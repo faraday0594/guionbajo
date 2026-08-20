@@ -489,13 +489,28 @@ async def tts_synthesize(
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    profile = None
+    user_api_key = None
     if current_user:
         try:
             result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
             profile = result.scalars().first()
+            if profile and profile.minimax_api_key:
+                user_api_key = profile.minimax_api_key
         except Exception:
-            profile = None
+            pass
+
+    if not user_api_key:
+        try:
+            res_key = await db.execute(
+                select(StudentProfile.minimax_api_key)
+                .where(StudentProfile.minimax_api_key.isnot(None))
+                .limit(1)
+            )
+            found_key = res_key.scalars().first()
+            if found_key:
+                user_api_key = found_key
+        except Exception:
+            pass
 
     voice_id = req.voice or "female-shaonv"
     emotion = req.emotion or "calm"
@@ -506,31 +521,8 @@ async def tts_synthesize(
         voice_id=voice_id,
         emotion=emotion,
         speed=speed,
-        api_key=profile.minimax_api_key if profile else None,
+        api_key=user_api_key,
     )
-
-    if not audio_bytes:
-        # Fallback to Edge Neural TTS for full tutor resilience
-        try:
-            req_voice = (voice_id or "").lower()
-            is_english = req_voice.startswith("en") or any(
-                c in req.text.lower() for c in ["lesson", "practice", "repeat", "listen"]
-            )
-            voice_to_use = "en-US-JennyNeural" if is_english else "es-MX-DaliaNeural"
-            audio_bytes = await _generate_edge_tts_audio(req.text, voice=voice_to_use)
-        except Exception as e:
-            logger.error(f"Edge TTS fallback error: {e}")
-
-    if not audio_bytes:
-        # Fallback to gTTS
-        try:
-            tts = gTTS(text=req.text, lang="es", slow=False)
-            buf = io.BytesIO()
-            tts.write_to_fp(buf)
-            buf.seek(0)
-            audio_bytes = buf.read()
-        except Exception as e:
-            logger.error(f"gTTS fallback error: {e}")
 
     if not audio_bytes:
         raise HTTPException(status_code=500, detail="Error en síntesis de voz")

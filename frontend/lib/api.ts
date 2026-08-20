@@ -264,8 +264,8 @@ export function cleanTextForTTS(text: string): string {
   return clean;
 }
 
-// Standard playTTS (immediate audio start)
-export async function playTTS(text: string, voice?: string, emotion?: string): Promise<HTMLAudioElement> {
+// Standard playTTS (immediate audio start for Tutor speech via MiniMax HD)
+export async function playTTS(text: string, voice = 'female-shaonv', emotion = 'calm'): Promise<HTMLAudioElement> {
   const speechText = cleanTextForTTS(text);
   const blob = await api.synthesize(speechText, voice, emotion);
   const url = URL.createObjectURL(blob);
@@ -295,7 +295,7 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
 
   // 1. Try Backend Studio Edge Neural TTS (en-US-RogerNeural)
   try {
-    const blob = await api.synthesize(speechText, 'edge-roger', 'calm', 0.9);
+    const blob = await api.synthesize(speechText, 'en-US-RogerNeural', 'calm', 0.95);
     if (blob && blob.size > 200) {
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);

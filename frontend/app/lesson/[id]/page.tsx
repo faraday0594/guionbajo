@@ -1019,11 +1019,11 @@ export default function LessonPage() {
     setItemLiveTranscript('');
     setItemEvals({});
     setExerciseInputs({});
-    setRevealedLineCount(999);
+    setRevealedLineCount(0);
     setAudioProgress(0);
     setActiveStepIdx(0);
-    setRevealedStepCount(99);
-    setIsFullBoardRevealed(true);
+    setRevealedStepCount(1);
+    setIsFullBoardRevealed(false);
     const newPhase = lesson?.phases?.[currentPhaseIdx];
     if (newPhase) {
       setCurrentSpeakingText(typeof newPhase.tutor_says === 'string' ? newPhase.tutor_says : newPhase.tutor_says?.text || '');
@@ -1492,7 +1492,12 @@ export default function LessonPage() {
   }
 
   const isStepRevealed = (type: string) => {
-    return true;
+    if (isFullBoardRevealed) return true;
+    const stepIdx = phaseStoryboardSteps.findIndex(
+      (s) => s.element_type === type || s.highlight_target === type
+    );
+    if (stepIdx === -1) return true;
+    return stepIdx < revealedStepCount;
   };
 
   const isStepActive = (type: string) => {

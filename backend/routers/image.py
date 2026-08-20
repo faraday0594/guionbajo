@@ -12,7 +12,7 @@ from database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from models.user import User, StudentProfile
-from auth.dependencies import get_current_user
+from auth.dependencies import get_current_user_optional
 
 router = APIRouter(prefix="/image", tags=["Image Generation"])
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class ImageGenRequest(BaseModel):
 @router.post("/generate")
 async def generate_image(
     req: ImageGenRequest,
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
     """

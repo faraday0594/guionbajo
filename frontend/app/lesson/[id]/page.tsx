@@ -960,30 +960,13 @@ export default function LessonPage() {
           ];
         }
 
-        // 🎨 GENERATE & PRELOAD SLIDE 0 IMAGE COMPLETELY BEFORE REVEALING CLASSROOM
-        setLoadingStage('Generando ilustración didáctica de alta resolución con IA...');
+        // 🎨 INSTANT CLASSROOM REVEAL: Load calibrated vector illustration immediately without blocking
         const phase0 = data.phases[0];
         const rawPrompt0 = typeof phase0?.image_prompt === 'string' && phase0.image_prompt.trim().length > 8
           ? phase0.image_prompt.trim()
           : `Educational 2D vector illustration of ${topicParam} for English lesson (${phase0?.phase_name || 'Introducción'}), clean minimal graphic style`;
         const sanitizedPrompt0 = sanitizeImagePrompt(rawPrompt0, topicParam, 0);
-
-        let slide0Url = '';
-        try {
-          const imgRes = await api.generateImage(sanitizedPrompt0).catch(() => null);
-          if (imgRes && imgRes.success && imgRes.url) {
-            slide0Url = imgRes.url;
-          }
-        } catch (imgErr) {
-          console.warn('MiniMax Slide 0 image generation failed, using calibrated fallback:', imgErr);
-        }
-
-        if (!slide0Url) {
-          slide0Url = getFallbackImageUrl(sanitizedPrompt0, topicParam, 0);
-        }
-
-        setLoadingStage('Precargando aula virtual y pizarra interactiva...');
-        await preloadImage(slide0Url, 4000);
+        const slide0Url = getFallbackImageUrl(sanitizedPrompt0, topicParam, 0);
 
         const initialImageMap: Record<string, string> = {
           [`0-${topicParam}`]: slide0Url,
@@ -993,30 +976,23 @@ export default function LessonPage() {
         setImageLoading(false);
         setLoadingLesson(false);
 
-        // 🚀 NON-BLOCKING BACKGROUND WORKER: Pre-generate all subsequent slides (1..N)
+        // 🚀 NON-BLOCKING BACKGROUND WORKER: Fetch high-res AI images in background without freezing UI
         (async () => {
-          for (let i = 1; i < data.phases.length; i++) {
+          for (let i = 0; i < data.phases.length; i++) {
             const p = data.phases[i];
             const promptKey = `${i}-${topicParam}`;
             const pPrompt = typeof p.image_prompt === 'string' && p.image_prompt.trim().length > 8
               ? p.image_prompt.trim()
-              : `Educational 2D vector illustration of ${topicParam} for English lesson (${p.phase_name}), clean minimal graphic style`;
+              : `Educational 2D vector illustration of ${topicParam} for English lesson (${p.phase_name || 'Clase'}), clean minimal graphic style`;
             const sanitizedPPrompt = sanitizeImagePrompt(pPrompt, topicParam, i);
 
             try {
               const genRes = await api.generateImage(sanitizedPPrompt).catch(() => null);
-              let pUrl = '';
               if (genRes && genRes.success && genRes.url) {
-                pUrl = genRes.url;
-              } else {
-                pUrl = getFallbackImageUrl(sanitizedPPrompt, topicParam, i);
+                setMinimaxImageMap(prev => ({ ...prev, [promptKey]: genRes.url }));
               }
-              await preloadImage(pUrl, 4000);
-              setMinimaxImageMap(prev => ({ ...prev, [promptKey]: pUrl }));
             } catch (err) {
-              console.warn(`Background generation for slide ${i} failed:`, err);
-              const fbUrl = getFallbackImageUrl(sanitizedPPrompt, topicParam, i);
-              setMinimaxImageMap(prev => ({ ...prev, [promptKey]: fbUrl }));
+              console.warn(`Background image generation for slide ${i} failed:`, err);
             }
           }
         })();
@@ -1501,9 +1477,16 @@ export default function LessonPage() {
         <p className="text-brand-cyan font-medium text-sm mb-3 animate-pulse text-center">
           {loadingStage}
         </p>
-        <p className="text-brand-text-secondary text-xs max-w-sm text-center leading-relaxed">
+        <p className="text-brand-text-secondary text-xs max-w-sm text-center leading-relaxed mb-6">
           Lección adaptativa para <strong className="text-white">{topicParam}</strong> ({sublevelParam}).
         </p>
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm border border-white/20 transition-all shadow-lg hover:scale-105"
+        >
+          <ArrowLeft size={16} />
+          <span>Volver al Dashboard</span>
+        </Link>
       </div>
     );
   }

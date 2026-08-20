@@ -11,6 +11,7 @@ from core.minimax_agent import TutorAgent
 from core.adaptive_engine import AdaptiveEngine
 from core.curriculum_graph import CURRICULUM_GRAPH, get_sublevel_info, get_class_node
 import logging
+import asyncio
 from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -53,9 +54,12 @@ async def generate_adaptive_lesson(
     }
 
     try:
-        script = await agent.generate_adaptive_lesson_script(topic, sublevel, prof_dict, adaptive_plan)
+        script = await asyncio.wait_for(
+            agent.generate_adaptive_lesson_script(topic, sublevel, prof_dict, adaptive_plan),
+            timeout=12.0
+        )
     except Exception as e:
-        logger.error(f"Error in generate_adaptive_lesson_script: {e}")
+        logger.warning(f"Adaptive lesson generation fallback triggered ({e}) for {topic}")
         is_a_level = sublevel.startswith("A1") or sublevel.startswith("A2")
         script = agent._build_fallback_lesson(topic, sublevel, is_a_level)
         script["archetype"] = adaptive_plan.get("archetype", "practice")

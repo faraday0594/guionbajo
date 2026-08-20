@@ -86,7 +86,7 @@ app.add_middleware(
         "https://guionbajo.vercel.app",
         "https://guionbajo-git-main-faraday0594s-projects.vercel.app",
     ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

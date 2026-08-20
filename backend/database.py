@@ -6,7 +6,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import re
+
 raw_url = settings.DATABASE_URL.strip() if settings.DATABASE_URL else "sqlite+aiosqlite:///./guionbajo.db"
+
+# Auto-strip accidental square brackets around password (common mistake when copying from Supabase [YOUR-PASSWORD])
+raw_url = re.sub(r':\[(.*?)\]@', r':\1@', raw_url)
 
 if raw_url.startswith("postgres://"):
     db_url = raw_url.replace("postgres://", "postgresql+asyncpg://", 1)

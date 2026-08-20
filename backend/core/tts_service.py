@@ -80,6 +80,68 @@ def is_predominantly_english(text: str) -> bool:
         return False
     return True
 
+async def _synthesize_minimax_tts(
+    text: str,
+    voice_id: str = "female-shaonv",
+    emotion: str = "calm",
+    speed: float = 1.0,
+    api_key: str = None
+) -> Optional[bytes]:
+    """Calls MiniMax speech-02-hd text-to-audio API (t2a_v2)."""
+    key = api_key or settings.MINIMAX_API_KEY
+    if not key:
+        return None
+
+    # Map generic/edge IDs to MiniMax voice IDs
+    minimax_voice = voice_id
+    if not voice_id or voice_id.startswith("edge-") or voice_id.startswith("en-") or voice_id in ("default", "tutor"):
+        minimax_voice = "female-shaonv"
+
+    payload = {
+        "model": settings.MINIMAX_TTS_MODEL or "speech-02-hd",
+        "text": text,
+        "stream": False,
+        "voice_setting": {
+            "voice_id": minimax_voice,
+            "speed": speed,
+            "vol": 1.0,
+            "pitch": 0,
+            "emotion": emotion,
+        },
+        "audio_setting": {
+            "sample_rate": 32000,
+            "bitrate": 128000,
+            "format": "mp3",
+            "channel": 1,
+        },
+    }
+
+    headers = {
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+    }
+
+    endpoint = settings.MINIMAX_TTS_ENDPOINT or "https://api.minimax.io/v1/t2a_v2"
+
+    try:
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            resp = await client.post(endpoint, json=payload, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                base_resp = data.get("base_resp", {})
+                if base_resp.get("status_code", 0) == 0:
+                    audio_hex = data.get("data", {}).get("audio")
+                    if audio_hex:
+                        return bytes.fromhex(audio_hex)
+                else:
+                    logger.warning(f"MiniMax TTS returned API status error: {base_resp}")
+            else:
+                logger.warning(f"MiniMax TTS HTTP error {resp.status_code}: {resp.text[:200]}")
+    except Exception as e:
+        logger.warning(f"MiniMax TTS call exception: {e}")
+    return None
+
+
 async def synthesize_speech(
     text: str,
     voice_id: str = "female-shaonv",
@@ -88,47 +150,78 @@ async def synthesize_speech(
     api_key: str = None
 ) -> bytes:
     key = api_key or settings.MINIMAX_API_KEY
-    
     vid = (voice_id or "").lower()
+
+    # Determine if the content is English practice / exercise / example / phonetic
     is_eng_voice = (
-        "jenny" in vid
+        "roger" in vid
+        or "jenny" in vid
         or "ava" in vid
         or "emma" in vid
-        or vid.startswith("en")
+        or vid.startswith("en-")
+        or "edge-roger" in vid
         or "edge-jenny" in vid
     )
     is_eng_content = is_predominantly_english(text)
-    is_english = is_eng_voice or is_eng_content
+    is_english = is_eng_voice or (is_eng_content and vid not in ("female-shaonv", "male-qn-college", "female-yicheng"))
 
-    # 1. If text is English or an English voice is requested, route directly to Native US English Edge-TTS (RogerNeural)
+    # ── 1. ENGLISH & MULTILINGUAL AUDIO (Exercises, Examples, Phonetics, Story) ───
     if is_english:
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
         if not speech_text:
             return b""
-        eng_voice = "en-US-RogerNeural" if (not vid.startswith("en-") or vid in ("female-shaonv", "edge-jenny")) else voice_id
+        eng_voice = "en-US-RogerNeural" if (not vid.startswith("en-") or vid in ("female-shaonv", "edge-jenny", "edge-roger")) else voice_id
+        
+        # Primary: Microsoft Neural Voice HD (Roger / Jenny / Ava)
         neural_audio = await _fallback_edge_tts(speech_text, voice_id=eng_voice, speed=speed)
         if neural_audio:
             return neural_audio
 
-    # 2. Preprocess text for Spanish tutor delivery & use Studio Neural Dalia (es-MX-DaliaNeural)
+        # Fallback: Google TTS in English (NEVER Spanish for English text!)
+        try:
+            loop = asyncio.get_event_loop()
+            def _gtts_en():
+                tts = gTTS(text=speech_text, lang="en", slow=False)
+                bio = io.BytesIO()
+                tts.write_to_fp(bio)
+                return bio.getvalue()
+            return await loop.run_in_executor(None, _gtts_en)
+        except Exception as e:
+            logger.error(f"English TTS fallback error: {e}")
+            return b""
+
+    # ── 2. SPANISH TUTOR SPEECH (MiniMax speech-02-hd / female-shaonv Primary) ─────
     speech_text = preprocess_text_for_tts(text, is_spanish_tutor=True)
     if not speech_text:
         return b""
 
-    spanish_voice = "es-MX-DaliaNeural" if vid in ("female-shaonv", "default", "", "edge-dalia") else voice_id
+    # A) PRIMARY: MiniMax High-Definition Neural Speech Engine
+    if key:
+        minimax_audio = await _synthesize_minimax_tts(
+            text=speech_text,
+            voice_id=voice_id,
+            emotion=emotion,
+            speed=speed,
+            api_key=key
+        )
+        if minimax_audio and len(minimax_audio) > 200:
+            return minimax_audio
+
+    # B) SECONDARY: Microsoft Neural Studio Voice (es-MX-DaliaNeural / es-MX-JorgeNeural)
+    spanish_voice = "es-MX-JorgeNeural" if "male" in vid or "jorge" in vid else "es-MX-DaliaNeural"
     neural_audio = await _fallback_edge_tts(speech_text, voice_id=spanish_voice, speed=speed)
     if neural_audio:
         return neural_audio
 
-    # 3. Last fallback via gTTS
+    # C) TERTIARY: Google TTS Spanish Fallback
     try:
         loop = asyncio.get_event_loop()
-        def _gtts_run():
+        def _gtts_es():
             tts = gTTS(text=speech_text, lang="es", slow=False)
             bio = io.BytesIO()
             tts.write_to_fp(bio)
             return bio.getvalue()
-        return await loop.run_in_executor(None, _gtts_run)
+        return await loop.run_in_executor(None, _gtts_es)
     except Exception as e:
         logger.error(f"All TTS synthesis engines failed: {e}")
         return b""

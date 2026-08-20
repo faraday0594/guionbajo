@@ -158,6 +158,9 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'en-US';
         u.rate = 0.85;
+        const voices = window.speechSynthesis.getVoices();
+        const enVoice = voices.find(v => (v.lang.startsWith('en') || v.lang === 'en-US') && (v.name.includes('Jenny') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Roger')));
+        if (enVoice) u.voice = enVoice;
         u.onend = () => setPlayingAudio(null);
         u.onerror = () => setPlayingAudio(null);
         window.speechSynthesis.speak(u);

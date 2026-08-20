@@ -2,27 +2,22 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from config import settings
 import ssl
-import urllib.parse
 import logging
 
 logger = logging.getLogger(__name__)
 
-db_url = settings.DATABASE_URL
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
-elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+asyncpg://"):
-    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+raw_url = settings.DATABASE_URL.strip() if settings.DATABASE_URL else "sqlite+aiosqlite:///./guionbajo.db"
 
-# Remove ?sslmode=... from URL because asyncpg does not accept sslmode query param in URL
-if "sslmode=" in db_url:
-    try:
-        parsed = urllib.parse.urlparse(db_url)
-        query_params = urllib.parse.parse_qs(parsed.query)
-        query_params.pop("sslmode", None)
-        new_query = urllib.parse.urlencode(query_params, doseq=True)
-        db_url = urllib.parse.urlunparse(parsed._replace(query=new_query))
-    except Exception as e:
-        logger.warning(f"Error stripping sslmode from DATABASE_URL: {e}")
+if raw_url.startswith("postgres://"):
+    db_url = raw_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif raw_url.startswith("postgresql://") and not raw_url.startswith("postgresql+asyncpg://"):
+    db_url = raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+else:
+    db_url = raw_url
+
+# asyncpg does not accept URL query parameters (like ?sslmode=require or &pgbouncer=true)
+if db_url.startswith("postgresql+asyncpg://") and "?" in db_url:
+    db_url = db_url.split("?", 1)[0]
 
 connect_args = {}
 engine_kwargs = {"echo": False}
@@ -39,7 +34,6 @@ else:
     except Exception as e:
         logger.warning(f"Error creating SSL context for DB: {e}")
     connect_args["statement_cache_size"] = 0
-    connect_args["prepared_statement_cache_size"] = 0
     engine_kwargs["pool_pre_ping"] = True
     engine_kwargs["pool_recycle"] = 300
 

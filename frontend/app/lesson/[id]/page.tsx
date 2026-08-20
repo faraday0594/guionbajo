@@ -1061,7 +1061,6 @@ export default function LessonPage() {
             ],
           };
         }
-        }
 
         // 🎨 INSTANT CLASSROOM REVEAL: Load calibrated vector illustration immediately without blocking
         const phase0 = data.phases[0];

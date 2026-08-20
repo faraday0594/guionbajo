@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: guionbajo-backend
+    name: guionbajo
     env: python
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port 
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9

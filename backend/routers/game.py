@@ -93,37 +93,42 @@ async def generate_games(
 @router.get("/lesson/{lesson_id}")
 async def get_games_for_lesson(
     lesson_id: str,
+    topic: Optional[str] = None,
+    sublevel: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Fetch or generate games tied to a completed lesson.
+    Fetch or generate games tied to a completed or in-progress lesson.
     """
-    les_res = await db.execute(
-        select(LessonHistory).where(
-            LessonHistory.id == lesson_id,
-            LessonHistory.user_id == current_user.id
+    lesson = None
+    try:
+        les_res = await db.execute(
+            select(LessonHistory).where(
+                LessonHistory.id == lesson_id,
+                LessonHistory.user_id == current_user.id
+            )
         )
-    )
-    lesson = les_res.scalars().first()
-    if not lesson:
-        raise HTTPException(status_code=404, detail="Lección no encontrada")
+        lesson = les_res.scalars().first()
+    except Exception as e:
+        logger.warning(f"Error finding lesson {lesson_id}: {e}")
 
     prof_res = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
     profile = prof_res.scalars().first()
 
     generator = GameGenerator(api_key=profile.minimax_api_key if profile else None)
-    topic = lesson.topic or "English Practice"
-    sublevel = lesson.sublevel or "A1.1"
+    resolved_topic = (lesson.topic if lesson else None) or topic or "English Practice"
+    resolved_sublevel = (lesson.sublevel if lesson else None) or sublevel or (profile.current_sublevel if profile else "A1.1")
+    lesson_data = lesson.lesson_data if lesson else None
 
-    mystery_word = await generator.generate_mystery_word(topic, sublevel, lesson.lesson_data)
-    twin_cards = await generator.generate_twin_cards(topic, sublevel, 6, lesson.lesson_data)
+    mystery_word = await generator.generate_mystery_word(resolved_topic, resolved_sublevel, lesson_data)
+    twin_cards = await generator.generate_twin_cards(resolved_topic, resolved_sublevel, 6, lesson_data)
 
     return {
         "success": True,
         "lesson_id": lesson_id,
-        "topic": topic,
-        "sublevel": sublevel,
+        "topic": resolved_topic,
+        "sublevel": resolved_sublevel,
         "mystery_word": mystery_word,
         "twin_cards": twin_cards,
     }

@@ -79,36 +79,41 @@ async def generate_reading_story(
 @router.get("/lesson/{lesson_id}")
 async def get_reading_for_lesson(
     lesson_id: str,
+    topic: Optional[str] = None,
+    sublevel: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Retrieves or generates reading practice for an existing lesson.
+    Retrieves or generates reading practice for an existing or in-progress lesson.
     """
-    les_res = await db.execute(
-        select(LessonHistory).where(
-            LessonHistory.id == lesson_id,
-            LessonHistory.user_id == current_user.id
+    lesson = None
+    try:
+        les_res = await db.execute(
+            select(LessonHistory).where(
+                LessonHistory.id == lesson_id,
+                LessonHistory.user_id == current_user.id
+            )
         )
-    )
-    lesson = les_res.scalars().first()
-    if not lesson:
-        raise HTTPException(status_code=404, detail="Lección no encontrada")
+        lesson = les_res.scalars().first()
+    except Exception as e:
+        logger.warning(f"Error querying lesson {lesson_id} for reading: {e}")
 
     prof_res = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
     profile = prof_res.scalars().first()
 
-    topic = lesson.topic or "English Practice"
-    sublevel = lesson.sublevel or "A1.1"
+    resolved_topic = (lesson.topic if lesson else None) or topic or "English Practice"
+    resolved_sublevel = (lesson.sublevel if lesson else None) or sublevel or (profile.current_sublevel if profile else "A1.1")
+    lesson_data = lesson.lesson_data if lesson else None
 
     generator = ReadingGenerator(api_key=profile.minimax_api_key if profile else None)
-    story = await generator.generate_reading_practice(topic, sublevel, lesson.lesson_data)
+    story = await generator.generate_reading_practice(resolved_topic, resolved_sublevel, lesson_data)
 
     return {
         "success": True,
         "lesson_id": lesson_id,
-        "topic": topic,
-        "sublevel": sublevel,
+        "topic": resolved_topic,
+        "sublevel": resolved_sublevel,
         "story": story
     }
 

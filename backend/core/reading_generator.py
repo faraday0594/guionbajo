@@ -144,11 +144,18 @@ class ReadingGenerator:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.MINIMAX_API_KEY
         self.model = settings.MINIMAX_LLM_MODEL
-        self.client = AsyncOpenAI(
-            api_key=self.api_key,
-            base_url=settings.MINIMAX_BASE_URL,
-            timeout=60.0,
-        )
+        if self.api_key:
+            try:
+                self.client = AsyncOpenAI(
+                    api_key=self.api_key,
+                    base_url=settings.MINIMAX_BASE_URL,
+                    timeout=60.0,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize AsyncOpenAI in ReadingGenerator: {e}")
+                self.client = None
+        else:
+            self.client = None
 
     async def generate_reading_practice(
         self,
@@ -159,6 +166,8 @@ class ReadingGenerator:
         """
         Generates a 3-4 part chunked reading story with character continuity and word-level IPA transcriptions.
         """
+        if not self.client or not self.api_key:
+            return self._build_curated_reading_fallback(topic, sublevel)
         prompt = (
             f"Generate an engaging visual reading practice story for:\n"
             f"Topic: {topic}\n"

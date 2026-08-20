@@ -46,27 +46,145 @@ export default function GameArena({
   const [maxStreak, setMaxStreak] = useState(0);
   const [earnedXp, setEarnedXp] = useState(35);
 
+  // Fallback data generator in case network or API is offline
+  const getClientFallbackData = () => {
+    const isA2 = sublevel.includes('A2');
+    const isB1 = sublevel.includes('B1') || sublevel.includes('B2');
+
+    const fallbackMystery: MysteryWordData = isB1 ? {
+      target_word: 'EXPERIENCE',
+      category: 'Vida y Present Perfect',
+      clue_definition: 'Conocimiento o habilidad práctica adquirida a través de la vivencia directa de eventos.',
+      clue_synonym: "Familia léxica: knowledge, background, skill, trial. Colocación: 'work experience'.",
+      image_prompt: 'Clean 2D vector flat art of a young professional climbing stairs towards goals, achieving milestones, bright vector style, no text, no words.',
+      clue_first_letter: "La palabra empieza con la letra 'E' y tiene 10 letras.",
+      example_sentence: 'Traveling abroad gives you unforgettable life experience.',
+      example_translation: 'Viajar al extranjero te brinda una experiencia de vida inolvidable.',
+      tutor_clue_speeches: [
+        '¡Pista 1! Es aquello que ganas al vivir situaciones y superar desafíos.',
+        'Segunda pista: Es fundamental en entrevistas laborales y en el Present Perfect.',
+        'Observa la ilustración generada para inspirarte.',
+        'Última pista: Comienza con la letra E y tiene 10 letras.'
+      ]
+    } : isA2 ? {
+      target_word: 'YESTERDAY',
+      category: 'Marcadores de Tiempo Pasado',
+      clue_definition: 'El día inmediatamente anterior al día de hoy.',
+      clue_synonym: "Familia léxica: past, time, morning, last night. Colocación: 'yesterday afternoon'.",
+      image_prompt: 'Clean 2D vector educational calendar illustration showing a past highlighted day marked with a checkmark, clean vector art, no text, no words.',
+      clue_first_letter: "La palabra empieza con la letra 'Y' y tiene 9 letras.",
+      example_sentence: 'Yesterday I visited my grandparents and watched a movie.',
+      example_translation: 'Ayer visité a mis abuelos y vi una película.',
+      tutor_clue_speeches: [
+        '¡Pista 1! Es un marcador temporal que nos lleva al pasado reciente.',
+        'Segunda pista: Se refiere al día que terminó hace unas horas.',
+        'Revisa la ilustración que apareció en pantalla.',
+        'Última pista: Comienza con la letra Y y tiene 9 letras.'
+      ]
+    } : {
+      target_word: 'AIRPORT',
+      category: 'Viajes y Lugares',
+      clue_definition: 'Lugar grande con pistas de despegue donde las personas abordan aviones para viajar.',
+      clue_synonym: "Familia léxica: airplane, terminal, flight, boarding pass. Colocación: 'at the airport'.",
+      image_prompt: 'Clean flat 2D vector educational illustration of a modern airport departure terminal with airplanes on runway, sunny day, minimal style, vibrant colors, no text, no words.',
+      clue_first_letter: "La palabra empieza con la letra 'A' y tiene 7 letras.",
+      example_sentence: 'We arrived at the airport two hours before our flight.',
+      example_translation: 'Llegamos al aeropuerto dos horas antes de nuestro vuelo.',
+      tutor_clue_speeches: [
+        '¡Primera pista! Es un lugar donde despegas hacia nuevas aventuras.',
+        'Segunda pista: Se relaciona con aviones, terminales y maletas.',
+        'Mira la ilustración en pantalla. ¿Qué lugar representa?',
+        'Última pista: Empieza con la letra A y tiene 7 letras.'
+      ]
+    };
+
+    const fallbackPairs: TwinCardPairData[] = [
+      {
+        pair_id: 'pair-1',
+        card_a: { text: 'Good morning', icon: '🌅', category: 'Saludos', translation: 'Buenos días' },
+        card_b: { text: 'Buenos días', icon: '☀️', category: 'Saludos', translation: 'Good morning' },
+        audio_phrase: 'Good morning, nice to meet you today!',
+        audio_translation: '¡Buenos días, un gusto conocerte hoy!',
+        explanation: "'Good morning' es el saludo formal y amigable que se utiliza desde el amanecer hasta el mediodía."
+      },
+      {
+        pair_id: 'pair-2',
+        card_a: { text: 'Thank you', icon: '🙏', category: 'Cortesía', translation: 'Gracias' },
+        card_b: { text: 'Gracias', icon: '✨', category: 'Cortesía', translation: 'Thank you' },
+        audio_phrase: 'Thank you very much for your help.',
+        audio_translation: 'Muchas gracias por tu ayuda.',
+        explanation: "'Thank you' es la fórmula universal en inglés para expresar gratitud y cortesía."
+      },
+      {
+        pair_id: 'pair-3',
+        card_a: { text: 'See you later', icon: '👋', category: 'Despedidas', translation: 'Hasta luego' },
+        card_b: { text: 'Hasta luego', icon: '⏳', category: 'Despedidas', translation: 'See you later' },
+        audio_phrase: 'Goodbye, see you later tomorrow!',
+        audio_translation: '¡Adiós, nos vemos más tarde mañana!',
+        explanation: "'See you later' se utiliza al despedirte de alguien a quien esperas volver a ver pronto."
+      },
+      {
+        pair_id: 'pair-4',
+        card_a: { text: 'My name is', icon: '🪪', category: 'Presentaciones', translation: 'Mi nombre es' },
+        card_b: { text: 'Mi nombre es', icon: '🗣️', category: 'Presentaciones', translation: 'My name is' },
+        audio_phrase: 'Hello, my name is Alex and I am a student.',
+        audio_translation: 'Hola, mi nombre es Alex y soy estudiante.',
+        explanation: "'My name is...' es la estructura básica para presentarte con confianza."
+      },
+      {
+        pair_id: 'pair-5',
+        card_a: { text: 'Please', icon: '🤝', category: 'Cortesía', translation: 'Por favor' },
+        card_b: { text: 'Por favor', icon: '🪄', category: 'Cortesía', translation: 'Please' },
+        audio_phrase: 'Could you help me with this exercise, please?',
+        audio_translation: '¿Podrías ayudarme con este ejercicio, por favor?',
+        explanation: "'Please' es la palabra clave de cortesía para realizar solicitudes de manera amable."
+      },
+      {
+        pair_id: 'pair-6',
+        card_a: { text: 'You are welcome', icon: '😊', category: 'Cortesía', translation: 'De nada' },
+        card_b: { text: 'De nada', icon: '🌟', category: 'Cortesía', translation: 'You are welcome' },
+        audio_phrase: 'You are very welcome, anytime!',
+        audio_translation: '¡De nada, cuando quieras!',
+        explanation: "'You are welcome' es la respuesta estándar y educada ante un agradecimiento ('Thank you')."
+      }
+    ];
+
+    return { fallbackMystery, fallbackPairs };
+  };
+
   // Load games from API
   useEffect(() => {
     async function loadGames() {
       setLoading(true);
       try {
-        let res;
+        let res: any = null;
         if (lessonId && !lessonId.startsWith('gen-')) {
-          res = await api.getLessonGames(lessonId);
+          try {
+            res = await api.getLessonGames(lessonId);
+          } catch (e) {
+            console.warn('getLessonGames failed, attempting generateGames fallback:', e);
+            res = await api.generateGames(topic, sublevel, lessonId, 'all', 6);
+          }
         } else {
           res = await api.generateGames(topic, sublevel, lessonId, 'all', 6);
         }
 
-        if (res.mystery_word) {
+        if (res && res.mystery_word) {
           setMysteryWordData(res.mystery_word);
+        } else {
+          setMysteryWordData(getClientFallbackData().fallbackMystery);
         }
-        if (res.twin_cards && Array.isArray(res.twin_cards)) {
+
+        if (res && res.twin_cards && Array.isArray(res.twin_cards) && res.twin_cards.length > 0) {
           setTwinCardsPairs(res.twin_cards);
+        } else {
+          setTwinCardsPairs(getClientFallbackData().fallbackPairs);
         }
       } catch (err) {
-        console.warn('Game load error:', err);
-        // Fallback default generation will be handled by backend or generator
+        console.warn('Game load error, activating local client fallback:', err);
+        const { fallbackMystery, fallbackPairs } = getClientFallbackData();
+        setMysteryWordData(fallbackMystery);
+        setTwinCardsPairs(fallbackPairs);
       } finally {
         setLoading(false);
       }

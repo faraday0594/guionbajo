@@ -320,11 +320,18 @@ class GameGenerator:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.MINIMAX_API_KEY
         self.model = settings.MINIMAX_LLM_MODEL
-        self.client = AsyncOpenAI(
-            api_key=self.api_key,
-            base_url=settings.MINIMAX_BASE_URL,
-            timeout=45.0,
-        )
+        if self.api_key:
+            try:
+                self.client = AsyncOpenAI(
+                    api_key=self.api_key,
+                    base_url=settings.MINIMAX_BASE_URL,
+                    timeout=45.0,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize AsyncOpenAI in GameGenerator: {e}")
+                self.client = None
+        else:
+            self.client = None
 
     def _get_level_key(self, sublevel: str) -> str:
         if not sublevel:
@@ -369,6 +376,9 @@ class GameGenerator:
         """
         Generate a Mystery Word challenge with 4-tier clues, image prompt and contextual example.
         """
+        if not self.client or not self.api_key:
+            return self._get_fallback_mystery_word(topic, sublevel)
+
         level_desc = sublevel or "A1.1"
         is_a_level = sublevel.startswith("A1") or sublevel.startswith("A2")
 
@@ -449,6 +459,9 @@ Return JSON schema:
         pair_count = max(6, pair_count)
         if pair_count % 2 != 0:
             pair_count += 1
+
+        if not self.client or not self.api_key:
+            return self._get_fallback_twin_cards(topic, sublevel, pair_count)
 
         system_prompt = (
             "You are an expert English teacher. Design a paired card matching game (Cartas Gemelas / Twin Cards).\n"

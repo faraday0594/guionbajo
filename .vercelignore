@@ -1,0 +1,4 @@
+backend/
+*.py
+*.bat
+*.md

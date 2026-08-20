@@ -1,3 +1,10 @@
+import sys
+import os
+
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -8,7 +15,6 @@ from models.user import User, StudentProfile
 from auth.jwt import get_password_hash
 from sqlalchemy.future import select
 import uuid
-import os
 import asyncio
 from routers import (
     auth_router,

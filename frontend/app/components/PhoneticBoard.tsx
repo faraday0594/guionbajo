@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, Sparkles, X, Layers, Award, Mic, Info, Play, Loader2 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, playEnglishAudio } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 
@@ -122,47 +122,11 @@ export default function PhoneticBoard({ inLessonMode = false, onClose }: Phoneti
     const key = id || text;
     setPlayingAudio(key);
 
-    // 1. Primary: High-Definition Backend Neural Audio (en-US-JennyNeural)
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('guionbajo_token') : null;
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/tts/synthesize`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ text, voice: 'en-US-RogerNeural', emotion: 'calm', speed: 0.9 }),
-        }
-      );
-
-      if (res.ok) {
-        const blob = await res.blob();
-        if (blob.size > 200) {
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          activeAudioRef.current = audio;
-          audio.onended = () => { setPlayingAudio(null); URL.revokeObjectURL(url); activeAudioRef.current = null; };
-          audio.onerror = () => { setPlayingAudio(null); URL.revokeObjectURL(url); activeAudioRef.current = null; };
-          await audio.play();
-          return;
-        }
-      }
-    } catch (_) {}
-
-    // 2. Fallback: Browser Web Speech API
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      const utt = new SpeechSynthesisUtterance(text);
-      utt.lang = 'en-US';
-      utt.rate = 0.85;
-      const voices = window.speechSynthesis.getVoices();
-      const enVoice = voices.find(v => v.lang === 'en-US' && (v.name.includes('Jenny') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Zira')));
-      if (enVoice) utt.voice = enVoice;
-      utt.onend = () => setPlayingAudio(null);
-      utt.onerror = () => setPlayingAudio(null);
-      window.speechSynthesis.speak(utt);
-    } else {
+      await playEnglishAudio(text);
+      setTimeout(() => setPlayingAudio(null), 1200);
+    } catch (err) {
+      console.error('Error playing TTS in PhoneticBoard:', err);
       setPlayingAudio(null);
     }
   };

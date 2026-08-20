@@ -214,6 +214,112 @@ export const api = {
 // Global audio handle & state for linear serialization
 let activeAudioElement: HTMLAudioElement | null = null;
 let currentResolveHandler: (() => void) | null = null;
+let cachedVoices: SpeechSynthesisVoice[] = [];
+let voicesLoadedPromise: Promise<SpeechSynthesisVoice[]> | null = null;
+
+export function ensureBrowserVoices(): Promise<SpeechSynthesisVoice[]> {
+  if (typeof window === 'undefined' || !window.speechSynthesis) {
+    return Promise.resolve([]);
+  }
+  const current = window.speechSynthesis.getVoices();
+  if (current && current.length > 0) {
+    cachedVoices = current;
+    return Promise.resolve(current);
+  }
+  if (!voicesLoadedPromise) {
+    voicesLoadedPromise = new Promise((resolve) => {
+      const onVoices = () => {
+        const v = window.speechSynthesis.getVoices();
+        if (v && v.length > 0) {
+          cachedVoices = v;
+          window.speechSynthesis.removeEventListener('voiceschanged', onVoices);
+          resolve(v);
+        }
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', onVoices);
+      setTimeout(() => {
+        const v = window.speechSynthesis.getVoices();
+        cachedVoices = v || [];
+        resolve(cachedVoices);
+      }, 500);
+    });
+  }
+  return voicesLoadedPromise;
+}
+
+export function getBrowserVoices(): SpeechSynthesisVoice[] {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return [];
+  if (cachedVoices.length > 0) return cachedVoices;
+  cachedVoices = window.speechSynthesis.getVoices();
+  return cachedVoices;
+}
+
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    cachedVoices = window.speechSynthesis.getVoices();
+  };
+  ensureBrowserVoices();
+}
+
+export function getBestBrowserVoice(lang: 'en' | 'es', preferredName?: string): SpeechSynthesisVoice | null {
+  const voices = getBrowserVoices();
+  if (!voices || voices.length === 0) return null;
+
+  if (lang === 'en') {
+    const enVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith('en'));
+    if (enVoices.length === 0) return null;
+
+    if (preferredName) {
+      const match = enVoices.find((v) => v.name.toLowerCase().includes(preferredName.toLowerCase()));
+      if (match) return match;
+    }
+
+    const priorityFilters = [
+      (v: SpeechSynthesisVoice) =>
+        (v.name.includes('Roger') || v.name.includes('Jenny') || v.name.includes('Aria') || v.name.includes('Natural')) &&
+        v.lang.startsWith('en'),
+      (v: SpeechSynthesisVoice) =>
+        (v.name.includes('Guy') || v.name.includes('Ava') || v.name.includes('Emma')) && v.lang.startsWith('en'),
+      (v: SpeechSynthesisVoice) => v.name.includes('Google') && v.lang.startsWith('en'),
+      (v: SpeechSynthesisVoice) =>
+        (v.name.includes('Samantha') || v.name.includes('Alex') || v.name.includes('Victoria')) &&
+        v.lang.startsWith('en'),
+      (v: SpeechSynthesisVoice) => v.name.includes('Microsoft') && v.lang.startsWith('en-US'),
+      (v: SpeechSynthesisVoice) => v.lang === 'en-US',
+      (v: SpeechSynthesisVoice) => v.lang.startsWith('en'),
+    ];
+
+    for (const test of priorityFilters) {
+      const found = enVoices.find(test);
+      if (found) return found;
+    }
+    return enVoices[0];
+  } else {
+    const esVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith('es'));
+    if (esVoices.length === 0) return null;
+
+    if (preferredName) {
+      const match = esVoices.find((v) => v.name.toLowerCase().includes(preferredName.toLowerCase()));
+      if (match) return match;
+    }
+
+    const priorityFilters = [
+      (v: SpeechSynthesisVoice) =>
+        (v.name.includes('Dalia') || v.name.includes('Jorge') || v.name.includes('Sabina') || v.name.includes('Natural')) &&
+        v.lang.startsWith('es'),
+      (v: SpeechSynthesisVoice) => v.name.includes('Google') && v.lang.startsWith('es'),
+      (v: SpeechSynthesisVoice) => (v.name.includes('Paulina') || v.name.includes('Monica')) && v.lang.startsWith('es'),
+      (v: SpeechSynthesisVoice) => v.lang === 'es-MX' || v.lang === 'es-ES',
+      (v: SpeechSynthesisVoice) => v.lang.startsWith('es'),
+    ];
+
+    for (const test of priorityFilters) {
+      const found = esVoices.find(test);
+      if (found) return found;
+    }
+    return esVoices[0];
+  }
+}
 
 // Stop any currently speaking tutor voice
 export function stopTutorVoice() {
@@ -264,36 +370,142 @@ export function cleanTextForTTS(text: string): string {
   return clean;
 }
 
-// Standard playTTS (immediate audio start for Tutor speech via MiniMax HD)
-export async function playTTS(text: string, voice = 'female-shaonv', emotion = 'calm'): Promise<HTMLAudioElement> {
-  const speechText = cleanTextForTTS(text);
-  const blob = await api.synthesize(speechText, voice, emotion);
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  activeAudioElement = audio;
+function createBrowserSpeechAudioAdapter(text: string, voiceId = 'female-shaonv') {
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const isEnglish = voiceId.startsWith('en-') || voiceId.includes('roger') || voiceId.includes('jenny');
+  const estimatedSeconds = Math.max(words * 0.38, 1.8);
 
-  const playPromise = audio.play();
-  if (playPromise !== undefined) {
-    playPromise.catch((err) => {
-      if (err && err.name !== 'AbortError') {
-        console.warn('TTS Audio play error:', err);
+  let timer: NodeJS.Timeout | null = null;
+  let startTime = 0;
+  let isPaused = false;
+
+  const adapter = {
+    duration: estimatedSeconds,
+    currentTime: 0,
+    paused: false,
+    ended: false,
+    ontimeupdate: null as (() => void) | null,
+    onended: null as (() => void) | null,
+    onerror: null as (() => void) | null,
+    play: async () => {
+      isPaused = false;
+      adapter.paused = false;
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        try {
+          window.speechSynthesis.cancel();
+          await ensureBrowserVoices();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = isEnglish ? 'en-US' : 'es-MX';
+          utterance.rate = isEnglish ? 0.9 : 1.0;
+          const bestVoice = getBestBrowserVoice(isEnglish ? 'en' : 'es');
+          if (bestVoice) utterance.voice = bestVoice;
+
+          utterance.onend = () => {
+            if (timer) clearInterval(timer);
+            adapter.currentTime = adapter.duration;
+            adapter.ended = true;
+            adapter.onended?.();
+          };
+          utterance.onerror = () => {
+            if (timer) clearInterval(timer);
+            adapter.ended = true;
+            adapter.onerror?.();
+          };
+
+          window.speechSynthesis.speak(utterance);
+          startTime = Date.now();
+          timer = setInterval(() => {
+            if (isPaused || adapter.ended) return;
+            const elapsed = (Date.now() - startTime) / 1000;
+            adapter.currentTime = Math.min(elapsed, adapter.duration);
+            adapter.ontimeupdate?.();
+            if (elapsed >= adapter.duration && !adapter.ended) {
+              if (timer) clearInterval(timer);
+              adapter.ended = true;
+              adapter.onended?.();
+            }
+          }, 50);
+        } catch (_) {
+          adapter.ended = true;
+          adapter.onended?.();
+        }
+      } else {
+        adapter.ended = true;
+        adapter.onended?.();
       }
-    });
-  }
-  audio.onended = () => {
-    URL.revokeObjectURL(url);
-    if (activeAudioElement === audio) activeAudioElement = null;
+    },
+    pause: () => {
+      isPaused = true;
+      adapter.paused = true;
+      if (timer) clearInterval(timer);
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (_) {}
+      }
+    }
   };
-  return audio;
+
+  adapter.play();
+  return adapter;
 }
 
-// ─── PLAY ENGLISH AUDIO (Roger Neural HD / Edge-TTS) ───────────────────────────
+// Standard playTTS (immediate audio start for Tutor speech via MiniMax HD with fallback)
+export async function playTTS(text: string, voice = 'female-shaonv', emotion = 'calm'): Promise<HTMLAudioElement | any> {
+  const speechText = cleanTextForTTS(text);
+  if (!speechText) {
+    return {
+      duration: 0,
+      currentTime: 0,
+      paused: true,
+      ended: true,
+      play: async () => {},
+      pause: () => {},
+      ontimeupdate: null,
+      onended: null,
+      onerror: null,
+    };
+  }
+
+  // 1. Try Primary Cloud Synthesis (MiniMax HD / Microsoft Neural Studio)
+  try {
+    const blob = await api.synthesize(speechText, voice, emotion);
+    if (blob && blob.size > 200) {
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      activeAudioElement = audio;
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          if (err && err.name !== 'AbortError') {
+            console.warn('TTS Audio play error:', err);
+          }
+        });
+      }
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (activeAudioElement === audio) activeAudioElement = null;
+      };
+      return audio;
+    }
+  } catch (err) {
+    console.warn('Backend TTS synthesis failed, switching to browser audio adapter:', err);
+  }
+
+  // 2. High Quality Browser Synthesis fallback
+  return createBrowserSpeechAudioAdapter(speechText, voice);
+}
+
+// ─── PLAY ENGLISH AUDIO (Roger / Jenny Neural HD / Edge-TTS) ───────────────────
 // High-definition natural English speech for exercise sentences, phonetics, and examples.
 export async function playEnglishAudio(text: string): Promise<HTMLAudioElement | void> {
   const speechText = cleanTextForTTS(text);
   if (!speechText) return;
 
-  // 1. Try Backend Studio Edge Neural TTS (en-US-RogerNeural)
+  stopTutorVoice();
+
+  // 1. Try Backend Studio Edge Neural TTS (en-US-RogerNeural / en-US-JennyNeural)
   try {
     const blob = await api.synthesize(speechText, 'en-US-RogerNeural', 'calm', 0.95);
     if (blob && blob.size > 200) {
@@ -319,35 +531,20 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
     console.warn('Backend Roger TTS synthesis fallback to browser:', e);
   }
 
-  // 2. Fallback to Browser Web Speech API prioritizing Roger / Natural
+  // 2. Fallback to Browser Web Speech API strictly in English (Roger / Jenny / Google US)
   if (typeof window !== 'undefined' && window.speechSynthesis) {
     try {
       window.speechSynthesis.cancel();
+      await ensureBrowserVoices();
       const utterance = new SpeechSynthesisUtterance(speechText);
       utterance.lang = 'en-US';
       utterance.rate = 0.88;
       utterance.pitch = 1.0;
 
-      const pickVoice = () => {
-        const voices = window.speechSynthesis.getVoices();
-        if (voices.length === 0) return null;
-        const priority = [
-          (v: SpeechSynthesisVoice) => (v.name.includes('Roger') || v.name.includes('Natural')) && v.lang.startsWith('en'),
-          (v: SpeechSynthesisVoice) => (v.name.includes('Guy') || v.name.includes('Male')) && v.lang.startsWith('en'),
-          (v: SpeechSynthesisVoice) => v.name.includes('Google') && v.lang.startsWith('en'),
-          (v: SpeechSynthesisVoice) => v.name.includes('Microsoft') && v.lang.startsWith('en-US'),
-          (v: SpeechSynthesisVoice) => v.lang.startsWith('en-US'),
-          (v: SpeechSynthesisVoice) => v.lang.startsWith('en'),
-        ];
-        for (const test of priority) {
-          const found = voices.find(test);
-          if (found) return found;
-        }
-        return null;
-      };
-
-      const voice = pickVoice();
-      if (voice) utterance.voice = voice;
+      const enVoice = getBestBrowserVoice('en');
+      if (enVoice) {
+        utterance.voice = enVoice;
+      }
       window.speechSynthesis.speak(utterance);
     } catch (_) {}
   }
@@ -355,12 +552,10 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
 
 // ─── ASYNC TUTOR VOICE MOTOR (playTutorVoice) ──────────────────────────────────
 // Returns a Promise that resolves ONLY when the tutor finishes speaking (onended).
-// Eliminates audio collision, overlapping, and premature timeouts.
 export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
   const speechText = cleanTextForTTS(text);
   if (!speechText) return Promise.resolve();
 
-  // 1. Terminate any previous active voice cleanly
   stopTutorVoice();
 
   return new Promise((resolve) => {
@@ -383,14 +578,13 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
 
     currentResolveHandler = cleanupAndResolve;
 
-    // Generous fallback safety timeout (e.g. 15-25s based on words) to prevent infinite freeze only
     const wordsCount = text.split(/\s+/).filter(Boolean).length;
     const maxSafetyMs = Math.max(wordsCount * 650, 6000) + 12000;
     safetyTimer = setTimeout(() => {
       cleanupAndResolve();
     }, maxSafetyMs);
 
-    const fallbackToBrowserSpeech = () => {
+    const fallbackToBrowserSpeech = async () => {
       if (typeof window === 'undefined' || !window.speechSynthesis) {
         cleanupAndResolve();
         return;
@@ -398,27 +592,18 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
 
       try {
         window.speechSynthesis.cancel();
+        await ensureBrowserVoices();
         const utterance = new SpeechSynthesisUtterance(text.trim());
-        utterance.lang = lang === 'en' ? 'en-US' : 'es-MX';
-        utterance.rate = lang === 'en' ? 0.9 : 1.0;
+        const isEng = lang === 'en';
+        utterance.lang = isEng ? 'en-US' : 'es-MX';
+        utterance.rate = isEng ? 0.9 : 1.0;
         utterance.pitch = 1.0;
 
-        const voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) {
-          const voice = voices.find((v) =>
-            lang === 'en'
-              ? (v.name.includes('Jenny') || v.name.includes('Google') || v.name.includes('Natural') || v.lang.startsWith('en-US'))
-              : v.lang.startsWith('es') || v.name.includes('Jorge') || v.name.includes('Spanish')
-          );
-          if (voice) utterance.voice = voice;
-        }
+        const bestVoice = getBestBrowserVoice(isEng ? 'en' : 'es');
+        if (bestVoice) utterance.voice = bestVoice;
 
-        utterance.onend = () => {
-          cleanupAndResolve();
-        };
-        utterance.onerror = () => {
-          cleanupAndResolve();
-        };
+        utterance.onend = () => cleanupAndResolve();
+        utterance.onerror = () => cleanupAndResolve();
 
         window.speechSynthesis.speak(utterance);
       } catch (err) {

@@ -20,18 +20,35 @@ app = FastAPI(title="Guionbajo Cloud - Master Phonetics Engine", version="1.0.9"
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=[],
+    allow_origin_regex=r"^https?://.*",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
+@app.get("/")
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "Guionbajo Cloud Master Phonetics Engine",
+        "version": "1.1.0"
+    }
+
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
+async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc) or "Internal Server Error"},
-        headers={"Access-Control-Allow-Origin": "*"}
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
     )
 
 app.include_router(auth_router)

@@ -3,6 +3,7 @@ import re
 import logging
 import asyncio
 import io
+from typing import Optional, Dict, Any, List
 import edge_tts
 from gtts import gTTS
 from config import settings

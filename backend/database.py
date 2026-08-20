@@ -25,10 +25,12 @@ if "sslmode=" in db_url:
         logger.warning(f"Error stripping sslmode from DATABASE_URL: {e}")
 
 connect_args = {}
+engine_kwargs = {"echo": False}
+
 if db_url.startswith("sqlite"):
     connect_args["check_same_thread"] = False
 else:
-    # Cloud PostgreSQL (Supabase / Render) requires SSL for asyncpg
+    # Cloud PostgreSQL (Supabase / Render) requires SSL and statement cache size 0 for asyncpg & PgBouncer
     try:
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
@@ -36,11 +38,15 @@ else:
         connect_args["ssl"] = ssl_context
     except Exception as e:
         logger.warning(f"Error creating SSL context for DB: {e}")
+    connect_args["statement_cache_size"] = 0
+    connect_args["prepared_statement_cache_size"] = 0
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 300
 
 engine = create_async_engine(
     db_url, 
-    echo=False,
-    connect_args=connect_args
+    connect_args=connect_args,
+    **engine_kwargs
 )
 AsyncSessionLocal = async_sessionmaker(
     bind=engine, 

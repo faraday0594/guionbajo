@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Volume2, Sparkles, Layers, Mic, CheckCircle2, RefreshCw } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, playEnglishAudio } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 interface MicroPhoneticProps {
@@ -113,7 +113,6 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
             activeAudioRef.current = localAudio;
             localAudio.onended = () => { setPlayingAudio(null); activeAudioRef.current = null; };
             localAudio.onerror = async () => {
-              // Fallback to backend API
               await fetchAndPlayBackendPhoneme(cleanSym);
             };
             await localAudio.play();
@@ -124,49 +123,9 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
         return;
       }
 
-      // Word / Drill playback via Studio Neural Backend (primary)
-      try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('guionbajo_token') : null;
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/tts/synthesize`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({ text, voice: 'en-US-RogerNeural', emotion: 'calm', speed: 0.9 }),
-          }
-        );
-
-        if (res.ok) {
-          const blob = await res.blob();
-          if (blob.size > 200) {
-            const audioUrl = URL.createObjectURL(blob);
-            const audio = new Audio(audioUrl);
-            activeAudioRef.current = audio;
-            audio.onended = () => { setPlayingAudio(null); URL.revokeObjectURL(audioUrl); activeAudioRef.current = null; };
-            audio.onerror = () => { setPlayingAudio(null); URL.revokeObjectURL(audioUrl); activeAudioRef.current = null; };
-            await audio.play();
-            return;
-          }
-        }
-      } catch (_) {}
-
-      // Fallback via Web Speech API (for words only)
-      if ('speechSynthesis' in window) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'en-US';
-        u.rate = 0.85;
-        const voices = window.speechSynthesis.getVoices();
-        const enVoice = voices.find(v => (v.lang.startsWith('en') || v.lang === 'en-US') && (v.name.includes('Jenny') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Roger')));
-        if (enVoice) u.voice = enVoice;
-        u.onend = () => setPlayingAudio(null);
-        u.onerror = () => setPlayingAudio(null);
-        window.speechSynthesis.speak(u);
-      } else {
-        setPlayingAudio(null);
-      }
+      // Word / Drill playback via High-Definition Roger Neural HD Engine
+      await playEnglishAudio(text);
+      setTimeout(() => setPlayingAudio(null), 1200);
     } catch (err) {
       console.error('Error playing sound:', err);
       setPlayingAudio(null);

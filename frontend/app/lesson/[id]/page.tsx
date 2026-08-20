@@ -2398,7 +2398,7 @@ export default function LessonPage() {
                                   {phase.student_task && (
                                     <button
                                       type="button"
-                                      onClick={() => handlePlayIndividualAudio(typeof phase.student_task === 'string' ? phase.student_task : '')}
+                                      onClick={() => speakText(typeof phase.student_task === 'string' ? phase.student_task : '')}
                                       className="px-2.5 py-1 rounded-xl bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 border border-brand-cyan/30 text-xs flex items-center gap-1.5 transition-all font-semibold"
                                     >
                                       <Volume2 size={13} className="text-brand-cyan animate-pulse" />
@@ -2625,7 +2625,7 @@ export default function LessonPage() {
                                   </h3>
                                   <button
                                     type="button"
-                                    onClick={() => handlePlayIndividualAudio(typeof phase.student_task === 'string' ? phase.student_task : '')}
+                                    onClick={() => speakText(typeof phase.student_task === 'string' ? phase.student_task : '')}
                                     className="px-2.5 py-1 rounded-xl bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 border border-brand-cyan/30 text-xs flex items-center gap-1.5 transition-all font-semibold"
                                   >
                                     <Volume2 size={13} className="text-brand-cyan animate-pulse" />

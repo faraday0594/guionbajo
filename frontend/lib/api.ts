@@ -2,7 +2,7 @@ import { getToken } from './auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
+async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 1): Promise<any> {
   const token = getToken();
   const headers = new Headers(options.headers || {});
 
@@ -14,10 +14,19 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      headers,
+    });
+  } catch (err: any) {
+    if (retries > 0) {
+      await new Promise((r) => setTimeout(r, 2500));
+      return fetchWithAuth(url, options, retries - 1);
+    }
+    throw err;
+  }
 
   if (response.status === 401) {
     if (typeof window !== 'undefined') {

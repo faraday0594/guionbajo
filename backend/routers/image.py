@@ -2,12 +2,17 @@
 Guionbajo — MiniMax image-01 Router
 Generates educational concept illustrations using MiniMax image-01 model.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 import httpx
 import logging
 from config import settings
+from database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from models.user import User, StudentProfile
+from auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/image", tags=["Image Generation"])
 logger = logging.getLogger(__name__)
@@ -17,16 +22,36 @@ class ImageGenRequest(BaseModel):
     aspect_ratio: Optional[str] = "16:9"
 
 @router.post("/generate")
-async def generate_image(req: ImageGenRequest):
+async def generate_image(
+    req: ImageGenRequest,
+    current_user: Optional[User] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Generate an educational illustration using MiniMax image-01 API.
     """
     if not req.prompt or not req.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt is required")
 
+    api_key = settings.MINIMAX_API_KEY
+    if not api_key and current_user:
+        result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+        profile = result.scalars().first()
+        if profile and profile.minimax_api_key:
+            api_key = profile.minimax_api_key
+
+    if not api_key:
+        logger.warning("No MiniMax API key configured for image generation")
+        return {
+            "success": False,
+            "url": None,
+            "error": "MiniMax API key not configured",
+            "provider": "minimax"
+        }
+
     url = "https://api.minimax.io/v1/image_generation"
     headers = {
-        "Authorization": f"Bearer {settings.MINIMAX_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
 
@@ -51,7 +76,9 @@ async def generate_image(req: ImageGenRequest):
             if response.status_code == 200 and "data" in response_json:
                 data = response_json["data"]
                 if isinstance(data, dict) and "image_urls" in data and len(data["image_urls"]) > 0:
-                    image_url = data["image_urls"][0]
+                    raw_image_url = data["image_urls"][0]
+                    # Ensure HTTPS to avoid Mixed Content errors on Vercel
+                    image_url = raw_image_url.replace("http://", "https://")
                     logger.info(f"Successfully generated MiniMax image-01: {image_url[:60]}...")
                     return {
                         "success": True,

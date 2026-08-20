@@ -24,9 +24,12 @@ async def update_key(settings_update: SettingsUpdate, current_user: User = Depen
     result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
     profile = result.scalars().first()
     
-    if profile:
+    if not profile:
+        profile = StudentProfile(user_id=current_user.id, minimax_api_key=settings_update.api_key)
+        db.add(profile)
+    else:
         profile.minimax_api_key = settings_update.api_key
-        await db.commit()
+    await db.commit()
     
     return {"status": "success"}
 

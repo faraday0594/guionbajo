@@ -11,7 +11,8 @@ from core.tts_normalizer import normalize_tts_text, ENGLISH_TTS_PHONETIC_MAP
 logger = logging.getLogger(__name__)
 
 AVAILABLE_VOICES = [
-    {"id": "edge-jenny", "name": "Jenny (Neural Studio English - HD)", "gender": "female", "lang": "en-US"},
+    {"id": "edge-roger", "name": "Roger (Neural Studio English - HD Male)", "gender": "male", "lang": "en-US"},
+    {"id": "edge-jenny", "name": "Jenny (Neural Studio English - HD Female)", "gender": "female", "lang": "en-US"},
     {"id": "edge-ava", "name": "Ava (Neural Multilingual - HD)", "gender": "female", "lang": "en-US"},
     {"id": "edge-emma", "name": "Emma (Neural Multilingual - HD)", "gender": "female", "lang": "en-US"},
     {"id": "edge-dalia", "name": "Dalia (Neural Spanish/English)", "gender": "female", "lang": "es-MX"},
@@ -26,11 +27,13 @@ def preprocess_text_for_tts(text: str, is_spanish_tutor: bool = True) -> str:
     """Preprocess text with phonetic and interjection normalizer."""
     return normalize_tts_text(text, is_spanish_tutor=is_spanish_tutor)
 
-async def _fallback_edge_tts(text: str, voice_id: str = "edge-jenny", speed: float = 1.0) -> bytes:
+async def _fallback_edge_tts(text: str, voice_id: str = "edge-roger", speed: float = 1.0) -> bytes:
     """High-quality Microsoft Neural Voice fallback."""
     try:
         vid = (voice_id or "").lower()
-        if "jenny" in vid:
+        if "roger" in vid:
+            voice = "en-US-RogerNeural"
+        elif "jenny" in vid:
             voice = "en-US-JennyNeural"
         elif "ava" in vid:
             voice = "en-US-AvaMultilingualNeural"
@@ -97,12 +100,12 @@ async def synthesize_speech(
     is_eng_content = is_predominantly_english(text)
     is_english = is_eng_voice or is_eng_content
 
-    # 1. If text is English or an English voice is requested, route directly to Native US English Edge-TTS (JennyNeural)
+    # 1. If text is English or an English voice is requested, route directly to Native US English Edge-TTS (RogerNeural)
     if is_english:
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
         if not speech_text:
             return b""
-        eng_voice = "en-US-JennyNeural" if (not vid.startswith("en-") or vid == "female-shaonv") else voice_id
+        eng_voice = "en-US-RogerNeural" if (not vid.startswith("en-") or vid in ("female-shaonv", "edge-jenny")) else voice_id
         neural_audio = await _fallback_edge_tts(speech_text, voice_id=eng_voice, speed=speed)
         if neural_audio:
             return neural_audio

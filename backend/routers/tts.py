@@ -42,57 +42,57 @@ MEMORY_AUDIO_CACHE: Dict[str, bytes] = {}
 # Tuned for authentic native English articulation with high clarity.
 PHONETIC_NEURAL_MAP: Dict[str, Dict[str, Any]] = {
     # ── Short Vowels ──────────────────────────────────────────────────────────
-    "/ɪ/":  {"text": "ih", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "ship", "name": "Short I"},
-    "/e/":  {"text": "eh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "bed", "name": "Short E"},
-    "/æ/":  {"text": "a", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "cat", "name": "Short A"},
-    "/ʌ/":  {"text": "uh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "cup", "name": "Short U"},
-    "/ɒ/":  {"text": "o", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "hot", "name": "Short O"},
-    "/ʊ/":  {"text": "oo", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "foot", "name": "Short OO"},
-    "/ə/":  {"text": "a", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "about", "name": "Schwa"},
+    "/ɪ/":  {"text": "ih", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "ship", "name": "Short I"},
+    "/e/":  {"text": "eh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "bed", "name": "Short E"},
+    "/æ/":  {"text": "a", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "cat", "name": "Short A"},
+    "/ʌ/":  {"text": "uh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "cup", "name": "Short U"},
+    "/ɒ/":  {"text": "o", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "hot", "name": "Short O"},
+    "/ʊ/":  {"text": "oo", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "foot", "name": "Short OO"},
+    "/ə/":  {"text": "a", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "about", "name": "Schwa"},
     # ── Long Vowels ───────────────────────────────────────────────────────────
-    "/iː/": {"text": "eee", "voice": "en-US-JennyNeural", "rate": "-20%", "anchor": "sheep", "name": "Long E"},
-    "/ɑː/": {"text": "aah", "voice": "en-US-JennyNeural", "rate": "-20%", "anchor": "car", "name": "Long A"},
-    "/ɔː/": {"text": "aw", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "door", "name": "Long O"},
-    "/uː/": {"text": "ooo", "voice": "en-US-JennyNeural", "rate": "-20%", "anchor": "blue", "name": "Long OO"},
-    "/ɜː/": {"text": "er", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "bird", "name": "Long ER"},
+    "/iː/": {"text": "eee", "voice": "en-US-RogerNeural", "rate": "-20%", "anchor": "sheep", "name": "Long E"},
+    "/ɑː/": {"text": "aah", "voice": "en-US-RogerNeural", "rate": "-20%", "anchor": "car", "name": "Long A"},
+    "/ɔː/": {"text": "aw", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "door", "name": "Long O"},
+    "/uː/": {"text": "ooo", "voice": "en-US-RogerNeural", "rate": "-20%", "anchor": "blue", "name": "Long OO"},
+    "/ɜː/": {"text": "er", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "bird", "name": "Long ER"},
     # ── Diphthongs ────────────────────────────────────────────────────────────
-    "/eɪ/": {"text": "ay", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "day", "name": "Face Diphthong"},
-    "/aɪ/": {"text": "eye", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "my", "name": "Price Diphthong"},
-    "/ɔɪ/": {"text": "oy", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "boy", "name": "Choice Diphthong"},
-    "/aʊ/": {"text": "ow", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "now", "name": "Mouth Diphthong"},
-    "/əʊ/": {"text": "oh", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "go", "name": "Goat Diphthong"},
-    "/ɪə/": {"text": "ear", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "near", "name": "Near Diphthong"},
-    "/eə/": {"text": "air", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "hair", "name": "Square Diphthong"},
-    "/ʊə/": {"text": "pure", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "cure", "name": "Cure Diphthong"},
+    "/eɪ/": {"text": "ay", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "day", "name": "Face Diphthong"},
+    "/aɪ/": {"text": "eye", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "my", "name": "Price Diphthong"},
+    "/ɔɪ/": {"text": "oy", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "boy", "name": "Choice Diphthong"},
+    "/aʊ/": {"text": "ow", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "now", "name": "Mouth Diphthong"},
+    "/əʊ/": {"text": "oh", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "go", "name": "Goat Diphthong"},
+    "/ɪə/": {"text": "ear", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "near", "name": "Near Diphthong"},
+    "/eə/": {"text": "air", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "hair", "name": "Square Diphthong"},
+    "/ʊə/": {"text": "pure", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "cure", "name": "Cure Diphthong"},
     # ── Fricatives ────────────────────────────────────────────────────────────
-    "/f/":  {"text": "fff", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "fish", "name": "Voiceless F"},
-    "/v/":  {"text": "vvv", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "van", "name": "Voiced V"},
-    "/θ/":  {"text": "th", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "think", "name": "Voiceless TH"},
-    "/ð/":  {"text": "the", "voice": "en-US-JennyNeural", "rate": "-15%", "anchor": "this", "name": "Voiced TH"},
-    "/s/":  {"text": "sss", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "sun", "name": "Voiceless S"},
-    "/z/":  {"text": "zzz", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "zoo", "name": "Voiced Z"},
-    "/ʃ/":  {"text": "shh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "shoe", "name": "SH Sound"},
-    "/ʒ/":  {"text": "zh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "measure", "name": "ZH Sound"},
-    "/h/":  {"text": "huh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "hat", "name": "H Sound"},
+    "/f/":  {"text": "fff", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "fish", "name": "Voiceless F"},
+    "/v/":  {"text": "vvv", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "van", "name": "Voiced V"},
+    "/θ/":  {"text": "th", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "think", "name": "Voiceless TH"},
+    "/ð/":  {"text": "the", "voice": "en-US-RogerNeural", "rate": "-15%", "anchor": "this", "name": "Voiced TH"},
+    "/s/":  {"text": "sss", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "sun", "name": "Voiceless S"},
+    "/z/":  {"text": "zzz", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "zoo", "name": "Voiced Z"},
+    "/ʃ/":  {"text": "shh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "shoe", "name": "SH Sound"},
+    "/ʒ/":  {"text": "zh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "measure", "name": "ZH Sound"},
+    "/h/":  {"text": "huh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "hat", "name": "H Sound"},
     # ── Affricates ────────────────────────────────────────────────────────────
-    "/tʃ/": {"text": "ch", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "chair", "name": "CH Sound"},
-    "/dʒ/": {"text": "juh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "judge", "name": "J Sound"},
+    "/tʃ/": {"text": "ch", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "chair", "name": "CH Sound"},
+    "/dʒ/": {"text": "juh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "judge", "name": "J Sound"},
     # ── Plosives ──────────────────────────────────────────────────────────────
-    "/p/":  {"text": "puh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "pen", "name": "P Plosive"},
-    "/b/":  {"text": "buh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "bad", "name": "B Plosive"},
-    "/t/":  {"text": "tuh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "tea", "name": "T Plosive"},
-    "/d/":  {"text": "duh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "dog", "name": "D Plosive"},
-    "/k/":  {"text": "kuh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "cat", "name": "K Plosive"},
-    "/g/":  {"text": "guh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "get", "name": "G Plosive"},
+    "/p/":  {"text": "puh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "pen", "name": "P Plosive"},
+    "/b/":  {"text": "buh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "bad", "name": "B Plosive"},
+    "/t/":  {"text": "tuh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "tea", "name": "T Plosive"},
+    "/d/":  {"text": "duh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "dog", "name": "D Plosive"},
+    "/k/":  {"text": "kuh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "cat", "name": "K Plosive"},
+    "/g/":  {"text": "guh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "get", "name": "G Plosive"},
     # ── Nasals ────────────────────────────────────────────────────────────────
-    "/m/":  {"text": "mmm", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "man", "name": "M Nasal"},
-    "/n/":  {"text": "nnn", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "no", "name": "N Nasal"},
-    "/ŋ/":  {"text": "ng", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "sing", "name": "NG Nasal"},
+    "/m/":  {"text": "mmm", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "man", "name": "M Nasal"},
+    "/n/":  {"text": "nnn", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "no", "name": "N Nasal"},
+    "/ŋ/":  {"text": "ng", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "sing", "name": "NG Nasal"},
     # ── Liquids & Approximants ────────────────────────────────────────────────
-    "/l/":  {"text": "lll", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "leg", "name": "L Liquid"},
-    "/r/":  {"text": "rrr", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "red", "name": "R Approximant"},
-    "/j/":  {"text": "yuh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "yes", "name": "Y Glide"},
-    "/w/":  {"text": "wuh", "voice": "en-US-JennyNeural", "rate": "-10%", "anchor": "wet", "name": "W Glide"},
+    "/l/":  {"text": "lll", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "leg", "name": "L Liquid"},
+    "/r/":  {"text": "rrr", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "red", "name": "R Approximant"},
+    "/j/":  {"text": "yuh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "yes", "name": "Y Glide"},
+    "/w/":  {"text": "wuh", "voice": "en-US-RogerNeural", "rate": "-10%", "anchor": "wet", "name": "W Glide"},
 }
 
 # ─── eSpeak-ng fallback map for offline redundancy ───────────────────────────
@@ -171,7 +171,7 @@ def normalize_ipa_symbol(raw_symbol: str) -> Optional[str]:
     return None
 
 
-async def _generate_edge_tts_audio(text: str, voice: str = "en-US-JennyNeural", rate: str = "-10%") -> bytes:
+async def _generate_edge_tts_audio(text: str, voice: str = "en-US-RogerNeural", rate: str = "-10%") -> bytes:
     """Synthesizes high-fidelity MP3 audio using Edge Neural TTS."""
     communicate = edge_tts.Communicate(text, voice, rate=rate)
     audio_data = b""
@@ -358,14 +358,14 @@ async def get_or_create_phoneme_audio(matched_key: str, use_anchor: bool = False
     # 4. Synthesize anchor word via Edge Neural TTS
     config = PHONETIC_NEURAL_MAP.get(matched_key, {
         "text": matched_key.strip("/"),
-        "voice": "en-US-JennyNeural",
+        "voice": "en-US-RogerNeural",
         "rate": "-10%",
         "anchor": "English",
         "name": matched_key
     })
 
     text_to_speak = config["anchor"] if use_anchor else config["text"]
-    voice = config.get("voice", "en-US-JennyNeural")
+    voice = config.get("voice", "en-US-RogerNeural")
     rate = config.get("rate", "-10%")
 
     try:

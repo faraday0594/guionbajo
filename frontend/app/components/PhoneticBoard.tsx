@@ -133,7 +133,7 @@ export default function PhoneticBoard({ inLessonMode = false, onClose }: Phoneti
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ text, voice: 'en-US-JennyNeural', emotion: 'calm', speed: 0.9 }),
+          body: JSON.stringify({ text, voice: 'en-US-RogerNeural', emotion: 'calm', speed: 0.9 }),
         }
       );
 

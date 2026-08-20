@@ -287,15 +287,15 @@ export async function playTTS(text: string, voice?: string, emotion?: string): P
   return audio;
 }
 
-// ─── PLAY ENGLISH AUDIO (Jenny Neural HD / Edge-TTS) ───────────────────────────
+// ─── PLAY ENGLISH AUDIO (Roger Neural HD / Edge-TTS) ───────────────────────────
 // High-definition natural English speech for exercise sentences, phonetics, and examples.
 export async function playEnglishAudio(text: string): Promise<HTMLAudioElement | void> {
   const speechText = cleanTextForTTS(text);
   if (!speechText) return;
 
-  // 1. Try Backend Studio Edge Neural TTS (en-US-JennyNeural)
+  // 1. Try Backend Studio Edge Neural TTS (en-US-RogerNeural)
   try {
-    const blob = await api.synthesize(speechText, 'edge-jenny', 'calm', 0.9);
+    const blob = await api.synthesize(speechText, 'edge-roger', 'calm', 0.9);
     if (blob && blob.size > 200) {
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
@@ -305,7 +305,7 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
           if (err && err.name !== 'AbortError') {
-            console.warn('Jenny Audio play error:', err);
+            console.warn('Roger Audio play error:', err);
           }
         });
       }
@@ -316,26 +316,26 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
       return audio;
     }
   } catch (e) {
-    console.warn('Backend Jenny TTS synthesis fallback to browser:', e);
+    console.warn('Backend Roger TTS synthesis fallback to browser:', e);
   }
 
-  // 2. Fallback to Browser Web Speech API prioritizing Jenny / Google Natural
+  // 2. Fallback to Browser Web Speech API prioritizing Roger / Natural
   if (typeof window !== 'undefined' && window.speechSynthesis) {
     try {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(speechText);
       utterance.lang = 'en-US';
       utterance.rate = 0.88;
-      utterance.pitch = 1.02;
+      utterance.pitch = 1.0;
 
       const pickVoice = () => {
         const voices = window.speechSynthesis.getVoices();
         if (voices.length === 0) return null;
         const priority = [
-          (v: SpeechSynthesisVoice) => (v.name.includes('Jenny') || v.name.includes('Natural')) && v.lang.startsWith('en'),
+          (v: SpeechSynthesisVoice) => (v.name.includes('Roger') || v.name.includes('Natural')) && v.lang.startsWith('en'),
+          (v: SpeechSynthesisVoice) => (v.name.includes('Guy') || v.name.includes('Male')) && v.lang.startsWith('en'),
           (v: SpeechSynthesisVoice) => v.name.includes('Google') && v.lang.startsWith('en'),
           (v: SpeechSynthesisVoice) => v.name.includes('Microsoft') && v.lang.startsWith('en-US'),
-          (v: SpeechSynthesisVoice) => v.name.includes('Samantha') || v.name.includes('Alex'),
           (v: SpeechSynthesisVoice) => v.lang.startsWith('en-US'),
           (v: SpeechSynthesisVoice) => v.lang.startsWith('en'),
         ];

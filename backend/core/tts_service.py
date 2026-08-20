@@ -56,6 +56,27 @@ async def _fallback_edge_tts(text: str, voice_id: str = "edge-jenny", speed: flo
         logger.warning(f"Edge TTS synthesis error ({voice_id}): {e}")
         return b""
 
+def is_predominantly_english(text: str) -> bool:
+    """Detects if text is purely/predominantly English sentence/words without Spanish introductory markers."""
+    if not text or not isinstance(text, str):
+        return False
+    # If text contains Spanish inverted punctuation or common Spanish accents, it's Spanish
+    if re.search(r'[áéíóúÁÉÍÓÚñÑ¿¡]', text):
+        return False
+    # Check common Spanish stop words
+    spanish_words = {
+        "el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "en", "para", "por", 
+        "con", "sin", "sobre", "entre", "este", "esta", "estos", "estas", "hola", "bienvenido", 
+        "bienvenida", "clase", "lección", "hoy", "vamos", "aprender", "fórmula", "regla", "sujeto",
+        "verbo", "complemento", "pizarra", "ejemplo", "observa", "revisa", "practica", "fíjate", "como",
+        "recuerda", "atención", "nota", "traducción", "aquí", "tienes"
+    }
+    tokens = [w.lower().strip(",.:;!?\"'()[]{}") for w in text.split()]
+    spanish_count = sum(1 for w in tokens if w in spanish_words)
+    if spanish_count >= 2:
+        return False
+    return True
+
 async def synthesize_speech(
     text: str,
     voice_id: str = "female-shaonv",
@@ -66,24 +87,27 @@ async def synthesize_speech(
     key = api_key or settings.MINIMAX_API_KEY
     
     vid = (voice_id or "").lower()
-    is_english = (
+    is_eng_voice = (
         "jenny" in vid
         or "ava" in vid
         or "emma" in vid
         or vid.startswith("en")
         or "edge-jenny" in vid
     )
+    is_eng_content = is_predominantly_english(text)
+    is_english = is_eng_voice or is_eng_content
 
-    # 1. If an Edge Neural voice or English voice is requested, route directly to Edge TTS for instant zero-lag HD audio
-    if is_english or vid.startswith("edge-"):
-        speech_text = preprocess_text_for_tts(text, is_spanish_tutor=not is_english)
+    # 1. If text is English or an English voice is requested, route directly to Native US English Edge-TTS
+    if is_english:
+        speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
         if not speech_text:
             return b""
-        neural_audio = await _fallback_edge_tts(speech_text, voice_id=voice_id, speed=speed)
+        eng_voice = "en-US-JennyNeural" if (not vid.startswith("en-") or vid == "female-shaonv") else voice_id
+        neural_audio = await _fallback_edge_tts(speech_text, voice_id=eng_voice, speed=speed)
         if neural_audio:
             return neural_audio
 
-    # Preprocess text for tutor delivery
+    # Preprocess text for Spanish tutor delivery
     speech_text = preprocess_text_for_tts(text, is_spanish_tutor=True)
     if not speech_text:
         return b""

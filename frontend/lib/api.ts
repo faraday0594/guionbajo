@@ -2,7 +2,7 @@ import { getToken } from './auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 0): Promise<any> {
+async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 1): Promise<any> {
   const token = getToken();
   const headers = new Headers(options.headers || {});
 
@@ -15,7 +15,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 0
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
 
   let response: Response;
   try {
@@ -27,7 +27,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 0
   } catch (err: any) {
     clearTimeout(timeoutId);
     if (retries > 0) {
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, 2000));
       return fetchWithAuth(url, options, retries - 1);
     }
     throw err;
@@ -65,7 +65,7 @@ async function fetchAudio(url: string, options: RequestInit = {}): Promise<Blob>
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
 
   try {
     const response = await fetch(`${API_BASE}${url}`, {

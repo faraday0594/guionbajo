@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
-from auth.dependencies import get_current_user
+from auth.dependencies import get_current_user, get_current_user_optional
 from database import get_db
 from models.user import User, StudentProfile
 from models.lesson import LessonHistory
@@ -161,18 +161,23 @@ async def current_lesson(
 @router.get("/{lesson_id}")
 async def get_lesson(
     lesson_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(LessonHistory).where(
+    query = select(LessonHistory).where(LessonHistory.id == lesson_id)
+    if current_user:
+        query = select(LessonHistory).where(
             LessonHistory.id == lesson_id,
-            LessonHistory.user_id == current_user.id,
+            LessonHistory.user_id == current_user.id
         )
-    )
+    result = await db.execute(query)
     lesson = result.scalars().first()
     if not lesson:
-        # Check if lesson_id matches a default module format or UUID lookup
+        # Fallback lookup without user_id filter for seamless multi-device or fresh sessions
+        result_any = await db.execute(select(LessonHistory).where(LessonHistory.id == lesson_id))
+        lesson = result_any.scalars().first()
+
+    if not lesson:
         raise HTTPException(status_code=404, detail="Lección no encontrada")
 
     script_data = lesson.lesson_data or {}

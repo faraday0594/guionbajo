@@ -97,7 +97,7 @@ async def synthesize_speech(
     is_eng_content = is_predominantly_english(text)
     is_english = is_eng_voice or is_eng_content
 
-    # 1. If text is English or an English voice is requested, route directly to Native US English Edge-TTS
+    # 1. If text is English or an English voice is requested, route directly to Native US English Edge-TTS (JennyNeural)
     if is_english:
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
         if not speech_text:
@@ -107,54 +107,13 @@ async def synthesize_speech(
         if neural_audio:
             return neural_audio
 
-    # Preprocess text for Spanish tutor delivery
+    # 2. Preprocess text for Spanish tutor delivery & use Studio Neural Dalia (es-MX-DaliaNeural)
     speech_text = preprocess_text_for_tts(text, is_spanish_tutor=True)
     if not speech_text:
         return b""
 
-    # 1. If MiniMax key is present, attempt MiniMax synthesis
-    if key and key.strip() and key != "YOUR_MINIMAX_API_KEY":
-        payload = {
-            "model": settings.MINIMAX_TTS_MODEL,
-            "text": speech_text,
-            "voice_setting": {
-                "voice_id": voice_id,
-                "speed": speed,
-                "emotion": emotion
-            },
-            "audio_setting": {
-                "format": "mp3",
-                "sample_rate": 24000
-            }
-        }
-
-        headers = {
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json"
-        }
-
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                response = await client.post(
-                    settings.MINIMAX_TTS_ENDPOINT,
-                    json=payload,
-                    headers=headers
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    if "data" in data and "audio" in data["data"]:
-                        import base64
-                        audio_hex = data["data"]["audio"]
-                        if isinstance(audio_hex, str):
-                            try:
-                                return bytes.fromhex(audio_hex)
-                            except ValueError:
-                                return base64.b64decode(audio_hex)
-        except Exception as e:
-            logger.warning(f"MiniMax TTS error, initiating Neural Edge-TTS fallback: {e}")
-
-    # 2. Resilient Neural Fallback via Edge-TTS
-    neural_audio = await _fallback_edge_tts(speech_text, voice_id=voice_id, speed=speed)
+    spanish_voice = "es-MX-DaliaNeural" if vid in ("female-shaonv", "default", "", "edge-dalia") else voice_id
+    neural_audio = await _fallback_edge_tts(speech_text, voice_id=spanish_voice, speed=speed)
     if neural_audio:
         return neural_audio
 

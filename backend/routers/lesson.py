@@ -176,9 +176,12 @@ async def get_lesson(
         raise HTTPException(status_code=404, detail="Lección no encontrada")
 
     script_data = lesson.lesson_data or {}
-    if isinstance(script_data, dict) and "phases" in script_data and isinstance(script_data["phases"], list):
-        agent = TutorAgent()
-        script_data = agent._audit_and_sanitize_lesson_content(script_data, lesson.topic, lesson.sublevel)
+    try:
+        if isinstance(script_data, dict) and "phases" in script_data and isinstance(script_data["phases"], list):
+            agent = TutorAgent()
+            script_data = agent._audit_and_sanitize_lesson_content(script_data, lesson.topic, lesson.sublevel)
+    except Exception as e:
+        logger.warning(f"Error auditing lesson script: {e}")
 
     return {
         "id": lesson.id,

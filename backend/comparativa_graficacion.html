@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparativa: MiniMax image-01 vs MiniMax-M3 SVG Timeline</title>
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: #0f1523;
+      --accent: #6366f1;
+      --cyan: #06b6d4;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.08);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 2.5rem 1.5rem;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto 3rem;
+    }
+    .header h1 {
+      font-size: 2.3rem;
+      background: linear-gradient(135deg, #c084fc, #6366f1, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.6rem;
+      font-weight: 800;
+    }
+    .header p {
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+    .theme-badge {
+      display: inline-block;
+      margin-top: 0.75rem;
+      padding: 0.4rem 1rem;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 9999px;
+      color: #a5b4fc;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      max-width: 1500px;
+      margin: 0 auto 3rem;
+    }
+    @media (max-width: 1100px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-image {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .badge-svg {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .preview-box {
+      background: #05070c;
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 440px;
+      margin-bottom: 1.5rem;
+      padding: 0.75rem;
+    }
+    .preview-box img {
+      width: 100%;
+      height: auto;
+      max-height: 480px;
+      display: block;
+      border-radius: 0.75rem;
+      object-fit: cover;
+    }
+    .preview-box svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 0.75rem;
+    }
+    .analysis {
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .analysis h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+      color: #e2e8f0;
+    }
+    .scorecard {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin: 1rem 0;
+      background: rgba(255,255,255,0.03);
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .score-item .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .score-item .val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 0.2rem;
+    }
+    .pros-cons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .pro-list, .con-list {
+      list-style: none;
+      font-size: 0.88rem;
+    }
+    .pro-list li {
+      color: #34d399;
+      margin-bottom: 0.4rem;
+    }
+    .con-list li {
+      color: #f87171;
+      margin-bottom: 0.4rem;
+    }
+    .pro-list li::before { content: "✓ "; font-weight: bold; }
+    .con-list li::before { content: "✗ "; font-weight: bold; }
+
+    .verdict-box {
+      max-width: 1500px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.05));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 1.5rem;
+      padding: 2rem;
+    }
+    .verdict-box h2 {
+      font-size: 1.5rem;
+      color: #38bdf8;
+      margin-bottom: 1rem;
+    }
+    .verdict-box p {
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔬 Laboratorio de Prueba Aislada: Graficación Visual Didáctica</h1>
+    <p>Comparando <strong>MiniMax image-01</strong> (Generación Raster) vs <strong>MiniMax-M3 SVG</strong> (Gráfico Vectorial)</p>
+    <div class="theme-badge">Tema: Adverbios de Frecuencia, Rutinas & Línea Temporal</div>
+  </div>
+
+  <div class="grid">
+    <!-- OPCION A: MINIMAX IMAGE-01 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Opción A: MiniMax image-01</div>
+        <span class="badge badge-image">IA Generativa Raster (JPG)</span>
+      </div>
+      <div class="preview-box">
+        <img src="http://hailuo-image-algeng-data-us.oss-us-east-1.aliyuncs.com/image_inference_output%2Ftalkie%2Fprod%2Fimg%2F2026-08-19%2F4fada14e-30a6-45b3-a431-98c723065b93_aigc.jpeg?Expires=1787197248&OSSAccessKeyId=LTAI5tRDTcyEYLLuBEpJRwCi&Signature=2L1HUdPhIFyHbwnLtYkL0fGrc4E%3D" alt="MiniMax image-01 generado" />
+      </div>
+      <div class="analysis">
+        <h3>Diagnóstico Didáctico:</h3>
+        <p>Los modelos de difusión de imágenes como <code>image-01</code> generan una escena estética, pero son incapaces de renderizar texto legible, líneas temporales analíticas ni fórmulas estructuradas.</p>
+        
+        <div class="scorecard">
+          <div class="score-item">
+            <div class="label">Legibilidad Texto</div>
+            <div class="val" style="color: var(--danger);">0 / 10</div>
+          </div>
+          <div class="score-item">
+            <div class="label">Precisión Temporal</div>
+            <div class="val" style="color: var(--warning);">3 / 10</div>
+          </div>
+          <div class="score-item">
+            <div class="label">Tiempo & Peso</div>
+            <div class="val" style="color: var(--warning);">~15s / 400KB</div>
+          </div>
+        </div>
+
+        <div class="pros-cons">
+          <div>
+            <strong>Ventajas:</strong>
+            <ul class="pro-list">
+              <li>Estilo visual artístico y situacional</li>
+              <li>Bueno para ambientar historias o contextos</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Desventajas:</strong>
+            <ul class="con-list">
+              <li>Texto deformado, ilegible o prohibido</li>
+              <li>No representa conceptos gramaticales abstractos</li>
+              <li>Depende de servidores externos y URLs temporales</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPCION B: MINIMAX-M3 SVG -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Opción B: MiniMax-M3 SVG</div>
+        <span class="badge badge-svg">Gráfico Vectorial SVG</span>
+      </div>
+      <div class="preview-box">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+          <defs>
+            <linearGradient id="chalkBg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#0a101d"/>
+              <stop offset="100%" stop-color="#141e33"/>
+            </linearGradient>
+            <linearGradient id="timeLineGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="50%" stop-color="#818cf8"/>
+              <stop offset="100%" stop-color="#c084fc"/>
+            </linearGradient>
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- Background container -->
+          <rect width="700" height="380" rx="16" fill="url(#chalkBg)" stroke="#27354f" stroke-width="1.5"/>
+
+          <!-- Title Header -->
+          <text x="350" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#f8fafc">TIMELINE: HABITS & FREQUENCY ADVERBS</text>
+          <text x="350" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Visualización de repetición en el tiempo hacia el presente</text>
+
+          <!-- Timeline horizontal line -->
+          <line x1="60" y1="140" x2="640" y2="140" stroke="url(#timeLineGrad)" stroke-width="3" stroke-linecap="round"/>
+          <polygon points="640,140 626,134 626,146" fill="#c084fc"/>
+
+          <!-- Past marker -->
+          <circle cx="120" cy="140" r="7" fill="#0ea5e9" filter="url(#glow)"/>
+          <text x="120" y="170" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#7dd3fc">PAST</text>
+          <text x="120" y="185" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#94a3b8">(Pasado)</text>
+
+          <!-- NOW / Present marker -->
+          <line x1="350" y1="95" x2="350" y2="185" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+          <circle cx="350" cy="140" r="11" fill="#f59e0b" filter="url(#glow)"/>
+          <rect x="305" y="90" width="90" height="24" rx="12" fill="#f59e0b" />
+          <text x="350" y="106" font-family="system-ui, sans-serif" font-size="12" font-weight="900" text-anchor="middle" fill="#000">NOW (Hoy)</text>
+          <text x="350" y="202" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">PRESENTE</text>
+
+          <!-- Future marker -->
+          <circle cx="580" cy="140" r="7" fill="#10b981" filter="url(#glow)"/>
+          <text x="580" y="170" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#6ee7b7">FUTURE</text>
+          <text x="580" y="185" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#94a3b8">(Futuro)</text>
+
+          <!-- Routine repetition dots in the past leading to NOW -->
+          <g filter="url(#glow)">
+            <circle cx="170" cy="140" r="5" fill="#38bdf8"/>
+            <circle cx="215" cy="140" r="5" fill="#38bdf8"/>
+            <circle cx="260" cy="140" r="5" fill="#38bdf8"/>
+            <circle cx="305" cy="140" r="5" fill="#38bdf8"/>
+          </g>
+          <path d="M 170 125 Q 260 100 340 125" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="255" y="112" font-family="system-ui, sans-serif" font-size="11" font-weight="600" text-anchor="middle" fill="#38bdf8">Acciones Repetidas / Rutina</text>
+
+          <!-- Frequency Breakdown Card Box -->
+          <rect x="40" y="225" width="620" height="135" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+
+          <!-- Adverb scale row -->
+          <!-- Always -->
+          <g transform="translate(65, 245)">
+            <rect x="0" y="0" width="115" height="42" rx="8" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.4)"/>
+            <text x="12" y="18" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#34d399">ALWAYS</text>
+            <text x="95" y="18" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#10b981">100%</text>
+            <text x="12" y="32" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Siempre</text>
+          </g>
+
+          <!-- Usually -->
+          <g transform="translate(195, 245)">
+            <rect x="0" y="0" width="115" height="42" rx="8" fill="rgba(6,182,212,0.12)" stroke="rgba(6,182,212,0.4)"/>
+            <text x="12" y="18" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">USUALLY</text>
+            <text x="95" y="18" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#06b6d4">80%</text>
+            <text x="12" y="32" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Usualmente</text>
+          </g>
+
+          <!-- Sometimes -->
+          <g transform="translate(325, 245)">
+            <rect x="0" y="0" width="115" height="42" rx="8" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.4)"/>
+            <text x="10" y="18" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#fbbf24">SOMETIMES</text>
+            <text x="95" y="18" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#f59e0b">50%</text>
+            <text x="10" y="32" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">A veces</text>
+          </g>
+
+          <!-- Never -->
+          <g transform="translate(455, 245)">
+            <rect x="0" y="0" width="115" height="42" rx="8" fill="rgba(239,68,68,0.12)" stroke="rgba(239,68,68,0.4)"/>
+            <text x="12" y="18" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#f87171">NEVER</text>
+            <text x="95" y="18" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#ef4444">0%</text>
+            <text x="12" y="32" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Nunca</text>
+          </g>
+
+          <!-- Syntax Formula Bar -->
+          <g transform="translate(65, 305)">
+            <rect x="0" y="0" width="570" height="40" rx="8" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.4)"/>
+            <text x="285" y="24" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#e0e7ff">
+              FÓRMULA: <tspan fill="#38bdf8">[ Sujeto ]</tspan> + <tspan fill="#34d399">[ Adverbio ]</tspan> + <tspan fill="#fbbf24">[ Verbo ]</tspan> + <tspan fill="#cbd5e1">[ Complemento ]</tspan>  ➔  "I always drink coffee"
+            </text>
+          </g>
+        </svg>
+      </div>
+      <div class="analysis">
+        <h3>Diagnóstico Didáctico:</h3>
+        <p>El LLM genera un diagrama vectorial exacto, con tipografía nítida, coordenadas de tiempo (Past → NOW → Future), puntos de repetición de hábitos, escala de porcentajes y fórmula sintáctica.</p>
+        
+        <div class="scorecard">
+          <div class="score-item">
+            <div class="label">Legibilidad Texto</div>
+            <div class="val" style="color: var(--success);">10 / 10</div>
+          </div>
+          <div class="score-item">
+            <div class="label">Precisión Temporal</div>
+            <div class="val" style="color: var(--success);">10 / 10</div>
+          </div>
+          <div class="score-item">
+            <div class="label">Tiempo & Peso</div>
+            <div class="val" style="color: var(--success);">~20s / 4KB</div>
+          </div>
+        </div>
+
+        <div class="pros-cons">
+          <div>
+            <strong>Ventajas:</strong>
+            <ul class="pro-list">
+              <li>100% nítido en pantallas Retina y móviles</li>
+              <li>Estructura temporal exacta y pedagógica</li>
+              <li>0 KB de CDN externa (se renderiza inline en el DOM)</li>
+              <li>Totalmente personalizable y animable con CSS</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Desventajas:</strong>
+            <ul class="con-list">
+              <li>Estilo esquemático / infográfico (no fotográfico)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="verdict-box">
+    <h2>🎯 Conclusión Pedagógica</h2>
+    <p>Tu intuición es <strong>100% acertada</strong>: Para conceptos temporales, estructurales y gramaticales (como <em>Adverbs of Frequency, Verb Tenses: Past vs Present vs Future, Present Perfect vs Past Simple, Conditionals</em>), <strong>la graficación vectorial SVG es infinitamente superior</strong>.</p>
+    <p>Una imagen generada por IA (image-01) es ideal para escenas figurativas (ej. un personaje en una cafetería), pero para <strong>entender la lógica temporal del inglés</strong>, una <strong>línea temporal SVG con puntos de repetición y fórmulas</strong> entrega claridad cognitiva inmediata sin ambigüedad.</p>
+  </div>
+</body>
+</html>

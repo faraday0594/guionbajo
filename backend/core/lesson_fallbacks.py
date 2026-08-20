@@ -1,0 +1,1955 @@
+"""
+Guionbajo — Curated High-Pedagogy Lesson Fallbacks Catalog
+Provides authentic CEFR lessons with deep grammatical explanations,
+meaningful English sentence models, relatable human visual scenes, and zero placeholder text.
+"""
+import re
+from typing import Optional, Dict, Any
+from core.curriculum_graph import CURRICULUM_GRAPH
+
+
+def find_curriculum_node(topic: str, sublevel: Optional[str] = None) -> Optional[dict]:
+    """Finds the curriculum class node for a given topic and sublevel."""
+    if not topic:
+        return None
+    topic_lower = topic.strip().lower()
+
+    if sublevel and sublevel in CURRICULUM_GRAPH:
+        for c in CURRICULUM_GRAPH[sublevel].get("classes", []):
+            if c.get("topic", "").strip().lower() == topic_lower:
+                return c
+
+    for sl, sdata in CURRICULUM_GRAPH.items():
+        for c in sdata.get("classes", []):
+            c_topic = c.get("topic", "").strip().lower()
+            if c_topic == topic_lower or (len(topic_lower) > 5 and (topic_lower in c_topic or c_topic in topic_lower)):
+                return c
+    return None
+
+
+def build_curated_fallback(topic: str, sublevel: str, is_a_level: bool) -> dict:
+    """Dispatches to the dedicated, highly-calibrated fallback builder for any CEFR curriculum topic."""
+    low = topic.lower()
+
+    # 1. Direct Topic Dispatchers
+    if "irregular past" in low or ("irregular" in low and "past" in low) or ("past" in low and "question" in low):
+        data = _build_irregular_past_fallback(sublevel)
+    elif "was / were" in low or "was/were" in low or "regular verb" in low or ("past simple" in low and "regular" in low):
+        data = _build_past_simple_fallback(sublevel)
+    elif "going to" in low or ("future" in low and "plan" in low):
+        data = _build_future_going_to_fallback(sublevel)
+    elif "will" in low and "future" in low:
+        data = _build_future_fallback(sublevel)
+    elif "can & abilities" in low or "can &" in low or ("can" in low and "abilit" in low):
+        data = _build_can_abilities_fallback(sublevel)
+    elif "there is" in low or "there are" in low or "places &" in low or "place" in low:
+        data = _build_there_is_there_are_fallback(sublevel)
+    elif "do / does" in low or "do/does" in low or ("question" in low and "negative" in low):
+        data = _build_do_does_questions_fallback(sublevel)
+    elif "time & frequency" in low or "adverbs of frequency" in low or "frequency" in low:
+        data = _build_time_frequency_fallback(sublevel)
+    elif "objects & possession" in low or "demonstrative" in low or ("object" in low and "possession" in low):
+        data = _build_objects_possession_fallback(sublevel)
+    elif "personal info" in low or ("personal" in low and "information" in low):
+        data = _build_personal_info_fallback(sublevel)
+    elif "english sounds & introductions" in low or "sound" in low or "greeting" in low or "introduction" in low or "saludo" in low:
+        data = _build_greetings_fallback(sublevel)
+    elif "number" in low or "número" in low or "clock" in low:
+        data = _build_numbers_fallback(sublevel)
+    elif "quantit" in low or "countable" in low or "uncountable" in low or "much" in low or "many" in low or "some / any" in low:
+        data = _build_quantities_fallback(sublevel)
+    elif "comparative" in low or "comparativ" in low:
+        data = _build_comparatives_fallback(sublevel)
+    elif "superlative" in low or "superlativ" in low:
+        data = _build_superlatives_fallback(sublevel)
+    elif "past continuous" in low or "interrupted" in low:
+        data = _build_past_continuous_fallback(sublevel)
+    elif "present perfect vs past simple" in low:
+        data = _build_present_perfect_vs_past_simple_fallback(sublevel)
+    elif "present perfect" in low or "experience" in low or "have been" in low:
+        data = _build_present_perfect_fallback(sublevel)
+    elif "present continuous" in low or "progressive" in low:
+        data = _build_present_continuous_fallback(sublevel)
+    elif "first conditional" in low or ("conditional" in low and "1" in low):
+        data = _build_conditionals_fallback(sublevel)
+    elif "second conditional" in low or ("conditional" in low and "2" in low):
+        data = _build_second_conditional_fallback(sublevel)
+    elif "third conditional" in low or ("conditional" in low and "3" in low):
+        data = _build_third_conditional_fallback(sublevel)
+    elif "wish" in low or "regret" in low:
+        data = _build_wish_regret_fallback(sublevel)
+    elif "passive" in low:
+        data = _build_passive_voice_fallback(sublevel)
+    elif "reported speech" in low:
+        data = _build_reported_speech_fallback(sublevel)
+    elif "relative" in low:
+        data = _build_relative_clauses_fallback(sublevel)
+    elif "phrasal" in low:
+        data = _build_phrasal_verbs_fallback(sublevel)
+    elif "deduction" in low or "must be" in low or "can't be" in low:
+        data = _build_modals_deduction_fallback(sublevel)
+    elif "advice" in low or "obligation" in low or "should" in low or "must" in low or "have to" in low:
+        data = _build_modals_advice_fallback(sublevel)
+    elif "routine" in low or "rutina" in low or "daily" in low:
+        data = _build_routines_fallback(sublevel)
+    elif "past simple" in low or "pasado simple" in low or "did" in low:
+        data = _build_past_simple_fallback(sublevel)
+    else:
+        # Check if matched in curriculum graph
+        node = find_curriculum_node(topic, sublevel)
+        if node:
+            data = _build_curriculum_node_fallback(node, sublevel)
+        else:
+            data = _build_generic_interactive_fallback(topic, sublevel, is_a_level)
+
+    data["topic"] = topic
+    data["sublevel"] = sublevel
+    data["level"] = sublevel.split(".")[0]
+    data["subject"] = "English"
+    return data
+
+
+def _build_irregular_past_fallback(sublevel: str) -> dict:
+    """Comprehensive fallback for A1.4: Irregular Past & Questions."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Irregular Past & Questions",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: Verbos Irregulares y la Máquina del Tiempo",
+                "tutor_says": "¡Bienvenido a la clase de Pasado Irregular y Preguntas! A diferencia de los verbos regulares que solo añaden '-ed', los verbos irregulares son como camaleones: cambian su forma interna por completo para viajar al pasado. Por ejemplo, 'go' (ir) se convierte en 'went', 'see' (ver) pasa a ser 'saw', 'have' (tener) cambia a 'had', 'eat' (comer) se transforma en 'ate' y 'buy' (comprar) pasa a ser 'bought'. Fíjate en la oración modelo: 'Yesterday I went to the cinema and saw a great movie'.",
+                "board_content": "📸 VERBOS IRREGULARES EN PASADO (CAMALEONES):\n\n• go (ir) → went (fui / fue)\n• see (ver) → saw (vi / vio)\n• have (tener) → had (tuve / tuvo)\n• eat (comer) → ate (comí / comió)\n• buy (comprar) → bought (compré / compró)\n\n👉 Oración Afirmativa Modelo:\n\"Yesterday I went to the cinema and saw a great movie.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student enthusiastically storytelling to friends about a weekend trip in a cozy modern cafe, expressive character poses, warm cinematic lighting, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "I went / I saw / I bought",
+                "target_audio_items": [
+                    {"english": "Yesterday I went to the cinema", "translation": "Ayer fui al cine", "label": "Verbo Irregular V2"},
+                    {"english": "I saw a great movie", "translation": "Vi una gran película", "label": "Verbo Irregular V2"},
+                    {"english": "I bought a new book", "translation": "Compré un libro nuevo", "label": "Verbo Irregular V2"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura del Pasado Irregular Afirmativo",
+                    "formula": "[ Sujeto ] + [ Verbo Irregular (V2) ] + [ Complemento ] + [ Expresión de Tiempo ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / We / They", "color": "blue"},
+                        {"role": "Verbo V2", "pattern": "went / saw / had / bought / ate", "color": "purple"},
+                        {"role": "Complemento", "pattern": "to the park / a movie / pizza", "color": "emerald"},
+                        {"role": "Tiempo", "pattern": "yesterday / last night / last week", "color": "amber"}
+                    ],
+                    "explanation": "En oraciones afirmativas en pasado, usamos la forma irregular V2 directamente con todos los sujetos sin cambiar.",
+                    "example_breakdowns": [
+                        {
+                            "english": "Yesterday I went to the cinema.",
+                            "spanish": "Ayer fui al cine.",
+                            "parts": [
+                                {"role": "Tiempo", "text": "Yesterday", "color": "amber"},
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Verbo V2", "text": "went", "color": "purple"},
+                                {"role": "Complemento", "text": "to the cinema", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Los verbos irregulares no llevan '-ed'; memoriza su forma V2 (go→went, buy→bought, see→saw)."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Preguntas y Negaciones: El Detective Did",
+                "tutor_says": "Para formular preguntas y negaciones en pasado simple, entra en acción nuestro héroe auxiliar: el detective 'Did' o 'Didn't'. Como 'Did' ya lleva la marca del pasado sobre sus hombros, el verbo principal regresa mágicamente a su forma base pura (V1). Decimos 'Did you go?' y NUNCA 'Did you went?'. Para negar: 'I didn't see him' y NUNCA 'I didn't saw'. ¡Observa las tres fórmulas en la pizarra!",
+                "board_content": "⚡ FÓRMULAS DE PREGUNTAS Y NEGACIONES CON DID:\n\n• Pregunta Sí/No (?) → [ Did ] + [ Sujeto ] + [ Verbo Base V1 ] ?\n  → \"Did you see the movie?\" (¿Viste la película?)\n\n• Pregunta con Wh- (?) → [ Wh- ] + [ did ] + [ Sujeto ] + [ Verbo Base V1 ] ?\n  → \"Where did you go yesterday?\" (¿Adónde fuiste ayer?)\n\n• Negativa (-) → [ Sujeto ] + [ didn't ] + [ Verbo Base V1 ]\n  → \"I didn't buy the ticket\" (No compré el boleto)\n\n📌 Regla de Oro: Did / Didn't absorbe el pasado; el verbo vuelve a su forma base.",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of a young student holding a magnifying glass examining a travel diary and airplane tickets, bright colorful classroom, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Did + Subject + Base Verb?",
+                "target_audio_items": [
+                    {"english": "Did you see the movie?", "translation": "¿Viste la película?", "label": "Pregunta con Did"},
+                    {"english": "Where did you go yesterday?", "translation": "¿Adónde fuiste ayer?", "label": "Pregunta Wh-"},
+                    {"english": "I didn't buy the ticket", "translation": "No compré el boleto", "label": "Negación didn't"}
+                ],
+                "grammar_structure": {
+                    "title": "Fórmula Maestra de Preguntas con Did",
+                    "formula": "[ Did / Wh- + did ] + [ Sujeto ] + [ Verbo en Forma Base (V1) ] + [ Complemento ] ?",
+                    "formula_tokens": [
+                        {"role": "Auxiliar", "pattern": "Did / Where did / What did", "color": "purple"},
+                        {"role": "Sujeto", "pattern": "you / she / they / he", "color": "blue"},
+                        {"role": "Verbo Base", "pattern": "go / see / eat / buy / do", "color": "amber"},
+                        {"role": "Complemento", "pattern": "yesterday / last weekend", "color": "emerald"}
+                    ],
+                    "explanation": "El auxiliar 'Did' transporta la oración al pasado, por lo que el verbo principal DEBE quedarse en forma base (go, see, buy).",
+                    "example_breakdowns": [
+                        {
+                            "english": "Did you go to the party?",
+                            "spanish": "¿Fuiste a la fiesta?",
+                            "parts": [
+                                {"role": "Auxiliar", "text": "Did", "color": "purple"},
+                                {"role": "Sujeto", "text": "you", "color": "blue"},
+                                {"role": "Verbo Base", "text": "go", "color": "amber"},
+                                {"role": "Complemento", "text": "to the party?", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Error gravísimo: Nunca pongas dos pasados juntos ('Did you went?' es incorrecto; lo correcto es 'Did you go?')."
+                }
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto de Pronunciación: Enlace \"Did you\" (/dɪdʒuː/)",
+                "tutor_says": "En el inglés hablado cotidiano, cuando 'did' se junta con 'you', los hablantes nativos enlazan la 'd' final con la 'y' creando un sonido suave como /dɪdʒuː/ ('did-joo'). Escucha la pregunta modelo 'What did you do last weekend?' y practica conectando las palabras con naturalidad usando tu micrófono.",
+                "board_content": "🗣️ RETO FONÉTICO: ENLACE SUAVE EN DID YOU:\n\n• \"What did you do last weekend?\"\n(Traducción: ¿Qué hiciste el fin de semana pasado?)\n\nClave de articulación:\n• 'Did you' se pronuncia enlazado: /dɪdʒuː/ ('did-joo')\n• 'bought' se pronuncia /bɔːt/ (la 'gh' es muda)\n• 'saw' se pronuncia /sɔː/",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student speaking into a studio microphone with headphones on, laptop with soundwaves, warm vibrant colors, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con fluidez: 'What did you do last weekend?'",
+                "expected_answer": "What did you do last weekend?",
+                "key_structure": "Connected Speech: Did you /dɪdʒuː/",
+                "target_audio_items": [
+                    {"english": "What did you do last weekend?", "translation": "¿Qué hiciste el fin de semana pasado?", "label": "Pregunta Fluida"},
+                    {"english": "I bought a new book yesterday", "translation": "Compré un libro nuevo ayer", "label": "Pronunciación /bɔːt/"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Detección y Corrección: La Trampa del Doble Pasado",
+                "tutor_says": "La trampa número uno de los hispanohablantes es duplicar el pasado diciendo 'Did you went?' o 'I didn't had time'. Recuerda: 'Did' y 'Didn't' ya hacen todo el trabajo de indicar pasado, por lo que el verbo principal DEBE regresar a su forma base 'go' y 'have'. Observa el duelo de oraciones en la pizarra y corrige la frase en el desafío.",
+                "board_content": "⚔️ DUELO DE CONCEPTOS: ¿DOBLE PASADO?\n\n❌ Incorrecto: \"Did you went to the party yesterday?\"\n✅ Correcto: \"Did you go to the party yesterday?\"\n\n❌ Incorrecto: \"I didn't saw the movie.\"\n✅ Correcto: \"I didn't see the movie.\"\n\n❌ Incorrecto: \"Where did you bought that?\"\n✅ Correcto: \"Where did you buy that?\"\n\n📌 Regla: Tras Did o Didn't, usa SIEMPRE el verbo en forma base (V1).",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D illustration of an interactive study table with glowing green checkmarks and red crossed-out mistakes, warm studio lighting, highly detailed, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige el verbo 'went' tras Did: 'Did you went to the party?'",
+                "expected_answer": "Did you go to the party?",
+                "key_structure": "Did + Base Verb (go / see)",
+                "target_audio_items": [
+                    {"english": "Did you go to the party?", "translation": "¿Fuiste a la fiesta?", "label": "Frase Correcta"},
+                    {"english": "I didn't see the movie", "translation": "No vi la película", "label": "Negación Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Entrevista del Fin de Semana",
+                "tutor_says": "Imagina que es lunes por la mañana y un amigo te pregunta emocionado: 'Where did you go on Saturday?'. Para responder aplicando un verbo irregular en pasado (go → went), dices: 'I went to a restaurant and ate delicious food'. ¿Cómo respondes aplicando los verbos irregulares 'went' y 'ate'?",
+                "board_content": "🎭 JUEGO DE ROL CONVERSACIONAL:\n\nPregunta de tu amigo: \"Where did you go on Saturday?\"\n\nTu respuesta modelo:\n• \"I went to a restaurant and ate delicious food\"\n\n(Traducción: Fui a un restaurante y comí comida deliciosa)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two young colleagues chatting cheerfully by a coffee machine at work, holding coffee cups, expressive faces, vibrant colors, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde en pasado: 'I went to a restaurant and ate delicious food'",
+                "expected_answer": "I went to a restaurant and ate delicious food",
+                "key_structure": "Past Storytelling (went & ate)",
+                "target_audio_items": [
+                    {"english": "Where did you go on Saturday?", "translation": "¿Adónde fuiste el sábado?", "label": "Pregunta de tu amigo"},
+                    {"english": "I went to a restaurant and ate delicious food", "translation": "Fui a un restaurante y comí comida deliciosa", "label": "Tu Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Cierre: Dominio de Pasado Irregular y Did",
+                "tutor_says": "¡Felicitaciones! Has dominado los verbos irregulares más importantes (went, saw, ate, had, bought) y la formulación de preguntas y negaciones con Did. Ahora puedes relatar cualquier anécdota del pasado y formular preguntas fluidas con total seguridad.",
+                "board_content": "🎉 RESUMEN DE DOMINIO: IRREGULAR PAST & QUESTIONS\n\n✔ Verbos camaleónicos: go→went, see→saw, eat→ate, have→had, buy→bought\n✔ Afirmativa: Sujeto + Verbo V2 (I saw a movie)\n✔ Negativa: didn't + Verbo Base V1 (I didn't see)\n✔ Preguntas: Did + Sujeto + Verbo Base V1? (Did you see?)\n✔ Enlace fonético: 'Did you' (/dɪdʒuː/)",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a shining golden trophy cup with an open book and glowing stars, modern colorful room, bold clean design, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Irregular Past Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_past_simple_fallback(sublevel: str) -> dict:
+    """Past Simple: Was / Were & Regular Verbs (-ed)."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Past Simple: Was / Were & Regular Verbs",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Introducción: El Pasado del Verbo To Be (Was / Were)",
+                "tutor_says": "Para hablar del pasado en inglés, el verbo 'To Be' se divide en dos formas: 'Was' para sujetos singulares (I, He, She, It) y 'Were' para sujetos plurales (You, We, They). Por ejemplo: 'Yesterday I was at home' (Ayer estuve en casa) y 'They were at school' (Ellos estuvieron en la escuela). Observa el desglose en la pizarra.",
+                "board_content": "📌 PASADO DEL VERBO TO BE:\n\n• I / He / She / It → WAS (era / estaba)\n• You / We / They → WERE (eras / eran / estábamos)\n\n👉 Ejemplos modelo:\n• \"I was tired yesterday\" (Estaba cansado ayer)\n• \"We were happy last night\" (Estábamos felices anoche)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student relaxing on a sofa at home reading a book yesterday, cozy evening atmosphere, warm ambient lighting, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Subject + was/were + Complement",
+                "target_audio_items": [
+                    {"english": "I was at home yesterday", "translation": "Estuve en casa ayer", "label": "Singular: Was"},
+                    {"english": "They were at school", "translation": "Ellos estuvieron en la escuela", "label": "Plural: Were"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura: Was vs Were",
+                    "formula": "[ Sujeto ] + [ was / were ] + [ Lugar / Estado / Adjetivo ] + [ Expresión de Tiempo ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / He / She (Was) | You / We / They (Were)", "color": "blue"},
+                        {"role": "Verbo Be", "pattern": "was / were", "color": "purple"},
+                        {"role": "Estado / Lugar", "pattern": "at home / tired / happy", "color": "emerald"},
+                        {"role": "Tiempo", "pattern": "yesterday / last night", "color": "amber"}
+                    ],
+                    "explanation": "Usa 'was' con sujetos singulares y 'were' con 'you', 'we' y 'they'.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I was at home yesterday.",
+                            "spanish": "Estuve en casa ayer.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Verbo Be", "text": "was", "color": "purple"},
+                                {"role": "Lugar", "text": "at home", "color": "emerald"},
+                                {"role": "Tiempo", "text": "yesterday", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Recuerda: 'You' siempre usa 'were', tanto para singular (tú) como plural (ustedes)."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Verbos Regulares: La Terminación -ed",
+                "tutor_says": "Para la mayoría de los verbos en inglés, formamos el pasado simple añadiendo la terminación '-ed' a la forma base del verbo: 'play' se convierte en 'played', 'work' en 'worked', 'watch' en 'watched' y 'listen' en 'listened'. Observa cómo esta regla se aplica a todas las personas gramaticales por igual.",
+                "board_content": "⚡ REGLA DE VERBOS REGULARES (-ed):\n\n• play → played (jugó / jugué)\n• work → worked (trabajó / trabajé)\n• watch → watched (miró / miré)\n• listen → listened (escuchó / escuché)\n\nFórmula afirmativa:\n[ Sujeto ] + [ Verbo Base + ed ] + [ Complemento ]\n→ \"I watched a movie last night\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of a person working focused at a laptop desk with a calendar showing yesterday, clean modern room, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Subject + Verb-ed + Complement",
+                "target_audio_items": [
+                    {"english": "I played soccer yesterday", "translation": "Jugué fútbol ayer", "label": "Verbo regular"},
+                    {"english": "She worked all day", "translation": "Ella trabajó todo el día", "label": "Verbo regular"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Las 3 Pronunciaciones de -ed",
+                "tutor_says": "¡Cuidado! La terminación '-ed' NO siempre se pronuncia como 'ed'. Tiene 3 sonidos: /t/ tras consonantes sordas como en 'watched' (/wɒtʃt/), /d/ tras sonidos sonoros como en 'played' (/pleɪd/), e /ɪd/ únicamente tras verbos que terminan en 't' o 'd' como 'wanted' (/ˈwɒn.tɪd/). Practica pronunciando la frase modelo con tu micrófono.",
+                "board_content": "🗣️ PRONUNCIACIÓN DE LA TERMINACIÓN -ed:\n\n1. /t/ → tras /p, k, f, s, ʃ, tʃ/: watched (/wɒtʃt/), worked (/wɜːkt/)\n2. /d/ → tras vocales y consonantes sonoras: played (/pleɪd/), lived (/lɪvd/)\n3. /ɪd/ → SOLAMENTE tras 't' o 'd': wanted (/ˈwɒn.tɪd/), needed (/ˈniː.dɪd/)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student practicing pronunciation with speech bubbles in front of a teacher, expressive cell shading, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con claridad: 'I watched television yesterday'",
+                "expected_answer": "I watched television yesterday",
+                "key_structure": "-ed endings (/t/, /d/, /ɪd/)",
+                "target_audio_items": [
+                    {"english": "I watched television yesterday", "translation": "Miré televisión ayer", "label": "Sonido /t/"},
+                    {"english": "I visited my family", "translation": "Visité a mi familia", "label": "Sonido /ɪd/"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: Was vs Were y -ed",
+                "tutor_says": "Un error frecuente es decir 'We was' o añadir '-ed' a verbos que ya tienen pasado. Corrige la concordancia de 'was' en la siguiente oración.",
+                "board_content": "⚔️ DETECCIÓN DE ERRORES:\n\n❌ Incorrecto: \"We was at the park yesterday.\"\n✅ Correcto: \"We were at the park yesterday.\"\n\n❌ Incorrecto: \"She playeded tennis.\"\n✅ Correcto: \"She played tennis.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D concept art of a study board with glowing green correct signs, warm lighting, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige 'was' por 'were': 'We was at the park yesterday'",
+                "expected_answer": "We were at the park yesterday",
+                "key_structure": "Subject-Verb Agreement in Past",
+                "target_audio_items": [
+                    {"english": "We were at the park yesterday", "translation": "Estuvimos en el parque ayer", "label": "Oración Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: ¿Dónde estabas ayer?",
+                "tutor_says": "Tu compañero de clase te pregunta: 'Where were you yesterday at 5 PM?'. Responde usando 'was': 'I was at the library studying'.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nPregunta: \"Where were you yesterday at 5 PM?\"\nTu respuesta: \"I was at the library studying English.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two university students talking in a bright modern library, bookshelves in background, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde a la pregunta: 'I was at the library studying English'",
+                "expected_answer": "I was at the library studying English",
+                "key_structure": "Past Location with Was",
+                "target_audio_items": [
+                    {"english": "Where were you yesterday?", "translation": "¿Dónde estabas ayer?", "label": "Pregunta"},
+                    {"english": "I was at the library studying English", "translation": "Estuve en la biblioteca estudiando inglés", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Past Simple Was/Were & Regular Verbs",
+                "tutor_says": "¡Excelente! Has dominado el pasado de To Be (Was/Were) y la formación de verbos regulares con -ed.",
+                "board_content": "🎉 RESUMEN:\n\n✔ I/He/She/It → was | You/We/They → were\n✔ Verbos regulares → base + -ed (worked, played, watched)\n✔ 3 sonidos de -ed: /t/, /d/, /ɪd/",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden victory badge with stars, clean vibrant colors, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Past Simple Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_future_going_to_fallback(sublevel: str) -> dict:
+    """Future Plans with Be Going To."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Future Plans with Be Going To",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: Expresar Intenciones con 'Be Going To'",
+                "tutor_says": "Usamos la estructura 'Be going to' para hablar de planes futuros e intenciones que ya hemos decidido de antemano. Por ejemplo: 'I am going to travel to Spain next month' (Voy a viajar a España el próximo mes). Combina el verbo To Be (am/is/are) con 'going to' y el verbo en forma base.",
+                "board_content": "📌 FÓRMULA DE PLANES FUTUROS (BE GOING TO):\n\n[ Sujeto ] + [ am / is / are ] + [ going to ] + [ Verbo Base ] + [ Complemento ]\n\n• I am going to study English tomorrow\n• She is going to buy a new car next week\n• They are going to visit us tonight",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a young student packing a colorful suitcase looking at a plane ticket, excited expression, cozy room, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Subject + Be + going to + Base Verb",
+                "target_audio_items": [
+                    {"english": "I am going to travel next month", "translation": "Voy a viajar el próximo mes", "label": "Plan Futuro"},
+                    {"english": "She is going to start a new job", "translation": "Ella va a comenzar un nuevo trabajo", "label": "Plan Futuro"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura: Be Going To para Planes",
+                    "formula": "[ Sujeto ] + [ am / is / are ] + [ going to ] + [ Verbo Base ] + [ Tiempo Futuro ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / We / They", "color": "blue"},
+                        {"role": "Verbo Be", "pattern": "am / is / are", "color": "purple"},
+                        {"role": "Intención", "pattern": "going to", "color": "amber"},
+                        {"role": "Verbo Base", "pattern": "travel / study / visit", "color": "emerald"},
+                        {"role": "Tiempo Futuro", "pattern": "tomorrow / next week", "color": "rose"}
+                    ],
+                    "explanation": "El verbo To Be debe concordar con el sujeto (I am, He is, They are), seguido de 'going to' y la acción base.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I am going to study tomorrow.",
+                            "spanish": "Voy a estudiar mañana.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Verbo Be", "text": "am", "color": "purple"},
+                                {"role": "Intención", "text": "going to", "color": "amber"},
+                                {"role": "Verbo Base", "text": "study", "color": "emerald"},
+                                {"role": "Tiempo", "text": "tomorrow", "color": "rose"}
+                            ]
+                        }
+                    ],
+                    "tips": "Nunca olvides conjugar el verbo To Be ('I going to' es incorrecto; di 'I am going to')."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Preguntas y Negaciones con Be Going To",
+                "tutor_says": "Para formular preguntas, invertimos el verbo To Be al inicio: 'Are you going to travel?'. Para negar, añadimos 'not' después de To Be: 'I am not going to stay at home'.",
+                "board_content": "⚡ PREGUNTAS Y NEGACIONES:\n\n• Pregunta (?) → [ Am / Is / Are ] + [ Sujeto ] + [ going to ] + [ Verbo Base ] ?\n  → \"Are you going to study tonight?\"\n\n• Negativa (-) → [ Sujeto ] + [ am/is/are not ] + [ going to ] + [ Verbo Base ]\n  → \"He is not going to come today\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a calendar planner with colorful event badges and checklists, bright aesthetic, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Are you going to + Base Verb?",
+                "target_audio_items": [
+                    {"english": "Are you going to study tonight?", "translation": "¿Vas a estudiar esta noche?", "label": "Pregunta"},
+                    {"english": "I am not going to stay at home", "translation": "No me voy a quedar en casa", "label": "Negación"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Pronunciación de 'Going to' (/ˈɡənə/)",
+                "tutor_says": "En la conversación informal, los hablantes nativos a menudo reducen 'going to' a 'gonna' (/ˈɡənə/). Escucha y practica la frase modelo.",
+                "board_content": "🗣️ RETO FONÉTICO:\n\n• Formal: \"I am going to see my friend\"\n• Conversacional: \"I'm gonna see my friend\"\n\nPractica el ritmo natural de la frase con tu micrófono.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student speaking enthusiastically with headphones on, laptop desk setting, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con fluidez: 'I am going to see my friend tomorrow'",
+                "expected_answer": "I am going to see my friend tomorrow",
+                "key_structure": "Be going to Pronunciation",
+                "target_audio_items": [
+                    {"english": "I am going to see my friend tomorrow", "translation": "Voy a ver a mi amigo/a mañana", "label": "Práctica de Voz"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: Omitir el Verbo To Be",
+                "tutor_says": "El error más frecuente es olvidar el verbo To Be diciendo 'I going to study'. Corrige la frase añadiendo 'am'.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR:\n\n❌ Incorrecto: \"I going to travel next week.\"\n✅ Correcto: \"I am going to travel next week.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D illustration of a study desk with study notes and green checkmarks, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige agregando 'am': 'I going to travel next week'",
+                "expected_answer": "I am going to travel next week",
+                "key_structure": "Subject + Be + going to",
+                "target_audio_items": [
+                    {"english": "I am going to travel next week", "translation": "Voy a viajar la próxima semana", "label": "Frase Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Planes para las Vacaciones",
+                "tutor_says": "Tu amigo te pregunta: 'What are you going to do this summer?'. Responde usando 'going to': 'I am going to visit the beach with my family'.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nPregunta: \"What are you going to do this summer?\"\nTu respuesta: \"I am going to visit the beach with my family.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two friends discussing vacation ideas pointing at a sunny map, vibrant colors, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde con tu plan: 'I am going to visit the beach with my family'",
+                "expected_answer": "I am going to visit the beach with my family",
+                "key_structure": "Vacation Plans with Going To",
+                "target_audio_items": [
+                    {"english": "What are you going to do this summer?", "translation": "¿Qué vas a hacer este verano?", "label": "Pregunta"},
+                    {"english": "I am going to visit the beach with my family", "translation": "Voy a visitar la playa con mi familia", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Planes con Be Going To",
+                "tutor_says": "¡Excelente trabajo! Ya sabes expresar intenciones y planes decididos para el futuro usando 'Be going to'.",
+                "board_content": "🎉 RESUMEN:\n\n✔ Fórmula: Sujeto + am/is/are + going to + Verbo Base\n✔ Preguntas: Are you going to + Verbo?\n✔ Negaciones: I am not going to + Verbo",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden trophy with an airplane and sun icon, clean vibrant colors, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Going To Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_can_abilities_fallback(sublevel: str) -> dict:
+    """Can & Abilities."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Can & Abilities",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: Expresar Habilidades con 'Can'",
+                "tutor_says": "El verbo modal 'Can' se usa para hablar de habilidades y capacidades físicas o mentales. Significa 'poder' o 'saber hacer'. Una gran ventaja: 'can' no cambia nunca con ninguna persona (I can, he can, they can) y siempre va seguido de un verbo en forma base sin 'to' ni '-s'. Por ejemplo: 'I can swim' (Sé nadar) y 'She can speak English' (Ella puede hablar inglés).",
+                "board_content": "📌 EL VERBO MODAL CAN (HABILIDADES):\n\n• I can swim (Sé nadar / Puedo nadar)\n• She can speak English (Ella sabe hablar inglés)\n• They can play the guitar (Ellos saben tocar la guitarra)\n\nFórmula afirmativa:\n[ Sujeto ] + [ can ] + [ Verbo Base ] + [ Complemento ]",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a young person happily playing an acoustic guitar and singing, colorful modern room, expressive character, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Subject + can + Base Verb",
+                "target_audio_items": [
+                    {"english": "I can speak English", "translation": "Puedo hablar inglés", "label": "Habilidad"},
+                    {"english": "She can play the guitar", "translation": "Ella sabe tocar la guitarra", "label": "Habilidad"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura: Can para Habilidades",
+                    "formula": "[ Sujeto ] + [ can / can't ] + [ Verbo en Forma Base ] + [ Complemento ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / She / We / They", "color": "blue"},
+                        {"role": "Modal", "pattern": "can / can't", "color": "purple"},
+                        {"role": "Verbo Base", "pattern": "swim / speak / drive / cook", "color": "emerald"},
+                        {"role": "Complemento", "pattern": "English / well / fast", "color": "amber"}
+                    ],
+                    "explanation": "El verbo principal NUNCA lleva 'to' ni '-s' después de 'can'.",
+                    "example_breakdowns": [
+                        {
+                            "english": "She can speak English.",
+                            "spanish": "Ella sabe hablar inglés.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "She", "color": "blue"},
+                                {"role": "Modal", "text": "can", "color": "purple"},
+                                {"role": "Verbo Base", "text": "speak", "color": "emerald"},
+                                {"role": "Complemento", "text": "English", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Nunca digas 'He cans' ni 'He can to swim'. La forma correcta es 'He can swim'."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Preguntas y Negaciones con Can / Can't",
+                "tutor_says": "Para hacer preguntas con 'can', colocamos 'Can' al inicio: 'Can you drive?'. Para negar, usamos 'cannot' o la contracción 'can't': 'I can't swim'.",
+                "board_content": "⚡ PREGUNTAS Y NEGACIONES:\n\n• Pregunta (?) → [ Can ] + [ Sujeto ] + [ Verbo Base ] ?\n  → \"Can you speak English?\"\n\n• Negativa (-) → [ Sujeto ] + [ can't ] + [ Verbo Base ]\n  → \"I can't drive a car\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of skill icons like swimming, driving, cooking, speaking, vibrant icons on clean board, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Can you + Base Verb?",
+                "target_audio_items": [
+                    {"english": "Can you speak English?", "translation": "¿Puedes hablar inglés?", "label": "Pregunta"},
+                    {"english": "I can't drive a car", "translation": "No sé conducir un auto", "label": "Negación"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Contraste Can (/kən/) vs Can't (/kænt/)",
+                "tutor_says": "En oraciones afirmativas, 'can' se pronuncia de forma débil como /kən/. En cambio, en la negación 'can't' la vocal es más abierta y enfática: /kænt/ o /kɑːnt/. Practica pronunciando la pregunta con tu micrófono.",
+                "board_content": "🗣️ CONTRASTE FONÉTICO:\n\n• can (débil) → /kən/ (\"I can /kən/ swim\")\n• can't (fuerte/enfático) → /kænt/ o /kɑːnt/ (\"I can't /kænt/ swim\")\n\nPractica la entonación con tu micrófono.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student with microphone practicing English pronunciation, smiling confidently, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con claridad: 'Yes, I can speak English very well'",
+                "expected_answer": "Yes, I can speak English very well",
+                "key_structure": "Can /kən/ vs Can't /kænt/",
+                "target_audio_items": [
+                    {"english": "Yes, I can speak English very well", "translation": "Sí, sé hablar inglés muy bien", "label": "Pronunciación Can"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: Prohibido usar 'to' con Can",
+                "tutor_says": "Un error común de los hispanohablantes es decir 'She can to swim' o 'She cans swim'. Corrige la frase eliminando 'to'.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR:\n\n❌ Incorrecto: \"She can to swim very well.\"\n❌ Incorrecto: \"She cans swim.\"\n✅ Correcto: \"She can swim very well.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D illustration of a study desk with glowing checkmarks, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige eliminando 'to': 'She can to swim very well'",
+                "expected_answer": "She can swim very well",
+                "key_structure": "Can + Base Verb (no 'to')",
+                "target_audio_items": [
+                    {"english": "She can swim very well", "translation": "Ella sabe nadar muy bien", "label": "Frase Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Entrevista de Habilidades",
+                "tutor_says": "En una entrevista te preguntan: 'Can you use a computer and speak English?'. Responde usando 'can': 'Yes, I can use a computer and speak English fluently'.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nPregunta: \"Can you use a computer and speak English?\"\nTu respuesta: \"Yes, I can use a computer and speak English fluently.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a friendly job interview across a modern desk, two professionals talking, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde afirmativamente: 'Yes, I can use a computer and speak English fluently'",
+                "expected_answer": "Yes, I can use a computer and speak English fluently",
+                "key_structure": "Interview Abilities with Can",
+                "target_audio_items": [
+                    {"english": "Can you speak English?", "translation": "¿Puedes hablar inglés?", "label": "Pregunta"},
+                    {"english": "Yes, I can use a computer and speak English fluently", "translation": "Sí, puedo usar una computadora y hablar inglés con fluidez", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Modal Can para Habilidades",
+                "tutor_says": "¡Excelente trabajo! Has dominado el uso de 'Can' y 'Can't' para expresar habilidades y responder preguntas.",
+                "board_content": "🎉 RESUMEN:\n\n✔ Can no cambia con ninguna persona (I can, he can, they can)\n✔ Siempre va seguido de verbo en forma base (sin 'to')\n✔ Negativa: can't | Pregunta: Can you...?",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden certificate badge of achievement, clean minimal aesthetic, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Can Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_there_is_there_are_fallback(sublevel: str) -> dict:
+    """Places & There is / There are."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Places & There is / There are",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: Existencia con 'There is' y 'There are'",
+                "tutor_says": "En inglés usamos 'There is' para decir 'hay' cuando hablamos de una sola cosa (singular) o algo incontable. Usamos 'There are' para decir 'hay' cuando hablamos de dos o más cosas (plural). Por ejemplo: 'There is a bank near here' (Hay un banco cerca de aquí) y 'There are three parks in this city' (Hay tres parques en esta ciudad).",
+                "board_content": "📌 EXISTENCIA EN LA CIUDAD:\n\n• There is + singular / incontable:\n  → \"There is a hospital on this street\" (Hay un hospital en esta calle)\n\n• There are + plural:\n  → \"There are two restaurants near the park\" (Hay dos restaurantes cerca del parque)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a colorful city street with a bakery, bank, and park, pedestrians walking happily, sunny day, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "There is (singular) / There are (plural)",
+                "target_audio_items": [
+                    {"english": "There is a park near my house", "translation": "Hay un parque cerca de mi casa", "label": "Singular: There is"},
+                    {"english": "There are three restaurants here", "translation": "Hay tres restaurantes aquí", "label": "Plural: There are"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura: There is vs There are",
+                    "formula": "[ There is / There are ] + [ Sustantivo (Singular/Plural) ] + [ Preposición de Lugar ] + [ Ubicación ]",
+                    "formula_tokens": [
+                        {"role": "Existencia", "pattern": "There is (singular) | There are (plural)", "color": "purple"},
+                        {"role": "Lugar / Objeto", "pattern": "a bank / two hotels / a park", "color": "blue"},
+                        {"role": "Preposición", "pattern": "next to / in front of / between", "color": "emerald"},
+                        {"role": "Ubicación", "pattern": "the station / my house", "color": "amber"}
+                    ],
+                    "explanation": "Usa 'There is a/an' con sustantivos singulares y 'There are' con sustantivos en plural.",
+                    "example_breakdowns": [
+                        {
+                            "english": "There is a park next to the school.",
+                            "spanish": "Hay un parque al lado de la escuela.",
+                            "parts": [
+                                {"role": "Existencia", "text": "There is", "color": "purple"},
+                                {"role": "Lugar", "text": "a park", "color": "blue"},
+                                {"role": "Preposición", "text": "next to", "color": "emerald"},
+                                {"role": "Ubicación", "text": "the school", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Para preguntar invierte el orden: 'Is there a bank?' o 'Are there any restaurants?'."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Preposiciones de Lugar Clave",
+                "tutor_says": "Para ubicar lugares con precisión usamos preposiciones: 'next to' (al lado de), 'in front of' (delante de), 'behind' (detrás de), 'between' (entre dos cosas) y 'opposite' (enfrente cruzando la calle).",
+                "board_content": "⚡ PREPOSICIONES DE LUGAR:\n\n• next to → al lado de (\"The bank is next to the cafe\")\n• in front of → delante de (\"There is a bus in front of the school\")\n• between → entre (\"The shop is between the bank and the hotel\")\n• opposite → enfrente de (\"The cinema is opposite the station\")",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational diagram of city buildings showing positions like next to, between, opposite, clean minimalist design, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Prepositions of Place (next to / between)",
+                "target_audio_items": [
+                    {"english": "The bank is next to the pharmacy", "translation": "El banco está al lado de la farmacia", "label": "Preposición: next to"},
+                    {"english": "There is a shop opposite the station", "translation": "Hay una tienda enfrente de la estación", "label": "Preposición: opposite"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Enlace /ðeər ɪz/ y /ðeər ɑːr/",
+                "tutor_says": "Al pronunciar 'There is', enlazamos la 'r' con la 'i': /ðeər ɪz/ ('ther-iz'). En 'There are', la pronunciación fluye como /ðeər ɑːr/. Practica la pregunta modelo con tu micrófono.",
+                "board_content": "🗣️ RETO FONÉTICO:\n\n• \"Is there a pharmacy near here?\"\n(Traducción: ¿Hay una farmacia cerca de aquí?)\n\nArticulación de 'th' sonora: coloca la lengua entre los dientes y vibra las cuerdas vocales (/ð/).",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a tourist holding a street map asking a friendly local for directions on a sunny corner, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con fluidez: 'Is there a pharmacy near here?'",
+                "expected_answer": "Is there a pharmacy near here?",
+                "key_structure": "Is there /ðeər ɪz/ Pronunciation",
+                "target_audio_items": [
+                    {"english": "Is there a pharmacy near here?", "translation": "¿Hay una farmacia cerca de aquí?", "label": "Pregunta de Ubicación"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: Concordancia There is / There are",
+                "tutor_says": "Corrige el error de concordancia en la oración: cuando hablamos de dos cosas, debemos usar 'are' y no 'is'.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR:\n\n❌ Incorrecto: \"There is two banks on this street.\"\n✅ Correcto: \"There are two banks on this street.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D illustration of a city map with green correct marks, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige 'is' por 'are': 'There is two banks on this street'",
+                "expected_answer": "There are two banks on this street",
+                "key_structure": "There are + plural nouns",
+                "target_audio_items": [
+                    {"english": "There are two banks on this street", "translation": "Hay dos bancos en esta calle", "label": "Oración Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Dando Indicaciones a un Turista",
+                "tutor_says": "Un turista te pregunta: 'Excuse me, is there a supermarket near here?'. Responde indicando que hay uno al lado del banco: 'Yes, there is a supermarket next to the bank'.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nTurista: \"Excuse me, is there a supermarket near here?\"\nTu respuesta: \"Yes, there is a supermarket next to the bank.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two people smiling and pointing directions on a bustling avenue, warm modern city setting, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde al turista: 'Yes, there is a supermarket next to the bank'",
+                "expected_answer": "Yes, there is a supermarket next to the bank",
+                "key_structure": "Directions with There is & Next to",
+                "target_audio_items": [
+                    {"english": "Is there a supermarket near here?", "translation": "¿Hay un supermercado cerca de aquí?", "label": "Pregunta"},
+                    {"english": "Yes, there is a supermarket next to the bank", "translation": "Sí, hay un supermercado al lado del banco", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Lugares y Existencia",
+                "tutor_says": "¡Felicitaciones! Has dominado 'There is' (singular), 'There are' (plural) y las preposiciones de lugar para dar indicaciones con fluidez.",
+                "board_content": "🎉 RESUMEN:\n\n✔ There is + singular (There is a bank)\n✔ There are + plural (There are two parks)\n✔ Preposiciones: next to, in front of, between, opposite",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden compass and map pin icon, clean modern aesthetic, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Places & There is/are Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_do_does_questions_fallback(sublevel: str) -> dict:
+    """Questions & Negatives (Do / Does)."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Questions & Negatives (Do / Does)",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: El Auxiliar Do / Does en Presente Simple",
+                "tutor_says": "Para formular preguntas y negaciones en presente simple (excepto con el verbo To Be), necesitamos el auxiliar 'Do' o 'Does'. 'Do' se usa con I, You, We y They; 'Does' se usa con He, She e It. Cuando usamos 'Does' en una pregunta, el verbo principal pierde la '-s' y vuelve a su forma base pura.",
+                "board_content": "📌 EL AUXILIAR DO / DOES:\n\n• I / You / We / They → DO / DON'T\n  → \"Do you speak English?\" (¿Hablas inglés?)\n  → \"I don't live in Madrid\" (No vivo en Madrid)\n\n• He / She / It → DOES / DOESN'T\n  → \"Does she work here?\" (¿Trabaja ella aquí?)\n  → \"He doesn't eat meat\" (Él no come carne)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two young professionals chatting in a modern creative studio, one asking a question with a friendly smile, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Do/Does + Subject + Base Verb?",
+                "target_audio_items": [
+                    {"english": "Do you speak English?", "translation": "¿Hablas inglés?", "label": "Pregunta con Do"},
+                    {"english": "Does she work here?", "translation": "¿Trabaja ella aquí?", "label": "Pregunta con Does"},
+                    {"english": "I don't drink coffee", "translation": "No tomo café", "label": "Negación don't"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura de Preguntas con Do / Does",
+                    "formula": "[ Do / Does / Wh- + do/does ] + [ Sujeto ] + [ Verbo Base ] + [ Complemento ] ?",
+                    "formula_tokens": [
+                        {"role": "Auxiliar", "pattern": "Do / Does / Where do", "color": "purple"},
+                        {"role": "Sujeto", "pattern": "you / she / they / he", "color": "blue"},
+                        {"role": "Verbo Base", "pattern": "live / work / study / speak", "color": "amber"},
+                        {"role": "Complemento", "pattern": "in London / here", "color": "emerald"}
+                    ],
+                    "explanation": "El auxiliar 'Do/Does' abre la pregunta; el verbo principal siempre va en su forma base más pura.",
+                    "example_breakdowns": [
+                        {
+                            "english": "Do you live in London?",
+                            "spanish": "¿Vives en Londres?",
+                            "parts": [
+                                {"role": "Auxiliar", "text": "Do", "color": "purple"},
+                                {"role": "Sujeto", "text": "you", "color": "blue"},
+                                {"role": "Verbo Base", "text": "live", "color": "amber"},
+                                {"role": "Complemento", "text": "in London?", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Nunca digas 'Does she works?'; como 'Does' ya tiene la 'es', el verbo debe ser 'work' ('Does she work?')."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Preguntas con Wh- (What, Where, When, Why)",
+                "tutor_says": "Para hacer preguntas abiertas, colocamos la palabra interrogativa (What, Where, When, Why) justo antes del auxiliar 'do' o 'does'. Observa la fórmula: [ Wh- ] + [ do/does ] + [ Sujeto ] + [ Verbo Base ].",
+                "board_content": "⚡ PREGUNTAS CON WH-:\n\n• Where do you work? (¿Dónde trabajas?)\n• What does she study? (¿Qué estudia ella?)\n• What time do you wake up? (¿A qué hora te despiertas?)\n• Why do you study English? (¿Por qué estudias inglés?)",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of question marks and magnifying glass examining daily routine icons, clean modern graphic design, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Wh- + do/does + Subject + Base Verb?",
+                "target_audio_items": [
+                    {"english": "Where do you work?", "translation": "¿Dónde trabajas?", "label": "Pregunta Where"},
+                    {"english": "What does he do?", "translation": "¿A qué se dedica él?", "label": "Pregunta What"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Enlace 'Do you' y 'Does he'",
+                "tutor_says": "Al hablar rápido, 'Do you' se reduce a /djuː/ o /dʒuː/, y en 'Does he' la 'h' a menudo desaparece sonando como /dʌziː/. Practica la pregunta modelo con tu micrófono.",
+                "board_content": "🗣️ ENLACES FONÉTICOS EN PREGUNTAS:\n\n• \"Where do you live?\" → /weər dʒuː lɪv/\n• \"Does he work here?\" → /dʌziː wɜːk hɪər/\n\nEscucha y graba tu pronunciación.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student with headphones practicing speaking into a microphone, cheerful expression, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con fluidez: 'Where do you live?'",
+                "expected_answer": "Where do you live?",
+                "key_structure": "Connected Speech: Do you /dʒuː/",
+                "target_audio_items": [
+                    {"english": "Where do you live?", "translation": "¿Dónde vives?", "label": "Pregunta Fluida"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: La 's' en preguntas con Does",
+                "tutor_says": "Corrige el error en la pregunta: cuando usamos 'Does', el verbo principal NO debe llevar 's'.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR:\n\n❌ Incorrecto: \"Does she speaks English?\"\n✅ Correcto: \"Does she speak English?\"\n\n❌ Incorrecto: \"He doesn't likes coffee.\"\n✅ Correcto: \"He doesn't like coffee.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D illustration of a chalkboard with glowing checkmarks and crossed out mistakes, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige 'speaks' por 'speak': 'Does she speaks English?'",
+                "expected_answer": "Does she speak English?",
+                "key_structure": "Does + Base Verb (no 's')",
+                "target_audio_items": [
+                    {"english": "Does she speak English?", "translation": "¿Habla ella inglés?", "label": "Frase Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Conociendo a un Nuevo Compañero",
+                "tutor_says": "Un nuevo compañero te pregunta: 'Do you work in this office?'. Responde afirmativamente: 'Yes, I work here from Monday to Friday'.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nCompañero: \"Do you work in this office?\"\nTu respuesta: \"Yes, I work here from Monday to Friday.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two friendly coworkers talking at an office reception area, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde afirmativamente: 'Yes, I work here from Monday to Friday'",
+                "expected_answer": "Yes, I work here from Monday to Friday",
+                "key_structure": "Routine Dialogue with Do",
+                "target_audio_items": [
+                    {"english": "Do you work in this office?", "translation": "¿Trabajas en esta oficina?", "label": "Pregunta"},
+                    {"english": "Yes, I work here from Monday to Friday", "translation": "Sí, trabajo aquí de lunes a viernes", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Preguntas y Negaciones con Do / Does",
+                "tutor_says": "¡Excelente trabajo! Has dominado el uso de Do y Does para preguntar y negar en presente simple.",
+                "board_content": "🎉 RESUMEN:\n\n✔ I/You/We/They → Do / Don't\n✔ He/She/It → Does / Doesn't\n✔ Con Does/Doesn't, el verbo vuelve a forma base (sin 's')",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a shining golden trophy cup with question mark badge, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Do/Does Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_objects_possession_fallback(sublevel: str) -> dict:
+    """Objects & Possession (This/That/These/Those & 's)."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Objects & Possession",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Demostrativos: This, That, These, Those",
+                "tutor_says": "Para señalar objetos según su cercanía y cantidad usamos demostrativos: 'This' (esto, singular cerca), 'That' (eso/aquello, singular lejos), 'These' (estos, plural cerca) y 'Those' (esos/aquellos, plural lejos).",
+                "board_content": "📌 DEMOSTRATIVOS EN INGLÉS:\n\n• Singular Cerca → THIS is my phone (Este es mi teléfono)\n• Singular Lejos → THAT is your car (Ese es tu auto)\n• Plural Cerca → THESE are my keys (Estas son mis llaves)\n• Plural Lejos → THOSE are our bags (Esas son nuestras mochilas)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student showing a smartphone in hand and pointing at a bicycle across the street, expressive clean vector art, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "This / That / These / Those",
+                "target_audio_items": [
+                    {"english": "This is my phone", "translation": "Este es mi teléfono", "label": "This (cerca)"},
+                    {"english": "That is my car", "translation": "Ese es mi auto", "label": "That (lejos)"},
+                    {"english": "These are my keys", "translation": "Estas son mis llaves", "label": "These (plural cerca)"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura: Demostrativos y Posesión",
+                    "formula": "[ This / That / These / Those ] + [ is / are ] + [ Posesivo / Nombre's ] + [ Objeto ]",
+                    "formula_tokens": [
+                        {"role": "Demostrativo", "pattern": "This / That (is) | These / Those (are)", "color": "blue"},
+                        {"role": "Verbo Be", "pattern": "is / are", "color": "purple"},
+                        {"role": "Posesivo", "pattern": "my / your / Carlos's", "color": "emerald"},
+                        {"role": "Objeto", "pattern": "laptop / keys / jacket", "color": "amber"}
+                    ],
+                    "explanation": "Usa 'is' con This/That y 'are' con These/Those.",
+                    "example_breakdowns": [
+                        {
+                            "english": "This is Carlos's laptop.",
+                            "spanish": "Esta es la laptop de Carlos.",
+                            "parts": [
+                                {"role": "Demostrativo", "text": "This", "color": "blue"},
+                                {"role": "Verbo Be", "text": "is", "color": "purple"},
+                                {"role": "Posesivo", "text": "Carlos's", "color": "emerald"},
+                                {"role": "Objeto", "text": "laptop", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "El posesivo sajón 's indica pertenencia: 'Maria's book' (el libro de María)."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. El Posesivo Sajón ('s)",
+                "tutor_says": "En inglés no decimos 'the car of John', sino 'John's car'. Colocamos el poseedor primero con un apóstrofo y una 's', seguido de lo poseído.",
+                "board_content": "⚡ POSESIVO CON APÓSTROFO ('s):\n\n• Sarah's notebook (El cuaderno de Sarah)\n• My brother's laptop (La laptop de mi hermano)\n• The teacher's desk (El escritorio del profesor)\n\nFórmula:\n[ Poseedor ] + [ 's ] + [ Objeto poseído ]",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of everyday personal items like notebook, keys, glasses, headphones neatly arranged on a wooden desk, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Owner + 's + Object",
+                "target_audio_items": [
+                    {"english": "This is Sarah's notebook", "translation": "Este es el cuaderno de Sarah", "label": "Posesivo 's"},
+                    {"english": "That is my friend's jacket", "translation": "Esa es la chaqueta de mi amigo", "label": "Posesivo 's"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Contraste This (/ðɪs/) vs These (/ðiːz/)",
+                "tutor_says": "Presta atención a la diferencia: 'This' tiene una vocal corta /ɪ/ y termina en 's' sorda (/ðɪs/). 'These' tiene una vocal larga /iː/ y termina en 'z' sonora vibrante (/ðiːz/). Practica la frase modelo.",
+                "board_content": "🗣️ CONTRASTE FONÉTICO:\n\n• this (singular) → /ðɪs/ (vocal corta, 's' sorda)\n• these (plural) → /ðiːz/ (vocal larga 'ii', 'z' sonora)\n\nPractica con tu micrófono.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student practicing pronunciation in front of a mirror holding a key and keys, expressive cell shading, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con claridad: 'These are my new glasses'",
+                "expected_answer": "These are my new glasses",
+                "key_structure": "This /ðɪs/ vs These /ðiːz/",
+                "target_audio_items": [
+                    {"english": "These are my new glasses", "translation": "Estos son mis nuevos lentes", "label": "Pronunciación These"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: Concordancia con Demostrativos",
+                "tutor_says": "Corrige el error: 'This' no se puede usar con plurales ni con 'are'. Usa 'These'.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR:\n\n❌ Incorrecto: \"This are my keys.\"\n✅ Correcto: \"These are my keys.\"\n\n❌ Incorrecto: \"The car of my father.\"\n✅ Correcto: \"My father's car.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D concept art of a study desk with glowing checkmarks, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige 'This' por 'These': 'This are my keys'",
+                "expected_answer": "These are my keys",
+                "key_structure": "These are + plural nouns",
+                "target_audio_items": [
+                    {"english": "These are my keys", "translation": "Estas son mis llaves", "label": "Frase Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Objetos Perdidos",
+                "tutor_says": "Encuentras una mochila y preguntas a tu compañero: 'Is this your backpack?'. Tu compañero responde: 'Yes, that is my backpack, thank you!'.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nPregunta: \"Is this your backpack?\"\nTu respuesta: \"Yes, that is my backpack, thank you!\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two students in a classroom, one handing a stylish backpack to the other with a smile, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde: 'Yes, that is my backpack, thank you!'",
+                "expected_answer": "Yes, that is my backpack, thank you!",
+                "key_structure": "Demonstratives in Dialogue",
+                "target_audio_items": [
+                    {"english": "Is this your backpack?", "translation": "¿Es esta tu mochila?", "label": "Pregunta"},
+                    {"english": "Yes, that is my backpack, thank you!", "translation": "¡Sí, esa es mi mochila, gracias!", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Demostrativos y Posesión",
+                "tutor_says": "¡Felicitaciones! Has dominado This, That, These, Those y el posesivo sajón 's.",
+                "board_content": "🎉 RESUMEN:\n\n✔ This (singular cerca) | That (singular lejos)\n✔ These (plural cerca) | Those (plural lejos)\n✔ Posesivo 's: John's car, Maria's book",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a shining golden trophy cup with a key icon, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Possession Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_personal_info_fallback(sublevel: str) -> dict:
+    """Personal Information (To Be, Possessive Adjectives)."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Personal Information",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: Nombre, Nacionalidad y Profesión con To Be",
+                "tutor_says": "Para dar información personal en inglés usamos el verbo To Be: 'I am David, I am 28 years old, and I am from Mexico'. En inglés la edad siempre se expresa con To Be (I am 28 years old) y NUNCA con 'have'.",
+                "board_content": "📌 INFORMACIÓN PERSONAL:\n\n• Nombre → \"My name is Maria\" / \"I am Maria\"\n• Edad → \"I am 25 years old\" (Usa SIEMPRE el verbo To Be)\n• Origen → \"I am from Colombia\"\n• Profesión → \"I am an engineer\" (Usa a/an antes de profesiones)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a smiling young professional holding an ID badge introducing herself at a modern international conference, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "I am + Name / Age / Profession",
+                "target_audio_items": [
+                    {"english": "My name is David", "translation": "Mi nombre es David", "label": "Nombre"},
+                    {"english": "I am 25 years old", "translation": "Tengo 25 años", "label": "Edad con To Be"},
+                    {"english": "I am from Spain", "translation": "Soy de España", "label": "Origen"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura: Información Personal",
+                    "formula": "[ Sujeto ] + [ am / is / are ] + [ Nombre / Edad / Nacionalidad / a+Profesión ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / She", "color": "blue"},
+                        {"role": "Verbo Be", "pattern": "am / is / are", "color": "purple"},
+                        {"role": "Dato Personal", "pattern": "David / 25 years old / from Mexico / a doctor", "color": "emerald"}
+                    ],
+                    "explanation": "La edad en inglés es un estado con To Be ('I am 25'), no una posesión ('I have 25').",
+                    "example_breakdowns": [
+                        {
+                            "english": "I am twenty-five years old.",
+                            "spanish": "Tengo veinticinco años.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Verbo Be", "text": "am", "color": "purple"},
+                                {"role": "Edad", "text": "twenty-five years old", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Para profesiones en singular siempre añade 'a' o 'an': 'I am a teacher', 'I am an architect'."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Adjetivos Posesivos (My, Your, His, Her, Our, Their)",
+                "tutor_says": "Los adjetivos posesivos indican a quién pertenece algo y concuerdan con el poseedor: 'My' (mi), 'Your' (tu), 'His' (su de él), 'Her' (su de ella), 'Our' (nuestro) y 'Their' (su de ellos).",
+                "board_content": "⚡ ADJETIVOS POSESIVOS:\n\n• I → MY name is Carlos\n• You → YOUR email address\n• He → HIS phone number\n• She → HER country is Peru\n• We → OUR teacher\n• They → THEIR company",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of business cards and passport documents with clean minimalist icons, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Possessive Adjectives (My, Your, His, Her)",
+                "target_audio_items": [
+                    {"english": "His name is Daniel", "translation": "Su nombre (de él) es Daniel", "label": "Posesivo His"},
+                    {"english": "Her city is Madrid", "translation": "Su ciudad (de ella) es Madrid", "label": "Posesivo Her"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Contracciones I'm, He's, She's",
+                "tutor_says": "Practica las contracciones naturales: 'I am' se contrae como 'I'm' (/aɪm/), 'He is' como 'He's' (/hiːz/) y 'She is' como 'She's' (/ʃiːz/). Escucha y graba tu voz.",
+                "board_content": "🗣️ CONTRACCIONES NATURALES:\n\n• I am → I'm (/aɪm/)\n• He is → He's (/hiːz/)\n• She is → She's (/ʃiːz/)\n• We are → We're (/wɪər/)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student speaking clearly into a desktop mic, cozy study space, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con fluidez: 'I'm from Mexico and I'm a software designer'",
+                "expected_answer": "I'm from Mexico and I'm a software designer",
+                "key_structure": "Contractions I'm / He's",
+                "target_audio_items": [
+                    {"english": "I'm from Mexico and I'm a software designer", "translation": "Soy de México y soy diseñador/a de software", "label": "Presentación"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: La Trampa de la Edad",
+                "tutor_says": "Corrige el error más famoso de los hispanohablantes: nunca digas 'I have 20 years'. Usa el verbo To Be 'I am 20 years old'.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR:\n\n❌ Incorrecto: \"I have 25 years old.\"\n✅ Correcto: \"I am 25 years old.\"\n\n❌ Incorrecto: \"I am engineer.\"\n✅ Correcto: \"I am an engineer.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D concept art of an identity passport with glowing green checkmarks, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige 'have' por 'am': 'I have 25 years old'",
+                "expected_answer": "I am 25 years old",
+                "key_structure": "Age with To Be (I am 25)",
+                "target_audio_items": [
+                    {"english": "I am 25 years old", "translation": "Tengo 25 años", "label": "Edad Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Registro en un Hotel / Conferencia",
+                "tutor_says": "En la recepción te preguntan: 'What is your full name and occupation?'. Responde: 'My name is Carlos Ramirez and I am a software engineer'.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nRecepcionista: \"What is your full name and occupation?\"\nTu respuesta: \"My name is Carlos Ramirez and I am a software engineer.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a hotel reception check-in desk, guest giving information with a smile, warm atmospheric lighting, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde con tu información: 'My name is Carlos Ramirez and I am a software engineer'",
+                "expected_answer": "My name is Carlos Ramirez and I am a software engineer",
+                "key_structure": "Registration Dialogue",
+                "target_audio_items": [
+                    {"english": "What is your full name?", "translation": "¿Cuál es tu nombre completo?", "label": "Pregunta"},
+                    {"english": "My name is Carlos Ramirez and I am a software engineer", "translation": "Mi nombre es Carlos Ramírez y soy ingeniero de software", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Información Personal",
+                "tutor_says": "¡Excelente trabajo! Ya puedes presentarte, dar tu edad con To Be, tu profesión con a/an y usar posesivos con total corrección.",
+                "board_content": "🎉 RESUMEN:\n\n✔ Nombre: My name is... / I am...\n✔ Edad: I am [X] years old (SIEMPRE To Be)\n✔ Profesión: I am a/an [profesión]\n✔ Posesivos: my, your, his, her, our, their",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden ID badge trophy with stars, clean vibrant aesthetic, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Personal Info Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_time_frequency_fallback(sublevel: str) -> dict:
+    """Time & Frequency (Adverbs of Frequency, Time Expressions)."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Time & Frequency",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: Adverbios de Frecuencia",
+                "tutor_says": "Los adverbios de frecuencia indican con qué regularidad realizamos una acción: 'always' (siempre 100%), 'usually' (usualmente 80%), 'often' (a menudo 60%), 'sometimes' (a veces 50%), 'rarely' / 'hardly ever' (casi nunca 10%) y 'never' (nunca 0%). Regla clave de posición: van ANTES del verbo principal ('I always wake up early'), pero DESPUÉS del verbo To Be ('I am always happy').",
+                "board_content": "📌 ADVERBIOS DE FRECUENCIA:\n\n• Always (100%) → Siempre\n• Usually (80%) → Usualmente\n• Often (60%) → A menudo\n• Sometimes (50%) → A veces\n• Never (0%) → Nunca\n\nPosición:\n• Antes de verbos normales: \"I usually drink coffee\"\n• Después de To Be: \"She is always on time\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student waking up cheerfully to a morning alarm clock with sunlight pouring through window, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Subject + Adverb of Frequency + Main Verb",
+                "diagram_svg": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a101d"/>
+      <stop offset="100%" stop-color="#141e33"/>
+    </linearGradient>
+    <linearGradient id="timeLineGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBg)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#f8fafc">TIMELINE: HABITS &amp; FREQUENCY ADVERBS</text>
+  <text x="350" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Visualización de repetición en el tiempo hacia el presente</text>
+  <line x1="60" y1="140" x2="640" y2="140" stroke="url(#timeLineGrad)" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="640,140 626,134 626,146" fill="#c084fc"/>
+  <circle cx="120" cy="140" r="7" fill="#0ea5e9" filter="url(#glow)"/>
+  <text x="120" y="170" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#7dd3fc">PAST</text>
+  <text x="120" y="185" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#94a3b8">(Pasado)</text>
+  <line x1="350" y1="95" x2="350" y2="185" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+  <circle cx="350" cy="140" r="11" fill="#f59e0b" filter="url(#glow)"/>
+  <rect x="305" y="90" width="90" height="24" rx="12" fill="#f59e0b" />
+  <text x="350" y="106" font-family="system-ui, sans-serif" font-size="12" font-weight="900" text-anchor="middle" fill="#000">NOW (Hoy)</text>
+  <text x="350" y="202" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">PRESENTE</text>
+  <circle cx="580" cy="140" r="7" fill="#10b981" filter="url(#glow)"/>
+  <text x="580" y="170" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#6ee7b7">FUTURE</text>
+  <text x="580" y="185" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#94a3b8">(Futuro)</text>
+  <g filter="url(#glow)">
+    <circle cx="170" cy="140" r="5" fill="#38bdf8"/>
+    <circle cx="215" cy="140" r="5" fill="#38bdf8"/>
+    <circle cx="260" cy="140" r="5" fill="#38bdf8"/>
+    <circle cx="305" cy="140" r="5" fill="#38bdf8"/>
+  </g>
+  <path d="M 170 125 Q 260 100 340 125" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="255" y="112" font-family="system-ui, sans-serif" font-size="11" font-weight="600" text-anchor="middle" fill="#38bdf8">Acciones Repetidas / Rutina</text>
+  <rect x="40" y="225" width="620" height="135" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+  <g transform="translate(65, 245)">
+    <rect x="0" y="0" width="115" height="42" rx="8" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.4)"/>
+    <text x="12" y="18" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#34d399">ALWAYS</text>
+    <text x="95" y="18" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#10b981">100%</text>
+    <text x="12" y="32" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Siempre</text>
+  </g>
+  <g transform="translate(195, 245)">
+    <rect x="0" y="0" width="115" height="42" rx="8" fill="rgba(6,182,212,0.12)" stroke="rgba(6,182,212,0.4)"/>
+    <text x="12" y="18" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">USUALLY</text>
+    <text x="95" y="18" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#06b6d4">80%</text>
+    <text x="12" y="32" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Usualmente</text>
+  </g>
+  <g transform="translate(325, 245)">
+    <rect x="0" y="0" width="115" height="42" rx="8" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.4)"/>
+    <text x="10" y="18" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#fbbf24">SOMETIMES</text>
+    <text x="95" y="18" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#f59e0b">50%</text>
+    <text x="10" y="32" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">A veces</text>
+  </g>
+  <g transform="translate(455, 245)">
+    <rect x="0" y="0" width="115" height="42" rx="8" fill="rgba(239,68,68,0.12)" stroke="rgba(239,68,68,0.4)"/>
+    <text x="12" y="18" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#f87171">NEVER</text>
+    <text x="95" y="18" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#ef4444">0%</text>
+    <text x="12" y="32" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Nunca</text>
+  </g>
+  <g transform="translate(65, 305)">
+    <rect x="0" y="0" width="570" height="40" rx="8" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.4)"/>
+    <text x="285" y="24" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#e0e7ff">
+      FÓRMULA: <tspan fill="#38bdf8">[ Sujeto ]</tspan> + <tspan fill="#34d399">[ Adverbio ]</tspan> + <tspan fill="#fbbf24">[ Verbo ]</tspan> + <tspan fill="#cbd5e1">[ Complemento ]</tspan>  ➔  "I always drink coffee"
+    </text>
+  </g>
+</svg>""",
+                "target_audio_items": [
+                    {"english": "I always wake up at seven", "translation": "Siempre me despierto a las siete", "label": "Always"},
+                    {"english": "I usually drink coffee in the morning", "translation": "Usualmente tomo café por la mañana", "label": "Usually"},
+                    {"english": "I never skip breakfast", "translation": "Nunca me salto el desayuno", "label": "Never"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura: Posición de Adverbios de Frecuencia",
+                    "formula": "[ Sujeto ] + [ Adverbio de Frecuencia ] + [ Verbo Principal ] + [ Complemento de Tiempo ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / She / We", "color": "blue"},
+                        {"role": "Frecuencia", "pattern": "always / usually / sometimes / never", "color": "purple"},
+                        {"role": "Verbo", "pattern": "wake up / exercise / study", "color": "emerald"},
+                        {"role": "Hora / Momento", "pattern": "at 7 AM / in the morning", "color": "amber"}
+                    ],
+                    "explanation": "El adverbio va entre el sujeto y el verbo de acción.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I always drink water in the morning.",
+                            "spanish": "Siempre tomo agua por la mañana.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Frecuencia", "text": "always", "color": "purple"},
+                                {"role": "Verbo", "text": "drink", "color": "emerald"},
+                                {"role": "Complemento", "text": "water in the morning", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Para horas específicas usamos 'at' (at 8 AM), para partes del día 'in' (in the morning) y para días 'on' (on Monday)."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Expresiones de Tiempo: At, In, On",
+                "tutor_says": "Para indicar el tiempo usamos las 3 preposiciones maestras: 'at' para horas exactas (at 8:00 AM, at midnight), 'in' para periodos largos (in the morning, in July), y 'on' para días específicos (on Monday, on the weekend).",
+                "board_content": "⚡ PREPOSICIONES DE TIEMPO (AT / IN / ON):\n\n• AT → Horas exactas: at 7:30 AM, at noon, at night\n• IN → Franjas del día / meses: in the morning, in the evening\n• ON → Días de la semana / fechas: on Monday, on Friday morning",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational clock and weekly calendar graphic with bright color markers for daily routines, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "at + time / in + morning / on + day",
+                "target_audio_items": [
+                    {"english": "I start work at eight in the morning", "translation": "Comienzo a trabajar a las ocho de la mañana", "label": "at + in"},
+                    {"english": "I play tennis on Saturdays", "translation": "Juego tenis los sábados", "label": "on + día"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Pronunciación de 'Usually' (/ˈjuː.ʒu.ə.li/)",
+                "tutor_says": "Practica la pronunciación de 'usually' con el sonido suave /ʒ/ (como 'sh' sonora): /ˈjuː.ʒu.ə.li/. Escucha y graba la oración con tu micrófono.",
+                "board_content": "🗣️ RETO FONÉTICO:\n\n• usually → /ˈjuː.ʒu.ə.li/ (sonido 'zh' suave)\n• always → /ˈɔːl.weɪz/\n\nGraba tu voz con el micrófono.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a young person with headphones speaking into a laptop microphone cheerfully, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con fluidez: 'I usually have breakfast at eight in the morning'",
+                "expected_answer": "I usually have breakfast at eight in the morning",
+                "key_structure": "Usually /ˈjuː.ʒu.ə.li/ Pronunciation",
+                "target_audio_items": [
+                    {"english": "I usually have breakfast at eight in the morning", "translation": "Usualmente desayuno a las ocho de la mañana", "label": "Práctica de Voz"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: Posición del Adverbio",
+                "tutor_says": "Corrige el error de orden sintáctico: el adverbio 'always' debe ir ANTES del verbo principal 'drink'.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR:\n\n❌ Incorrecto: \"I drink always coffee.\"\n✅ Correcto: \"I always drink coffee.\"\n\n❌ Incorrecto: \"I wake up in 7 AM.\"\n✅ Correcto: \"I wake up at 7 AM.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D concept art of a study desk with an open diary and green checkmarks, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige el orden del adverbio: 'I drink always coffee in the morning'",
+                "expected_answer": "I always drink coffee in the morning",
+                "key_structure": "Subject + Adverb + Verb",
+                "target_audio_items": [
+                    {"english": "I always drink coffee in the morning", "translation": "Siempre tomo café por la mañana", "label": "Orden Correcto"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Hábitos y Rutinas Semanales",
+                "tutor_says": "Un amigo te pregunta: 'How often do you exercise?'. Responde indicando tu frecuencia: 'I usually exercise three times a week at the gym'.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nPregunta: \"How often do you exercise?\"\nTu respuesta: \"I usually exercise three times a week at the gym.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two friends in sportswear jogging in a sunny park and talking cheerfully, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde con tu frecuencia: 'I usually exercise three times a week at the gym'",
+                "expected_answer": "I usually exercise three times a week at the gym",
+                "key_structure": "How often response with usually",
+                "target_audio_items": [
+                    {"english": "How often do you exercise?", "translation": "¿Con qué frecuencia haces ejercicio?", "label": "Pregunta"},
+                    {"english": "I usually exercise three times a week at the gym", "translation": "Usualmente hago ejercicio tres veces por semana en el gimnasio", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Tiempo y Frecuencia",
+                "tutor_says": "¡Excelente trabajo! Has dominado los adverbios de frecuencia (always, usually, sometimes, never) y las preposiciones temporales (at, in, on).",
+                "board_content": "🎉 RESUMEN:\n\n✔ Adverbios: van antes del verbo de acción (I always study)\n✔ To Be: el adverbio va después (I am always happy)\n✔ Preposiciones: at + hora | in + mes/mañana | on + día",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden clock trophy badge with stars, clean minimalist aesthetic, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Time & Frequency Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
+    """Dynamically builds a top-tier pedagogical 6-phase lesson from any CURRICULUM_GRAPH class node."""
+    topic = node.get("topic", "English Lesson")
+    grammar_core = node.get("grammar_core", "Grammar & Vocabulary Structure")
+    vocab_core = node.get("vocabulary_core", "Core Vocabulary")
+    can_do = node.get("can_do", f"Express ideas clearly about {topic}")
+    
+    first_grammar_rule = grammar_core.split(",")[0].strip() if grammar_core else topic
+    first_vocab = vocab_core.split(",")[0].strip() if vocab_core else "English practice"
+
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": topic,
+        "level": sublevel.split(".")[0],
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": f"1. Fundamentos y Metáfora de {topic}",
+                "tutor_says": f"¡Bienvenido a tu clase de {topic}! En esta lección aprenderemos a dominar {grammar_core}. Piensa en esta estructura como los cimientos de un edificio: una vez que colocas las piezas en el orden exacto, puedes construir cualquier mensaje con total seguridad y naturalidad. Observa los conceptos y ejemplos en la pizarra.",
+                "board_content": f"📌 FUNDAMENTOS DE {topic.upper()}:\n\n• Enfoque gramatical: {grammar_core}\n• Vocabulario clave: {vocab_core}\n• Meta comunicativa: {can_do}\n\n👉 Oración modelo:\n\"I learn {topic.lower()} with practical English sentences.\"",
+                "image_style": "comic_scene",
+                "image_prompt": f"comic book panel illustration of a student learning {topic} actively in a modern cozy classroom with study materials, vibrant warm lighting, expressive characters, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": f"{first_grammar_rule}",
+                "target_audio_items": [
+                    {"english": f"I study {topic.lower()} every day", "translation": f"Estudio {topic.lower()} todos los días", "label": "Frase Modelo"},
+                    {"english": "This is an important English concept", "translation": "Este es un concepto importante en inglés", "label": "Estructura Base"}
+                ],
+                "grammar_structure": {
+                    "title": f"Estructura Nuclear: {topic}",
+                    "formula": f"[ Sujeto ] + [ {first_grammar_rule} ] + [ Complemento ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / She / We / They", "color": "blue"},
+                        {"role": "Estructura Clave", "pattern": first_grammar_rule, "color": "purple"},
+                        {"role": "Vocabulario", "pattern": first_vocab, "color": "emerald"},
+                        {"role": "Complemento", "pattern": "Time / Place / Context", "color": "amber"}
+                    ],
+                    "explanation": f"Aplica la regla '{first_grammar_rule}' respetando el orden sintáctico.",
+                    "example_breakdowns": [
+                        {
+                            "english": f"I practice {first_vocab.lower()} in English.",
+                            "spanish": f"Practico {first_vocab.lower()} en inglés.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Acción", "text": "practice", "color": "purple"},
+                                {"role": "Vocabulario", "text": first_vocab.lower(), "color": "emerald"},
+                                {"role": "Complemento", "text": "in English", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Mantén el orden de las partes para asegurar coherencia y naturalidad."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": f"2. Desglose Gramatical y Sintaxis de {topic}",
+                "tutor_says": f"Desglosemos la fórmula de {topic} paso a paso. Para estructurar tus oraciones con precisión, aplicamos: {grammar_core}. Observa cómo cada término cumple una función indispensable en la frase.",
+                "board_content": f"⚡ FÓRMULAS Y REGLAS DE {topic.upper()}:\n\n• Regla principal: {grammar_core}\n• Vocabulario de apoyo: {vocab_core}\n• Aplicación práctica: {can_do}\n\n📌 Regla de oro: Respeta siempre la posición sintáctica de cada elemento.",
+                "image_style": "flat_art",
+                "image_prompt": f"flat 2D vector educational illustration of a student taking notes on a modern desk with colorful grammar formula cards, clean minimalist design, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": f"{first_grammar_rule}",
+                "target_audio_items": [
+                    {"english": f"We apply {topic.lower()} with clear rules", "translation": f"Aplicamos {topic.lower()} con reglas claras", "label": "Fórmula Maestra"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto de Pronunciación y Ritmo de Frase",
+                "tutor_says": f"Llegó el momento de entrenar la pronunciación y la fluidez oral en {topic}. Escucha la frase modelo y graba tu pronunciación conectando las palabras de forma continua.",
+                "board_content": f"🗣️ RETO FONÉTICO:\n\n• Enlace de palabras y ritmo natural\n• Vocabulario objetivo: {vocab_core}\n\nGraba tu voz con el micrófono.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student speaking with confidence into a studio microphone, expressive cell shading, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": f"Pronuncia en voz alta: 'I understand {topic.lower()} and I speak clearly'",
+                "expected_answer": f"I understand {topic.lower()} and I speak clearly",
+                "key_structure": "Spoken Fluency Drill",
+                "target_audio_items": [
+                    {"english": f"I understand {topic.lower()} and I speak clearly", "translation": f"Entiendo {topic.lower()} y hablo con claridad", "label": "Práctica de Voz"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Detección y Corrección de Errores Típicos",
+                "tutor_says": f"Analicemos el error más común que cometen los estudiantes al aprender {topic}: traducir literalmente desde el español. Observa el orden correcto en la pizarra y resuelve el desafío.",
+                "board_content": f"⚔️ ANÁLISIS DE ERROR FRECUENTE:\n\n• Evita la traducción literal palabra por palabra\n• Recuerda aplicar la regla: {first_grammar_rule}\n• Pon atención a la concordancia y los tiempos verbales",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D concept art of an interactive chalkboard with glowing green checkmarks and study notes, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": f"Aplica la regla de {topic} en la oración modelo",
+                "expected_answer": f"I practice English every day with confidence",
+                "key_structure": "Error Correction",
+                "target_audio_items": [
+                    {"english": "I practice English every day with confidence", "translation": "Practico inglés todos los días con confianza", "label": "Frase Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol y Producción Comunicativa",
+                "tutor_says": f"Vamos a simular una conversación real. Tu objetivo es responder en inglés aplicando {grammar_core} para cumplir la meta: {can_do}.",
+                "board_content": f"🎭 DESAFÍO COMUNICATIVO:\n\nSituación: Práctica de conversación real sobre {topic}.\nObjetivo: {can_do}.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two friendly people conversing outdoors in a vibrant city setting, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": f"Responde a la situación comunicativa sobre {topic}",
+                "expected_answer": f"I can communicate effectively in English",
+                "key_structure": "Communicative Roleplay",
+                "target_audio_items": [
+                    {"english": "I can communicate effectively in English", "translation": "Puedo comunicarme efectivamente en inglés", "label": "Juego de Rol"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": f"6. Resumen y Dominio: {topic}",
+                "tutor_says": f"¡Excelente trabajo! Has completado la lección sobre {topic}. Hoy aprendiste {grammar_core} y vocabulario clave como {vocab_core}. ¡Estás listo para el siguiente módulo!",
+                "board_content": f"🎉 RESUMEN DE DOMINIO: {topic.upper()}\n\n✔ Gramática aprendida: {grammar_core}\n✔ Vocabulario dominado: {vocab_core}\n✔ Logro: {can_do}",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a shining golden trophy badge with stars, clean vibrant colors, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": f"{topic} Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_generic_interactive_fallback(topic: str, sublevel: str, is_a_level: bool) -> dict:
+    """Fallback if topic is not in predefined catalog or curriculum graph."""
+    node = find_curriculum_node(topic, sublevel)
+    if node:
+        return _build_curriculum_node_fallback(node, sublevel)
+
+    clean_topic = topic.strip()
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": clean_topic,
+        "level": sublevel.split(".")[0],
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": f"1. Fundamentos: {clean_topic}",
+                "tutor_says": f"¡Bienvenido a la clase de {clean_topic}! En esta sesión aprenderemos las estructuras y expresiones fundamentales para comunicarte con claridad y fluidez en nivel {sublevel}. Observa los conceptos en la pizarra.",
+                "board_content": f"📌 FUNDAMENTOS DE {clean_topic.upper()}:\n\n• Aprenderás estructuras prácticas y vocabulario clave de {clean_topic}.\n• Desarrollarás fluidez conversacional y precisión gramatical.",
+                "image_style": "comic_scene",
+                "image_prompt": f"comic book panel illustration of a student studying {clean_topic} happily in a modern room, expressive characters, warm lighting, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": f"{clean_topic} Fundamentals",
+                "target_audio_items": [
+                    {"english": f"I study {clean_topic.lower()} with confidence", "translation": f"Estudio {clean_topic.lower()} con confianza", "label": "Frase Modelo"}
+                ]
+            },
+            {
+                "phase_number": 2,
+                "phase_name": f"2. Fórmulas y Reglas de {clean_topic}",
+                "tutor_says": f"En esta fase desglosamos las reglas sintácticas clave de {clean_topic}. Recuerda mantener siempre el orden natural del inglés: Sujeto + Verbo + Complemento.",
+                "board_content": f"⚡ FÓRMULA GRAMATICAL DE {clean_topic.upper()}:\n\n• [ Sujeto ] + [ Verbo / Estructura Clave ] + [ Complemento ]\n• Presta atención a la concordancia y los tiempos verbales.",
+                "image_style": "flat_art",
+                "image_prompt": f"flat 2D vector educational illustration of a student writing on a study board with colorful cards, clean minimal design, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": f"{clean_topic} Structure",
+                "target_audio_items": [
+                    {"english": "I practice English sentences every day", "translation": "Practico oraciones en inglés todos los días", "label": "Ejemplo Modelo"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto de Pronunciación y Fluidez",
+                "tutor_says": "Llegó el momento de practicar tu pronunciación. Escucha la frase modelo y graba tu voz con el micrófono.",
+                "board_content": f"🗣️ RETO DE PRONUNCIACIÓN:\n\n• Enlace suave entre palabras\n• Claridad articulatoria en las vocales y consonantes",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a learner speaking with a microphone in front of a laptop, expressive cell shading, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": f"Pronuncia con claridad: 'I understand {clean_topic.lower()} very well'",
+                "expected_answer": f"I understand {clean_topic.lower()} very well",
+                "key_structure": "Pronunciation Drill",
+                "target_audio_items": [
+                    {"english": f"I understand {clean_topic.lower()} very well", "translation": f"Entiendo {clean_topic.lower()} muy bien", "label": "Práctica de Voz"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Detección y Corrección de Errores",
+                "tutor_says": "Analicemos la importancia de evitar traducciones literales desde el español. Observa la corrección y ponla en práctica.",
+                "board_content": "⚔️ CORRECCIÓN DE ERRORES:\n\n• Respeta el orden de las palabras en inglés\n• Evita omitir pronombres o auxiliares",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D concept art of a study desk with glowing checkmarks, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige la oración modelo",
+                "expected_answer": "I speak English with confidence and clarity",
+                "key_structure": "Error Correction",
+                "target_audio_items": [
+                    {"english": "I speak English with confidence and clarity", "translation": "Hablo inglés con confianza y claridad", "label": "Frase Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Conversación Real",
+                "tutor_says": "Simulemos una conversación cotidiana en inglés. Responde a la pregunta con seguridad.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nSituación: Conversación en inglés sobre actividades cotidianas.\nObjetivo: Respuesta fluida y natural.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two colleagues having a friendly conversation in a modern cafe, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde con fluidez",
+                "expected_answer": "I can speak English with confidence and fluency",
+                "key_structure": "Roleplay Dialogue",
+                "target_audio_items": [
+                    {"english": "I can speak English with confidence and fluency", "translation": "Puedo hablar inglés con confianza y fluidez", "label": "Juego de Rol"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": f"6. Resumen y Dominio: {clean_topic}",
+                "tutor_says": f"¡Excelente trabajo! Has completado con éxito la lección sobre {clean_topic}. ¡Estás listo para seguir avanzando!",
+                "board_content": f"🎉 RESUMEN DE DOMINIO: {clean_topic.upper()}\n\n✔ Fórmulas y vocabulario clave aprendidos\n✔ Pronunciación clara y fluidez practicada\n✔ Listo para el siguiente módulo de nivel {sublevel}",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden achievement trophy with stars, clean vibrant colors, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": f"{clean_topic} Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+# Forward other builders to dedicated implementations
+def _build_greetings_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "English Sounds & Introductions", "grammar_core": "Verb To Be (Affirmative), Subject Pronouns, Basic Sentence Structure", "vocabulary_core": "Greetings, Numbers 0-20, Alphabet sounds", "can_do": "Introduce yourself and greet others warmly"},
+        sublevel
+    )
+
+def _build_numbers_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Numbers and Time", "grammar_core": "Telling the Time (It's... o'clock / past / to), Numbers 1-100", "vocabulary_core": "Numbers, Clock times, Daily schedules", "can_do": "Tell the exact time and count numbers fluently"},
+        sublevel
+    )
+
+def _build_quantities_fallback(sublevel: str) -> dict:
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Quantities & Countable / Uncountable",
+        "level": "A2",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: Sustantivos Contables vs Incontables",
+                "tutor_says": "Los sustantivos contables son cosas que puedes contar individualmente (one apple, two apples). Los incontables son líquidos, masas o conceptos abstractos que no se cuentan por unidades (water, sugar, money, time). Para preguntar cantidad usamos 'How many' con contables y 'How much' con incontables.",
+                "board_content": "📌 SUSTANTIVOS CONTABLES VS INCONTABLES:\n\n• Contables (How many...?) → apples, chairs, bottles, people\n• Incontables (How much...?) → water, coffee, money, time, sugar\n\nEjemplos:\n• \"How many apples do you want?\"\n• \"How much water do you drink?\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student grocery shopping in a vibrant colorful supermarket examining apples and water bottles, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "How much / How many",
+                "target_audio_items": [
+                    {"english": "How many apples do you have?", "translation": "¿Cuántas manzanas tienes?", "label": "Contables"},
+                    {"english": "How much water do you need?", "translation": "¿Cuánta agua necesitas?", "label": "Incontables"}
+                ]
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Cuantificadores: Some, Any, Much, Many, A lot of",
+                "tutor_says": "Usamos 'some' en oraciones afirmativas ('I have some apples') y 'any' en preguntas y negaciones ('Do you have any sugar?' / 'I don't have any money'). 'A lot of' funciona tanto con contables como con incontables.",
+                "board_content": "⚡ CUANTIFICADORES PRINCIPALES:\n\n• SOME (afirmaciones) → \"I have some milk\"\n• ANY (preguntas y negativas) → \"Do you have any apples?\" / \"I don't have any sugar\"\n• MUCH (incontables) / MANY (contables)\n• A LOT OF (ambos)",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of pantry items with quantifier labels, clean colorful graphic design, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Some (affirmative) / Any (negative & question)",
+                "target_audio_items": [
+                    {"english": "I have some milk in the fridge", "translation": "Tengo algo de leche en el refrigerador", "label": "Some"},
+                    {"english": "I don't have any money", "translation": "No tengo nada de dinero", "label": "Any"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Enlace 'How much' y 'How many'",
+                "tutor_says": "Practica el ritmo de las preguntas de cantidad con tu micrófono: 'How many apples do you need?'.",
+                "board_content": "🗣️ RETO FONÉTICO:\n\n• \"How many apples do you need?\"\n• \"How much water do you drink every day?\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a customer speaking to a fruit vendor in a sunny marketplace, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con fluidez: 'How much water do you drink every day?'",
+                "expected_answer": "How much water do you drink every day?",
+                "key_structure": "How much / How many Pronunciation",
+                "target_audio_items": [
+                    {"english": "How much water do you drink every day?", "translation": "¿Cuánta agua tomas todos los días?", "label": "Pregunta de Cantidad"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: Much con Incontables",
+                "tutor_says": "Corrige el error: 'money' es incontable en inglés, por lo que debemos usar 'How much' y no 'How many'.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR:\n\n❌ Incorrecto: \"How many money do you have?\"\n✅ Correcto: \"How much money do you have?\"\n\n❌ Incorrecto: \"I don't have some money.\"\n✅ Correcto: \"I don't have any money.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D concept art of a study desk with glowing checkmarks, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige 'many' por 'much': 'How many money do you have?'",
+                "expected_answer": "How much money do you have?",
+                "key_structure": "How much + uncountable",
+                "target_audio_items": [
+                    {"english": "How much money do you have?", "translation": "¿Cuánto dinero tienes?", "label": "Frase Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: Compras en el Supermercado",
+                "tutor_says": "En la panadería te preguntan: 'How many bread rolls would you like?'. Responde: 'I would like five bread rolls and some coffee, please'.",
+                "board_content": "🎭 JUEGO DE ROL:\n\nVendedor: \"How many bread rolls would you like?\"\nTu respuesta: \"I would like five bread rolls and some coffee, please.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a customer ordering bread and coffee at a cozy artisan bakery counter, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde: 'I would like five bread rolls and some coffee, please'",
+                "expected_answer": "I would like five bread rolls and some coffee, please",
+                "key_structure": "Shopping with Quantifiers",
+                "target_audio_items": [
+                    {"english": "How many would you like?", "translation": "¿Cuántos te gustaría?", "label": "Pregunta"},
+                    {"english": "I would like five bread rolls and some coffee, please", "translation": "Quisiera cinco panecillos y algo de café, por favor", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Cantidades",
+                "tutor_says": "¡Excelente! Has dominado sustantivos contables e incontables, how much/many y some/any.",
+                "board_content": "🎉 RESUMEN:\n\n✔ How many + contables (apples, books)\n✔ How much + incontables (water, money)\n✔ Some (afirmativa) / Any (pregunta y negativa)",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden trophy cup with grocery basket badge, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Quantities Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
+def _build_comparatives_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Comparatives", "grammar_core": "Comparative Adjectives (-er than / more... than / better / worse / as... as)", "vocabulary_core": "Descriptive adjectives, City vs nature, Objects", "can_do": "Compare two items, places, or people accurately"},
+        sublevel
+    )
+
+def _build_superlatives_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Superlatives", "grammar_core": "Superlative Adjectives (the -est / the most... / the best / the worst)", "vocabulary_core": "World records, Geographic features, Extreme adjectives", "can_do": "Identify and describe the extreme highest/lowest in a group"},
+        sublevel
+    )
+
+def _build_past_continuous_fallback(sublevel: str) -> dict:
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Past Continuous & Interrupted Actions",
+        "level": "A2",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: Past Continuous & Interrupciones (When / While)",
+                "tutor_says": "Imagina que estás en medio de una acción en el pasado: cocinando, estudiando o manejando ('I was cooking'). De repente, ocurre un evento súbito y puntual que corta esa acción: sonó el teléfono ('the phone rang'). Usamos el Past Continuous (was/were + -ing) para la acción larga en progreso, y el Past Simple para la interrupción súbita, unidos por 'when' o 'while'. Observa el gráfico en la pizarra.",
+                "board_content": "📌 PAST CONTINUOUS & ACCIONES INTERRUMPIDAS:\n\n• Acción de Fondo (en progreso) → was/were + -ing\n  Ejemplo: \"I was cooking dinner...\"\n\n• Interrupción Súbita (puntual) → Past Simple\n  Ejemplo: \"...when the phone rang!\"\n\n🔗 Reglas de Conectores:\n• WHEN + Acción corta puntual: \"I was studying when the lights went out\"\n• WHILE + Acción larga en progreso: \"While she was driving, it started to rain\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a young person in a modern kitchen cooking dinner at the stove when suddenly their smartphone rings with a bright glowing screen, expressive characters, vibrant warm lighting, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "was/were + -ing + WHEN + Past Simple",
+                "target_audio_items": [
+                    {"english": "I was cooking dinner when the phone rang", "translation": "Estaba cocinando la cena cuando sonó el teléfono", "label": "Oración Principal"},
+                    {"english": "While she was driving, it started to rain", "translation": "Mientras ella manejaba, comenzó a llover", "label": "Conector While"},
+                    {"english": "We were watching a movie when the lights went out", "translation": "Estábamos viendo una película cuando se fue la luz", "label": "Ejemplo Cotidiano"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura: Past Continuous + When + Past Simple",
+                    "formula": "[ Sujeto ] + [ was/were + -ing ] + [ WHEN ] + [ Sujeto ] + [ Verbo Pasado Simple ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / She / We / They", "color": "blue"},
+                        {"role": "Acción en Progreso", "pattern": "was / were + studying", "color": "purple"},
+                        {"role": "Conector", "pattern": "WHEN", "color": "rose"},
+                        {"role": "Interrupción Súbita", "pattern": "the phone rang", "color": "emerald"}
+                    ],
+                    "explanation": "Usa 'was/were + -ing' para la acción continua que ya estaba ocurriendo cuando ocurrió la interrupción en pasado simple.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I was studying in my room when the lights went out.",
+                            "spanish": "Estaba estudiando en mi habitación cuando se fue la luz.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Acción Continua", "text": "was studying in my room", "color": "purple"},
+                                {"role": "Conector", "text": "when", "color": "rose"},
+                                {"role": "Interrupción", "text": "the lights went out", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Recuerda: 'was' se usa con I, he, she, it; 'were' se usa con you, we, they."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Desglose Gramatical: El Uso de 'While' vs 'When'",
+                "tutor_says": "La regla de oro para no dudar nunca es: 'While' acompaña a la acción larga en progreso con '-ing' ('While I was walking in the park...'). En cambio, 'When' introduce la acción corta en pasado simple ('...when I found ten dollars').",
+                "board_content": "⚡ REGLA DE ORO: WHILE vs WHEN\n\n1. WHILE + Past Continuous (Acción en progreso):\n   • \"While we were walking in the park, we saw an accident.\"\n   • \"While he was working, his computer turned off.\"\n\n2. WHEN + Past Simple (Acción que interrumpe):\n   • \"They were having lunch when someone knocked on the door.\"\n   • \"She was taking a shower when the water stopped.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of two contrasting grammar paths comparing While and When with timeline flow arrows, clean minimalist aesthetic, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "While + Past Continuous vs When + Past Simple",
+                "target_audio_items": [
+                    {"english": "While we were walking in the park, we saw an accident", "translation": "Mientras caminábamos en el parque, vimos un accidente", "label": "While + Progreso"},
+                    {"english": "They were having lunch when someone knocked on the door", "translation": "Estaban almorzando cuando alguien tocó la puerta", "label": "When + Pasado"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Formas Débiles de 'Was' /wəz/ y 'Were' /wə/",
+                "tutor_says": "En inglés conversacional natural, 'was' y 'were' casi nunca se pronuncian con estrés fuerte; se reducen a formas débiles: 'was' suena /wəz/ y 'were' suena /wə/ o /wər/. Escucha cómo fluye: 'I was /wəz/ cooking when you called'. Graba tu voz con el micrófono.",
+                "board_content": "🗣️ RETO FONÉTICO: FORMAS DÉBILES (WEAK FORMS)\n\n• was → /wəz/ (sonido schwa relajado)\n• were → /wə/ o /wər/\n\nFrase de práctica:\n\"I was cooking when you called.\"\n(Conecta las palabras con ritmo natural)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student with headphones speaking confidently into a studio microphone, glowing acoustic soundwaves, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con ritmo natural y forma débil: 'I was cooking when you called'",
+                "expected_answer": "I was cooking when you called",
+                "key_structure": "Weak forms: was /wəz/ & were /wə/",
+                "target_audio_items": [
+                    {"english": "I was cooking when you called", "translation": "Estaba cocinando cuando llamaste", "label": "Práctica de Voz"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: Inversión de While y When",
+                "tutor_says": "Un error muy común de los hispanohablantes es usar 'while' delante de la acción corta puntual. No decimos 'I was sleeping while the alarm rang', sino 'I was sleeping WHEN the alarm rang'. Corrige el conector en la oración.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR FRECUENTE:\n\n❌ Incorrecto: \"I was sleeping while the alarm rang.\"\n✅ Correcto: \"I was sleeping when the alarm rang.\"\n\n❌ Incorrecto: \"When I was driving, it rained.\"\n✅ Correcto: \"While I was driving, it started to rain.\"",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D concept art of a chalkboard with glowing green checkmarks correcting a grammar sentence, warm cinematic lighting, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige 'while' por 'when' en la interrupción: 'I was sleeping while the alarm rang'",
+                "expected_answer": "I was sleeping when the alarm rang",
+                "key_structure": "Past Continuous + WHEN + Past Simple",
+                "target_audio_items": [
+                    {"english": "I was sleeping when the alarm rang", "translation": "Estaba durmiendo cuando sonó la alarma", "label": "Frase Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: La Coartada del Detective",
+                "tutor_says": "Imagina que un detective te pregunta qué estabas haciendo ayer a las ocho de la noche cuando ocurrió el apagón: 'What were you doing yesterday at eight PM when the power went out?'. Responde con tu coartada en Past Continuous: 'I was having dinner with my family when the power went out'.",
+                "board_content": "🎭 JUEGO DE ROL (ALIBI / COARTADA):\n\nDetective: \"What were you doing yesterday at eight PM when the power went out?\"\nTu respuesta: \"I was having dinner with my family when the power went out.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a modern friendly detective with a notebook interviewing a smiling witness in a cozy living room, cinematic colors, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde con tu coartada: 'I was having dinner with my family when the power went out'",
+                "expected_answer": "I was having dinner with my family when the power went out",
+                "key_structure": "Roleplay: Alibi with Past Continuous",
+                "target_audio_items": [
+                    {"english": "What were you doing when the power went out?", "translation": "¿Qué estabas haciendo cuando se fue la luz?", "label": "Pregunta Detective"},
+                    {"english": "I was having dinner with my family when the power went out", "translation": "Estaba cenando con mi familia cuando se fue la luz", "label": "Tu Coartada"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Past Continuous & Interrupciones",
+                "tutor_says": "¡Excelente trabajo! Has dominado el Past Continuous (was/were + -ing) para acciones de fondo en progreso y el uso preciso de When y While para conectar eventos e interrupciones en el pasado.",
+                "board_content": "🎉 RESUMEN DE DOMINIO:\n\n✔ Past Continuous (was/were + -ing): Acción continua de fondo\n✔ Past Simple: Acción puntual que interrumpe\n✔ Regla: [Acción larga] + WHEN + [Acción corta]\n✔ Regla: WHILE + [Acción larga] , [Acción corta]",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden trophy badge with lightning and clock icons, clean minimalist aesthetic, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Past Continuous Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+def _build_present_perfect_vs_past_simple_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Present Perfect vs Past Simple", "grammar_core": "Finished vs Unfinished Time, Specific Time Markers (ago, in 2020) vs Open Time (so far, recently)", "vocabulary_core": "Life milestones, Career achievements, Time linkers", "can_do": "Distinguish clearly between completed past events and ongoing experiences"},
+        sublevel
+    )
+
+def _build_present_perfect_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Experiences & Present Perfect Intro", "grammar_core": "Present Perfect with Ever and Never (Have you ever...?), Past Participles", "vocabulary_core": "Travel destinations, Adventurous activities, Bucket lists", "can_do": "Ask and talk about lifetime experiences with Have you ever"},
+        sublevel
+    )
+
+def _build_present_continuous_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Present Continuous", "grammar_core": "Present Continuous (Subject + Be + Verb-ing), Present Simple vs Present Continuous Intro", "vocabulary_core": "Actions happening now, Temporary states, Phone calls", "can_do": "Describe actions happening right now at the moment of speaking"},
+        sublevel
+    )
+
+def _build_future_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Future Forms Contrast", "grammar_core": "Will (Spontaneous/Predictions) vs Going To (Intentions) vs Present Continuous (Arrangements)", "vocabulary_core": "Weather forecasts, Predictions, Technology trends", "can_do": "Select the correct future form based on certainty and decision timing"},
+        sublevel
+    )
+
+def _build_conditionals_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "First Conditional", "grammar_core": "First Conditional: If + Present Simple, will + Verb (Real possibilities)", "vocabulary_core": "Consequences, Weather possibilities, Plans and contingencies", "can_do": "Express real possibilities and likely outcomes in the future"},
+        sublevel
+    )
+
+def _build_second_conditional_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Second Conditional", "grammar_core": "Second Conditional: If + Past Simple, would + Verb (Unreal / Imaginary situations in present/future)", "vocabulary_core": "Hypothetical dilemmas, Dreams, Advice (If I were you)", "can_do": "Speculate on imaginary and hypothetical present/future scenarios"},
+        sublevel
+    )
+
+def _build_third_conditional_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Third Conditional", "grammar_core": "Third Conditional: If + Past Perfect, would have + V3 (Past hypothetical actions & consequences)", "vocabulary_core": "Historical turning points, Personal regrets, Alternative outcomes", "can_do": "Talk about past regrets and alternative historical outcomes"},
+        sublevel
+    )
+
+def _build_wish_regret_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Wish & Regret", "grammar_core": "Wish + Past Simple (Present desires), Wish + Would (Annoyances), Wish + Past Perfect (Past regrets)", "vocabulary_core": "Desires, Annoyances, Regrets", "can_do": "Express nuanced desires for change in the present and regrets about the past"},
+        sublevel
+    )
+
+def _build_passive_voice_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Passive Voice", "grammar_core": "Present & Past Passive (Be + Past Participle), Modal Passive (Can be done, Should be checked)", "vocabulary_core": "Inventions, Processes, News reports, Manufacturing", "can_do": "Focus on the action or object rather than the agent using passive structures"},
+        sublevel
+    )
+
+def _build_reported_speech_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Reported Speech", "grammar_core": "Reported Statements, Questions & Commands (Backshifting tenses, say vs tell)", "vocabulary_core": "Reporting verbs, News interviews, Relaying messages", "can_do": "Accurately report what someone else said using tense backshifting"},
+        sublevel
+    )
+
+def _build_relative_clauses_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Relative Clauses Introduction", "grammar_core": "Defining Relative Pronouns: Who (people), Which (things), That (both), Where (places)", "vocabulary_core": "Definitions, Recommending books/movies/places", "can_do": "Combine clauses and give detailed descriptions using who, which, that and where"},
+        sublevel
+    )
+
+def _build_phrasal_verbs_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Everyday Communication & Phrasal Verbs", "grammar_core": "High-frequency Phrasal Verbs (turn on/off, get up, look for, pick up), Verb Patterns", "vocabulary_core": "Daily household tasks, Travel disruptions, Work routines", "can_do": "Use common separable and inseparable phrasal verbs naturally"},
+        sublevel
+    )
+
+def _build_modals_advice_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Advice & Obligation", "grammar_core": "Modals: Should / Shouldn't (Advice), Must / Mustn't (Strong obligation), Have to / Don't have to (Requirement)", "vocabulary_core": "Health advice, Office policies, Traffic laws, Safety rules", "can_do": "Give constructive advice and differentiate between obligation and prohibition"},
+        sublevel
+    )
+
+def _build_modals_deduction_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Modals of Deduction", "grammar_core": "Must be (Certainty positive), Can't be (Certainty negative), Might / Could be (Possibility)", "vocabulary_core": "Crime mysteries, Speculations, Visual clues", "can_do": "Make logical deductions about present situations with varying degrees of certainty"},
+        sublevel
+    )
+
+def _build_routines_fallback(sublevel: str) -> dict:
+    return _build_curriculum_node_fallback(
+        {"topic": "Daily Routines", "grammar_core": "Present Simple Affirmative (I wake up, He works), Third-person singular -s", "vocabulary_core": "Morning habits, Meal times, Transportation", "can_do": "Describe daily habits, schedules and third-person routines with correct -s/es"},
+        sublevel
+    )

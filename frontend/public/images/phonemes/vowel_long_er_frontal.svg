@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#090D16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="#090D16"/>
+  <circle cx="100" cy="100" r="85" fill="url(#bgGlow)"/>
+  
+        <!-- Neutral Relaxed Lips (/ə/, /ɜː/) -->
+        <path d="M 45 100 Q 100 78 155 100 Q 100 122 45 100 Z" fill="#F43F5E" stroke="#FDA4AF" stroke-width="2"/>
+        <path d="M 60 100 Q 100 90 140 100 Q 100 110 60 100 Z" fill="#0F172A"/>
+        <path d="M 72 94 Q 100 93 128 94 L 126 97 Q 100 96 74 97 Z" fill="#F8FAFC"/>
+        <path d="M 75 106 Q 100 105 125 106 L 123 103 Q 100 102 77 103 Z" fill="#F8FAFC"/>
+        
+  <text x="100" y="180" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Labios Neutros Medios</text>
+</svg>

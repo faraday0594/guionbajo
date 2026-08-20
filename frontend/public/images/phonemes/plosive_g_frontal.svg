@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#090D16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="#090D16"/>
+  <circle cx="100" cy="100" r="85" fill="url(#bgGlow)"/>
+  
+        <!-- Wide Open Mouth -->
+        <path d="M 45 100 Q 100 45 155 100 Q 100 155 45 100 Z" fill="#F43F5E" stroke="#FDA4AF" stroke-width="2"/>
+        <!-- Oral Opening -->
+        <path d="M 58 100 Q 100 65 142 100 Q 100 135 58 100 Z" fill="#0F172A"/>
+        <!-- Upper Teeth -->
+        <path d="M 68 80 Q 100 78 132 80 L 130 87 Q 100 85 70 87 Z" fill="#F8FAFC"/>
+        <!-- Tongue Floor -->
+        <path d="M 72 120 Q 100 105 128 120 Q 100 130 72 120 Z" fill="#FB7185"/>
+        <!-- Lower Teeth -->
+        <path d="M 70 126 Q 100 124 130 126 L 128 122 Q 100 120 72 122 Z" fill="#F8FAFC"/>
+        
+  <text x="100" y="180" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Mandíbula Media + Voz</text>
+</svg>

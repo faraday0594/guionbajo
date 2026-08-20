@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#090D16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="#090D16"/>
+  <circle cx="100" cy="100" r="85" fill="url(#bgGlow)"/>
+  
+        <!-- Top Teeth on Lower Lip -->
+        <path d="M 45 95 Q 100 70 155 95 Q 100 135 45 95 Z" fill="#F43F5E" stroke="#FDA4AF" stroke-width="2"/>
+        <path d="M 60 95 Q 100 85 140 95 Q 100 115 60 95 Z" fill="#0F172A"/>
+        <!-- Upper Teeth clearly visible pressing down -->
+        <path d="M 70 88 Q 100 86 130 88 L 128 104 Q 100 102 72 104 Z" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+        <!-- Bottom lip tucked slightly under teeth -->
+        <path d="M 50 105 Q 100 115 150 105 Q 100 135 50 105 Z" fill="#E11D48"/>
+        
+  <text x="100" y="180" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Dientes en Labio Inferior</text>
+</svg>

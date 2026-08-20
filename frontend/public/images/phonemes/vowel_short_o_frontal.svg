@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#090D16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="#090D16"/>
+  <circle cx="100" cy="100" r="85" fill="url(#bgGlow)"/>
+  
+        <!-- Large Rounded O -->
+        <ellipse cx="100" cy="100" rx="45" ry="50" fill="#F43F5E" stroke="#FDA4AF" stroke-width="2"/>
+        <ellipse cx="100" cy="100" rx="25" ry="32" fill="#0F172A"/>
+        <path d="M 85 82 Q 100 80 115 82 L 113 86 Q 100 85 87 86 Z" fill="#F8FAFC"/>
+        <path d="M 85 118 Q 100 114 115 118 L 113 115 Q 100 112 87 115 Z" fill="#FB7185"/>
+        
+  <text x="100" y="180" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Labios Ovalados Redondos</text>
+</svg>

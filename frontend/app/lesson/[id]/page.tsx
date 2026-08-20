@@ -832,12 +832,12 @@ export default function LessonPage() {
   const [cinemaModeActive, setCinemaModeActive] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0); // 0–100
   // 📖 Board karaoke: reveal lines one-by-one as tutor speaks
-  const [revealedLineCount, setRevealedLineCount] = useState<number>(0);
+  const [revealedLineCount, setRevealedLineCount] = useState<number>(999);
 
   // 🎬 Progressive Live Classroom & Storyboard Stepper
   const [activeStepIdx, setActiveStepIdx] = useState<number>(0);
-  const [revealedStepCount, setRevealedStepCount] = useState<number>(1);
-  const [isFullBoardRevealed, setIsFullBoardRevealed] = useState<boolean>(false);
+  const [revealedStepCount, setRevealedStepCount] = useState<number>(99);
+  const [isFullBoardRevealed, setIsFullBoardRevealed] = useState<boolean>(true);
 
   const phase = lesson?.phases?.[currentPhaseIdx] || {};
   const isALevel = (sublevelParam || '').startsWith('A1') || (sublevelParam || '').startsWith('A2');
@@ -1019,11 +1019,11 @@ export default function LessonPage() {
     setItemLiveTranscript('');
     setItemEvals({});
     setExerciseInputs({});
-    setRevealedLineCount(0);
+    setRevealedLineCount(999);
     setAudioProgress(0);
     setActiveStepIdx(0);
-    setRevealedStepCount(1);
-    setIsFullBoardRevealed(false);
+    setRevealedStepCount(99);
+    setIsFullBoardRevealed(true);
     const newPhase = lesson?.phases?.[currentPhaseIdx];
     if (newPhase) {
       setCurrentSpeakingText(typeof newPhase.tutor_says === 'string' ? newPhase.tutor_says : newPhase.tutor_says?.text || '');
@@ -1492,17 +1492,7 @@ export default function LessonPage() {
   }
 
   const isStepRevealed = (type: string) => {
-    if (isFullBoardRevealed) return true;
-    if (!phaseStoryboardSteps || phaseStoryboardSteps.length === 0) return true;
-    const stepIdx = phaseStoryboardSteps.findIndex(s => s.element_type === type || s.highlight_target === type);
-    if (stepIdx === -1) {
-      // If it's an interactive exercise card not mapped in storyboard, hide it while tutor speaks
-      if (type === 'exercise') {
-        return tutorState !== 'speaking' && Boolean(audioFinishedNaturallyRef.current);
-      }
-      return true;
-    }
-    return stepIdx < revealedStepCount || stepIdx <= activeStepIdx;
+    return true;
   };
 
   const isStepActive = (type: string) => {

@@ -251,11 +251,18 @@ class TutorAgent:
     def __init__(self, api_key: str = None):
         self.api_key = api_key or settings.MINIMAX_API_KEY
         self.model = settings.MINIMAX_LLM_MODEL
-        self.client = AsyncOpenAI(
-            api_key=self.api_key,
-            base_url=settings.MINIMAX_BASE_URL,
-            timeout=75.0,
-        )
+        if self.api_key:
+            try:
+                self.client = AsyncOpenAI(
+                    api_key=self.api_key,
+                    base_url=settings.MINIMAX_BASE_URL,
+                    timeout=75.0,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize AsyncOpenAI in TutorAgent: {e}")
+                self.client = None
+        else:
+            self.client = None
 
     def _build_system_prompt(self, student_profile: dict) -> str:
         return SYSTEM_PROMPT_TEMPLATE.format(
@@ -609,6 +616,12 @@ class TutorAgent:
         level_desc = SUBLEVEL_DESCRIPTIONS.get(sublevel, sublevel)
         is_a_level = sublevel.startswith("A1") or sublevel.startswith("A2")
         
+        if not self.client or not self.api_key:
+            fallback = self._build_fallback_lesson(topic, sublevel, is_a_level)
+            fallback["archetype"] = adaptive_plan.get("archetype", "practice")
+            fallback["phonetic_focus"] = adaptive_plan.get("phonetic_focus", {})
+            return fallback
+
         curr_node = self._find_curriculum_node(topic, sublevel) or {}
         grammar_target = curr_node.get("grammar_core") or ""
         vocab_target = curr_node.get("vocabulary_core") or ""

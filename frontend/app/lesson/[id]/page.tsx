@@ -929,35 +929,138 @@ export default function LessonPage() {
         }
 
         if (!data) {
-          const genRes = await api.generateAdaptiveLesson(sublevelParam, classIndexParam, topicParam);
-          data = {
-            id: genRes.lesson_id || lessonId,
-            title: topicParam,
-            sublevel: sublevelParam,
-            phases: genRes.script?.phases || [],
-            phonetic_focus: genRes.adaptive_plan?.phonetic_focus || genRes.script?.phonetic_focus,
-            archetype: genRes.adaptive_plan?.archetype || genRes.script?.archetype,
-          };
+          try {
+            const genRes = await api.generateAdaptiveLesson(sublevelParam, classIndexParam, topicParam);
+            data = {
+              id: genRes.lesson_id || lessonId,
+              title: topicParam,
+              sublevel: sublevelParam,
+              phases: genRes.script?.phases || [],
+              phonetic_focus: genRes.adaptive_plan?.phonetic_focus || genRes.script?.phonetic_focus,
+              archetype: genRes.adaptive_plan?.archetype || genRes.script?.archetype,
+            };
 
-          if (genRes.lesson_id && typeof window !== 'undefined' && window.history.replaceState) {
-            const newUrl = `/lesson/${genRes.lesson_id}?topic=${encodeURIComponent(topicParam)}&sublevel=${encodeURIComponent(sublevelParam)}&class_index=${classIndexParam}`;
-            window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
+            if (genRes.lesson_id && typeof window !== 'undefined' && window.history.replaceState) {
+              const newUrl = `/lesson/${genRes.lesson_id}?topic=${encodeURIComponent(topicParam)}&sublevel=${encodeURIComponent(sublevelParam)}&class_index=${classIndexParam}`;
+              window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
+            }
+          } catch (genErr) {
+            console.warn('generateAdaptiveLesson failed, activating rich offline lesson fallback:', genErr);
           }
         }
 
-        if (!data.phases || data.phases.length === 0) {
-          data.phases = [
-            {
-              phase_number: 1,
-              phase_name: '1. Introducción y Saludo',
-              tutor_says: `¡Hola! Bienvenido a la lección sobre ${topicParam}. Revisa los conceptos y practica la pronunciación en la pizarra.`,
-              board_content: `📌 Tema: ${topicParam}\n\nAprenderemos frases y estructuras clave para desenvolverte con fluidez.`,
-              image_style: 'comic_scene',
-              image_prompt: `flat 2D vector educational illustration of ${topicParam}, vibrant colors, clean minimal style, no text, no words, no letters.`,
-              student_task: null,
-              expected_answer: null,
-            },
-          ];
+        if (!data || !data.phases || data.phases.length === 0) {
+          data = {
+            id: lessonId || `fallback-${Date.now()}`,
+            title: topicParam || 'English Practice',
+            sublevel: sublevelParam || 'A1.1',
+            phases: [
+              {
+                phase_number: 1,
+                phase_name: '1. Activación y Warm-up',
+                tutor_says: `¡Hola! Bienvenido a tu clase de inglés sobre ${topicParam}. Hoy aprenderemos las estructuras y expresiones fundamentales para comunicarte con total seguridad.`,
+                board_content: `📌 Tema: ${topicParam}\n\n• Objetivo: Dominar el vocabulario y las estructuras clave.\n• Escucha atentamente las frases y repite conmigo.`,
+                image_style: 'comic_scene',
+                image_prompt: `Clean flat 2D vector educational illustration of a friendly teacher introducing ${topicParam} in a modern classroom, no text, no words.`,
+                target_audio_items: [
+                  { english: `Hello, let's learn about ${topicParam}`, translation: `Hola, aprendamos sobre ${topicParam}`, label: 'Saludo y Objetivo' }
+                ],
+                student_task: null,
+                expected_answer: null,
+                interaction_type: 'explanation',
+              },
+              {
+                phase_number: 2,
+                phase_name: '2. Repaso y Fundamentos',
+                tutor_says: `Antes de profundizar, repasemos las bases que conectan con este tema. Recuerda que la pronunciación clara es la clave de la fluidez.`,
+                board_content: `💡 Fundamento Gramatical:\n\n• Sujeto + Verbo + Complemento\n• Conexión sonora fluida entre palabras.`,
+                image_style: 'flat_art',
+                image_prompt: `Clean 2D vector illustration of connecting puzzle pieces representing language concepts, no text, no words.`,
+                target_audio_items: [
+                  { english: 'I practice English every single day.', translation: 'Practico inglés todos los días.', label: 'Frase de Repaso' }
+                ],
+                student_task: 'Repite la oración en voz alta con buena pronunciación.',
+                expected_answer: 'I practice English every single day.',
+                interaction_type: 'pronunciation',
+              },
+              {
+                phase_number: 3,
+                phase_name: '3. Estructura Gramatical Central',
+                tutor_says: `Aquí tenemos la fórmula nuclear de ${topicParam}. Observa cómo se ordenan los elementos paso a paso.`,
+                board_content: `📐 Fórmula Central:\n\n[ Sujeto ] + [ Verbo / Auxiliar ] + [ Complemento ]\n\n• Ejemplo: "This is my notebook." (Este es mi cuaderno).`,
+                image_style: 'flat_art',
+                image_prompt: `Clean flat 2D vector diagram showing sentence building blocks on a chalkboard, no text, no words.`,
+                grammar_structure: {
+                  title: `Estructura: ${topicParam}`,
+                  formula: '[ Sujeto ] + [ Verbo ] + [ Complemento ]',
+                  formula_tokens: [
+                    { role: 'Sujeto', pattern: 'I / You / He / She / It', color: 'blue' },
+                    { role: 'Verbo', pattern: 'Action / Be', color: 'purple' },
+                    { role: 'Complemento', pattern: 'Object / Place', color: 'emerald' }
+                  ],
+                  explanation: `Esta estructura te permite construir oraciones claras y correctas sobre ${topicParam}.`,
+                  example_breakdowns: [
+                    {
+                      english: 'This is my favorite book.',
+                      spanish: 'Este es mi libro favorito.',
+                      parts: [
+                        { role: 'Sujeto', text: 'This', color: 'blue' },
+                        { role: 'Verbo', text: 'is', color: 'purple' },
+                        { role: 'Complemento', text: 'my favorite book', color: 'emerald' }
+                      ]
+                    }
+                  ]
+                },
+                target_audio_items: [
+                  { english: 'This is my favorite book.', translation: 'Este es mi libro favorito.', label: 'Ejemplo Modelo' }
+                ],
+                student_task: null,
+                expected_answer: null,
+                interaction_type: 'explanation',
+              },
+              {
+                phase_number: 4,
+                phase_name: '4. Análisis y Ejemplos Prácticos',
+                tutor_says: `Ahora escuchemos oraciones modelo en contexto. Pon mucha atención a la entonación y al ritmo natural del inglés.`,
+                board_content: `🎯 Ejemplos en Contexto:\n\n1. "I have my keys in my bag." (Tengo mis llaves en mi bolso).\n2. "She has her new phone." (Ella tiene su teléfono nuevo).`,
+                image_style: 'comic_scene',
+                image_prompt: `Clean 2D vector educational illustration of everyday objects and people talking, no text, no words.`,
+                target_audio_items: [
+                  { english: 'I have my keys in my bag.', translation: 'Tengo mis llaves en mi bolso.', label: 'Oración 1' },
+                  { english: 'She has her new phone.', translation: 'Ella tiene su teléfono nuevo.', label: 'Oración 2' }
+                ],
+                student_task: 'Pronuncia la frase modelo en voz alta.',
+                expected_answer: 'I have my keys in my bag.',
+                interaction_type: 'pronunciation',
+              },
+              {
+                phase_number: 5,
+                phase_name: '5. Práctica Guiada Interactiva',
+                tutor_says: `¡Es tu turno de practicar! Completa la siguiente oración eligiendo la palabra correcta.`,
+                board_content: `📝 Ejercicio Interactivo:\n\nCompleta: "She has ______ keys." [ her / his ]`,
+                image_style: 'flat_art',
+                image_prompt: `Clean 2D vector graphic of a student filling an exercise with a glowing checkmark, no text, no words.`,
+                student_task: 'Completa: "She has ______ keys." [ her / his ]',
+                expected_answer: 'her',
+                interaction_type: 'quiz',
+              },
+              {
+                phase_number: 6,
+                phase_name: '6. Producción y Desafío Final',
+                tutor_says: `¡Excelente trabajo hasta aquí! Como desafío final, pronuncia una oración completa aplicando todo lo que aprendiste hoy.`,
+                board_content: `🏆 Desafío de Producción:\n\nDi en voz alta: "I am ready to speak English fluently."`,
+                image_style: 'comic_scene',
+                image_prompt: `Vibrant 2D vector illustration of a student celebrating success with a trophy and confetti, no text, no words.`,
+                target_audio_items: [
+                  { english: 'I am ready to speak English fluently.', translation: 'Estoy listo/a para hablar inglés con fluidez.', label: 'Frase de Cierre' }
+                ],
+                student_task: 'Di la frase final: "I am ready to speak English fluently."',
+                expected_answer: 'I am ready to speak English fluently.',
+                interaction_type: 'pronunciation',
+              }
+            ],
+          };
+        }
         }
 
         // 🎨 INSTANT CLASSROOM REVEAL: Load calibrated vector illustration immediately without blocking

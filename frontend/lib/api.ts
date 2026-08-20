@@ -428,7 +428,7 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
 
     (async () => {
       try {
-        const targetVoice = lang === 'en' ? 'edge-jenny' : undefined;
+        const targetVoice = lang === 'en' ? 'en-US-JennyNeural' : 'female-shaonv';
         const blob = await api.synthesize(text, targetVoice);
         if (!blob || blob.size === 0 || finished) {
           if (!finished) fallbackToBrowserSpeech();

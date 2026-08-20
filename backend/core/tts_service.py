@@ -121,24 +121,33 @@ async def _synthesize_minimax_tts(
         "Content-Type": "application/json",
     }
 
-    endpoint = settings.MINIMAX_TTS_ENDPOINT or "https://api.minimax.io/v1/t2a_v2"
+    endpoints = [
+        settings.MINIMAX_TTS_ENDPOINT or "https://api.minimax.io/v1/t2a_v2",
+        "https://api.minimax.chat/v1/t2a_v2",
+    ]
 
-    try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            resp = await client.post(endpoint, json=payload, headers=headers)
-            if resp.status_code == 200:
-                data = resp.json()
-                base_resp = data.get("base_resp", {})
-                if base_resp.get("status_code", 0) == 0:
-                    audio_hex = data.get("data", {}).get("audio")
-                    if audio_hex:
-                        return bytes.fromhex(audio_hex)
+    for endpoint in endpoints:
+        try:
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                resp = await client.post(endpoint, json=payload, headers=headers)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    base_resp = data.get("base_resp", {})
+                    if base_resp.get("status_code", 0) == 0:
+                        audio_raw = data.get("data", {}).get("audio") or data.get("audio")
+                        if audio_raw:
+                            try:
+                                return bytes.fromhex(audio_raw)
+                            except ValueError:
+                                import base64
+                                return base64.b64decode(audio_raw)
+                    else:
+                        logger.warning(f"MiniMax TTS returned status error on {endpoint}: {base_resp}")
                 else:
-                    logger.warning(f"MiniMax TTS returned API status error: {base_resp}")
-            else:
-                logger.warning(f"MiniMax TTS HTTP error {resp.status_code}: {resp.text[:200]}")
-    except Exception as e:
-        logger.warning(f"MiniMax TTS call exception: {e}")
+                    logger.warning(f"MiniMax TTS HTTP {resp.status_code} on {endpoint}: {resp.text[:200]}")
+        except Exception as e:
+            logger.warning(f"MiniMax TTS error on {endpoint}: {e}")
+
     return None
 
 

@@ -47,8 +47,11 @@ app.include_router(reading_router)
 
 @app.on_event("startup")
 async def startup_event():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        print(f"[WARN] Database initialization error on startup: {e}")
 
 if __name__ == "__main__":
     import uvicorn

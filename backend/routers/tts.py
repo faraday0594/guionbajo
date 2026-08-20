@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, Response, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from auth.dependencies import get_current_user
+from auth.dependencies import get_current_user_optional
 from database import get_db
 from models.user import User, StudentProfile
 from schemas.student import TTSRequest
@@ -486,30 +486,54 @@ async def tts_prewarm_phonemes():
 @router.post("/synthesize")
 async def tts_synthesize(
     req: TTSRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
-    profile = result.scalars().first()
+    profile = None
+    if current_user:
+        try:
+            result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+            profile = result.scalars().first()
+        except Exception:
+            profile = None
+
+    voice_id = req.voice or "female-shaonv"
+    emotion = req.emotion or "calm"
+    speed = req.speed or 1.0
 
     audio_bytes = await synthesize_speech(
         text=req.text,
-        voice_id=req.voice,
-        emotion=req.emotion,
-        speed=req.speed,
+        voice_id=voice_id,
+        emotion=emotion,
+        speed=speed,
         api_key=profile.minimax_api_key if profile else None,
     )
 
     if not audio_bytes:
         # Fallback to Edge Neural TTS for full tutor resilience
         try:
-            is_english = req.voice.startswith("en") or any(
+            req_voice = (voice_id or "").lower()
+            is_english = req_voice.startswith("en") or any(
                 c in req.text.lower() for c in ["lesson", "practice", "repeat", "listen"]
             )
             voice_to_use = "en-US-JennyNeural" if is_english else "es-MX-DaliaNeural"
             audio_bytes = await _generate_edge_tts_audio(req.text, voice=voice_to_use)
         except Exception as e:
             logger.error(f"Edge TTS fallback error: {e}")
+
+    if not audio_bytes:
+        # Fallback to gTTS
+        try:
+            tts = gTTS(text=req.text, lang="es", slow=False)
+            buf = io.BytesIO()
+            tts.write_to_fp(buf)
+            buf.seek(0)
+            audio_bytes = buf.read()
+        except Exception as e:
+            logger.error(f"gTTS fallback error: {e}")
+
+    if not audio_bytes:
+        raise HTTPException(status_code=500, detail="Error en síntesis de voz")
 
     return Response(content=audio_bytes, media_type="audio/mpeg")
 

@@ -250,13 +250,19 @@ class TutorAgent:
 
     def __init__(self, api_key: str = None):
         self.api_key = api_key or settings.MINIMAX_API_KEY
+        if self.api_key and (
+            self.api_key.startswith("your_") 
+            or "placeholder" in self.api_key.lower() 
+            or len(self.api_key.strip()) < 15
+        ):
+            self.api_key = ""
         self.model = settings.MINIMAX_LLM_MODEL
         if self.api_key:
             try:
                 self.client = AsyncOpenAI(
                     api_key=self.api_key,
                     base_url=settings.MINIMAX_BASE_URL,
-                    timeout=75.0,
+                    timeout=22.0,
                 )
             except Exception as e:
                 logger.warning(f"Failed to initialize AsyncOpenAI in TutorAgent: {e}")

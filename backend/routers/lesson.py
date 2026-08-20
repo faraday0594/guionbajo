@@ -56,7 +56,7 @@ async def generate_adaptive_lesson(
     try:
         script = await asyncio.wait_for(
             agent.generate_adaptive_lesson_script(topic, sublevel, prof_dict, adaptive_plan),
-            timeout=65.0
+            timeout=22.0
         )
     except Exception as e:
         logger.warning(f"Adaptive lesson generation fallback triggered ({e}) for {topic}")

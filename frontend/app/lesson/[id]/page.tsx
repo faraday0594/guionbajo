@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api, playTTS, stopTutorVoice, playEnglishAudio } from '@/lib/api';
+import { api, playTTS, stopTutorVoice, playEnglishAudio, setSavedPreferredVoice } from '@/lib/api';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 import MicButton from '@/app/components/TutorPanel/MicButton';
 import ScoreDisplay from '@/app/components/TutorPanel/ScoreDisplay';
@@ -678,122 +678,130 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
 // ─── HELPER: Generate or Normalize Phase Storyboard Steps ───────────────────
 function getPhaseStoryboardSteps(phase: any, topic: string): StoryboardStep[] {
   const diagSvg = getPhaseDiagramSvg(phase, topic);
+  let tutorSpeech = typeof phase?.tutor_says === 'string'
+    ? phase.tutor_says
+    : phase?.tutor_says?.text || '';
 
-  if (phase?.storyboard_steps && Array.isArray(phase.storyboard_steps) && phase.storyboard_steps.length > 0) {
-    const hasDiagStep = phase.storyboard_steps.some((s: any) => s.element_type === 'diagram');
-    if (!diagSvg || hasDiagStep) {
-      const hasExercise = Boolean(phase.phase_number !== 1 && (phase.student_task || phase.expected_answer || phase.exercises));
-      const hasExerciseStep = phase.storyboard_steps.some((s: any) => s.element_type === 'exercise');
-      if (!hasExercise || hasExerciseStep) {
-        return phase.storyboard_steps;
-      }
-    }
+  const hasExercises = Boolean(
+    phase?.phase_number !== 1 && (phase?.student_task || phase?.expected_answer || phase?.exercises)
+  );
+
+  // If this phase has interactive exercises, make sure tutor speech ends with a clear transition prompt if missing
+  const lowerSpeech = tutorSpeech.toLowerCase();
+  if (
+    hasExercises &&
+    tutorSpeech &&
+    !lowerSpeech.includes('a continuación') &&
+    !lowerSpeech.includes('ejercicio') &&
+    !lowerSpeech.includes('resuelve') &&
+    !lowerSpeech.includes('completa') &&
+    !lowerSpeech.includes('desafío')
+  ) {
+    tutorSpeech = `${tutorSpeech.trim()} A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido.`;
   }
+
+  // Clean sentences spoken by the tutor
+  const rawSentences = tutorSpeech.split(/(?<=[.?!])\s+/).filter((s: string) => s.trim().length > 0);
+  const sentenceWordCounts = rawSentences.map((s: string) => s.split(/\s+/).filter(Boolean).length);
+  const totalWords = Math.max(sentenceWordCounts.reduce((a: number, b: number) => a + b, 0), 1);
+
+  const hasGrammar = Boolean(phase?.grammar_structure || phase?.key_structure);
+  const hasPhonetics = Boolean(
+    phase?.phonetic_focus ||
+    (phase?.phase_name?.toLowerCase().includes('fonét') && phase?.phase_number === 4)
+  );
+  const hasMiddle = Boolean(diagSvg || hasGrammar || hasPhonetics);
+
+  const hasAudioPractice = Boolean(
+    phase?.target_audio_items && phase.target_audio_items.length > 0 && !hasExercises
+  );
+  const hasBottom = hasExercises || hasAudioPractice;
+
   const steps: StoryboardStep[] = [];
-  let idx = 1;
-  steps.push({
-    step_id: 'step-title',
-    step_index: idx++,
-    element_type: 'title',
-    label: '1. Introducción y Título',
-    tutor_speech_snippet: typeof phase?.phase_name === 'string' ? phase.phase_name : 'Introducción',
-    trigger_ratio: 0.00,
-    animation: 'chalk_write',
-    highlight_target: 'title',
-    chalk_color: 'yellow',
-  });
-  steps.push({
-    step_id: 'step-illustration',
-    step_index: idx++,
-    element_type: 'illustration',
-    label: '2. Ilustración Didáctica',
-    tutor_speech_snippet: 'Observa la ilustración visual para comprender el contexto.',
-    trigger_ratio: 0.15,
-    animation: 'zoom_pop',
-    highlight_target: 'illustration',
-    chalk_color: 'cyan',
-  });
+  let stepCounter = 1;
+
+  // Step 1: Whiteboard & Concepts (Main Teaching Board - Top, starts at 0.00)
+  const introSnippet = rawSentences[0] || (typeof phase?.phase_name === 'string' ? phase.phase_name : 'Explicación');
   steps.push({
     step_id: 'step-concepts',
-    step_index: idx++,
+    step_index: stepCounter++,
     element_type: 'concepts',
-    label: '3. Reglas en Pizarra',
-    tutor_speech_snippet: 'Revisa las reglas y conceptos clave anotados en la pizarra.',
-    trigger_ratio: 0.35,
+    label: `${phase?.phase_name || '1. Conceptos en Pizarra'}`,
+    tutor_speech_snippet: introSnippet,
+    trigger_ratio: 0.00,
     animation: 'typewriter',
     highlight_target: 'concepts',
     chalk_color: 'green',
   });
-  if (diagSvg) {
-    steps.push({
-      step_id: 'step-diagram',
-      step_index: idx++,
-      element_type: 'diagram',
-      label: `${idx - 1}. Gráfico Didáctico`,
-      tutor_speech_snippet: 'Observa la línea temporal y el esquema conceptual.',
-      trigger_ratio: 0.45,
-      animation: 'zoom_pop',
-      highlight_target: 'diagram',
-      chalk_color: 'cyan',
-    });
-  }
-  const isPhoneticPhase = Boolean(
-    phase?.phonetic_focus ||
-    (phase?.phase_name?.toLowerCase().includes('fonét') && phase?.phase_number === 4)
-  );
 
-  if (isPhoneticPhase) {
+  // Calculate real cumulative word ratios
+  if (hasMiddle) {
+    const elemType = diagSvg ? 'diagram' : (hasPhonetics ? 'phonetics' : 'grammar');
+    const label = diagSvg ? 'Esquema Conceptual' : (hasPhonetics ? 'Foco Fonético' : 'Fórmula Gramatical');
+
+    // Find sentence that mentions grammar/diagram/structure if any
+    let middleSentenceIdx = 1;
+    for (let i = 1; i < rawSentences.length; i++) {
+      const sLow = rawSentences[i].toLowerCase();
+      if (sLow.includes('fórmula') || sLow.includes('esquema') || sLow.includes('diagrama') || sLow.includes('estructura') || sLow.includes('patrón') || sLow.includes('línea') || sLow.includes('fonét')) {
+        middleSentenceIdx = i;
+        break;
+      }
+    }
+    if (middleSentenceIdx >= rawSentences.length && rawSentences.length > 1) {
+      middleSentenceIdx = hasBottom && rawSentences.length > 2 ? 1 : rawSentences.length - 1;
+    }
+
+    const middleSnippet = rawSentences[middleSentenceIdx] || rawSentences[1] || 'Observa la estructura sintáctica y el esquema conceptual.';
+    const wordsBeforeMiddle = sentenceWordCounts.slice(0, middleSentenceIdx).reduce((a: number, b: number) => a + b, 0);
+    const calculatedMiddleRatio = wordsBeforeMiddle / totalWords;
+    const triggerRatio = Math.max(0.35, Math.min(hasBottom ? 0.65 : 0.80, calculatedMiddleRatio));
+
     steps.push({
-      step_id: 'step-phonetics',
-      step_index: idx++,
-      element_type: 'phonetics',
-      label: '4. Micro-Fonética',
-      tutor_speech_snippet: 'Fíjate en la postura de la boca y el contraste fonético.',
-      trigger_ratio: 0.55,
+      step_id: `step-${elemType}`,
+      step_index: stepCounter++,
+      element_type: elemType,
+      label: `${stepCounter - 1}. ${label}`,
+      tutor_speech_snippet: middleSnippet,
+      trigger_ratio: Math.round(triggerRatio * 100) / 100,
       animation: 'bounce_in',
-      highlight_target: 'phonetics',
-      chalk_color: 'purple',
-    });
-  } else if (phase?.grammar_structure || phase?.key_structure || phase?.phase_number === 3 || phase?.phase_number === 4) {
-    steps.push({
-      step_id: 'step-grammar',
-      step_index: idx++,
-      element_type: 'grammar',
-      label: '4. Estructura y Reglas',
-      tutor_speech_snippet: 'Fíjate en el patrón y la estructura sintáctica.',
-      trigger_ratio: 0.55,
-      animation: 'bounce_in',
-      highlight_target: 'grammar',
+      highlight_target: elemType,
       chalk_color: 'purple',
     });
   }
-  if (phase?.target_audio_items && phase.target_audio_items.length > 0) {
+
+  // Step 3: Interactive Practice or Challenge (if present)
+  if (hasBottom) {
+    const elemType = hasExercises ? 'exercise' : 'audio_practice';
+    const label = hasExercises ? 'Desafío Interactivo' : 'Práctica de Pronunciación';
+
+    let bottomSentenceIdx = rawSentences.length - 1;
+    for (let i = rawSentences.length - 1; i >= 1; i--) {
+      const sLow = rawSentences[i].toLowerCase();
+      if (sLow.includes('ejercicio') || sLow.includes('a continuación') || sLow.includes('completa') || sLow.includes('resuelve') || sLow.includes('práctica') || sLow.includes('desafío') || sLow.includes('micrófono')) {
+        bottomSentenceIdx = i;
+        break;
+      }
+    }
+
+    const bottomSnippet = rawSentences[bottomSentenceIdx] || 'A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido.';
+    const wordsBeforeBottom = sentenceWordCounts.slice(0, bottomSentenceIdx).reduce((a: number, b: number) => a + b, 0);
+    const calculatedBottomRatio = wordsBeforeBottom / totalWords;
+    const triggerRatio = Math.max(hasMiddle ? 0.60 : 0.45, Math.min(0.88, calculatedBottomRatio));
+
     steps.push({
-      step_id: 'step-audio-practice',
-      step_index: idx++,
-      element_type: 'audio_practice',
-      label: '5. Práctica de Pronunciación',
-      tutor_speech_snippet: 'Escucha y practica las frases clave con el micrófono.',
-      trigger_ratio: 0.72,
-      animation: 'fly_from_bottom',
-      highlight_target: 'audio_practice',
-      chalk_color: 'pink',
-    });
-  }
-  // Exercises are strictly calibrated at the end of the slide, and never in Phase 1
-  if (phase?.phase_number !== 1 && (phase?.student_task || phase?.expected_answer || phase?.exercises)) {
-    steps.push({
-      step_id: 'step-exercise',
-      step_index: idx++,
-      element_type: 'exercise',
-      label: `${idx - 1}. Desafío Interactivo`,
-      tutor_speech_snippet: 'Demuestra lo aprendido resolviendo el ejercicio interactivo.',
-      trigger_ratio: 0.88,
+      step_id: `step-${elemType}`,
+      step_index: stepCounter++,
+      element_type: elemType,
+      label: `${stepCounter - 1}. ${label}`,
+      tutor_speech_snippet: bottomSnippet,
+      trigger_ratio: Math.round(triggerRatio * 100) / 100,
       animation: 'spotlight_glow',
-      highlight_target: 'exercise',
+      highlight_target: elemType,
       chalk_color: 'gold',
     });
   }
+
   return steps;
 }
 
@@ -827,6 +835,56 @@ export default function LessonPage() {
   const [viewMode, setViewMode] = useState<'board' | 'timeline' | 'reading' | 'games'>('board');
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [minimaxImageMap, setMinimaxImageMap] = useState<Record<string, string>>({});
+  const [generatingImages, setGeneratingImages] = useState<Record<string, boolean>>({});
+  const inFlightImagePromisesRef = useRef<{ [key: string]: Promise<string> | undefined }>({});
+
+  const fetchPhaseImage = useCallback(async (phaseIdx: number, topic: string, phaseObj?: any): Promise<string> => {
+    const promptKey = `${phaseIdx}-${topic}`;
+    if (minimaxImageMap[promptKey]) {
+      return minimaxImageMap[promptKey];
+    }
+    const existing = inFlightImagePromisesRef.current[promptKey];
+    if (existing) {
+      return existing;
+    }
+
+    const p = phaseObj || lesson?.phases?.[phaseIdx];
+    const pPrompt = typeof p?.image_prompt === 'string' && p.image_prompt.trim().length > 8
+      ? p.image_prompt.trim()
+      : `Educational 2D vector illustration of ${topic} for English lesson (${p?.phase_name || 'Clase'}), clean minimal graphic style`;
+    const sanitizedPrompt = sanitizeImagePrompt(pPrompt, topic, phaseIdx);
+
+    setGeneratingImages(prev => ({ ...prev, [promptKey]: true }));
+
+    const promise = (async () => {
+      let finalUrl = '';
+      try {
+        const res: any = await api.generateImage(sanitizedPrompt, '16:9');
+        if (res && res.success && (res.url || res.image_url)) {
+          finalUrl = res.url || res.image_url;
+          console.log(`🎨 MiniMax image-01 generated for slide ${phaseIdx}:`, finalUrl);
+        } else {
+          console.warn(`MiniMax image-01 returned no URL for slide ${phaseIdx}:`, res);
+        }
+      } catch (err) {
+        console.warn(`MiniMax image generation for slide ${phaseIdx} failed:`, err);
+      }
+
+      if (!finalUrl) {
+        // Fallback only if MiniMax generation explicitly failed
+        finalUrl = getFallbackImageUrl(sanitizedPrompt, topic, phaseIdx);
+      }
+
+      await preloadImage(finalUrl, 4000).catch(() => {});
+      setMinimaxImageMap(prev => ({ ...prev, [promptKey]: finalUrl }));
+      setGeneratingImages(prev => ({ ...prev, [promptKey]: false }));
+      delete inFlightImagePromisesRef.current[promptKey];
+      return finalUrl;
+    })();
+
+    inFlightImagePromisesRef.current[promptKey] = promise;
+    return promise;
+  }, [lesson, minimaxImageMap]);
 
   // 🎬 Cinema mode & audio tracking
   const [cinemaModeActive, setCinemaModeActive] = useState(false);
@@ -874,6 +932,7 @@ export default function LessonPage() {
 
   const stopCurrentAudio = () => {
     audioSessionIdRef.current += 1;
+    stopTutorVoice();
     if (audioTimerRef.current) {
       clearInterval(audioTimerRef.current);
       audioTimerRef.current = null;
@@ -908,6 +967,12 @@ export default function LessonPage() {
 
       setLoadingLesson(true);
       setLoadingStage('Diseñando guion didáctico y plan pedagógico...');
+
+      api.getSettings().then((settings) => {
+        if (settings?.preferred_voice) {
+          setSavedPreferredVoice(settings.preferred_voice);
+        }
+      }).catch(() => {});
 
       try {
         let data: any = null;
@@ -985,34 +1050,13 @@ export default function LessonPage() {
               },
               {
                 phase_number: 3,
-                phase_name: '3. Estructura Gramatical Central',
-                tutor_says: `Aquí tenemos la fórmula nuclear de ${topicParam}. Observa cómo se ordenan los elementos paso a paso.`,
-                board_content: `📐 Fórmula Central:\n\n[ Sujeto ] + [ Verbo / Auxiliar ] + [ Complemento ]\n\n• Ejemplo: "This is my notebook." (Este es mi cuaderno).`,
+                phase_name: '3. Núcleo Gramatical y Estructura',
+                tutor_says: `Ahora entremos al corazón del tema. Observa cómo se organizan los elementos en la oración.`,
+                board_content: `⚡ Regla Central:\n\n• Presta atención a las fórmulas y contrastes.\n• Conecta las palabras con ritmo natural.`,
                 image_style: 'flat_art',
-                image_prompt: `Clean flat 2D vector diagram showing sentence building blocks on a chalkboard, no text, no words.`,
-                grammar_structure: {
-                  title: `Estructura: ${topicParam}`,
-                  formula: '[ Sujeto ] + [ Verbo ] + [ Complemento ]',
-                  formula_tokens: [
-                    { role: 'Sujeto', pattern: 'I / You / He / She / It', color: 'blue' },
-                    { role: 'Verbo', pattern: 'Action / Be', color: 'purple' },
-                    { role: 'Complemento', pattern: 'Object / Place', color: 'emerald' }
-                  ],
-                  explanation: `Esta estructura te permite construir oraciones claras y correctas sobre ${topicParam}.`,
-                  example_breakdowns: [
-                    {
-                      english: 'This is my favorite book.',
-                      spanish: 'Este es mi libro favorito.',
-                      parts: [
-                        { role: 'Sujeto', text: 'This', color: 'blue' },
-                        { role: 'Verbo', text: 'is', color: 'purple' },
-                        { role: 'Complemento', text: 'my favorite book', color: 'emerald' }
-                      ]
-                    }
-                  ]
-                },
+                image_prompt: `Clean 2D vector graphic showing structured language flow with colorful tokens, no text, no words.`,
                 target_audio_items: [
-                  { english: 'This is my favorite book.', translation: 'Este es mi libro favorito.', label: 'Ejemplo Modelo' }
+                  { english: 'This is the main rule we follow.', translation: 'Esta es la regla principal que seguimos.', label: 'Estructura Clave' }
                 ],
                 student_task: null,
                 expected_answer: null,
@@ -1020,37 +1064,39 @@ export default function LessonPage() {
               },
               {
                 phase_number: 4,
-                phase_name: '4. Análisis y Ejemplos Prácticos',
-                tutor_says: `Ahora escuchemos oraciones modelo en contexto. Pon mucha atención a la entonación y al ritmo natural del inglés.`,
-                board_content: `🎯 Ejemplos en Contexto:\n\n1. "I have my keys in my bag." (Tengo mis llaves en mi bolso).\n2. "She has her new phone." (Ella tiene su teléfono nuevo).`,
+                phase_name: '4. Análisis y Desconstrucción',
+                tutor_says: `Analicemos los errores típicos para que nunca caigas en ellos.`,
+                board_content: `🔍 Desglose:\n\n• Error común: traducción literal palabra por palabra.\n• Acierto: pensar en bloques completos.`,
                 image_style: 'comic_scene',
-                image_prompt: `Clean 2D vector educational illustration of everyday objects and people talking, no text, no words.`,
+                image_prompt: `Clean 2D vector educational comic of a student analyzing a chart on a smart board, no text, no words.`,
                 target_audio_items: [
-                  { english: 'I have my keys in my bag.', translation: 'Tengo mis llaves en mi bolso.', label: 'Oración 1' },
-                  { english: 'She has her new phone.', translation: 'Ella tiene su teléfono nuevo.', label: 'Oración 2' }
+                  { english: 'Notice how the words connect together.', translation: 'Nota cómo las palabras se conectan juntas.', label: 'Análisis' }
                 ],
-                student_task: 'Pronuncia la frase modelo en voz alta.',
-                expected_answer: 'I have my keys in my bag.',
-                interaction_type: 'pronunciation',
+                student_task: null,
+                expected_answer: null,
+                interaction_type: 'explanation',
               },
               {
                 phase_number: 5,
-                phase_name: '5. Práctica Guiada Interactiva',
-                tutor_says: `¡Es tu turno de practicar! Completa la siguiente oración eligiendo la palabra correcta.`,
-                board_content: `📝 Ejercicio Interactivo:\n\nCompleta: "She has ______ keys." [ her / his ]`,
+                phase_name: '5. Práctica Guiada',
+                tutor_says: `Es tu turno de practicar. Repite la oración modelo con confianza.`,
+                board_content: `🎯 Práctica Guiada:\n\n• Di la oración en voz alta.\n• Mantén la entonación y el acento correctos.`,
                 image_style: 'flat_art',
-                image_prompt: `Clean 2D vector graphic of a student filling an exercise with a glowing checkmark, no text, no words.`,
-                student_task: 'Completa: "She has ______ keys." [ her / his ]',
-                expected_answer: 'her',
-                interaction_type: 'quiz',
+                image_prompt: `Clean 2D vector educational graphic of an interactive microphone and sound waves, no text, no words.`,
+                target_audio_items: [
+                  { english: 'I can speak clearly and confidently.', translation: 'Puedo hablar clara y seguramente.', label: 'Práctica' }
+                ],
+                student_task: 'Pronuncia la oración: "I can speak clearly and confidently."',
+                expected_answer: 'I can speak clearly and confidently.',
+                interaction_type: 'pronunciation',
               },
               {
                 phase_number: 6,
-                phase_name: '6. Producción y Desafío Final',
-                tutor_says: `¡Excelente trabajo hasta aquí! Como desafío final, pronuncia una oración completa aplicando todo lo que aprendiste hoy.`,
-                board_content: `🏆 Desafío de Producción:\n\nDi en voz alta: "I am ready to speak English fluently."`,
+                phase_name: '6. Producción y Cierre',
+                tutor_says: `¡Excelente trabajo hoy! Has completado la lección. Repite la frase final para consolidar tu aprendizaje.`,
+                board_content: `🏆 Cierre y Consolidación:\n\n• ¡Objetivo alcanzado con éxito!\n• Sigue practicando a diario.`,
                 image_style: 'comic_scene',
-                image_prompt: `Vibrant 2D vector illustration of a student celebrating success with a trophy and confetti, no text, no words.`,
+                image_prompt: `Clean 2D vector illustration of celebration and progress in English learning with stars, no text, no words.`,
                 target_audio_items: [
                   { english: 'I am ready to speak English fluently.', translation: 'Estoy listo/a para hablar inglés con fluidez.', label: 'Frase de Cierre' }
                 ],
@@ -1062,42 +1108,26 @@ export default function LessonPage() {
           };
         }
 
-        // 🎨 INSTANT CLASSROOM REVEAL: Load calibrated vector illustration immediately without blocking
-        const phase0 = data.phases[0];
-        const rawPrompt0 = typeof phase0?.image_prompt === 'string' && phase0.image_prompt.trim().length > 8
-          ? phase0.image_prompt.trim()
-          : `Educational 2D vector illustration of ${topicParam} for English lesson (${phase0?.phase_name || 'Introducción'}), clean minimal graphic style`;
-        const sanitizedPrompt0 = sanitizeImagePrompt(rawPrompt0, topicParam, 0);
-        const slide0Url = getFallbackImageUrl(sanitizedPrompt0, topicParam, 0);
-
-        const initialImageMap: Record<string, string> = {
-          [`0-${topicParam}`]: slide0Url,
-        };
-        setMinimaxImageMap(initialImageMap);
         setLesson(data);
+
+        // 🎨 Pre-generate & preload Phase 0's image with MiniMax image-01 so the lesson NEVER starts without it
+        setLoadingStage('Generando ilustración didáctica con MiniMax IA (image-01)...');
+        const initialImageUrl = await fetchPhaseImage(0, topicParam, data.phases[0]);
+        console.log('🎨 Phase 0 MiniMax image ready:', initialImageUrl);
+
+        // Preload image in browser before revealing UI so it appears immediately with 0 delay
+        setLoadingStage('Precargando pizarra interactiva...');
+        await preloadImage(initialImageUrl, 5000).catch(() => {});
+
         setImageLoading(false);
         setLoadingLesson(false);
 
-        // 🚀 NON-BLOCKING BACKGROUND WORKER: Fetch high-res AI images in background without freezing UI
-        (async () => {
-          for (let i = 0; i < data.phases.length; i++) {
-            const p = data.phases[i];
-            const promptKey = `${i}-${topicParam}`;
-            const pPrompt = typeof p.image_prompt === 'string' && p.image_prompt.trim().length > 8
-              ? p.image_prompt.trim()
-              : `Educational 2D vector illustration of ${topicParam} for English lesson (${p.phase_name || 'Clase'}), clean minimal graphic style`;
-            const sanitizedPPrompt = sanitizeImagePrompt(pPrompt, topicParam, i);
-
-            try {
-              const genRes = await api.generateImage(sanitizedPPrompt).catch(() => null);
-              if (genRes && genRes.success && genRes.url) {
-                setMinimaxImageMap(prev => ({ ...prev, [promptKey]: genRes.url }));
-              }
-            } catch (err) {
-              console.warn(`Background image generation for slide ${i} failed:`, err);
-            }
-          }
-        })();
+        // 🚀 NON-BLOCKING BACKGROUND WORKER: Pre-generate remaining slide images with MiniMax
+        for (let i = 1; i < data.phases.length; i++) {
+          fetchPhaseImage(i, topicParam, data.phases[i]).catch((err: any) => {
+            console.warn(`Background image generation for slide ${i} failed:`, err);
+          });
+        }
 
       } catch (err: any) {
         console.error('Failed to load lesson:', err);
@@ -1107,7 +1137,7 @@ export default function LessonPage() {
     }
 
     loadOrCreateLesson();
-  }, [lessonId, topicParam, sublevelParam]);
+  }, [lessonId, topicParam, sublevelParam, fetchPhaseImage]);
 
   // Reset states on phase change
   useEffect(() => {
@@ -1130,10 +1160,11 @@ export default function LessonPage() {
     if (newPhase) {
       setCurrentSpeakingText(typeof newPhase.tutor_says === 'string' ? newPhase.tutor_says : newPhase.tutor_says?.text || '');
     }
-  }, [currentPhaseIdx, lesson]);
+  }, [currentPhaseIdx]);
 
   // 2. Auto Speak Tutor's Line ONCE per Phase Change
   useEffect(() => {
+    if (loadingLesson) return;
     if (viewMode === 'games' || viewMode === 'reading') return;
     if (
       lesson &&
@@ -1149,10 +1180,10 @@ export default function LessonPage() {
           ? phase.tutor_says
           : phase.tutor_says?.text || 'Escucha la explicación';
       if (textToSpeak) {
-        speakText(textToSpeak);
+        speakText(textToSpeak, true);
       }
     }
-  }, [lesson, currentPhaseIdx, evaluation, viewMode]);
+  }, [lesson, currentPhaseIdx, evaluation, viewMode, loadingLesson]);
 
   const updateStoryboardProgress = (progressPercent: number, stepsList: StoryboardStep[]) => {
     if (!stepsList || stepsList.length === 0) return;
@@ -1171,7 +1202,7 @@ export default function LessonPage() {
     setRevealedStepCount(prev => Math.max(prev, revealed));
   };
 
-  const speakText = async (text: string) => {
+  const speakText = async (text: string, isMainLecture = false) => {
     if (!text || !text.trim()) return;
 
     setCurrentSpeakingText(text);
@@ -1181,28 +1212,30 @@ export default function LessonPage() {
     const currentPhaseObj = lesson?.phases?.[currentPhaseIdx];
     const stepsList = getPhaseStoryboardSteps(currentPhaseObj, topicParam);
 
-    const boardContent = currentPhaseObj?.board_content;
-    const boardLines: string[] = typeof boardContent === 'string'
-      ? boardContent.split('\n').filter((l: string) => l.trim().length > 0)
-      : [];
+    if (isMainLecture) {
+      const boardContent = currentPhaseObj?.board_content;
+      const boardLines: string[] = typeof boardContent === 'string'
+        ? boardContent.split('\n').filter((l: string) => l.trim().length > 0)
+        : [];
 
-    if (boardLines.length > 0) {
-      setRevealedLineCount(0);
-      const wordsInSpeech = text.split(/\s+/).filter(Boolean).length;
-      const estimatedDurationMs = Math.max(wordsInSpeech * 175, 1800);
-      const lineInterval = estimatedDurationMs / Math.max(boardLines.length, 1);
-      let revealed = 0;
-      if (lineRevealTimerRef.current) clearInterval(lineRevealTimerRef.current);
-      lineRevealTimerRef.current = setInterval(() => {
-        revealed++;
-        setRevealedLineCount(revealed);
-        if (revealed >= boardLines.length) {
-          if (lineRevealTimerRef.current) clearInterval(lineRevealTimerRef.current);
-          lineRevealTimerRef.current = null;
-        }
-      }, lineInterval);
-    } else {
-      setRevealedLineCount(999);
+      if (boardLines.length > 0) {
+        setRevealedLineCount(0);
+        const wordsInSpeech = text.split(/\s+/).filter(Boolean).length;
+        const estimatedDurationMs = Math.max(wordsInSpeech * 175, 1800);
+        const lineInterval = estimatedDurationMs / Math.max(boardLines.length, 1);
+        let revealed = 0;
+        if (lineRevealTimerRef.current) clearInterval(lineRevealTimerRef.current);
+        lineRevealTimerRef.current = setInterval(() => {
+          revealed++;
+          setRevealedLineCount(revealed);
+          if (revealed >= boardLines.length) {
+            if (lineRevealTimerRef.current) clearInterval(lineRevealTimerRef.current);
+            lineRevealTimerRef.current = null;
+          }
+        }, lineInterval);
+      } else {
+        setRevealedLineCount(999);
+      }
     }
 
     setTutorState('thinking');
@@ -1217,50 +1250,64 @@ export default function LessonPage() {
       currentAudioRef.current = audio;
       setTutorState('speaking');
 
-      // Smooth ~20Hz progress interval to keep subtitles & storyboard in sync without DOM thrashing
-      if (audioTimerRef.current) clearInterval(audioTimerRef.current);
-      audioTimerRef.current = setInterval(() => {
-        const aud = currentAudioRef.current;
-        if (!aud || audioSessionIdRef.current !== thisSessionId || aud.paused || aud.ended) {
+      if (isMainLecture) {
+        // Smooth ~20Hz progress interval to keep subtitles & storyboard in sync without DOM thrashing
+        if (audioTimerRef.current) clearInterval(audioTimerRef.current);
+        audioTimerRef.current = setInterval(() => {
+          const aud = currentAudioRef.current;
+          if (!aud || audioSessionIdRef.current !== thisSessionId || aud.paused || aud.ended) {
+            if (audioTimerRef.current) {
+              clearInterval(audioTimerRef.current);
+              audioTimerRef.current = null;
+            }
+            return;
+          }
+
+          if (aud.duration && aud.duration > 0 && !isNaN(aud.duration)) {
+            const prog = (aud.currentTime / aud.duration) * 100;
+            const clamped = Math.min(Math.max(prog, 0), 100);
+            setAudioProgress(clamped);
+            updateStoryboardProgress(clamped, stepsList);
+          }
+        }, 50);
+
+        audio.ontimeupdate = () => {
+          if (audio.duration && audio.duration > 0 && !isNaN(audio.duration)) {
+            const prog = (audio.currentTime / audio.duration) * 100;
+            const clamped = Math.min(Math.max(prog, 0), 100);
+            setAudioProgress(clamped);
+            updateStoryboardProgress(clamped, stepsList);
+          }
+        };
+
+        audio.onended = () => {
           if (audioTimerRef.current) {
             clearInterval(audioTimerRef.current);
             audioTimerRef.current = null;
           }
-          return;
-        }
+          if (audioSessionIdRef.current === thisSessionId) {
+            setTutorState('idle');
+            setAudioProgress(100);
+            setRevealedLineCount(999);
+            setActiveStepIdx(stepsList.length - 1);
+            setRevealedStepCount(stepsList.length);
+            setIsFullBoardRevealed(true);
+            audioFinishedNaturallyRef.current = true;
+          }
+        };
+      } else {
+        // Auxiliary / Feedback speech: simply play speech and return to idle without resetting storyboard or viewport
+        audio.onended = () => {
+          if (audioTimerRef.current) {
+            clearInterval(audioTimerRef.current);
+            audioTimerRef.current = null;
+          }
+          if (audioSessionIdRef.current === thisSessionId) {
+            setTutorState('idle');
+          }
+        };
+      }
 
-        if (aud.duration && aud.duration > 0 && !isNaN(aud.duration)) {
-          const prog = (aud.currentTime / aud.duration) * 100;
-          const clamped = Math.min(Math.max(prog, 0), 100);
-          setAudioProgress(clamped);
-          updateStoryboardProgress(clamped, stepsList);
-        }
-      }, 50);
-
-      audio.ontimeupdate = () => {
-        if (audio.duration && audio.duration > 0 && !isNaN(audio.duration)) {
-          const prog = (audio.currentTime / audio.duration) * 100;
-          const clamped = Math.min(Math.max(prog, 0), 100);
-          setAudioProgress(clamped);
-          updateStoryboardProgress(clamped, stepsList);
-        }
-      };
-
-      audio.onended = () => {
-        if (audioTimerRef.current) {
-          clearInterval(audioTimerRef.current);
-          audioTimerRef.current = null;
-        }
-        if (audioSessionIdRef.current === thisSessionId) {
-          setTutorState('idle');
-          setAudioProgress(100);
-          setRevealedLineCount(999);
-          setActiveStepIdx(stepsList.length - 1);
-          setRevealedStepCount(stepsList.length);
-          setIsFullBoardRevealed(true);
-          audioFinishedNaturallyRef.current = true;
-        }
-      };
       audio.onerror = () => {
         if (audioTimerRef.current) {
           clearInterval(audioTimerRef.current);
@@ -1268,16 +1315,20 @@ export default function LessonPage() {
         }
         if (audioSessionIdRef.current === thisSessionId) {
           setTutorState('idle');
-          setRevealedLineCount(999);
-          setIsFullBoardRevealed(true);
+          if (isMainLecture) {
+            setRevealedLineCount(999);
+            setIsFullBoardRevealed(true);
+          }
         }
       };
     } catch (err) {
       console.warn('TTS Error:', err);
       if (audioSessionIdRef.current === thisSessionId) {
         setTutorState('idle');
-        setRevealedLineCount(999);
-        setIsFullBoardRevealed(true);
+        if (isMainLecture) {
+          setRevealedLineCount(999);
+          setIsFullBoardRevealed(true);
+        }
       }
     }
   };
@@ -1565,6 +1616,57 @@ export default function LessonPage() {
     };
   }, [tutorState, cinemaModeActive, lesson]);
 
+  // 🎬 Smooth Guided Auto-Scroll & Viewport Focus for Active Storyboard Step
+  useEffect(() => {
+    if (viewMode !== 'board') return;
+    if (!phaseStoryboardSteps || phaseStoryboardSteps.length === 0) return;
+
+    if (activeStepIdx === 0) {
+      const topEl = document.getElementById('storyboard-target-title') || document.getElementById('storyboard-target-concepts');
+      if (topEl) {
+        const timer = setTimeout(() => {
+          topEl.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+            inline: 'nearest',
+          });
+        }, 120);
+        return () => clearTimeout(timer);
+      }
+      return;
+    }
+
+    const currentStep = phaseStoryboardSteps[activeStepIdx];
+    if (!currentStep) return;
+
+    const candidateIds = [
+      currentStep.element_type ? `storyboard-target-${currentStep.element_type}` : '',
+      currentStep.highlight_target ? `storyboard-target-${currentStep.highlight_target}` : '',
+      currentStep.step_id ? `storyboard-target-${currentStep.step_id.replace(/^step-/, '')}` : '',
+      currentStep.step_id ? `storyboard-target-${currentStep.step_id.replace(/^step-/, '').replace(/-/g, '_')}` : '',
+    ].filter(Boolean);
+
+    let targetEl: HTMLElement | null = null;
+    for (const id of candidateIds) {
+      const el = document.getElementById(id);
+      if (el) {
+        targetEl = el;
+        break;
+      }
+    }
+
+    if (targetEl) {
+      const timer = setTimeout(() => {
+        targetEl?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest',
+        });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [activeStepIdx, viewMode, phaseStoryboardSteps]);
+
   if (loadingLesson) {
     return (
       <div className="min-h-screen bg-brand-dark flex flex-col items-center justify-center text-white p-6 relative overflow-hidden">
@@ -1630,7 +1732,7 @@ export default function LessonPage() {
     } else {
       const textToSpeak = typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '';
       if (textToSpeak) {
-        speakText(textToSpeak);
+        speakText(textToSpeak, true);
       }
     }
   };
@@ -1638,10 +1740,10 @@ export default function LessonPage() {
   const handleReplayCurrentStep = () => {
     const step = phaseStoryboardSteps[activeStepIdx];
     if (step && step.tutor_speech_snippet) {
-      speakText(step.tutor_speech_snippet);
+      speakText(step.tutor_speech_snippet, false);
     } else {
       const textToSpeak = typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '';
-      speakText(textToSpeak);
+      speakText(textToSpeak, true);
     }
   };
 
@@ -1657,7 +1759,7 @@ export default function LessonPage() {
     setRevealedStepCount(1);
     const textToSpeak = typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '';
     if (textToSpeak) {
-      speakText(textToSpeak);
+      speakText(textToSpeak, true);
     }
   };
 
@@ -1672,18 +1774,14 @@ export default function LessonPage() {
   const styleType = (phase.image_style as string) || 'flat_art';
   const cleanImagePrompt = sanitizeImagePrompt(rawImagePrompt, topicParam, currentPhaseIdx);
 
-  const minimaxGeneratedUrl = minimaxImageMap[`${currentPhaseIdx}-${topicParam}`];
-  const imageUrl = minimaxGeneratedUrl || getFallbackImageUrl(cleanImagePrompt, topicParam, currentPhaseIdx);
+  const promptKey = `${currentPhaseIdx}-${topicParam}`;
+  const minimaxGeneratedUrl = minimaxImageMap[promptKey];
+  const isImageGenerating = generatingImages[promptKey] || !minimaxGeneratedUrl;
+  const imageUrl = minimaxGeneratedUrl || '';
 
   // Dedicated Sentence Image URL for timeline items
   const getSentenceImageUrl = (englishSentence: string, index: number): string => {
-    if (!englishSentence || typeof englishSentence !== 'string') {
-      return imageUrl;
-    }
-    const cleanSentence = englishSentence.replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-    const prompt = `flat 2D vector illustration representing the concept of "${cleanSentence}" in an educational lesson, vibrant colors, clean minimal graphic style, white background, no text, no words, no letters`;
-    const seed = (cleanSentence + index).split('').reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) & 0x7fffffff, 99);
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=450&model=flux&nologo=true&enhance=true&seed=${seed}`;
+    return imageUrl;
   };
 
   // ─── Reusable Component for Interactive Pronunciation & Speech Card ────────
@@ -2010,7 +2108,13 @@ export default function LessonPage() {
                 </motion.div>
               )}
             </AnimatePresence>
-            <TutorAvatar state={tutorState} />
+            <TutorAvatar
+              state={tutorState}
+              text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
+              audioProgress={audioProgress}
+              size="sm"
+              audioElement={currentAudioRef.current}
+            />
             <span className="text-brand-text-secondary font-medium">
               {tutorState === 'speaking'
                 ? 'Explicando...'
@@ -2074,7 +2178,7 @@ export default function LessonPage() {
               <div className={`${getBoardThemeClass(phase.board_theme)} p-5 sm:p-7 space-y-5 relative`}>
                 
                 {/* Board Header Bar */}
-                <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-white/10 z-10">
+                <div id="storyboard-target-title" className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-white/10 z-10">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-2xl bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan">
                       <BookOpen size={20} />
@@ -2090,7 +2194,7 @@ export default function LessonPage() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => speakText(typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '')}
+                      onClick={() => speakText(typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '', true)}
                       className="text-xs px-3 py-1.5 rounded-xl glass hover:bg-brand-surface border border-brand-border text-brand-cyan hover:text-white flex items-center gap-1.5 transition-all font-semibold"
                       title="Escuchar la explicación del tutor en voz alta"
                     >
@@ -2180,6 +2284,7 @@ export default function LessonPage() {
                         <AnimatePresence>
                           {(isFullBoardRevealed || isStepRevealed('illustration')) && (
                             <motion.div
+                              id="storyboard-target-illustration"
                               initial={{ opacity: 0, scale: 0.92, y: 15 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.92 }}
@@ -2190,43 +2295,58 @@ export default function LessonPage() {
                                   : ''
                               }`}
                             >
-                              <div className="rounded-2xl border border-white/10 overflow-hidden relative shadow-lg bg-black/35 flex flex-col items-center justify-center p-2.5 group transition-all h-full">
-                                {imageLoading && (
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 text-brand-text-muted">
-                                    <Loader2 className="w-8 h-8 text-brand-accent animate-spin mb-2" />
-                                    <span className="text-xs font-medium font-chalk">Cargando pizarra...</span>
-                                  </div>
-                                )}
-
-                                <div
-                                  onClick={() => setIsImageZoomed(true)}
-                                  className="relative w-full flex-1 overflow-hidden rounded-xl cursor-pointer group/img flex items-center justify-center bg-black/20 border border-white/5 min-h-[180px] sm:min-h-[220px]"
-                                >
-                                  <img
-                                    src={imageUrl}
-                                    alt="Ilustración didáctica principal"
-                                    onLoad={() => setImageLoading(false)}
-                                    onError={() => setImageLoading(false)}
-                                    className="w-full max-h-56 sm:max-h-64 object-contain rounded-xl group-hover/img:scale-105 transition-transform duration-300"
-                                  />
-                                  <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[2px]">
-                                    <span className="px-3.5 py-1.5 rounded-xl bg-brand-accent text-white text-xs font-bold flex items-center gap-1.5 shadow-xl">
-                                      <ZoomIn size={14} /> Ampliar Imagen
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div className="w-full pt-2 px-1.5 flex items-center justify-end text-[11px] font-semibold text-white/50">
-                                  <button
-                                    type="button"
+                              {minimaxGeneratedUrl ? (
+                                <div className="rounded-2xl border border-white/10 overflow-hidden relative shadow-lg bg-black/35 flex flex-col items-center justify-center p-2.5 group transition-all h-full">
+                                  <div
                                     onClick={() => setIsImageZoomed(true)}
-                                    className="hover:text-white transition-colors flex items-center gap-1.5"
+                                    className="relative w-full flex-1 overflow-hidden rounded-xl cursor-pointer group/img flex items-center justify-center bg-black/20 border border-white/5 min-h-[180px] sm:min-h-[220px]"
                                   >
-                                    <Maximize2 size={12} />
-                                    <span>Ampliar Imagen</span>
-                                  </button>
+                                    <img
+                                      src={minimaxGeneratedUrl}
+                                      alt="Ilustración didáctica principal"
+                                      className="w-full max-h-56 sm:max-h-64 object-contain rounded-xl group-hover/img:scale-105 transition-transform duration-300"
+                                    />
+                                    <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[2px]">
+                                      <span className="px-3.5 py-1.5 rounded-xl bg-brand-accent text-white text-xs font-bold flex items-center gap-1.5 shadow-xl">
+                                        <ZoomIn size={14} /> Ampliar Imagen
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="w-full pt-2 px-1.5 flex items-center justify-between text-[11px] font-semibold text-white/50">
+                                    <span className="flex items-center gap-1 text-[10px] text-brand-cyan font-mono">
+                                      <Sparkles size={11} className="text-brand-cyan" /> MiniMax image-01
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsImageZoomed(true)}
+                                      className="hover:text-white transition-colors flex items-center gap-1.5"
+                                    >
+                                      <Maximize2 size={12} />
+                                      <span>Ampliar Imagen</span>
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
+                              ) : (
+                                <div className="rounded-2xl border border-brand-cyan/30 overflow-hidden relative shadow-lg bg-gradient-to-br from-brand-accent/15 via-black/60 to-brand-cyan/10 flex flex-col items-center justify-center p-6 text-center group transition-all h-full min-h-[220px]">
+                                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-cyan/15 via-transparent to-transparent opacity-80 pointer-events-none" />
+                                  <div className="relative mb-3">
+                                    <div className="w-12 h-12 rounded-2xl bg-brand-cyan/20 border border-brand-cyan/40 flex items-center justify-center shadow-[0_0_25px_rgba(0,212,255,0.3)]">
+                                      <Sparkles className="w-6 h-6 text-brand-cyan animate-pulse" />
+                                    </div>
+                                  </div>
+                                  <h4 className="text-sm font-bold text-white tracking-wide font-chalk">
+                                    Generando ilustración con MiniMax IA...
+                                  </h4>
+                                  <p className="text-xs text-brand-text-muted mt-1.5 max-w-xs leading-relaxed">
+                                    El modelo <strong className="text-brand-cyan font-mono">image-01</strong> está creando la escena visual didáctica para esta fase.
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-4 px-3 py-1.5 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan text-xs font-semibold">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Esperando imagen neuronal...</span>
+                                  </div>
+                                </div>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -2235,6 +2355,7 @@ export default function LessonPage() {
                         <AnimatePresence>
                           {(isFullBoardRevealed || isStepRevealed('concepts')) && (
                             <motion.div
+                              id="storyboard-target-concepts"
                               initial={{ opacity: 0, y: 15 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0 }}
@@ -2290,6 +2411,7 @@ export default function LessonPage() {
                       <AnimatePresence>
                         {currentDiagramSvg && (isFullBoardRevealed || isStepRevealed('diagram')) && (
                           <motion.div
+                            id="storyboard-target-diagram"
                             initial={{ opacity: 0, scale: 0.96, y: 15 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.96 }}
@@ -2323,6 +2445,7 @@ export default function LessonPage() {
                       <AnimatePresence>
                         {(phase.grammar_structure || phase.key_structure) && (isFullBoardRevealed || isStepRevealed('grammar')) && (
                           <motion.div
+                            id="storyboard-target-grammar"
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
@@ -2351,6 +2474,7 @@ export default function LessonPage() {
                         <AnimatePresence>
                           {(isFullBoardRevealed || isStepRevealed('phonetics')) && (
                             <motion.div
+                              id="storyboard-target-phonetics"
                               initial={{ opacity: 0, scale: 0.95, y: 20 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95 }}
@@ -2376,6 +2500,7 @@ export default function LessonPage() {
                       <AnimatePresence>
                         {(isFullBoardRevealed || isStepRevealed('exercise')) && (
                           <motion.div
+                            id="storyboard-target-exercise"
                             initial={{ opacity: 0, y: 25 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
@@ -2720,6 +2845,7 @@ export default function LessonPage() {
                       <AnimatePresence>
                         {targetAudioItems && targetAudioItems.length > 0 && exercises.length === 0 && (isFullBoardRevealed || isStepRevealed('audio_practice')) && (
                           <motion.div
+                            id="storyboard-target-audio_practice"
                             initial={{ opacity: 0, y: 25 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
@@ -2789,7 +2915,7 @@ export default function LessonPage() {
 
                     <button
                       type="button"
-                      onClick={() => speakText(typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '')}
+                      onClick={() => speakText(typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '', true)}
                       className="px-3.5 py-1.5 rounded-xl bg-brand-accent/20 hover:bg-brand-accent/40 text-brand-cyan border border-brand-accent/40 text-xs font-bold flex items-center gap-2 transition-all shadow-sm hover:scale-105"
                     >
                       <Volume2 size={14} className="animate-pulse text-brand-cyan" />
@@ -2797,23 +2923,36 @@ export default function LessonPage() {
                     </button>
                   </div>
 
-                  {/* Concept Grid: Image + Rules */}
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
-                    <div
-                      onClick={() => setIsImageZoomed(true)}
-                      className="md:col-span-5 relative group rounded-2xl overflow-hidden cursor-pointer bg-black/30 border border-white/10"
-                    >
-                      <img
-                        src={imageUrl}
-                        alt="Ilustración didáctica principal"
-                        className="w-full h-48 sm:h-56 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                        <span className="px-3.5 py-1.5 rounded-xl bg-brand-accent text-white text-xs font-bold flex items-center gap-1.5 shadow-lg">
-                          <ZoomIn size={14} /> Ampliar Imagen
-                        </span>
+                    {/* Concept Grid: Image + Rules */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                      <div className="md:col-span-5 relative group rounded-2xl overflow-hidden bg-black/30 border border-white/10">
+                        {minimaxGeneratedUrl ? (
+                          <div
+                            onClick={() => setIsImageZoomed(true)}
+                            className="cursor-pointer relative"
+                          >
+                            <img
+                              src={minimaxGeneratedUrl}
+                              alt="Ilustración didáctica principal"
+                              className="w-full h-48 sm:h-56 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                              <span className="px-3.5 py-1.5 rounded-xl bg-brand-accent text-white text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                                <ZoomIn size={14} /> Ampliar Imagen
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="h-48 sm:h-56 flex flex-col items-center justify-center p-4 text-center bg-brand-dark/60 border border-brand-cyan/20 rounded-2xl">
+                            <Sparkles className="w-6 h-6 text-brand-cyan animate-pulse mb-2" />
+                            <span className="text-xs font-semibold text-white font-chalk">Generando ilustración MiniMax...</span>
+                            <div className="flex items-center gap-1.5 mt-2 text-[11px] text-brand-cyan font-mono">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <span>image-01</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
 
                     <div className="md:col-span-7 space-y-3">
                       <div className="text-sm sm:text-base text-white leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/10 font-mono text-emerald-200 shadow-inner whitespace-pre-line">

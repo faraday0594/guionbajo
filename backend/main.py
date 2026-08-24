@@ -35,6 +35,11 @@ async def lifespan(app: FastAPI):
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            try:
+                from sqlalchemy import text
+                await conn.execute(text("ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS preferred_voice VARCHAR DEFAULT 'female-yujie';"))
+            except Exception:
+                pass
         print("[OK] Database tables initialized successfully.")
         
         async with AsyncSessionLocal() as db:
@@ -130,4 +135,4 @@ app.include_router(reading_router)
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

@@ -11,35 +11,291 @@ from core.tts_normalizer import normalize_tts_text, ENGLISH_TTS_PHONETIC_MAP
 
 logger = logging.getLogger(__name__)
 
-AVAILABLE_VOICES = [
-    {"id": "edge-roger", "name": "Roger (Neural Studio English - HD Male)", "gender": "male", "lang": "en-US"},
-    {"id": "edge-jenny", "name": "Jenny (Neural Studio English - HD Female)", "gender": "female", "lang": "en-US"},
-    {"id": "edge-ava", "name": "Ava (Neural Multilingual - HD)", "gender": "female", "lang": "en-US"},
-    {"id": "edge-emma", "name": "Emma (Neural Multilingual - HD)", "gender": "female", "lang": "en-US"},
-    {"id": "edge-dalia", "name": "Dalia (Neural Spanish/English)", "gender": "female", "lang": "es-MX"},
-    {"id": "edge-jorge", "name": "Jorge (Neural Spanish/English Male)", "gender": "male", "lang": "es-MX"},
-    {"id": "female-shaonv", "name": "Shaonv (MiniMax Warm)", "gender": "female", "lang": "zh/es"},
-    {"id": "male-qn-college", "name": "College Male (MiniMax)", "gender": "male", "lang": "es"},
-    {"id": "female-yicheng", "name": "Yicheng (Female - Professional)", "gender": "female", "lang": "zh/es"},
-    {"id": "audiobook_male_1", "name": "Audiobook Male", "gender": "male", "lang": "zh/es"},
+# ══════════════════════════════════════════════════════════════════════════════
+# CATÁLOGO DE VOCES EN ESPAÑOL E INGLÉS (MiniMax, Google TTS, Edge Studio)
+# ══════════════════════════════════════════════════════════════════════════════
+AVAILABLE_VOICES: List[Dict[str, Any]] = [
+    # ─── 1. MINIMAX NEURAL HD (speech-02-hd / t2a_v2) ─────────────────────────
+    {
+        "id": "female-yujie",
+        "name": "Yujie (MiniMax - Madura / Elegante)",
+        "provider": "minimax",
+        "gender": "female",
+        "lang": "es",
+        "badge": "Recomendada",
+        "description": "Voz femenina madura, calmada y con dicción pedagógica excelente para tutoría",
+        "preview_text": "¡Hola! Soy tu tutora de inglés. Hoy vamos a dominar la pronunciación y gramática juntos."
+    },
+    {
+        "id": "female-chengshu",
+        "name": "Chengshu (MiniMax - Profesional)",
+        "provider": "minimax",
+        "gender": "female",
+        "lang": "es",
+        "badge": "Formal",
+        "description": "Voz femenina clara, ejecutiva, articulada y con tono seguro",
+        "preview_text": "¡Hola! Revisemos la estructura gramatical con mucha atención en este ejemplo."
+    },
+    {
+        "id": "female-tianmei",
+        "name": "Tianmei (MiniMax - Dulce)",
+        "provider": "minimax",
+        "gender": "female",
+        "lang": "es",
+        "badge": "Motivadora",
+        "description": "Voz femenina dulce, amigable y motivadora para guiarte en el aprendizaje",
+        "preview_text": "¡Excelente trabajo! Vamos a practicar una nueva frase para mejorar tu fluidez."
+    },
+    {
+        "id": "female-shaonv",
+        "name": "Shaonv (MiniMax - Juvenil)",
+        "provider": "minimax",
+        "gender": "female",
+        "lang": "es",
+        "badge": "Juvenil",
+        "description": "Voz femenina juvenil, cálida y enérgica",
+        "preview_text": "¡Hola! Estoy lista para ayudarte con todos tus ejercicios de inglés hoy."
+    },
+    {
+        "id": "audiobook_female_1",
+        "name": "Narradora Audiobook (MiniMax)",
+        "provider": "minimax",
+        "gender": "female",
+        "lang": "es",
+        "badge": "Narración",
+        "description": "Voz femenina envolvente, pausada y didáctica para explicaciones",
+        "preview_text": "Observa con atención cómo cambia el significado de la oración al usar este conector."
+    },
+    {
+        "id": "presenter_female",
+        "name": "Locutora HD (MiniMax)",
+        "provider": "minimax",
+        "gender": "female",
+        "lang": "es",
+        "badge": "Studio HD",
+        "description": "Voz femenina con tono de locutora profesional y claridad de estudio",
+        "preview_text": "Bienvenidos a la sesión de hoy. Analicemos los puntos clave de esta lección."
+    },
+    {
+        "id": "male-qn-qingse",
+        "name": "Qingse (MiniMax - Joven)",
+        "provider": "minimax",
+        "gender": "male",
+        "lang": "es",
+        "badge": "Dinámico",
+        "description": "Voz masculina joven, dinámica y conversacional",
+        "preview_text": "¡Qué tal! Vamos a darle ritmo a esta práctica de conversación en inglés."
+    },
+    {
+        "id": "male-qn-jingying",
+        "name": "Jingying (MiniMax - Ejecutivo)",
+        "provider": "minimax",
+        "gender": "male",
+        "lang": "es",
+        "badge": "Ejecutivo",
+        "description": "Voz masculina formal con dicción nítida, firme y precisa",
+        "preview_text": "Correcto. Fíjate en la posición de la lengua y los labios al pronunciar este fonema."
+    },
+    {
+        "id": "male-qn-daxuesheng",
+        "name": "College Male (MiniMax - Universitario)",
+        "provider": "minimax",
+        "gender": "male",
+        "lang": "es",
+        "badge": "Moderno",
+        "description": "Voz masculina fresca, moderna y conversacional",
+        "preview_text": "¡Hola! Practiquemos este diálogo paso a paso para ganar total confianza."
+    },
+    {
+        "id": "presenter_male",
+        "name": "Locutor HD (MiniMax)",
+        "provider": "minimax",
+        "gender": "male",
+        "lang": "es",
+        "badge": "Studio HD",
+        "description": "Voz masculina con tono de presentador de noticias",
+        "preview_text": "Iniciamos la sección práctica. Presta atención al siguiente ejemplo fonético."
+    },
+    {
+        "id": "audiobook_male_1",
+        "name": "Narrador Audiobook (MiniMax)",
+        "provider": "minimax",
+        "gender": "male",
+        "lang": "es",
+        "badge": "Narrador",
+        "description": "Voz masculina profunda, reflexiva y calmada",
+        "preview_text": "Cada palabra que practicamos hoy te acerca más a tu meta de dominar el inglés."
+    },
+
+    # ─── 2. GOOGLE TTS (gTTS) ────────────────────────────────────────────────
+    {
+        "id": "google-es",
+        "name": "Google Español (Latinoamérica)",
+        "provider": "google",
+        "gender": "female",
+        "lang": "es-419",
+        "badge": "Google Oficial",
+        "description": "Voz clásica y natural de Google en español latinoamericano, limpia y nítida",
+        "preview_text": "Hola, soy la voz de Google. Estoy lista para guiarte en tu aprendizaje de inglés."
+    },
+    {
+        "id": "google-es-mx",
+        "name": "Google Español (México)",
+        "provider": "google",
+        "gender": "female",
+        "lang": "es-MX",
+        "badge": "México",
+        "description": "Voz oficial de Google con entonación de México",
+        "preview_text": "Hola, esta es la voz de Google México. Practiquemos juntos tus frases de inglés."
+    },
+    {
+        "id": "google-es-es",
+        "name": "Google Español (España)",
+        "provider": "google",
+        "gender": "female",
+        "lang": "es-ES",
+        "badge": "España",
+        "description": "Voz clásica de Google con acento castellano de España",
+        "preview_text": "Hola, soy la voz de Google en español de España. Practiquemos juntos esta lección."
+    },
+    {
+        "id": "google-en-us",
+        "name": "Google English (Estados Unidos)",
+        "provider": "google",
+        "gender": "female",
+        "lang": "en-US",
+        "badge": "Google US",
+        "description": "Voz estándar de Google en inglés americano para entrenamiento",
+        "preview_text": "Hello! I am the Google English voice. Let's practice your pronunciation together."
+    },
+    {
+        "id": "google-en-uk",
+        "name": "Google English (Reino Unido / British)",
+        "provider": "google",
+        "gender": "female",
+        "lang": "en-GB",
+        "badge": "Google UK",
+        "description": "Voz estándar de Google en inglés británico",
+        "preview_text": "Hello! I am the Google British English voice. Let's practice your pronunciation."
+    },
+
+    # ─── 3. MICROSOFT EDGE NEURAL STUDIO (Español e Inglés HD) ───────────────
+    {
+        "id": "es-MX-DaliaNeural",
+        "name": "Dalia (Edge Neural - México Femenina)",
+        "provider": "edge",
+        "gender": "female",
+        "lang": "es-MX",
+        "badge": "Ultra Natural",
+        "description": "Voz neuronal de alta fidelidad, extremadamente fluida, natural y agradable",
+        "preview_text": "Hola, soy Dalia. Te acompañaré durante toda tu lección de inglés con explicaciones claras."
+    },
+    {
+        "id": "es-MX-JorgeNeural",
+        "name": "Jorge (Edge Neural - México Masculino)",
+        "provider": "edge",
+        "gender": "male",
+        "lang": "es-MX",
+        "badge": "Cálida",
+        "description": "Voz neuronal cálida, amable y con excelente dicción para tutoría",
+        "preview_text": "Hola, soy Jorge. Vamos a revisar paso a paso cada detalle para que hables con total confianza."
+    },
+    {
+        "id": "es-ES-ElviraNeural",
+        "name": "Elvira (Edge Neural - España Femenina)",
+        "provider": "edge",
+        "gender": "female",
+        "lang": "es-ES",
+        "badge": "España HD",
+        "description": "Voz neuronal de España, nítida, formal y pedagógica",
+        "preview_text": "Hola, soy Elvira. Analicemos juntos las reglas y patrones de esta lección."
+    },
+    {
+        "id": "es-ES-AlvaroNeural",
+        "name": "Álvaro (Edge Neural - España Masculino)",
+        "provider": "edge",
+        "gender": "male",
+        "lang": "es-ES",
+        "badge": "España HD",
+        "description": "Voz neuronal serena, profesional y clara",
+        "preview_text": "Hola, soy Álvaro. Con dedicación y práctica constante lograrás dominar el idioma."
+    },
+    {
+        "id": "es-US-PalomaNeural",
+        "name": "Paloma (Edge Neural - US Spanish Bilingüe)",
+        "provider": "edge",
+        "gender": "female",
+        "lang": "es-US",
+        "badge": "Bilingüe HD",
+        "description": "Voz femenina bilingüe con entonación natural de español estadounidense",
+        "preview_text": "Hola, soy Paloma. Practicaremos la transición fonética entre español e inglés."
+    },
+    {
+        "id": "es-US-AlonsoNeural",
+        "name": "Alonso (Edge Neural - US Spanish Bilingüe)",
+        "provider": "edge",
+        "gender": "male",
+        "lang": "es-US",
+        "badge": "Bilingüe HD",
+        "description": "Voz masculina bilingüe con excelente articulación de ambos idiomas",
+        "preview_text": "Hola, soy Alonso. Esta lección te ayudará a pronunciar como un hablante nativo."
+    },
+    {
+        "id": "en-US-RogerNeural",
+        "name": "Roger (Edge Neural - Inglés Estudio HD)",
+        "provider": "edge",
+        "gender": "male",
+        "lang": "en-US",
+        "badge": "English Coach",
+        "description": "Voz nativa de estudio en inglés americano, perfecta para entrenamiento fonético",
+        "preview_text": "Hello there! I am Roger, your native English pronunciation coach. Let's get started!"
+    },
+    {
+        "id": "en-US-JennyNeural",
+        "name": "Jenny (Edge Neural - Inglés Estudio HD)",
+        "provider": "edge",
+        "gender": "female",
+        "lang": "en-US",
+        "badge": "English Coach",
+        "description": "Voz nativa de estudio en inglés americano con claridad y tono natural impecable",
+        "preview_text": "Hi everyone! I am Jenny. We will practice natural phrases and pronunciation rhythm."
+    },
 ]
 
 def preprocess_text_for_tts(text: str, is_spanish_tutor: bool = True) -> str:
     """Preprocess text with phonetic and interjection normalizer."""
     return normalize_tts_text(text, is_spanish_tutor=is_spanish_tutor)
 
-async def _fallback_edge_tts(text: str, voice_id: str = "edge-roger", speed: float = 1.0) -> bytes:
-    """High-quality Microsoft Neural Voice fallback."""
+async def _synthesize_google_tts(text: str, lang: str = "es", tld: str = "com") -> bytes:
+    """Synthesize speech using Google TTS (gTTS)."""
+    try:
+        loop = asyncio.get_event_loop()
+        def _generate():
+            tts = gTTS(text=text, lang=lang, tld=tld, slow=False)
+            bio = io.BytesIO()
+            tts.write_to_fp(bio)
+            return bio.getvalue()
+        return await loop.run_in_executor(None, _generate)
+    except Exception as e:
+        logger.warning(f"Google TTS synthesis error: {e}")
+        return b""
+
+async def _fallback_edge_tts(text: str, voice_id: str = "es-MX-DaliaNeural", speed: float = 1.0) -> bytes:
+    """High-quality Microsoft Neural Voice synthesis."""
     try:
         vid = (voice_id or "").lower()
         if "roger" in vid:
             voice = "en-US-RogerNeural"
         elif "jenny" in vid:
             voice = "en-US-JennyNeural"
-        elif "ava" in vid:
-            voice = "en-US-AvaMultilingualNeural"
-        elif "emma" in vid:
-            voice = "en-US-EmmaMultilingualNeural"
+        elif "paloma" in vid:
+            voice = "es-US-PalomaNeural"
+        elif "alonso" in vid:
+            voice = "es-US-AlonsoNeural"
+        elif "alvaro" in vid:
+            voice = "es-ES-AlvaroNeural"
+        elif "elvira" in vid:
+            voice = "es-ES-ElviraNeural"
         elif "jorge" in vid or "male" in vid or "college" in vid:
             voice = "es-MX-JorgeNeural"
         elif voice_id.startswith("en-"):
@@ -64,10 +320,8 @@ def is_predominantly_english(text: str) -> bool:
     """Detects if text is purely/predominantly English sentence/words without Spanish introductory markers."""
     if not text or not isinstance(text, str):
         return False
-    # If text contains Spanish inverted punctuation or common Spanish accents, it's Spanish
     if re.search(r'[áéíóúÁÉÍÓÚñÑ¿¡]', text):
         return False
-    # Check common Spanish stop words
     spanish_words = {
         "el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "en", "para", "por", 
         "con", "sin", "sobre", "entre", "este", "esta", "estos", "estas", "hola", "bienvenido", 
@@ -83,20 +337,20 @@ def is_predominantly_english(text: str) -> bool:
 
 async def _synthesize_minimax_tts(
     text: str,
-    voice_id: str = "female-shaonv",
+    voice_id: str = "female-yujie",
     emotion: str = "calm",
     speed: float = 1.0,
     api_key: str = None
 ) -> Optional[bytes]:
     """Calls MiniMax speech-02-hd text-to-audio API (t2a_v2)."""
     key = api_key or settings.MINIMAX_API_KEY
-    if not key:
+    if not key or key == "your_minimax_api_key_here" or len(key) < 10:
         return None
 
     # Map generic/edge IDs to MiniMax voice IDs
     minimax_voice = voice_id
-    if not voice_id or voice_id.startswith("edge-") or voice_id.startswith("en-") or voice_id in ("default", "tutor"):
-        minimax_voice = "female-shaonv"
+    if not voice_id or voice_id.startswith("edge-") or voice_id.startswith("en-") or voice_id.startswith("es-") or voice_id.startswith("google") or voice_id in ("default", "tutor"):
+        minimax_voice = "female-yujie"
 
     payload = {
         "model": settings.MINIMAX_TTS_MODEL or "speech-02-hd",
@@ -151,10 +405,9 @@ async def _synthesize_minimax_tts(
 
     return None
 
-
 async def synthesize_speech(
     text: str,
-    voice_id: str = "female-shaonv",
+    voice_id: str = "female-yujie",
     emotion: str = "calm",
     speed: float = 1.0,
     api_key: str = None
@@ -162,51 +415,47 @@ async def synthesize_speech(
     key = api_key or settings.MINIMAX_API_KEY
     vid = (voice_id or "").lower()
 
-    # Determine if the content is English practice / exercise / example / phonetic
-    is_eng_voice = (
-        "roger" in vid
-        or "jenny" in vid
-        or "ava" in vid
-        or "emma" in vid
-        or vid.startswith("en-")
-        or "edge-roger" in vid
-        or "edge-jenny" in vid
-    )
+    # ── 1. EXPLICIT GOOGLE TTS VOICES ─────────────────────────────────────────
+    if vid.startswith("google-") or vid.startswith("gtts-"):
+        is_eng = "en" in vid
+        speech_text = preprocess_text_for_tts(text, is_spanish_tutor=not is_eng)
+        lang = "en" if is_eng else "es"
+        if "es-es" in vid:
+            tld = "es"
+        elif "es-mx" in vid:
+            tld = "com.mx"
+        elif "en-uk" in vid:
+            tld = "co.uk"
+        else:
+            tld = "com"
+        google_audio = await _synthesize_google_tts(speech_text, lang=lang, tld=tld)
+        if google_audio and len(google_audio) > 100:
+            return google_audio
+
+    # ── 2. EXPLICIT MICROSOFT EDGE NEURAL STUDIO VOICES ───────────────────────
+    if vid.startswith("es-") or vid.startswith("en-") or vid.startswith("edge-"):
+        is_eng = vid.startswith("en-") or "roger" in vid or "jenny" in vid
+        speech_text = preprocess_text_for_tts(text, is_spanish_tutor=not is_eng)
+        edge_audio = await _fallback_edge_tts(speech_text, voice_id=voice_id, speed=speed)
+        if edge_audio and len(edge_audio) > 100:
+            return edge_audio
+
+    # ── 3. ENGLISH PRACTICE / DRILL CONTENT ───────────────────────────────────
     is_eng_content = is_predominantly_english(text)
-    is_english = is_eng_voice or (is_eng_content and vid not in ("female-shaonv", "male-qn-college", "female-yicheng"))
-
-    # ── 1. ENGLISH & MULTILINGUAL AUDIO (Exercises, Examples, Phonetics, Story) ───
-    if is_english:
+    if is_eng_content and not any(k in vid for k in ("yujie", "chengshu", "tianmei", "shaonv", "dalia", "jorge", "elvira", "alvaro", "paloma", "alonso")):
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
-        if not speech_text:
-            return b""
-        eng_voice = "en-US-RogerNeural" if (not vid.startswith("en-") or vid in ("female-shaonv", "edge-jenny", "edge-roger")) else voice_id
-        
-        # Primary: Microsoft Neural Voice HD (Roger / Jenny / Ava)
-        neural_audio = await _fallback_edge_tts(speech_text, voice_id=eng_voice, speed=speed)
-        if neural_audio:
+        neural_audio = await _fallback_edge_tts(speech_text, voice_id="en-US-RogerNeural", speed=speed)
+        if neural_audio and len(neural_audio) > 100:
             return neural_audio
+        return await _synthesize_google_tts(speech_text, lang="en")
 
-        # Fallback: Google TTS in English (NEVER Spanish for English text!)
-        try:
-            loop = asyncio.get_event_loop()
-            def _gtts_en():
-                tts = gTTS(text=speech_text, lang="en", slow=False)
-                bio = io.BytesIO()
-                tts.write_to_fp(bio)
-                return bio.getvalue()
-            return await loop.run_in_executor(None, _gtts_en)
-        except Exception as e:
-            logger.error(f"English TTS fallback error: {e}")
-            return b""
-
-    # ── 2. SPANISH TUTOR SPEECH (MiniMax speech-02-hd / female-shaonv Primary) ─────
+    # ── 4. SPANISH TUTOR SPEECH (MiniMax / Neural Fallbacks) ───────────────────
     speech_text = preprocess_text_for_tts(text, is_spanish_tutor=True)
     if not speech_text:
         return b""
 
-    # A) PRIMARY: MiniMax High-Definition Neural Speech Engine
-    if key:
+    # A) PRIMARY: MiniMax High-Definition Neural Speech Engine (if valid key)
+    if key and key != "your_minimax_api_key_here" and len(key) >= 10:
         minimax_audio = await _synthesize_minimax_tts(
             text=speech_text,
             voice_id=voice_id,
@@ -217,21 +466,12 @@ async def synthesize_speech(
         if minimax_audio and len(minimax_audio) > 200:
             return minimax_audio
 
-    # B) SECONDARY: Microsoft Neural Studio Voice (es-MX-DaliaNeural / es-MX-JorgeNeural)
-    spanish_voice = "es-MX-JorgeNeural" if "male" in vid or "jorge" in vid else "es-MX-DaliaNeural"
-    neural_audio = await _fallback_edge_tts(speech_text, voice_id=spanish_voice, speed=speed)
-    if neural_audio:
+    # B) SECONDARY: Microsoft Neural Studio Voice
+    is_male = any(m in vid for m in ("male", "jorge", "alvaro", "alonso", "qingse", "jingying", "daxuesheng", "presenter_male"))
+    fallback_spanish = "es-MX-JorgeNeural" if is_male else "es-MX-DaliaNeural"
+    neural_audio = await _fallback_edge_tts(speech_text, voice_id=fallback_spanish, speed=speed)
+    if neural_audio and len(neural_audio) > 100:
         return neural_audio
 
     # C) TERTIARY: Google TTS Spanish Fallback
-    try:
-        loop = asyncio.get_event_loop()
-        def _gtts_es():
-            tts = gTTS(text=speech_text, lang="es", slow=False)
-            bio = io.BytesIO()
-            tts.write_to_fp(bio)
-            return bio.getvalue()
-        return await loop.run_in_executor(None, _gtts_es)
-    except Exception as e:
-        logger.error(f"All TTS synthesis engines failed: {e}")
-        return b""
+    return await _synthesize_google_tts(speech_text, lang="es")

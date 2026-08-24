@@ -1,4 +1,7 @@
+import os
 from pydantic_settings import BaseSettings
+
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 
 class Settings(BaseSettings):
     MINIMAX_API_KEY: str = ""
@@ -12,6 +15,8 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int = 10080  # 7 days
     
     class Config:
-        env_file = ".env"
+        env_file = _env_path
+        extra = "ignore"
 
 settings = Settings()
+

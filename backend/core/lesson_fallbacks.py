@@ -84,8 +84,14 @@ def build_curated_fallback(topic: str, sublevel: str, is_a_level: bool) -> dict:
         data = _build_reported_speech_fallback(sublevel)
     elif "relative" in low:
         data = _build_relative_clauses_fallback(sublevel)
-    elif "phrasal" in low:
-        data = _build_phrasal_verbs_fallback(sublevel)
+    elif "logic of out" in low or ("phrasal" in low and ("out" in low or "up" in low or "b1.2" in sublevel.lower())):
+        data = _build_phrasal_verbs_out_up_fallback(sublevel)
+    elif "off, on" in low or ("phrasal" in low and ("off" in low or "away" in low or "back" in low or "b1.4" in sublevel.lower())):
+        data = _build_phrasal_verbs_off_on_fallback(sublevel)
+    elif "three-part" in low or "multi-particle" in low or "separability" in low or ("phrasal" in low and "b2" in sublevel.lower()):
+        data = _build_phrasal_verbs_advanced_fallback(sublevel)
+    elif "phrasal" in low or "particle" in low:
+        data = _build_phrasal_verbs_spatial_fallback(sublevel)
     elif "deduction" in low or "must be" in low or "can't be" in low:
         data = _build_modals_deduction_fallback(sublevel)
     elif "advice" in low or "obligation" in low or "should" in low or "must" in low or "have to" in low:
@@ -94,6 +100,8 @@ def build_curated_fallback(topic: str, sublevel: str, is_a_level: bool) -> dict:
         data = _build_routines_fallback(sublevel)
     elif "past simple" in low or "pasado simple" in low or "did" in low:
         data = _build_past_simple_fallback(sublevel)
+    elif "narrative" in low or "storytelling" in low or "past perfect" in low:
+        data = _build_narrative_tenses_fallback(sublevel)
     else:
         # Check if matched in curriculum graph
         node = find_curriculum_node(topic, sublevel)
@@ -1369,15 +1377,163 @@ def _build_time_frequency_fallback(sublevel: str) -> dict:
     }
 
 
+def _build_narrative_tenses_fallback(sublevel: str) -> dict:
+    """Dedicated high-pedagogy fallback for B1.1 Narrative Tenses."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Narrative Tenses",
+        "level": "B1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: Las 3 Capas Temporales de Narrative Tenses",
+                "tutor_says": "¡Bienvenido a la clase de Narrative Tenses! En la narración en inglés combinamos tres tiempos para dar profundidad y dinamismo a una historia: el Past Continuous (was/were + -ing) describe el escenario o la acción de fondo ('It was raining heavily...'), el Past Simple cuenta la secuencia de acciones principales en orden ('...when I arrived at the station'), y el Past Perfect (had + V3) revela los antecedentes que ocurrieron antes de todo ('...the train had already left'). Fíjate en la oración modelo: 'When I arrived at the station, the train had already left because I had overslept'.",
+                "board_content": "🎬 LAS 3 CAPAS DE NARRATIVE TENSES:\n\n1. ACCIÓN ANTERIOR / BACKSTORY (Past Perfect - had + V3):\n   → \"The train had already left\"\n2. ESCENARIO DE FONDO (Past Continuous - was/were + -ing):\n   → \"It was raining heavily...\"\n3. EVENTO PRINCIPAL (Past Simple - V2 / -ed):\n   → \"...when I arrived at the station\"\n\n👉 Oración Modelo Completa:\n\"When I arrived at the station, the train had already left because I had overslept.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a young traveler looking at an empty railway platform in the rain with station clock, cinematic warm lighting, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Past Simple + Past Perfect (had + V3)",
+                "target_audio_items": [
+                    {"english": "When I arrived, the train had already left", "translation": "Cuando llegué, el tren ya se había ido", "label": "Past Perfect"},
+                    {"english": "She was crying because she had lost her passport", "translation": "Ella estaba llorando porque había perdido su pasaporte", "label": "Narrative Sequence"},
+                    {"english": "By the time we got home, the movie had finished", "translation": "Para cuando llegamos a casa, la película había terminado", "label": "Conector By The Time"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura Nuclear: Narrative Tenses",
+                    "formula": "[ Evento Pasado Simple ] + [ Conector ] + [ Past Perfect (had + V3) ]",
+                    "formula_tokens": [
+                        {"role": "Pasado Simple", "pattern": "When I arrived / When she called", "color": "blue"},
+                        {"role": "Conector", "pattern": "because / by the time / before", "color": "rose"},
+                        {"role": "Past Perfect", "pattern": "had + already + V3 (left / finished / started)", "color": "purple"},
+                        {"role": "Complemento", "pattern": "the train / the movie / her keys", "color": "emerald"}
+                    ],
+                    "explanation": "El Past Perfect (had + V3) se usa exclusivamente para la acción que ocurrió PRIMERO en la línea temporal.",
+                    "example_breakdowns": [
+                        {
+                            "english": "When I arrived, the train had already left.",
+                            "spanish": "Cuando llegué, el tren ya se había ido.",
+                            "parts": [
+                                {"role": "Pasado Simple", "text": "When I arrived,", "color": "blue"},
+                                {"role": "Sujeto", "text": "the train", "color": "emerald"},
+                                {"role": "Past Perfect", "text": "had already left", "color": "purple"}
+                            ]
+                        }
+                    ],
+                    "tips": "El Past Perfect no se usa solo: siempre necesita un punto de referencia en Pasado Simple."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Conectores Temporales: By the time, As soon as & Already",
+                "tutor_says": "Para enlazar eventos narrativos con precisión usamos conectores clave: 'By the time' significa 'para cuando' y va seguido de Pasado Simple con el resultado en Past Perfect ('By the time the police arrived, the burglar had escaped'). 'As soon as' introduce lo que ocurrió inmediatamente después ('As soon as I had finished dinner, my phone rang'). Observa las fórmulas en la pizarra.",
+                "board_content": "⚡ CONECTORES CLAVE EN HISTORIAS:\n\n• By the time + [ Pasado Simple ], [ Sujeto ] + had + V3\n  → \"By the time the police arrived, the suspect had escaped.\"\n\n• [ Pasado Simple ] + because + [ Sujeto ] + had + V3\n  → \"I was exhausted because I had worked all night.\"\n\n• As soon as + [ Sujeto ] + had + V3, [ Pasado Simple ]\n  → \"As soon as she had arrived, we started the meeting.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of a timeline infographic with clocks and story panels, modern clean design, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "By the time + Past Simple, Past Perfect",
+                "target_audio_items": [
+                    {"english": "By the time the police arrived, the suspect had escaped", "translation": "Para cuando llegó la policía, el sospechoso se había escapado", "label": "By the time"},
+                    {"english": "I was exhausted because I had worked all night", "translation": "Estaba agotado/a porque había trabajado toda la noche", "label": "Causa en Pasado"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Reto Fonético: Contracciones con Had (/aɪd/, /ʃiːd/, /ðeɪd/)",
+                "tutor_says": "En el inglés hablado natural, 'had' casi siempre se contrae con los pronombres: 'I had' se convierte en 'I'd' (/aɪd/), 'She had' en 'She'd' (/ʃiːd/), y 'They had' en 'They'd' (/ðeɪd/). Escucha con atención la frase modelo: 'I realized I'd left my keys in the office'. Practica la contracción con tu micrófono.",
+                "board_content": "🗣️ RETO FONÉTICO: CONTRACCIONES DE HAD:\n\n• I had → I'd (/aɪd/)\n• She had → She'd (/ʃiːd/)\n• They had → They'd (/ðeɪd/)\n• We had → We'd (/wiːd/)\n\nFrase de práctica:\n\"I realized I'd left my keys in the office.\"\n(Pronuncia /aɪd/ de forma suave y conectada)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a student speaking into a studio microphone with soundwaves glowing, expressive character, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia con fluidez: 'I realized I'd left my keys in the office'",
+                "expected_answer": "I realized I'd left my keys in the office",
+                "key_structure": "Contractions: I'd / She'd + V3",
+                "target_audio_items": [
+                    {"english": "I realized I'd left my keys in the office", "translation": "Me di cuenta de que había dejado mis llaves en la oficina", "label": "Contracción I'd"},
+                    {"english": "She said she'd never seen that man before", "translation": "Ella dijo que nunca había visto a ese hombre antes", "label": "Contracción She'd"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Detección de Errores: La Trampa Cronológica del Doble Pasado",
+                "tutor_says": "Un error común es usar dos Pasados Simples cuando una acción ocurrió antes que otra alterando el orden cronológico. Si dices 'When I got to the cinema, the movie started', significa que empezó DESPUÉS de que llegaste. Si ya había empezado antes, DEBES usar Past Perfect: 'the movie had already started'. Corrige la frase en la pizarra.",
+                "board_content": "⚔️ ANÁLISIS DE ERROR CRONOLÓGICO:\n\n❌ Confuso: \"When we arrived at the party, everyone left.\"\n(Suena a que se fueron justo al verte llegar)\n\n✅ Preciso: \"When we arrived at the party, everyone had already left.\"\n(Ya se habían ido antes de que llegaras)\n\n📌 Regla: Usa Past Perfect (had + V3) para el evento previo.",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D concept art of an investigator comparing two conflicting timeline photographs on a glowing detective board, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige agregando 'had already left': 'When we arrived at the party, everyone left'",
+                "expected_answer": "When we arrived at the party, everyone had already left",
+                "key_structure": "Past Perfect for Prior Actions",
+                "target_audio_items": [
+                    {"english": "When we arrived at the party, everyone had already left", "translation": "Cuando llegamos a la fiesta, todos ya se habían ido", "label": "Oración Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Juego de Rol: El Testigo del Giro Inesperado",
+                "tutor_says": "Imagina que un detective te pregunta qué ocurrió cuando abriste la puerta de tu departamento: 'What happened when you opened the door?'. Relata el giro inesperado usando Past Simple y Past Perfect: 'When I opened the door, someone had turned off all the lights and taken my laptop'.",
+                "board_content": "🎭 JUEGO DE ROL (TESTIMONIO NARRATIVO):\n\nDetective: \"What happened when you opened the door?\"\n\nTu respuesta modelo:\n• \"When I opened the door, someone had turned off all the lights and taken my laptop.\"\n\n(Traducción: Cuando abrí la puerta, alguien había apagado todas las luces y tomado mi laptop)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of a friendly modern detective taking notes while listening to a witness in a living room, warm colors, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde al detective: 'When I opened the door, someone had turned off all the lights'",
+                "expected_answer": "When I opened the door, someone had turned off all the lights",
+                "key_structure": "Narrative Storytelling with Past Perfect",
+                "target_audio_items": [
+                    {"english": "What happened when you opened the door?", "translation": "¿Qué ocurrió cuando abriste la puerta?", "label": "Pregunta Detective"},
+                    {"english": "When I opened the door, someone had turned off all the lights", "translation": "Cuando abrí la puerta, alguien había apagado todas las luces", "label": "Tu Testimonio"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen y Dominio: Narrative Tenses Mastery",
+                "tutor_says": "¡Felicitaciones! Has dominado las tres capas narrativas en inglés: Past Continuous para el fondo, Past Simple para la acción principal y Past Perfect (had + V3) para los antecedentes y giros de trama. ¡Ahora puedes relatar cualquier anécdota con nivel profesional!",
+                "board_content": "🎉 RESUMEN DE DOMINIO: NARRATIVE TENSES\n\n✔ Past Continuous (was/were + -ing): Escenario de fondo\n✔ Past Simple (V2): Eventos secuenciales en primer plano\n✔ Past Perfect (had + V3): Acción que ocurrió ANTES\n✔ Conectores: By the time, As soon as, When, Because\n✔ Contracciones: I'd, She'd, They'd",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a golden quill pen and open storybook with glowing stars, elegant minimalist design, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Narrative Tenses Mastery",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
 def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
-    """Dynamically builds a top-tier pedagogical 6-phase lesson from any CURRICULUM_GRAPH class node."""
+    """Dynamically builds an authentic pedagogical 6-phase lesson from any CURRICULUM_GRAPH class node."""
     topic = node.get("topic", "English Lesson")
     grammar_core = node.get("grammar_core", "Grammar & Vocabulary Structure")
     vocab_core = node.get("vocabulary_core", "Core Vocabulary")
     can_do = node.get("can_do", f"Express ideas clearly about {topic}")
     
     first_grammar_rule = grammar_core.split(",")[0].strip() if grammar_core else topic
-    first_vocab = vocab_core.split(",")[0].strip() if vocab_core else "English practice"
+    first_vocab = vocab_core.split(",")[0].strip() if vocab_core else "everyday situations"
+
+    # Contextual sentence models based on CEFR level
+    is_b_level = sublevel.startswith("B1") or sublevel.startswith("B2")
+    if is_b_level:
+        model_sent_1 = f"In professional discussions, we apply {first_grammar_rule.lower()} to communicate with precision."
+        model_sent_2 = f"This structure allows us to express complex nuances effectively."
+        model_sent_trans_1 = f"En discusiones profesionales, aplicamos {first_grammar_rule.lower()} para comunicarnos con precisión."
+        practice_dialogue_q = f"How would you explain this perspective in an interactive discussion?"
+        practice_dialogue_a = f"From my perspective, this approach is the most effective solution."
+        err_wrong = f"He explained me the whole situation yesterday."
+        err_correct = f"He explained the whole situation to me yesterday."
+    else:
+        model_sent_1 = f"I use {first_vocab.lower()} when I speak with friends."
+        model_sent_2 = f"She practices this English structure every morning."
+        model_sent_trans_1 = f"Uso {first_vocab.lower()} cuando hablo con amigos."
+        practice_dialogue_q = f"Where do you usually practice your English?"
+        practice_dialogue_a = f"I practice speaking English at home and in my classes."
+        err_wrong = f"She don't have enough time today."
+        err_correct = f"She doesn't have enough time today."
 
     return {
         "schema": "ai_tutor.lesson.v1",
@@ -1388,18 +1544,18 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
         "phases": [
             {
                 "phase_number": 1,
-                "phase_name": f"1. Fundamentos y Metáfora de {topic}",
-                "tutor_says": f"¡Bienvenido a tu clase de {topic}! En esta lección aprenderemos a dominar {grammar_core}. Piensa en esta estructura como los cimientos de un edificio: una vez que colocas las piezas en el orden exacto, puedes construir cualquier mensaje con total seguridad y naturalidad. Observa los conceptos y ejemplos en la pizarra.",
-                "board_content": f"📌 FUNDAMENTOS DE {topic.upper()}:\n\n• Enfoque gramatical: {grammar_core}\n• Vocabulario clave: {vocab_core}\n• Meta comunicativa: {can_do}\n\n👉 Oración modelo:\n\"I learn {topic.lower()} with practical English sentences.\"",
+                "phase_name": f"1. Fundamentos y Enfoque de {topic}",
+                "tutor_says": f"¡Bienvenido a tu clase de {topic}! En esta lección aprenderemos a dominar {grammar_core}. Piensa en esta estructura como una herramienta de precisión para comunicarte con claridad en nivel {sublevel}. Dominarás vocabulario clave como {vocab_core} y lograrás el objetivo: {can_do}. Observa los conceptos y ejemplos en la pizarra.",
+                "board_content": f"📌 FUNDAMENTOS DE {topic.upper()}:\n\n• Enfoque gramatical: {grammar_core}\n• Vocabulario clave: {vocab_core}\n• Meta comunicativa: {can_do}\n\n👉 Oración Modelo Principal:\n\"{model_sent_1}\"",
                 "image_style": "comic_scene",
-                "image_prompt": f"comic book panel illustration of a student learning {topic} actively in a modern cozy classroom with study materials, vibrant warm lighting, expressive characters, strictly no text",
+                "image_prompt": f"comic book panel illustration of young learners having an engaging conversation about {topic} in a bright modern study lounge, warm atmospheric lighting, strictly no text",
                 "interaction_type": "explanation",
                 "student_task": None,
                 "expected_answer": None,
                 "key_structure": f"{first_grammar_rule}",
                 "target_audio_items": [
-                    {"english": f"I study {topic.lower()} every day", "translation": f"Estudio {topic.lower()} todos los días", "label": "Frase Modelo"},
-                    {"english": "This is an important English concept", "translation": "Este es un concepto importante en inglés", "label": "Estructura Base"}
+                    {"english": model_sent_1, "translation": model_sent_trans_1, "label": "Oración Principal"},
+                    {"english": model_sent_2, "translation": "Ella practica esta estructura de inglés cada mañana", "label": "Ejemplo Modelo"}
                 ],
                 "grammar_structure": {
                     "title": f"Estructura Nuclear: {topic}",
@@ -1408,18 +1564,18 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
                         {"role": "Sujeto", "pattern": "I / You / He / She / We / They", "color": "blue"},
                         {"role": "Estructura Clave", "pattern": first_grammar_rule, "color": "purple"},
                         {"role": "Vocabulario", "pattern": first_vocab, "color": "emerald"},
-                        {"role": "Complemento", "pattern": "Time / Place / Context", "color": "amber"}
+                        {"role": "Complemento", "pattern": "Time / Context / Place", "color": "amber"}
                     ],
-                    "explanation": f"Aplica la regla '{first_grammar_rule}' respetando el orden sintáctico.",
+                    "explanation": f"Aplica '{first_grammar_rule}' manteniendo siempre el orden sintáctico natural.",
                     "example_breakdowns": [
                         {
-                            "english": f"I practice {first_vocab.lower()} in English.",
-                            "spanish": f"Practico {first_vocab.lower()} en inglés.",
+                            "english": model_sent_1,
+                            "spanish": model_sent_trans_1,
                             "parts": [
                                 {"role": "Sujeto", "text": "I", "color": "blue"},
-                                {"role": "Acción", "text": "practice", "color": "purple"},
+                                {"role": "Estructura", "text": "use", "color": "purple"},
                                 {"role": "Vocabulario", "text": first_vocab.lower(), "color": "emerald"},
-                                {"role": "Complemento", "text": "in English", "color": "amber"}
+                                {"role": "Complemento", "text": "with friends", "color": "amber"}
                             ]
                         }
                     ],
@@ -1429,7 +1585,7 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
             {
                 "phase_number": 2,
                 "phase_name": f"2. Desglose Gramatical y Sintaxis de {topic}",
-                "tutor_says": f"Desglosemos la fórmula de {topic} paso a paso. Para estructurar tus oraciones con precisión, aplicamos: {grammar_core}. Observa cómo cada término cumple una función indispensable en la frase.",
+                "tutor_says": f"Desglosemos la sintaxis de {topic} paso a paso. Para estructurar oraciones con precisión, aplicamos: {grammar_core}. Observa cómo cada término cumple una función indispensable en la frase.",
                 "board_content": f"⚡ FÓRMULAS Y REGLAS DE {topic.upper()}:\n\n• Regla principal: {grammar_core}\n• Vocabulario de apoyo: {vocab_core}\n• Aplicación práctica: {can_do}\n\n📌 Regla de oro: Respeta siempre la posición sintáctica de cada elemento.",
                 "image_style": "flat_art",
                 "image_prompt": f"flat 2D vector educational illustration of a student taking notes on a modern desk with colorful grammar formula cards, clean minimalist design, strictly no text",
@@ -1438,7 +1594,7 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
                 "expected_answer": None,
                 "key_structure": f"{first_grammar_rule}",
                 "target_audio_items": [
-                    {"english": f"We apply {topic.lower()} with clear rules", "translation": f"Aplicamos {topic.lower()} con reglas claras", "label": "Fórmula Maestra"}
+                    {"english": model_sent_1, "translation": model_sent_trans_1, "label": "Fórmula Maestra"}
                 ]
             },
             {
@@ -1449,41 +1605,42 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
                 "image_style": "comic_scene",
                 "image_prompt": "comic book panel illustration of a student speaking with confidence into a studio microphone, expressive cell shading, strictly no text",
                 "interaction_type": "pronunciation",
-                "student_task": f"Pronuncia en voz alta: 'I understand {topic.lower()} and I speak clearly'",
-                "expected_answer": f"I understand {topic.lower()} and I speak clearly",
+                "student_task": f"Pronuncia en voz alta: '{model_sent_1}'",
+                "expected_answer": model_sent_1,
                 "key_structure": "Spoken Fluency Drill",
                 "target_audio_items": [
-                    {"english": f"I understand {topic.lower()} and I speak clearly", "translation": f"Entiendo {topic.lower()} y hablo con claridad", "label": "Práctica de Voz"}
+                    {"english": model_sent_1, "translation": model_sent_trans_1, "label": "Práctica de Voz"}
                 ]
             },
             {
                 "phase_number": 4,
                 "phase_name": "4. Detección y Corrección de Errores Típicos",
-                "tutor_says": f"Analicemos el error más común que cometen los estudiantes al aprender {topic}: traducir literalmente desde el español. Observa el orden correcto en la pizarra y resuelve el desafío.",
-                "board_content": f"⚔️ ANÁLISIS DE ERROR FRECUENTE:\n\n• Evita la traducción literal palabra por palabra\n• Recuerda aplicar la regla: {first_grammar_rule}\n• Pon atención a la concordancia y los tiempos verbales",
+                "tutor_says": f"Analicemos el error más común que cometen los estudiantes al aplicar {topic}: la interferencia del orden sintáctico en español. Observa la corrección en la pizarra y resuelve el desafío.",
+                "board_content": f"⚔️ ANÁLISIS DE ERROR FRECUENTE:\n\n❌ Incorrecto: \"{err_wrong}\"\n✅ Correcto: \"{err_correct}\"\n\n📌 Regla: Mantén la concordancia exacta y evita la traducción literal.",
                 "image_style": "concept_art",
                 "image_prompt": "cinematic 2D concept art of an interactive chalkboard with glowing green checkmarks and study notes, strictly no text",
                 "interaction_type": "error_correction",
-                "student_task": f"Aplica la regla de {topic} en la oración modelo",
-                "expected_answer": f"I practice English every day with confidence",
+                "student_task": f"Corrige la oración: '{err_wrong}'",
+                "expected_answer": err_correct,
                 "key_structure": "Error Correction",
                 "target_audio_items": [
-                    {"english": "I practice English every day with confidence", "translation": "Practico inglés todos los días con confianza", "label": "Frase Correcta"}
+                    {"english": err_correct, "translation": "Oración corregida", "label": "Frase Correcta"}
                 ]
             },
             {
                 "phase_number": 5,
                 "phase_name": "5. Juego de Rol y Producción Comunicativa",
                 "tutor_says": f"Vamos a simular una conversación real. Tu objetivo es responder en inglés aplicando {grammar_core} para cumplir la meta: {can_do}.",
-                "board_content": f"🎭 DESAFÍO COMUNICATIVO:\n\nSituación: Práctica de conversación real sobre {topic}.\nObjetivo: {can_do}.",
+                "board_content": f"🎭 DESAFÍO COMUNICATIVO:\n\nPregunta: \"{practice_dialogue_q}\"\n\nTu respuesta modelo:\n• \"{practice_dialogue_a}\"",
                 "image_style": "comic_scene",
                 "image_prompt": "comic book panel illustration of two friendly people conversing outdoors in a vibrant city setting, strictly no text",
                 "interaction_type": "roleplay",
-                "student_task": f"Responde a la situación comunicativa sobre {topic}",
-                "expected_answer": f"I can communicate effectively in English",
+                "student_task": f"Responde a la pregunta: '{practice_dialogue_a}'",
+                "expected_answer": practice_dialogue_a,
                 "key_structure": "Communicative Roleplay",
                 "target_audio_items": [
-                    {"english": "I can communicate effectively in English", "translation": "Puedo comunicarme efectivamente en inglés", "label": "Juego de Rol"}
+                    {"english": practice_dialogue_q, "translation": "Pregunta de práctica", "label": "Pregunta"},
+                    {"english": practice_dialogue_a, "translation": "Respuesta modelo", "label": "Juego de Rol"}
                 ]
             },
             {
@@ -1510,103 +1667,10 @@ def _build_generic_interactive_fallback(topic: str, sublevel: str, is_a_level: b
         return _build_curriculum_node_fallback(node, sublevel)
 
     clean_topic = topic.strip()
-    return {
-        "schema": "ai_tutor.lesson.v1",
-        "topic": clean_topic,
-        "level": sublevel.split(".")[0],
-        "sublevel": sublevel,
-        "subject": "English",
-        "phases": [
-            {
-                "phase_number": 1,
-                "phase_name": f"1. Fundamentos: {clean_topic}",
-                "tutor_says": f"¡Bienvenido a la clase de {clean_topic}! En esta sesión aprenderemos las estructuras y expresiones fundamentales para comunicarte con claridad y fluidez en nivel {sublevel}. Observa los conceptos en la pizarra.",
-                "board_content": f"📌 FUNDAMENTOS DE {clean_topic.upper()}:\n\n• Aprenderás estructuras prácticas y vocabulario clave de {clean_topic}.\n• Desarrollarás fluidez conversacional y precisión gramatical.",
-                "image_style": "comic_scene",
-                "image_prompt": f"comic book panel illustration of a student studying {clean_topic} happily in a modern room, expressive characters, warm lighting, strictly no text",
-                "interaction_type": "explanation",
-                "student_task": None,
-                "expected_answer": None,
-                "key_structure": f"{clean_topic} Fundamentals",
-                "target_audio_items": [
-                    {"english": f"I study {clean_topic.lower()} with confidence", "translation": f"Estudio {clean_topic.lower()} con confianza", "label": "Frase Modelo"}
-                ]
-            },
-            {
-                "phase_number": 2,
-                "phase_name": f"2. Fórmulas y Reglas de {clean_topic}",
-                "tutor_says": f"En esta fase desglosamos las reglas sintácticas clave de {clean_topic}. Recuerda mantener siempre el orden natural del inglés: Sujeto + Verbo + Complemento.",
-                "board_content": f"⚡ FÓRMULA GRAMATICAL DE {clean_topic.upper()}:\n\n• [ Sujeto ] + [ Verbo / Estructura Clave ] + [ Complemento ]\n• Presta atención a la concordancia y los tiempos verbales.",
-                "image_style": "flat_art",
-                "image_prompt": f"flat 2D vector educational illustration of a student writing on a study board with colorful cards, clean minimal design, strictly no text",
-                "interaction_type": "explanation",
-                "student_task": None,
-                "expected_answer": None,
-                "key_structure": f"{clean_topic} Structure",
-                "target_audio_items": [
-                    {"english": "I practice English sentences every day", "translation": "Practico oraciones en inglés todos los días", "label": "Ejemplo Modelo"}
-                ]
-            },
-            {
-                "phase_number": 3,
-                "phase_name": "3. Reto de Pronunciación y Fluidez",
-                "tutor_says": "Llegó el momento de practicar tu pronunciación. Escucha la frase modelo y graba tu voz con el micrófono.",
-                "board_content": f"🗣️ RETO DE PRONUNCIACIÓN:\n\n• Enlace suave entre palabras\n• Claridad articulatoria en las vocales y consonantes",
-                "image_style": "comic_scene",
-                "image_prompt": "comic book panel illustration of a learner speaking with a microphone in front of a laptop, expressive cell shading, strictly no text",
-                "interaction_type": "pronunciation",
-                "student_task": f"Pronuncia con claridad: 'I understand {clean_topic.lower()} very well'",
-                "expected_answer": f"I understand {clean_topic.lower()} very well",
-                "key_structure": "Pronunciation Drill",
-                "target_audio_items": [
-                    {"english": f"I understand {clean_topic.lower()} very well", "translation": f"Entiendo {clean_topic.lower()} muy bien", "label": "Práctica de Voz"}
-                ]
-            },
-            {
-                "phase_number": 4,
-                "phase_name": "4. Detección y Corrección de Errores",
-                "tutor_says": "Analicemos la importancia de evitar traducciones literales desde el español. Observa la corrección y ponla en práctica.",
-                "board_content": "⚔️ CORRECCIÓN DE ERRORES:\n\n• Respeta el orden de las palabras en inglés\n• Evita omitir pronombres o auxiliares",
-                "image_style": "concept_art",
-                "image_prompt": "cinematic 2D concept art of a study desk with glowing checkmarks, strictly no text",
-                "interaction_type": "error_correction",
-                "student_task": "Corrige la oración modelo",
-                "expected_answer": "I speak English with confidence and clarity",
-                "key_structure": "Error Correction",
-                "target_audio_items": [
-                    {"english": "I speak English with confidence and clarity", "translation": "Hablo inglés con confianza y claridad", "label": "Frase Correcta"}
-                ]
-            },
-            {
-                "phase_number": 5,
-                "phase_name": "5. Juego de Rol: Conversación Real",
-                "tutor_says": "Simulemos una conversación cotidiana en inglés. Responde a la pregunta con seguridad.",
-                "board_content": "🎭 JUEGO DE ROL:\n\nSituación: Conversación en inglés sobre actividades cotidianas.\nObjetivo: Respuesta fluida y natural.",
-                "image_style": "comic_scene",
-                "image_prompt": "comic book panel illustration of two colleagues having a friendly conversation in a modern cafe, strictly no text",
-                "interaction_type": "roleplay",
-                "student_task": "Responde con fluidez",
-                "expected_answer": "I can speak English with confidence and fluency",
-                "key_structure": "Roleplay Dialogue",
-                "target_audio_items": [
-                    {"english": "I can speak English with confidence and fluency", "translation": "Puedo hablar inglés con confianza y fluidez", "label": "Juego de Rol"}
-                ]
-            },
-            {
-                "phase_number": 6,
-                "phase_name": f"6. Resumen y Dominio: {clean_topic}",
-                "tutor_says": f"¡Excelente trabajo! Has completado con éxito la lección sobre {clean_topic}. ¡Estás listo para seguir avanzando!",
-                "board_content": f"🎉 RESUMEN DE DOMINIO: {clean_topic.upper()}\n\n✔ Fórmulas y vocabulario clave aprendidos\n✔ Pronunciación clara y fluidez practicada\n✔ Listo para el siguiente módulo de nivel {sublevel}",
-                "image_style": "flat_art",
-                "image_prompt": "flat 2D vector illustration of a golden achievement trophy with stars, clean vibrant colors, strictly no text",
-                "interaction_type": "explanation",
-                "student_task": None,
-                "expected_answer": None,
-                "key_structure": f"{clean_topic} Mastery",
-                "target_audio_items": []
-            }
-        ]
-    }
+    return _build_curriculum_node_fallback(
+        {"topic": clean_topic, "grammar_core": f"{clean_topic} structures and expressions", "vocabulary_core": "Key conversational phrases", "can_do": f"Communicate with confidence about {clean_topic}"},
+        sublevel
+    )
 
 
 # Forward other builders to dedicated implementations
@@ -1930,11 +1994,561 @@ def _build_relative_clauses_fallback(sublevel: str) -> dict:
         sublevel
     )
 
-def _build_phrasal_verbs_fallback(sublevel: str) -> dict:
-    return _build_curriculum_node_fallback(
-        {"topic": "Everyday Communication & Phrasal Verbs", "grammar_core": "High-frequency Phrasal Verbs (turn on/off, get up, look for, pick up), Verb Patterns", "vocabulary_core": "Daily household tasks, Travel disruptions, Work routines", "can_do": "Use common separable and inseparable phrasal verbs naturally"},
-        sublevel
-    )
+def _build_phrasal_verbs_spatial_fallback(sublevel: str) -> dict:
+    """Rich curated fallback for A2.4: Everyday Phrasal Verbs: Spatial & Physical Particles."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Everyday Phrasal Verbs: Spatial & Physical Particles",
+        "level": "A2",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Fundamentos: La Dirección Espacial de las Partículas",
+                "tutor_says": "¡Bienvenido a la clase de Phrasal Verbs espaciales! En inglés, los phrasal verbs no son combinaciones caprichosas de palabras, sino que siguen una lógica física clara: el verbo describe la acción y la partícula indica el vector o dirección del movimiento. Con 'UP' la energía se orienta hacia arriba como en 'stand up' (ponerse de pie); con 'DOWN' hacia el suelo como en 'sit down' (sentarse); y con 'ON' y 'OFF' activamos o desactivamos un contacto como en 'turn on' y 'turn off'. Observa la primera oración modelo en la pizarra.",
+                "board_content": "🧭 VECTORES ESPACIALES DE PARTÍCULAS:\n\n• UP (Hacia arriba) → stand up (ponerse de pie), get up (levantarse)\n• DOWN (Hacia abajo) → sit down (sentarse), put down (bajar/soltar)\n• ON (Contacto / Flujo) → turn on (encender), put on (ponerse ropa)\n• OFF (Separación) → turn off (apagar), take off (quitarse ropa)\n\n👉 Oración Modelo:\n\"Please stand up and turn on the classroom lights.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic panel of an encouraging teacher in a bright classroom demonstrating physical action verbs with a warm smile, clean 2D vector style, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Verb + Spatial Particle",
+                "target_audio_items": [
+                    {"english": "Please stand up", "translation": "Por favor ponte de pie", "label": "Vector UP"},
+                    {"english": "Sit down on the chair", "translation": "Siéntate en la silla", "label": "Vector DOWN"},
+                    {"english": "Turn on the lights", "translation": "Enciende las luces", "label": "Vector ON"}
+                ],
+                "grammar_structure": {
+                    "title": "Estructura de Phrasal Verbs Espaciales",
+                    "formula": "[ Sujeto ] + [ Verbo Base (Acción) ] + [ Partícula Espacial ] + [ Objeto ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / She / We", "color": "blue"},
+                        {"role": "Verbo", "pattern": "stand / sit / turn / pick", "color": "purple"},
+                        {"role": "Partícula", "pattern": "up / down / on / off", "color": "amber"},
+                        {"role": "Objeto", "pattern": "the phone / the lights / the bag", "color": "emerald"}
+                    ],
+                    "explanation": "El verbo aporta el movimiento físico y la partícula orienta la dirección espacial exacta de la acción.",
+                    "example_breakdowns": [
+                        {
+                            "english": "She turned on the radio.",
+                            "spanish": "Ella encendió la radio.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "She", "color": "blue"},
+                                {"role": "Verbo", "text": "turned", "color": "purple"},
+                                {"role": "Partícula", "text": "on", "color": "amber"},
+                                {"role": "Objeto", "text": "the radio", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Piensa en el movimiento físico o contacto que provoca la partícula antes de traducir."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Rutinas y Movimiento Físico Cotidiano",
+                "tutor_says": "En nuestra rutina diaria usamos estos vectores constantemente. 'Wake up' es abrir los ojos cuando la consciencia sube, mientras que 'get up' es el acto físico de sacar el cuerpo de la cama y ponerse de pie. Si algo cae al suelo, decimos 'pick up' porque lo levantamos hacia arriba con la mano. Y al terminar de usarlo, decimos 'put down' porque lo devolvemos a la superficie. Observa la diferencia entre despertar y levantarse en la pizarra.",
+                "board_content": "☀️ RUTINA DIARIA Y ACCIONES FÍSICAS:\n\n• Wake up → Despertar (abrir los ojos al amanecer)\n• Get up → Levantarse físicamente de la cama\n• Pick up → Recoger / Levantar algo del suelo o mesa\n• Put down → Colocar / Dejar algo sobre una superficie\n\n📌 Comparación Clave:\n\"I wake up at 6:00 AM, but I get up at 6:30 AM.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of a person waking up cheerfully in a sunny bedroom and picking up a notebook from the desk, clean colors, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "wake up vs get up",
+                "target_audio_items": [
+                    {"english": "I wake up early every morning", "translation": "Me despierto temprano cada mañana", "label": "Rutina"},
+                    {"english": "He gets up at seven", "translation": "Él se levanta a las siete", "label": "Rutina física"},
+                    {"english": "Pick up your notebook, please", "translation": "Recoge tu libreta, por favor", "label": "Acción física"}
+                ],
+                "grammar_structure": {
+                    "title": "Contraste de Rutina: Wake up vs Get up",
+                    "formula": "[ Sujeto ] + [ wake up / get up ] + [ Expresión de Tiempo ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / She", "color": "blue"},
+                        {"role": "Phrasal Verb", "pattern": "wake up / get up", "color": "purple"},
+                        {"role": "Tiempo", "pattern": "at 7:00 AM / early", "color": "amber"}
+                    ],
+                    "explanation": "'Wake up' refiere al estado mental consciente; 'get up' refiere al desplazamiento físico.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I wake up at 6:00 AM.",
+                            "spanish": "Me despierto a las 6:00 AM.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Phrasal Verb", "text": "wake up", "color": "purple"},
+                                {"role": "Tiempo", "text": "at 6:00 AM", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "No confundas 'wake up' (abrir los ojos) con 'get up' (salir físicamente de la cama)."
+                }
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Conexión Fonética y Pronunciación Ligada (Connected Speech)",
+                "tutor_says": "En la pronunciación real de los hablantes nativos, la consonante final del verbo salta y se fusiona fluidamente con la vocal de la partícula. Por ejemplo, en 'turn on' no se hace una pausa entre palabras: la 'n' se enlaza y suena /tɜːr-nɒn/. Lo mismo ocurre en 'pick up', que se pronuncia /pɪ-kʌp/, y en 'get in', que suena /ɡɛ-tɪn/. Escucha y practica esta conexión continua.",
+                "board_content": "🗣️ PRONUNCIACIÓN LIGADA (CONNECTED SPEECH):\n\n• turn + on ➔ /tɜːr.nɒn/ (el sonido 'n' se une a 'on')\n• pick + up ➔ /pɪ.kʌp/ (el sonido 'k' se une a 'up')\n• get + in ➔ /ɡɛ.tɪn/ (el sonido 't' se une a 'in')\n• put + on ➔ /pʊ.tɒn/ (el sonido 't' se une a 'on')\n\n👉 Enlace Natural:\n\"Turn_on the lamp and pick_it_up.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational graphic showing visual sound waves connecting two words smoothly, bright cyan and amber highlights, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia la oración uniendo los sonidos de las palabras sin pausas intermedias: 'Turn on the lamp and pick up the book'",
+                "expected_answer": "Turn on the lamp and pick up the book",
+                "key_structure": "Linking: Consonant + Vowel",
+                "target_audio_items": [
+                    {"english": "Turn on the lamp", "translation": "Enciende la lámpara", "label": "Connected Speech"},
+                    {"english": "Pick up the book", "translation": "Recoge el libro", "label": "Connected Speech"},
+                    {"english": "Get in the car", "translation": "Sube al auto", "label": "Connected Speech"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Desglose y Análisis de Errores Típicos",
+                "tutor_says": "Analicemos dos errores muy comunes cometidos por hispanohablantes. El primero es usar 'open the light' en lugar de 'turn on the light'; en inglés solo abrimos puertas o ventanas físicas, mientras que los circuitos eléctricos se encienden con 'turn on'. El segundo error es olvidar la partícula: decir 'I wake at 7' en vez de 'I wake up at 7'. Observa la tabla de correcciones en la pizarra.",
+                "board_content": "⚠️ ERRORES COMUNES DE HISPANOHABLANTES:\n\n❌ Incorrecto: \"*Open the light*\" (Calco del español 'abrir la luz')\n✅ Correcto: \"Turn on the light\" (Activar el interruptor)\n\n❌ Incorrecto: \"*Close the TV*\"\n✅ Correcto: \"Turn off the TV\"\n\n❌ Incorrecto: \"*I stand from the chair*\"\n✅ Correcto: \"I stand up from the chair\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic panel showing a smart modern living room with a person turning on a stylish lamp using a wall switch, clean vector art, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Turn on/off vs Open/Close",
+                "target_audio_items": [
+                    {"english": "Turn on the light, please", "translation": "Enciende la luz, por favor", "label": "Uso Correcto"},
+                    {"english": "Turn off the TV before sleeping", "translation": "Apaga la televisión antes de dormir", "label": "Uso Correcto"},
+                    {"english": "Please sit down here", "translation": "Por favor siéntate aquí", "label": "Uso Correcto"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Práctica Guiada Interactiva",
+                "tutor_says": "Es momento de poner en práctica lo que aprendiste. Completa la oración eligiendo el phrasal verb correcto según el contexto físico. A continuación, completa el ejercicio interactivo en la pizarra.",
+                "board_content": "📝 EJERCICIO DE SELECCIÓN:\n\nCompleta la frase según el contexto:\n\"It is very dark in this room. Please __________ the light.\" [ turn on / turn off / sit down ]\n\n📌 Opciones:\n• turn on (encender)\n• turn off (apagar)\n• sit down (sentarse)",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational scene of a student confidently solving an exercise on a chalkboard in a modern classroom, strictly no text",
+                "interaction_type": "quiz",
+                "student_task": "Completa la oración: 'It is very dark in this room. Please __________ the light' [ turn on / turn off / sit down ]",
+                "expected_answer": "turn on",
+                "key_structure": "turn on the light",
+                "target_audio_items": [
+                    {"english": "Please turn on the light", "translation": "Por favor enciende la luz", "label": "Ejercicio Resuelto"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Producción Comunicativa Espontánea",
+                "tutor_says": "¡Excelente progreso! Para cerrar la lección, describe en inglés a qué hora te despiertas y te levantas por las mañanas utilizando 'wake up' y 'get up'. A continuación, responde en la pizarra con tu frase completa.",
+                "board_content": "🎯 DESAFÍO COMUNICATIVO:\n\nDescribe tu rutina matutina usando ambos phrasal verbs:\n👉 Modelo: \"I wake up at 6:30 AM and I get up at 7:00 AM.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a student speaking with confidence in a friendly conversation, warm colors, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Di en inglés a qué hora te despiertas y a qué hora te levantas (ejemplo: 'I wake up at 7:00 AM and I get up at 7:15 AM')",
+                "expected_answer": "I wake up at 7:00 AM and I get up at 7:15 AM",
+                "key_structure": "I wake up at... and I get up at...",
+                "target_audio_items": [
+                    {"english": "I wake up at 7:00 AM and I get up at 7:15 AM", "translation": "Me despierto a las 7:00 AM y me levanto a las 7:15 AM", "label": "Producción Final"}
+                ]
+            }
+        ]
+    }
+
+
+def _build_phrasal_verbs_out_up_fallback(sublevel: str) -> dict:
+    """Rich curated fallback for B1.2: Phrasal Verbs: Cognitive Logic of OUT & UP."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Phrasal Verbs: Cognitive Logic of OUT & UP",
+        "level": "B1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Semántica Cognitiva: El Esquema de Contenedor de 'OUT'",
+                "tutor_says": "¡Bienvenido a la clase de semántica cognitiva de Phrasal Verbs! La partícula 'OUT' tiene como origen el esquema espacial de un contenedor: algo que se mueve desde el interior hacia el exterior. Pero en inglés, esta idea física se proyecta en metáforas mentales fascinantes. Cuando una verdad o dato oculto sale a la luz pública, usamos 'find out' (descubrir o averiguar). Cuando alguien sobresale visiblemente de un grupo, decimos 'stand out' (destacar). Fíjate en la oración modelo en la pizarra.",
+                "board_content": "💡 EL ESQUEMA DE CONTENEDOR (PARTÍCULA 'OUT'):\n\n1. Salida física → walk out (salir caminando), get out (salir)\n2. De lo oculto a la luz (Descubrimiento / Visibilidad):\n   • find out → Descubrir información (la verdad sale a la luz)\n   • stand out → Sobresalir / Destacarse de la multitud\n   • point out → Señalar / Hacer visible un detalle importante\n\n👉 Oración Modelo:\n\"We need to find out the truth before the meeting.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic panel illustration of a team of detectives in a bright modern office discovering a key document that glows with discovery light, clean vector art, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "find out / stand out / point out",
+                "target_audio_items": [
+                    {"english": "We need to find out the truth", "translation": "Necesitamos descubrir la verdad", "label": "Descubrimiento"},
+                    {"english": "Her creative ideas stand out", "translation": "Sus ideas creativas se destacan", "label": "Visibilidad"},
+                    {"english": "He pointed out a critical mistake", "translation": "Él señaló un error crítico", "label": "Revelación"}
+                ],
+                "grammar_structure": {
+                    "title": "Esquema Cognitivo de 'OUT' (Descubrimiento)",
+                    "formula": "[ Sujeto ] + [ find out / stand out / point out ] + [ Objeto / Detalle ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / We / The team", "color": "blue"},
+                        {"role": "Verbo + OUT", "pattern": "find out / point out", "color": "purple"},
+                        {"role": "Información", "pattern": "the truth / the problem / the facts", "color": "emerald"}
+                    ],
+                    "explanation": "La partícula 'OUT' proyecta la idea de que la información sale del ocultamiento hacia el conocimiento consciente.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I found out the solution yesterday.",
+                            "spanish": "Descubrí la solución ayer.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Verbo + OUT", "text": "found out", "color": "purple"},
+                                {"role": "Información", "text": "the solution yesterday", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Recuerda: 'find' es encontrar un objeto físico; 'find out' es descubrir información que no sabías."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Agotamiento y Resolución con 'OUT'",
+                "tutor_says": "La partícula 'OUT' tiene dos extensiones metafóricas adicionales de gran importancia. La primera es el límite exterior o agotamiento total: cuando una sustancia sale por completo del stock, decimos 'run out of' (quedarse sin algo, como café o tiempo), y cuando una persona agota toda su energía decimos 'burn out'. La segunda es la resolución de problemas: 'figure out' o 'work out' significan extraer orden y solución fuera de un enredo caótico. Observa ambas ramas en la pizarra.",
+                "board_content": "⚡ DOS METÁFORAS MÁS CON 'OUT':\n\n3. Agotamiento total (Límite exterior):\n   • run out of → Quedarse sin stock/recurso (\"We ran out of time\")\n   • sell out → Venderse todo hasta agotar existencias\n   • burn out → Quedar exhausto / Quemarse por exceso de trabajo\n\n4. Resolución del caos (Extraer la solución):\n   • figure out → Calcular / Descifrar la solución a un enigma\n   • work out → Resolver un problema / Dar buen resultado\n\n📌 Comparación:\n\"I figured out the problem before we ran out of budget.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration comparing an empty hourglass showing running out of time and a glowing lightbulb representing figuring out a solution, clean educational graphic, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "run out of vs figure out",
+                "target_audio_items": [
+                    {"english": "We ran out of coffee this morning", "translation": "Nos quedamos sin café esta mañana", "label": "Agotamiento"},
+                    {"english": "I finally figured out the code", "translation": "Finalmente descifré el código", "label": "Resolución"},
+                    {"english": "Everything will work out fine", "translation": "Todo se resolverá bien", "label": "Resultado"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. El Eje Vertical y la Completitud con 'UP'",
+                "tutor_says": "Pasemos ahora a la partícula 'UP'. Además del movimiento hacia arriba como en 'stand up', en lingüística cognitiva 'UP' funciona como un marcador de telicidad y completitud total: cuando un recipiente se llena, el nivel del líquido sube hasta el borde. Por eso 'eat up' significa comerse todo el plato hasta el final, 'clean up' es limpiar a fondo sin dejar nada sucio, y 'wrap up' es concluir una reunión por completo. Además, con 'turn up' aumentamos el volumen según la metáfora 'More is Up'.",
+                "board_content": "📈 LA PARTÍCULA 'UP' (COMPLETITUD Y AUMENTO):\n\n1. Completitud Total (Llenar hasta el tope):\n   • eat up / drink up → Comer/beber todo sin dejar sobras\n   • clean up → Limpiar completamente a fondo\n   • wrap up → Concluir o cerrar una reunión de forma definitiva\n\n2. Aumento de Escala (More is Up):\n   • turn up (the volume) → Subir el volumen / la intensidad\n   • speed up → Acelerar el paso\n\n3. Emergencia en la Mente:\n   • come up with → Idear o crear una solución ingeniosa",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of a professional team celebrating wrapping up a successful project in a modern boardroom, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "clean up / wrap up / come up with",
+                "target_audio_items": [
+                    {"english": "Let's clean up the kitchen", "translation": "Limpiemos la cocina por completo", "label": "Completitud UP"},
+                    {"english": "We should wrap up the meeting", "translation": "Deberíamos concluir la reunión", "label": "Cierre total"},
+                    {"english": "She came up with a great idea", "translation": "A ella se le ocurrió una gran idea", "label": "Emergencia mental"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Desconstrucción y Contraste de Contextos",
+                "tutor_says": "Fíjate en cómo una sola partícula cambia radicalmente el matiz del verbo. 'Look for' es simplemente buscar con los ojos, mientras que 'look up' es consultar un dato en un diccionario o base de datos hasta encontrarlo. Y 'eat' es la acción de comer, mientras que 'eat up' añade la urgencia de terminar todo el alimento. No memorices traducciones: pregúntate qué fuerza espacial o metafórica aporta la partícula.",
+                "board_content": "🔬 DESGLOSE DE MATICES METAFÓRICOS:\n\n• Look for (buscar físicamente) vs Look up (consultar un dato en un registro)\n• Eat (comer) vs Eat up (acabarse todo el plato hasta el final)\n• Run (correr) vs Run out of (quedarse sin existencias de algo)\n• Find (encontrar un objeto) vs Find out (descubrir un secreto o información)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic panel showing a person consulting a large dictionary with a lightbulb above their head while cooking in the kitchen, clean vector art, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Particle Semantic Nuances",
+                "target_audio_items": [
+                    {"english": "Look up the word in the dictionary", "translation": "Busca la palabra en el diccionario", "label": "Consulta de datos"},
+                    {"english": "Eat up your vegetables", "translation": "Cómete todas tus verduras", "label": "Completitud"},
+                    {"english": "We ran out of milk", "translation": "Nos quedamos sin leche", "label": "Agotamiento"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Práctica Guiada de Selección y Deducción",
+                "tutor_says": "Apliquemos la lógica cognitiva de 'OUT'. Elige la opción correcta para completar la frase en el contexto de resolver un problema complejo. A continuación, resuelve el ejercicio en la pizarra.",
+                "board_content": "📝 EJERCICIO DE DEDUCCIÓN:\n\nCompleta la frase:\n\"After hours of research, the team finally __________ how to solve the error.\" [ figured out / ran out of / looked for ]\n\n📌 Opciones:\n• figured out (descifró / resolvió)\n• ran out of (se quedó sin)\n• looked for (buscó con la mirada)",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of a student selecting the right answer on an interactive board, strictly no text",
+                "interaction_type": "quiz",
+                "student_task": "Completa la oración: 'After hours of research, the team finally __________ how to solve the error' [ figured out / ran out of / looked for ]",
+                "expected_answer": "figured out",
+                "key_structure": "figured out how to solve",
+                "target_audio_items": [
+                    {"english": "The team finally figured out how to solve the error", "translation": "El equipo finalmente descifró cómo resolver el error", "label": "Ejercicio Resuelto"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Producción Espontánea y Fluidez",
+                "tutor_says": "¡Brillante trabajo! Para concluir, cuéntame una situación en la que te hayas quedado sin tiempo o recursos usando 'ran out of', o una en la que hayas descubierto algo importante con 'found out'. A continuación, di tu oración completa en la pizarra.",
+                "board_content": "🎯 DESAFÍO DE PRODUCCIÓN:\n\nConstruye una oración con 'find out' o 'run out of':\n👉 Modelo: \"Yesterday we ran out of coffee, but I found out there is a new store nearby.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector graphic of a professional explaining a solution during an interactive meeting, vibrant colors, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Di una oración en inglés usando 'find out' o 'run out of' (ejemplo: 'We ran out of time during the exam')",
+                "expected_answer": "We ran out of time during the exam",
+                "key_structure": "We ran out of... / I found out that...",
+                "target_audio_items": [
+                    {"english": "We ran out of time during the exam", "translation": "Nos quedamos sin tiempo durante el examen", "label": "Producción Final"}
+                ]
+            }
+        ]
+    }
+
+
+def _build_phrasal_verbs_off_on_fallback(sublevel: str) -> dict:
+    """Rich curated fallback for B1.4: Phrasal Verbs: Particle Semantics of OFF, ON, AWAY & BACK."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Phrasal Verbs: Particle Semantics of OFF, ON, AWAY & BACK",
+        "level": "B1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. El Contraste de Contacto y Separación: 'ON' vs 'OFF'",
+                "tutor_says": "¡Bienvenido a la clase de semántica de partículas intermedias! En este nivel exploramos la oposición fundamental entre 'ON' (contacto, activación y avance en el tiempo) y 'OFF' (separación, desconexión y corte). Cuando un avión despega, se separa de la pista y decimos 'take off'; cuando cancelamos un evento, lo separamos de la agenda y decimos 'call off'; y cuando postergamos una tarea, la alejamos de la fecha fijada con 'put off'. Observa este mapa conceptual en la pizarra.",
+                "board_content": "⚡ OPOSICIÓN CONCEPTUAL: ON vs OFF\n\n• ON (Superficie / Flujo / Continuidad):\n  → turn on (activar), put on (colocar sobre el cuerpo), carry on (continuar)\n\n• OFF (Separación / Interrupción / Cancelación):\n  → take off (despegar / quitarse ropa)\n  → turn off (desactivar circuito)\n  → call off (cancelar un evento programado)\n  → put off (posponer / aplazar una tarea)\n\n👉 Oración Modelo:\n\"They had to call off the match because the storm took off the roof.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic panel showing an airport runway with an airplane taking off smoothly into the sky, clean 2D vector art, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "call off / put off / take off",
+                "target_audio_items": [
+                    {"english": "The flight will take off soon", "translation": "El vuelo despegará pronto", "label": "Separación OFF"},
+                    {"english": "They called off the concert", "translation": "Cancelaron el concierto", "label": "Cancelación OFF"},
+                    {"english": "Don't put off your homework", "translation": "No pospongas tus deberes", "label": "Postergación OFF"}
+                ],
+                "grammar_structure": {
+                    "title": "Semántica de 'OFF' (Separación y Cancelación)",
+                    "formula": "[ Sujeto ] + [ call off / put off / take off ] + [ Objeto ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "They / We / The pilot", "color": "blue"},
+                        {"role": "Verbo + OFF", "pattern": "called off / put off / took off", "color": "purple"},
+                        {"role": "Evento/Objeto", "pattern": "the meeting / the flight / the project", "color": "emerald"}
+                    ],
+                    "explanation": "'OFF' indica el desprendimiento de una superficie física o la exclusión de una fecha del calendario.",
+                    "example_breakdowns": [
+                        {
+                            "english": "They called off the meeting.",
+                            "spanish": "Cancelaron la reunión.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "They", "color": "blue"},
+                                {"role": "Verbo + OFF", "text": "called off", "color": "purple"},
+                                {"role": "Evento", "text": "the meeting", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "'Call off' significa cancelar por completo; 'put off' significa solo aplazar para otra fecha."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Continuidad Aspectual con 'ON'",
+                "tutor_says": "Cuando la partícula 'ON' se combina con verbos de movimiento o acción, proyecta la metáfora de avanzar a lo largo de una línea temporal continua sin detenerse. Es lo que en lingüística llamamos aspecto continuativo. 'Carry on' y 'go on' significan proseguir con la tarea a pesar de las dificultades, y 'keep on' expresa perseverancia constante. Escucha y observa la fórmula de continuidad.",
+                "board_content": "⏩ ASPECTO CONTINUATIVO CON 'ON':\n\n• carry on (with) → Proseguir la marcha / no rendirse\n• go on → Continuar hablando o sucediendo\n• keep on (+ ing) → Seguir haciendo una acción repetidamente\n• drive on → Seguir conduciendo hacia adelante\n\n📌 Regla Aspectual:\n\"Keep on + Verb-ing\" ➔ \"She kept on studying despite being tired.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of a determined marathon runner moving forward along an endless bright track, clean colors, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "carry on / keep on + ing",
+                "target_audio_items": [
+                    {"english": "Please carry on with your presentation", "translation": "Por favor continúa con tu presentación", "label": "Continuidad ON"},
+                    {"english": "She kept on practicing every day", "translation": "Ella siguió practicando todos los días", "label": "Perseverancia ON"},
+                    {"english": "The story goes on", "translation": "La historia continúa", "label": "Progreso ON"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Distancia con 'AWAY' y Retorno con 'BACK'",
+                "tutor_says": "Otras dos partículas indispensables son 'AWAY' y 'BACK'. 'AWAY' describe desplazamiento hacia la lejanía o almacenamiento fuera de la vista: 'give away' es regalar o donar a otros, y 'put away' es guardar las cosas en su lugar correcto. Por el contrario, 'BACK' es el vector de retorno al origen o reciprocidad: 'pay back' es devolver dinero prestado y 'call back' es regresar una llamada telefónica.",
+                "board_content": "🔄 TRAYECTORIAS: AWAY (Distancia) vs BACK (Retorno):\n\n• AWAY (Hacia la lejanía / Almacenamiento):\n  → give away (donar / regalar / desprenderse)\n  → put away (guardar en el armario o cajón)\n\n• BACK (Retorno al punto de partida / Reciprocidad):\n  → pay back (devolver dinero / saldar deuda)\n  → call back (devolver una llamada telefónica)\n  → give back (devolver un objeto a su dueño)",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of two people happily returning a borrowed book and shaking hands, bright warm colors, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "pay back / put away",
+                "target_audio_items": [
+                    {"english": "I will pay you back tomorrow", "translation": "Te devolveré el dinero mañana", "label": "Retorno BACK"},
+                    {"english": "Put away your toys after playing", "translation": "Guarda tus juguetes después de jugar", "label": "Almacenamiento AWAY"},
+                    {"english": "She gave away her old clothes", "translation": "Ella donó su ropa vieja", "label": "Distancia AWAY"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Análisis de Errores: 'Put off' vs 'Call off'",
+                "tutor_says": "Uno de los errores más frecuentes en exámenes B1 es confundir 'put off' con 'call off'. Recuerda la regla mnemotécnica: si la reunión se cancela definitivamente y no ocurrirá, se usó 'call off'. Si la reunión se reprograma para el próximo viernes, solo se pospuso y se usó 'put off'. Observa las dos oraciones en la pizarra.",
+                "board_content": "⚠️ DIFERENCIA CRÍTICA: CANCELAR vs POSPONER:\n\n• CALL OFF = Cancelación definitiva (el evento queda eliminado)\n  → \"The concert was called off due to heavy rain.\"\n\n• PUT OFF = Postergación temporal (el evento se hará más tarde)\n  → \"We put off the meeting until next Tuesday.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic panel showing a calendar with an event crossed out with a red cross versus an arrow moving an event to next week, clean vector art, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "call off vs put off",
+                "target_audio_items": [
+                    {"english": "The match was called off", "translation": "El partido fue cancelado", "label": "Cancelado"},
+                    {"english": "We put off the launch until next month", "translation": "Pospusimos el lanzamiento hasta el próximo mes", "label": "Pospuesto"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Práctica Guiada de Partículas",
+                "tutor_says": "Demuestra tu dominio de las partículas 'OFF' y 'ON'. Completa la frase seleccionando el phrasal verb adecuado. A continuación, responde en la pizarra.",
+                "board_content": "📝 EJERCICIO INTERACTIVO:\n\nCompleta la frase:\n\"Because of the bad weather, the organizers decided to __________ the outdoor festival.\" [ call off / carry on / put away ]\n\n📌 Opciones:\n• call off (cancelar definitivamente)\n• carry on (continuar adelante)\n• put away (guardar)",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational graphic of a student selecting the correct card on a smart screen, strictly no text",
+                "interaction_type": "quiz",
+                "student_task": "Completa la oración: 'Because of the bad weather, the organizers decided to __________ the outdoor festival' [ call off / carry on / put away ]",
+                "expected_answer": "call off",
+                "key_structure": "decided to call off",
+                "target_audio_items": [
+                    {"english": "The organizers decided to call off the festival", "translation": "Los organizadores decidieron cancelar el festival", "label": "Ejercicio Resuelto"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Producción y Debate Comunicativo",
+                "tutor_says": "¡Excelente dominio! Para finalizar, formula una oración donde expreses por qué es una mala idea postergar tareas importantes usando 'put off', o da un consejo para seguir adelante usando 'carry on'. A continuación, di tu frase en la pizarra.",
+                "board_content": "🎯 DESAFÍO COMUNICATIVO:\n\nExpresa un consejo usando 'put off' o 'carry on':\n👉 Modelo: \"You should never put off your responsibilities, but carry on with determination.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of two professionals having an engaging strategic conversation in a modern creative workspace, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Di una oración en inglés usando 'put off' o 'carry on' (ejemplo: 'Don't put off what you can do today')",
+                "expected_answer": "Don't put off what you can do today",
+                "key_structure": "Don't put off... / You must carry on...",
+                "target_audio_items": [
+                    {"english": "Don't put off what you can do today", "translation": "No pospongas lo que puedes hacer hoy", "label": "Producción Final"}
+                ]
+            }
+        ]
+    }
+
+
+def _build_phrasal_verbs_advanced_fallback(sublevel: str) -> dict:
+    """Rich curated fallback for B2.2: Three-Part Phrasal Verbs & Separability Mechanics."""
+    return {
+        "schema": "ai_tutor.lesson.v1",
+        "topic": "Three-Part Phrasal Verbs & Separability Mechanics",
+        "level": "B2",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "1. Sintaxis Avanzada: La Regla del Sándwich del Pronombre",
+                "tutor_says": "Welcome to B2 Advanced Phrasal Syntax! In English, separable transitive phrasal verbs allow noun objects either after the particle or between the verb and particle (e.g. 'turn off the lights' or 'turn the lights off'). However, when the object is a pronoun like 'it', 'them', or 'him', the pronoun MUST sit inside the verb sandwich. Saying '*turn off it*' is a severe grammatical violation in English; you must strictly say 'turn it off' and 'figure it out'. Examine the syntax breakdown on the board.",
+                "board_content": "🥪 THE PRONOUN SANDWICH RULE (SEPARABILITY):\n\n• With full Nouns (Both are correct):\n  → \"I looked up the word\"  ✅\n  → \"I looked the word up\"  ✅\n\n• With Object Pronouns (it / them / me / him / her):\n  → \"I looked IT up\"        ✅ (Mandatory pronoun placement)\n  → \"*I looked up IT*\"      ❌ (Severe syntactic error)\n\n👉 Rule: Object pronouns MUST sit between the verb and particle.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic panel of an executive writing clear syntax brackets on a modern glass board during an advanced language masterclass, clean vector art, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Verb + Pronoun + Particle",
+                "target_audio_items": [
+                    {"english": "I will figure it out tomorrow", "translation": "Lo descifraré mañana", "label": "Pronoun Sandwich"},
+                    {"english": "Please turn them off before leaving", "translation": "Por favor apágalos antes de salir", "label": "Pronoun Sandwich"},
+                    {"english": "She looked it up online", "translation": "Ella lo consultó en internet", "label": "Pronoun Sandwich"}
+                ],
+                "grammar_structure": {
+                    "title": "Pronoun Sandwich Placement Formula",
+                    "formula": "[ Subject ] + [ Verb ] + [ Pronoun (it/them/him/her) ] + [ Particle ]",
+                    "formula_tokens": [
+                        {"role": "Subject", "pattern": "I / You / We / They", "color": "blue"},
+                        {"role": "Verb", "pattern": "figure / turn / pick / look", "color": "purple"},
+                        {"role": "Pronoun Object", "pattern": "it / them / him / her", "color": "amber"},
+                        {"role": "Particle", "pattern": "out / off / up / down", "color": "emerald"}
+                    ],
+                    "explanation": "Weak unstressed object pronouns are syntactically required to be enclosed between the lexical verb and its particle.",
+                    "example_breakdowns": [
+                        {
+                            "english": "We figured it out.",
+                            "spanish": "Lo resolvimos.",
+                            "parts": [
+                                {"role": "Subject", "text": "We", "color": "blue"},
+                                {"role": "Verb", "text": "figured", "color": "purple"},
+                                {"role": "Pronoun", "text": "it", "color": "amber"},
+                                {"role": "Particle", "text": "out", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Never place an object pronoun after the particle: always 'turn it on', never '*turn on it*'."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Verbos Frasales de Tres Partes (Three-Part Phrasal Verbs)",
+                "tutor_says": "Three-part phrasal verbs consist of a Base Verb + Adverbial Particle + Preposition. Crucially, three-part verbs are ALWAYS INSEPARABLE. You cannot split their particles. High-frequency structures include 'come up with' (to produce an idea), 'cut down on' (to reduce consumption), 'put up with' (to tolerate something unpleasant), and 'look down on' (to despise or feel superior). Notice their flow on the board.",
+                "board_content": "🔗 THREE-PART PHRASAL VERBS (ALWAYS INSEPARABLE):\n\n• come up with → Idear o producir una solución (\"She came up with a strategy\")\n• cut down on → Reducir el consumo de algo (\"We must cut down on expenses\")\n• put up with → Tolerar o soportar una molestia (\"I can't put up with this noise\")\n• look down on → Menospreciar a alguien (\"Never look down on others\")\n• look forward to (+ ing) → Esperar con entusiasmo (\"I look forward to meeting you\")\n\n📌 Syntactic Rule: [ Verb + Particle 1 + Preposition 2 ] + [ Noun / Gerund ]",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of an executive presentation showing strategic cost reduction and creative innovation diagrams, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "come up with / cut down on / put up with",
+                "target_audio_items": [
+                    {"english": "We came up with an innovative solution", "translation": "Se nos ocurrió una solución innovadora", "label": "Three-Part Verb"},
+                    {"english": "I need to cut down on sugar", "translation": "Necesito reducir el azúcar", "label": "Three-Part Verb"},
+                    {"english": "She refuses to put up with delays", "translation": "Ella se rehúsa a tolerar retrasos", "label": "Three-Part Verb"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Registro Ejecutivo y Redes Semánticas Avanzadas",
+                "tutor_says": "In executive and professional English, phrasal verbs with particles like 'OUT', 'THROUGH', and 'DOWN' convey sophisticated business nuances. 'Iron out' means to resolve minor discrepancies; 'follow through' means to execute a commitment to completion; and 'phase out' means to gradually eliminate an obsolete process. Observe how these expressions elevate your professional register.",
+                "board_content": "💼 EXECUTIVE & STRATEGIC PHRASAL VERBS:\n\n• iron out → Alisar asperezas / resolver discrepancias (\"Iron out the contract terms\")\n• follow through (with) → Cumplir un compromiso hasta el final (\"Follow through on promises\")\n• phase out → Eliminar progresivamente (\"Phase out legacy software\")\n• step down (from) → Renunciar a un cargo de liderazgo (\"Step down as CEO\")\n• look over → Revisar minuciosamente un reporte (\"Look over the financial audit\")",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of two business executives finalizing a strategic partnership contract with confident handshakes, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "iron out / follow through / phase out",
+                "target_audio_items": [
+                    {"english": "We ironed out the final contract details", "translation": "Resolvimos los detalles finales del contrato", "label": "Registro Ejecutivo"},
+                    {"english": "The company will phase out old systems", "translation": "La empresa eliminará gradualmente los sistemas antiguos", "label": "Registro Ejecutivo"},
+                    {"english": "He followed through on his commitments", "translation": "Él cumplió con sus compromisos hasta el final", "label": "Registro Ejecutivo"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Desconstrucción y Corrección de Errores Sintácticos",
+                "tutor_says": "Let us deconstruct the two classic errors at the B2 level. The first error is placing pronouns outside separable verbs (saying '*I figured out it*' instead of 'I figured it out'). The second error is attempting to separate three-part phrasal verbs (saying '*I cut it down on*' instead of 'I cut down on it'). Examine the side-by-side corrections on the board.",
+                "board_content": "🔬 CRITICAL B2 ERROR AUDIT:\n\n❌ Error 1: \"*I will figure out it later*\"\n✅ Correct: \"I will figure it out later\" (Pronoun sandwich)\n\n❌ Error 2: \"*We must cut expenses down on*\"\n✅ Correct: \"We must cut down on expenses\" (Three-part verbs are inseparable)\n\n❌ Error 3: \"*I look forward to meet you*\"\n✅ Correct: \"I look forward to meeting you\" (Preposition 'to' requires gerund -ing)",
+                "image_style": "comic_scene",
+                "image_prompt": "comic panel illustration of a professional reviewing a document with green checkmarks indicating grammatical precision, clean vector art, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Inseparable vs Separable",
+                "target_audio_items": [
+                    {"english": "I will figure it out later", "translation": "Lo resolveré más tarde", "label": "Uso Correcto"},
+                    {"english": "We must cut down on expenses", "translation": "Debemos reducir gastos", "label": "Uso Correcto"},
+                    {"english": "I look forward to meeting you", "translation": "Espero con entusiasmo conocerte", "label": "Uso Correcto"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Práctica Guiada de Sintaxis y Corrección",
+                "tutor_says": "Apply your syntactic mastery. Choose the grammatically correct sentence adhering to the Pronoun Sandwich rule. Complete the interactive exercise on the board.",
+                "board_content": "📝 SYNTACTIC ACCURACY CHALLENGE:\n\nSelect the only grammatically correct sentence:\n1. \"*She turned off it before leaving the office.*\"\n2. \"She turned it off before leaving the office.\"\n3. \"*She turned off them before leaving the office.*\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational scene of a student solving an advanced syntax challenge on a glowing digital board, strictly no text",
+                "interaction_type": "quiz",
+                "student_task": "Elige la opción correcta con la colocación adecuada del pronombre: [ She turned it off / She turned off it ]",
+                "expected_answer": "She turned it off",
+                "key_structure": "She turned it off",
+                "target_audio_items": [
+                    {"english": "She turned it off before leaving the office", "translation": "Ella lo apagó antes de salir de la oficina", "label": "Ejercicio Resuelto"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Producción Ejecutiva Espontánea",
+                "tutor_says": "Masterful progress! To conclude this B2 mastery session, formulate an executive statement describing how your team resolved an issue or reduced costs using 'ironed out', 'came up with', or 'cut down on'. Deliver your complete spoken sentence on the board.",
+                "board_content": "🎯 EXECUTIVE FLUENCY CAPSTONE:\n\nFormulate a professional sentence using a three-part or executive phrasal verb:\n👉 Model: \"Our team came up with a strategy to iron out the project discrepancies.\"",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector graphic of a confident executive presenting project outcomes in a sleek modern boardroom, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Di una oración profesional en inglés usando 'came up with', 'cut down on' o 'iron out' (ejemplo: 'We came up with a plan to cut down on costs')",
+                "expected_answer": "We came up with a plan to cut down on costs",
+                "key_structure": "We came up with a plan to...",
+                "target_audio_items": [
+                    {"english": "We came up with a plan to cut down on costs", "translation": "Idreamos un plan para reducir costos", "label": "Producción Final B2"}
+                ]
+            }
+        ]
+    }
 
 def _build_modals_advice_fallback(sublevel: str) -> dict:
     return _build_curriculum_node_fallback(

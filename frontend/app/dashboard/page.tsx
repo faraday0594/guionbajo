@@ -105,7 +105,7 @@ const CEFR_PENSUM: Record<string, { title: string; badge: string; modules: Modul
     modules: [
       { id: 'a24-1', title: 'First Conditional', topic: 'First Conditional', focus: 'Condicional de causa real', description: 'If + present, will + verb, Entonación condicional' },
       { id: 'a24-2', title: 'Relative Clauses Intro', topic: 'Relative Clauses Introduction', focus: 'Pronombres relativos', description: 'Who, Which, That, Contraste alveolar /r/ vs /l/' },
-      { id: 'a24-3', title: 'Everyday Phrasal Verbs', topic: 'Everyday Communication & Phrasal Verbs', focus: 'Phrasal verbs cotidianos', description: 'Verb patterns básicos e introducción al Connected Speech' },
+      { id: 'a24-3', title: 'Spatial Phrasal Verbs', topic: 'Everyday Phrasal Verbs: Spatial & Physical Particles', focus: 'Dirección física y partículas espaciales', description: 'Get in/out, sit down, stand up, turn on/off, pick up y connected speech' },
       { id: 'a24-4', title: 'A2 Final Capstone', topic: 'A2 Final Integration & Capstone', focus: 'Certificación de Nivel A2', description: 'Comunicación independiente en viajes, trabajo y sociedad' },
     ],
   },
@@ -127,8 +127,8 @@ const CEFR_PENSUM: Record<string, { title: string; badge: string; modules: Modul
     modules: [
       { id: 'b12-1', title: 'Giving Opinions', topic: 'Giving Opinions & Linking Expressions', focus: 'Estructuras de opinión', description: 'Conectores de discurso, Entonación asertiva' },
       { id: 'b12-2', title: 'Comparisons & Preferences', topic: 'Comparisons & Preferences', focus: 'Preferencias matizadas', description: 'Prefer / Would rather, Contrastive stress' },
-      { id: 'b12-3', title: 'Modals of Deduction', topic: 'Modals of Deduction', focus: 'Deducción lógica', description: 'Must, Might, Could, Can\'t, Sentence rhythm' },
-      { id: 'b12-4', title: 'B1.2 Integration', topic: 'B1.2 Integration', focus: 'Debate y argumentación', description: 'Intercambio crítico, opiniones y deducciones' },
+      { id: 'b12-3', title: 'Cognitive Logic: OUT & UP', topic: 'Phrasal Verbs: Cognitive Logic of OUT & UP', focus: 'Semántica cognitiva de OUT y UP', description: 'Descubrimiento (find out), agotamiento (run out) y completitud (clean up, turn up)' },
+      { id: 'b12-4', title: 'B1.2 Integration', topic: 'B1.2 Integration: Opinions, Deductions & Phrasal Fluency', focus: 'Debate, deducción y fluidez de partículas', description: 'Intercambio crítico, deducciones lógicas y resolución de problemas' },
     ],
   },
   'B1.3': {
@@ -147,7 +147,7 @@ const CEFR_PENSUM: Record<string, { title: string; badge: string; modules: Modul
     modules: [
       { id: 'b14-1', title: 'Passive Voice', topic: 'Passive Voice', focus: 'Voz pasiva presente y pasada', description: 'Modal passive, Pronunciación de participios pasados' },
       { id: 'b14-2', title: 'Reported Speech', topic: 'Reported Speech', focus: 'Estilo indirecto', description: 'Statements, questions, commands, Reporting verbs intonation' },
-      { id: 'b14-3', title: 'Relative Clauses Advanced', topic: 'Relative Clauses: Defining & Non-Defining', focus: 'Cláusulas explicativas', description: 'Defining vs Non-defining, Pausas estratégicas' },
+      { id: 'b14-3', title: 'Particles: OFF, ON, AWAY, BACK', topic: 'Phrasal Verbs: Particle Semantics of OFF, ON, AWAY & BACK', focus: 'Semántica de trayectoria y continuidad', description: 'Separación (take off, call off), continuidad (carry on) y retorno (pay back)' },
       { id: 'b14-4', title: 'B1 Final Capstone', topic: 'B1 Final Integration & Assessment', focus: 'Certificación de Nivel B1', description: 'Evaluación integral: Debate, hipótesis, voz pasiva y ritmo natural' },
     ],
   },
@@ -167,10 +167,10 @@ const CEFR_PENSUM: Record<string, { title: string; badge: string; modules: Modul
     title: 'B2.2 — Natural English',
     badge: 'B2 Advanced Control',
     modules: [
-      { id: 'b22-1', title: 'Phrasal Verbs Mastery', topic: 'Phrasal Verbs Mastery', focus: 'Phrasal verbs de 3 partes', description: 'Separables e inseparables, Stress en la partícula adverbial' },
-      { id: 'b22-2', title: 'Idiomatic English', topic: 'Idiomatic English & Fixed Expressions', focus: 'Modismos y expresiones fijas', description: 'Idioms profesionales y casuales, Reducción y linking nativo' },
-      { id: 'b22-3', title: 'Advanced Verb Patterns', topic: 'Advanced Verb Patterns', focus: 'Gerundio vs infinitivo con cambio', description: 'Remember/stop/forget + gerund vs infinitive, Ritmo' },
-      { id: 'b22-4', title: 'B2.2 Integration', topic: 'B2.2 Integration', focus: 'Conversación natural espontánea', description: 'Uso fluido de modismos y enlace natural' },
+      { id: 'b22-1', title: 'Advanced Particle Networks', topic: 'Phrasal Verbs: Advanced Cognitive Semantics & Multi-Particle Networks', focus: 'Redes semánticas multi-partícula', description: 'Registro ejecutivo (iron out, step down, look over, follow through, phase out)' },
+      { id: 'b22-2', title: 'Three-Part Phrasals & Syntax', topic: 'Three-Part Phrasal Verbs & Separability Mechanics', focus: 'Regla del sándwich del pronombre y 3 partes', description: 'Separabilidad (figure it out), inseparables (come up with, cut down on, put up with)' },
+      { id: 'b22-3', title: 'Idiomatic English', topic: 'Idiomatic English & Fixed Expressions', focus: 'Modismos y colocaciones metafóricas', description: 'Idioms profesionales y casuales, Reducción y linking nativo' },
+      { id: 'b22-4', title: 'B2.2 Integration', topic: 'Advanced Verb Patterns & B2.2 Integration', focus: 'Conversación ejecutiva y patrones verbales', description: 'Gerundio vs infinitivo con cambio de significado y síntesis idiomática' },
     ],
   },
   'B2.3': {

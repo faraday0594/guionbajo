@@ -17,6 +17,7 @@ node_modules/
 .next/
 out/
 build/
+*.tsbuildinfo
 
 # Database & SQLite
 *.db

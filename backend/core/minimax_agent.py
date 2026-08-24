@@ -172,7 +172,50 @@ CRITICAL INTERACTIVE LESSON RULES:
    B) WHEN TO SET NULL (`diagram_svg`: null):
       - Pure conversational greetings, vocabulary lists, pure speaking output phases, or phases where a standard illustration is already completely sufficient and no geometric/temporal schema is needed.
 
-11. JSON SCHEMA (ai_tutor.lesson.v1):
+11. MANDATORY SPOKEN TRANSITIONS IN `tutor_says` FOR EXERCISE/PRACTICE PHASES:
+    Whenever a phase contains exercises, fill-in-the-blank items, pronunciation tasks, or interactive challenges (`interaction_type` is 'quiz', 'pronunciation', 'error_correction', 'roleplay', or `exercises` are present), the final sentence of `tutor_says` MUST naturally transition the student to the board activity (e.g. 'A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido.' or 'A continuación, completa los ejercicios interactivos en la pizarra.').
+
+ 12. MANDATORY COGNITIVE LINGUISTICS & PARTICLE SEMANTICS FOR PHRASAL VERBS (EXTREMELY CRITICAL):
+     Whenever a lesson or phase deals with Phrasal Verbs or Prepositional Particles (e.g., OUT, UP, DOWN, OFF, ON, IN, AWAY, BACK, OVER, THROUGH):
+     - STRICTLY FORBIDDEN: Presenting phrasal verbs as arbitrary lists of translations to memorize by brute force.
+     - MANDATORY COGNITIVE MODEL: In `tutor_says` and `board_content`, you MUST explain:
+       a) THE PHYSICAL IMAGE SCHEMA: The baseline spatial/physical orientation of the particle (e.g., Container Schema for OUT/IN, Vertical Axis for UP/DOWN, Surface Contact for ON/OFF, Separation for OFF/AWAY).
+       b) THE METAPHORICAL EXTENSION VECTOR: Explain HOW the particle's spatial direction metaphorically alters the core verb:
+          - FOR 'OUT':
+            1. Leaving a container (physical): "walk out", "get out".
+            2. Emergence / Visibility / Discovery (coming out of darkness/hiddenness into light): "find out", "stand out", "point out", "turn out", "come out".
+            3. Completion / Exhaustion / Total Depletion (reaching the outer boundary/zero): "run out of", "burn out", "sell out", "wear out".
+            4. Distribution / Extension (moving outward to multiple points): "hand out", "spread out", "reach out".
+            5. Problem Solving / Untangling chaos: "figure out", "work out", "sort out", "iron out".
+            6. Extinguishment (leaving the state of burning/activity): "put out the fire", "blow out", "black out".
+          - FOR 'UP':
+            1. Vertical ascension: "stand up", "climb up".
+            2. Telic completion / Totality / Filling to the brim: "eat up" (finish all food), "drink up", "clean up" (complete clean), "wrap up" (finish entirely), "use up".
+            3. Increase in volume / speed / intensity ("More is Up"): "turn up", "speak up", "speed up", "heat up".
+            4. Emergence into consciousness / Idea creation ("Visibility is Up"): "show up", "bring up", "come up with", "set up".
+            5. Fragmentation / Disruption: "blow up", "break up", "split up".
+          - FOR 'DOWN':
+            1. Physical descent: "sit down", "lie down".
+            2. Decrease in intensity / speed / quantity ("Less is Down"): "turn down", "slow down", "calm down", "cut down on".
+            3. Fixation / Inscribing into permanent support: "write down", "note down", "settle down".
+            4. Breakdown / Failure: "break down", "shut down", "let down".
+          - FOR 'OFF':
+            1. Separation / Detachment from surface or trajectory: "take off" (plane leaving ground/clothes off), "set off" (depart), "drop off".
+            2. Interruption of power / Deactivation: "turn off", "switch off", "cut off".
+            3. Cancellation or Postponement (moving off the calendar): "call off" (cancel), "put off" (postpone).
+            4. Culmination / Relief: "pay off" (clear debt), "finish off".
+          - FOR 'ON':
+            1. Surface contact: "put on".
+            2. Operation / Activation: "turn on".
+            3. Aspectual Continuity in time (progressing forward): "go on", "carry on", "keep on", "drive on".
+            4. Dependence / Reliance: "count on", "rely on".
+          - FOR 'AWAY' / 'BACK' / 'IN' / 'OVER' / 'THROUGH':
+            - Explain the systematic trajectory (e.g. IN = inclusion/internalization; AWAY = distance/storage; BACK = return/reciprocity; OVER = reconsideration/crossing; THROUGH = passing through obstacle to completion).
+       c) MULTI-CONTEXT CONTRAST: Always contrast 2-3 distinct contexts driven by the same particle (e.g., contrast "find out" [discovery] with "run out" [exhaustion] and "figure out" [resolution]).
+       d) SYNTAX FORMULA: In `grammar_structure`, represent the structure as:
+          `[ Verbo Base (Acción) ] + [ Partícula (Vector Espacial / Metáfora) ] + [ Objeto / Complemento ]`
+
+ 13. JSON SCHEMA (ai_tutor.lesson.v1):
 Return JSON with key "phases" containing 6 phase objects.
 """
 
@@ -262,7 +305,7 @@ class TutorAgent:
                 self.client = AsyncOpenAI(
                     api_key=self.api_key,
                     base_url=settings.MINIMAX_BASE_URL,
-                    timeout=22.0,
+                    timeout=75.0,
                 )
             except Exception as e:
                 logger.warning(f"Failed to initialize AsyncOpenAI in TutorAgent: {e}")
@@ -413,6 +456,54 @@ class TutorAgent:
             return None
 
         combined_text = f"{topic} {p.get('phase_name', '')} {p.get('board_content', '')}".lower()
+
+        # 0. Narrative Tenses 3-Layer Timeline (Past Perfect vs Past Continuous vs Past Simple)
+        if any(w in combined_text for w in ["narrative tenses", "narrative", "storytelling", "past perfect"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgNT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowNT" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgNT)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="36" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">TIMELINE: NARRATIVE TENSES (3 CAPAS TEMPORALES)</text>
+  <text x="350" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Estructura cronológica: Fondo (Continuous) + Suceso (Simple) + Pasado Anterior (Past Perfect)</text>
+  <line x1="50" y1="130" x2="650" y2="130" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+  <polygon points="650,130 636,124 636,136" fill="#64748b"/>
+  <g transform="translate(130, 130)" filter="url(#glowNT)">
+    <circle cx="0" cy="0" r="12" fill="#c084fc"/>
+    <text x="0" y="4" font-family="system-ui, sans-serif" font-size="11" font-weight="900" text-anchor="middle" fill="#fff">1</text>
+  </g>
+  <rect x="50" y="68" width="160" height="24" rx="8" fill="rgba(192,132,252,0.2)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="130" y="84" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#c084fc">PAST PERFECT (Had + V3)</text>
+  <text x="130" y="165" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#e9d5ff">"The train had left..."</text>
+  <text x="130" y="180" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">(Ocurrió primero)</text>
+  <g transform="translate(350, 130)" filter="url(#glowNT)">
+    <circle cx="0" cy="0" r="12" fill="#38bdf8"/>
+    <text x="0" y="4" font-family="system-ui, sans-serif" font-size="11" font-weight="900" text-anchor="middle" fill="#fff">2</text>
+  </g>
+  <rect x="270" y="68" width="160" height="24" rx="8" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" stroke-width="1.2"/>
+  <text x="350" y="84" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#38bdf8">PAST SIMPLE (V2)</text>
+  <text x="350" y="165" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#7dd3fc">"...when I arrived"</text>
+  <text x="350" y="180" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">(Evento principal)</text>
+  <line x1="560" y1="95" x2="560" y2="165" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+  <circle cx="560" cy="130" r="9" fill="#f59e0b" filter="url(#glowNT)"/>
+  <text x="560" y="160" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">NOW</text>
+  <text x="560" y="175" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">(Presente)</text>
+  <g transform="translate(45, 215)">
+    <rect x="0" y="0" width="610" height="65" rx="10" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="15" y="25" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">Regla de Secuencia Temporal (Causa / Antecedente):</text>
+    <text x="15" y="48" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">
+      <tspan fill="#7dd3fc">When I arrived at the cinema</tspan>, <tspan fill="#c084fc" font-weight="bold">the movie had already started</tspan>.
+    </text>
+  </g>
+  <g transform="translate(45, 290)">
+    <rect x="0" y="0" width="610" height="65" rx="10" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="15" y="25" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#34d399">Con Past Continuous (Escenario de Fondo + Interrupción):</text>
+    <text x="15" y="48" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">
+      <tspan fill="#34d399">It was raining</tspan> <tspan fill="#cbd5e1">because a storm</tspan> <tspan fill="#c084fc" font-weight="bold">had hit the city</tspan>.
+    </text>
+  </g>
+</svg>"""
 
         # 1. Past Continuous & Interrupted Actions Timeline (MUST check before generic past simple)
         if any(w in combined_text for w in ["past continuous", "interrupted", "interrupción", "was/were + -ing", "while / when", "while we were"]):
@@ -585,6 +676,147 @@ class TutorAgent:
     <tspan fill="#38bdf8">[ Sujeto ]</tspan> + <tspan fill="#fbbf24">[ am/is/are ]</tspan> + <tspan fill="#10b981">[ going to ]</tspan> + <tspan fill="#c084fc">[ Verbo Base ]</tspan>
   </text>
   <text x="350" y="265" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#94a3b8">Ejemplo: "I am going to travel tomorrow"</text>
+</svg>"""
+
+        # 4. Cognitive Particle Semantics: The Logic of OUT (Container, Discovery, Exhaustion, Resolution)
+        if any(w in combined_text for w in ["logic of out", "particle out", "find out", "figure out", "run out", "phrasal verb"]) and any(w in combined_text for w in ["out", "emergence", "discovery", "exhaustion", "resolution"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgOut" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowOut" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgOut)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">COGNITIVE LINGUISTICS: THE PARTICLE 'OUT'</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Esquema de Contenedor: Del interior hacia el exterior / De lo oculto a lo visible</text>
+  
+  <!-- Central Container -->
+  <rect x="230" y="90" width="240" height="150" rx="14" fill="#0f172a" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="6,4"/>
+  <text x="350" y="150" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#94a3b8">CONTAINER SCHEMA</text>
+  <text x="350" y="170" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#64748b">(Interior / Oculto / Límite)</text>
+  
+  <!-- Vector 1: Salida Física (Top Left) -->
+  <path d="M 230 110 L 110 90" fill="none" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrow)" filter="url(#glowOut)"/>
+  <polygon points="100,88 114,83 112,95" fill="#38bdf8"/>
+  <rect x="15" y="70" width="170" height="42" rx="8" fill="rgba(56,189,248,0.15)" stroke="#38bdf8" stroke-width="1"/>
+  <text x="100" y="88" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#7dd3fc">1. SALIDA FÍSICA</text>
+  <text x="100" y="103" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#cbd5e1">"Get out / Walk out"</text>
+  
+  <!-- Vector 2: Visibilidad & Descubrimiento (Top Right) -->
+  <path d="M 470 110 L 590 90" fill="none" stroke="#fbbf24" stroke-width="2.5" filter="url(#glowOut)"/>
+  <polygon points="600,88 586,83 588,95" fill="#fbbf24"/>
+  <rect x="515" y="70" width="170" height="42" rx="8" fill="rgba(245,158,11,0.15)" stroke="#fbbf24" stroke-width="1"/>
+  <text x="600" y="88" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#fbbf24">2. REVELACIÓN / LUZ</text>
+  <text x="600" y="103" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#cbd5e1">"Find out / Stand out"</text>
+  
+  <!-- Vector 3: Agotamiento / Límite Exterior (Bottom Left) -->
+  <path d="M 230 220 L 110 240" fill="none" stroke="#ef4444" stroke-width="2.5" filter="url(#glowOut)"/>
+  <polygon points="100,242 112,235 114,247" fill="#ef4444"/>
+  <rect x="15" y="225" width="170" height="42" rx="8" fill="rgba(239,68,68,0.15)" stroke="#ef4444" stroke-width="1"/>
+  <text x="100" y="243" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#f87171">3. AGOTAMIENTO TOTAL</text>
+  <text x="100" y="258" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#cbd5e1">"Run out of / Burn out"</text>
+  
+  <!-- Vector 4: Resolución del Caos (Bottom Right) -->
+  <path d="M 470 220 L 590 240" fill="none" stroke="#10b981" stroke-width="2.5" filter="url(#glowOut)"/>
+  <polygon points="600,242 588,235 586,247" fill="#10b981"/>
+  <rect x="515" y="225" width="170" height="42" rx="8" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="1"/>
+  <text x="600" y="243" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#34d399">4. RESOLUCIÓN / ORDEN</text>
+  <text x="600" y="258" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#cbd5e1">"Figure out / Work out"</text>
+  
+  <!-- Bottom Formula Box -->
+  <rect x="40" y="295" width="620" height="65" rx="10" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+  <text x="350" y="322" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#f8fafc">
+    FÓRMULA: <tspan fill="#c084fc">[ Verbo Base ]</tspan> + <tspan fill="#38bdf8">[ OUT (Vector Hacia Afuera / Límite) ]</tspan> = <tspan fill="#34d399">[ Significado Metafórico ]</tspan>
+  </text>
+  <text x="350" y="344" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#94a3b8">
+    Ejemplo: "I need to <tspan fill="#fbbf24" font-weight="bold">find out</tspan> the truth" (sacar a la luz) | "We <tspan fill="#f87171" font-weight="bold">ran out of</tspan> coffee" (fuera de stock)
+  </text>
+</svg>"""
+
+        # 5. Cognitive Particle Semantics: UP vs DOWN (Vertical Scale, Telicity, Volume, Reduction)
+        if any(w in combined_text for w in ["up vs down", "logic of up", "particle up", "particle down", "turn up", "turn down", "eat up", "clean up", "break down"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgUpDown" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowUpDown" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgUpDown)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">VERTICAL AXIS: PARTICLES 'UP' vs 'DOWN'</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Metáforas de Escala: Aumento / Completitud (UP) vs Reducción / Fijación (DOWN)</text>
+  
+  <!-- Vertical Axis Line -->
+  <line x1="350" y1="75" x2="350" y2="280" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="350,68 344,80 356,80" fill="#10b981"/>
+  <polygon points="350,287 344,275 356,275" fill="#ef4444"/>
+  
+  <!-- UP SIDE (Left/Top) -->
+  <rect x="40" y="80" width="280" height="90" rx="10" fill="rgba(16,185,129,0.12)" stroke="#10b981" stroke-width="1.2"/>
+  <text x="180" y="102" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#34d399">▲ PARTÍCULA 'UP'</text>
+  <text x="180" y="122" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">• <tspan font-weight="bold" fill="#6ee7b7">Completitud / Llenado:</tspan> Eat up, Clean up, Fill up</text>
+  <text x="180" y="140" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">• <tspan font-weight="bold" fill="#6ee7b7">Aumento (More is Up):</tspan> Turn up, Speak up, Speed up</text>
+  <text x="180" y="158" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">• <tspan font-weight="bold" fill="#6ee7b7">Emergencia / Consciencia:</tspan> Show up, Come up with</text>
+  
+  <!-- DOWN SIDE (Right/Bottom) -->
+  <rect x="380" y="175" width="280" height="90" rx="10" fill="rgba(239,68,68,0.12)" stroke="#ef4444" stroke-width="1.2"/>
+  <text x="520" y="197" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#f87171">▼ PARTÍCULA 'DOWN'</text>
+  <text x="520" y="217" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">• <tspan font-weight="bold" fill="#fca5a5">Reducción (Less is Down):</tspan> Turn down, Slow down, Calm down</text>
+  <text x="520" y="235" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#fca5a5">• <tspan font-weight="bold" fill="#fca5a5">Fijación / Asiento:</tspan> Write down, Settle down</text>
+  <text x="520" y="253" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#fca5a5">• <tspan font-weight="bold" fill="#fca5a5">Colapso / Falla:</tspan> Break down, Shut down</text>
+  
+  <!-- Bottom Contrast Box -->
+  <rect x="40" y="295" width="620" height="65" rx="10" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+  <text x="350" y="322" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#f8fafc">
+    CONTRASTE DIRECTO: <tspan fill="#34d399">"Turn UP the music"</tspan> (Subir volumen) vs <tspan fill="#f87171">"Turn DOWN the offer"</tspan> (Bajar/Rechazar)
+  </text>
+  <text x="350" y="344" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#94a3b8">
+    Telicidad con UP: "Eat the apple" (acción) vs "Eat UP the apple" (comerla completamente hasta el corazón)
+  </text>
+</svg>"""
+
+        # 6. Cognitive Particle Semantics: ON vs OFF (Contact, Activation, Continuity vs Separation, Postponement)
+        if any(w in combined_text for w in ["particle off", "particle on", "on vs off", "turn off", "turn on", "put off", "call off", "take off", "carry on", "go on"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgOnOff" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowOnOff" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgOnOff)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">CONTACT &amp; SEPARATION: PARTICLES 'ON' vs 'OFF'</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Superficie y Continuidad (ON) vs Desprendimiento y Postergación (OFF)</text>
+  
+  <!-- Left Side: ON (Contact & Continuity) -->
+  <g transform="translate(50, 80)">
+    <rect x="0" y="0" width="280" height="195" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="20" y="15" width="240" height="28" rx="6" fill="#0284c7"/>
+    <text x="140" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">PARTÍCULA 'ON' (Contacto / Flujo)</text>
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#7dd3fc">1. Contacto Físico / Poner:</text>
+    <text x="30" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"Put on your jacket" (sobre el cuerpo)</text>
+    <text x="20" y="112" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#7dd3fc">2. Activación de Energía:</text>
+    <text x="30" y="130" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"Turn on the lights / Switch on"</text>
+    <text x="20" y="154" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#7dd3fc">3. Continuidad Temporal (Aspectual):</text>
+    <text x="30" y="172" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"Go on / Carry on / Keep on walking"</text>
+  </g>
+  
+  <!-- Right Side: OFF (Detachment & Cancellation) -->
+  <g transform="translate(370, 80)">
+    <rect x="0" y="0" width="280" height="195" rx="12" fill="rgba(244,63,94,0.10)" stroke="#f43f5e" stroke-width="1.5"/>
+    <rect x="20" y="15" width="240" height="28" rx="6" fill="#e11d48"/>
+    <text x="140" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">PARTÍCULA 'OFF' (Separación / Corte)</text>
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#fda4af">1. Desconexión / Separación:</text>
+    <text x="30" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"Take off shoes / The plane took off"</text>
+    <text x="20" y="112" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#fda4af">2. Interrupción de Energía:</text>
+    <text x="30" y="130" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"Turn off the engine / Cut off supply"</text>
+    <text x="20" y="154" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#fda4af">3. Cancelación o Postergación:</text>
+    <text x="30" y="172" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"Call off the meeting / Put off a task"</text>
+  </g>
+  
+  <!-- Bottom Summary -->
+  <rect x="40" y="295" width="620" height="65" rx="10" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+  <text x="350" y="322" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#f8fafc">
+    METÁFORA CLAVE: <tspan fill="#38bdf8">ON</tspan> mantiene el flujo hacia adelante; <tspan fill="#f43f5e">OFF</tspan> separa o detiene el evento
+  </text>
+  <text x="350" y="344" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#94a3b8">
+    Ejemplo: "Please <tspan fill="#38bdf8" font-weight="bold">carry on</tspan> with your work" vs "They decided to <tspan fill="#f43f5e" font-weight="bold">call off</tspan> the match"
+  </text>
 </svg>"""
 
         return None
@@ -832,6 +1064,32 @@ class TutorAgent:
         first_audio = target_audios[0]["english"] if target_audios and isinstance(target_audios[0], dict) else (p.get("expected_answer") or "")
 
         low_top = topic.lower()
+        if "phrasal" in low_top or "particle" in low_top or any(pt in low_top for pt in ["logic of out", "particle semantics", "three-part phrasal"]):
+            return {
+                "title": "Semántica Cognitiva: Estructura de Phrasal Verbs",
+                "formula": "[ Sujeto ] + [ Verbo Base (Acción) ] + [ Partícula (Vector Metafórico) ] + [ Objeto / Complemento ]",
+                "formula_tokens": [
+                    {"role": "Sujeto", "pattern": "I / You / We / They / She", "color": "blue"},
+                    {"role": "Verbo Base", "pattern": "find / figure / run / turn / clean", "color": "purple"},
+                    {"role": "Partícula", "pattern": "OUT / UP / DOWN / OFF / ON", "color": "amber"},
+                    {"role": "Complemento", "pattern": "the problem / the truth / coffee", "color": "emerald"}
+                ],
+                "explanation": "La partícula altera metafóricamente el verbo base orientando la acción hacia un vector espacial (salida, completitud, aumento o separación).",
+                "example_breakdowns": [
+                    {
+                        "english": first_audio or "We figured out the solution.",
+                        "spanish": "Resolvimos la solución.",
+                        "parts": [
+                            {"role": "Sujeto", "text": "We", "color": "blue"},
+                            {"role": "Verbo", "text": "figured", "color": "purple"},
+                            {"role": "Partícula", "text": "out", "color": "amber"},
+                            {"role": "Complemento", "text": "the solution", "color": "emerald"}
+                        ]
+                    }
+                ],
+                "tips": "Identifica la fuerza espacial de la partícula en lugar de memorizar traducciones aisladas."
+            }
+
         if "irregular past" in low_top or ("irregular" in low_top and "past" in low_top):
             return {
                 "title": "Fórmula: Preguntas y Negaciones en Pasado (Did / Didn't)",
@@ -911,127 +1169,103 @@ class TutorAgent:
     def _build_phase_storyboard(self, p: dict) -> list:
         """
         Deterministic storyboard generator synchronizing tutor speech with visual chalkboard elements.
-        Breaks down the phase into a step-by-step progressive reveal sequence.
+        Breaks down the phase into a step-by-step progressive reveal sequence with sentence-exact timing.
         """
         tutor_speech = str(p.get("tutor_says") or "")
+        has_task = bool(p.get("student_task") or p.get("expected_answer") or p.get("exercises"))
+
+        # Append closing exercise transition prompt if missing
+        s_low = tutor_speech.lower()
+        if has_task and tutor_speech and not any(k in s_low for k in ["a continuación", "ejercicio", "resuelve", "completa", "desafío"]):
+            tutor_speech = f"{tutor_speech.strip()} A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido."
+            p["tutor_says"] = tutor_speech
+
         raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', tutor_speech) if s.strip()]
-        
+        sentence_words = [len(s.split()) for s in raw_sentences]
+        total_words = max(sum(sentence_words), 1)
+
         board = str(p.get("board_content") or "")
         target_audios = p.get("target_audio_items") or []
         has_grammar = bool(p.get("grammar_structure") or p.get("key_structure"))
         has_phonetics = bool(p.get("phonetic_focus") or p.get("phoneme_symbol") or p.get("phase_number") == 4 or "fonét" in str(p.get("phase_name", "")).lower())
-        has_task = bool(p.get("student_task") or p.get("expected_answer") or p.get("exercises"))
+        has_middle = bool(p.get("diagram_svg") or has_grammar or has_phonetics)
+        has_audio = bool(target_audios and not has_task)
+        has_bottom = has_task or has_audio
 
         steps = []
         step_counter = 1
 
-        # Step 1: Title & Phase Introduction (0-15% of audio)
-        speech_snippet_1 = raw_sentences[0] if raw_sentences else (str(p.get("phase_name") or "Tema Principal"))
-        steps.append({
-            "step_id": "step-title",
-            "step_index": step_counter,
-            "element_type": "title",
-            "label": f"{step_counter}. Introducción y Título",
-            "tutor_speech_snippet": speech_snippet_1,
-            "trigger_ratio": 0.00,
-            "animation": "chalk_write",
-            "highlight_target": "title",
-            "chalk_color": "yellow"
-        })
-        step_counter += 1
-
-        # Step 2: Educational Visual Graphic (15-35% of audio)
-        speech_snippet_2 = raw_sentences[1] if len(raw_sentences) > 1 else "Observa la ilustración visual para comprender el contexto de la lección."
-        steps.append({
-            "step_id": "step-illustration",
-            "step_index": step_counter,
-            "element_type": "illustration",
-            "label": f"{step_counter}. Ilustración Didáctica",
-            "tutor_speech_snippet": speech_snippet_2,
-            "trigger_ratio": 0.15,
-            "animation": "zoom_pop",
-            "highlight_target": "illustration",
-            "chalk_color": "cyan"
-        })
-        step_counter += 1
-
-        # Step 3: Whiteboard Concepts & Rules (35-45% of audio)
-        speech_snippet_3 = raw_sentences[2] if len(raw_sentences) > 2 else "Revisa las reglas y conceptos clave anotados en la pizarra."
+        # Step 1: Whiteboard & Concepts (Main Teaching Board - Top, always starts at 0.00)
+        speech_snippet_1 = raw_sentences[0] if raw_sentences else (str(p.get("phase_name") or "Conceptos en Pizarra"))
         steps.append({
             "step_id": "step-concepts",
             "step_index": step_counter,
             "element_type": "concepts",
-            "label": f"{step_counter}. Reglas en Pizarra",
-            "tutor_speech_snippet": speech_snippet_3,
-            "trigger_ratio": 0.35,
+            "label": f"{step_counter}. {p.get('phase_name', 'Conceptos en Pizarra')}",
+            "tutor_speech_snippet": speech_snippet_1,
+            "trigger_ratio": 0.00,
             "animation": "typewriter",
             "highlight_target": "concepts",
             "chalk_color": "green"
         })
         step_counter += 1
 
-        # Step 3.5: Visual Vector Diagram / Timeline (if present, 45-55% of audio)
-        if p.get("diagram_svg"):
-            speech_snippet_diag = raw_sentences[min(3, len(raw_sentences)-1)] if len(raw_sentences) > 3 else "Observa el esquema visual y la línea de tiempo."
-            steps.append({
-                "step_id": "step-diagram",
-                "step_index": step_counter,
-                "element_type": "diagram",
-                "label": f"{step_counter}. Gráfico Didáctico",
-                "tutor_speech_snippet": speech_snippet_diag,
-                "trigger_ratio": 0.45,
-                "animation": "zoom_pop",
-                "highlight_target": "diagram",
-                "chalk_color": "cyan"
-            })
-            step_counter += 1
+        # Step 2: Diagram / Schema or Grammar Structure (Middle Zone - if present)
+        if has_middle:
+            elem_type = "diagram" if p.get("diagram_svg") else ("phonetics" if has_phonetics else "grammar")
+            label_text = "Esquema Conceptual" if p.get("diagram_svg") else ("Foco Fonético" if has_phonetics else "Fórmula Gramatical")
+            
+            middle_idx = 1
+            for idx, s in enumerate(raw_sentences[1:], 1):
+                sl = s.lower()
+                if any(kw in sl for kw in ["fórmula", "esquema", "diagrama", "estructura", "patrón", "línea", "fonét"]):
+                    middle_idx = idx
+                    break
 
-        # Step 4: Grammar / Phonetics Card (55-72% of audio)
-        if has_phonetics or has_grammar or p.get("phase_number") in (2, 3, 4):
-            speech_snippet_4 = raw_sentences[min(3, len(raw_sentences)-1)] if len(raw_sentences) > 3 else "Fíjate en el patrón y la estructura sintáctica."
-            elem_type = "phonetics" if has_phonetics else "grammar"
-            label = f"{step_counter}. Foco Fonético" if has_phonetics else f"{step_counter}. Fórmula Gramatical"
+            speech_snippet_2 = raw_sentences[middle_idx] if middle_idx < len(raw_sentences) else (raw_sentences[1] if len(raw_sentences) > 1 else "Observa la estructura y el esquema conceptual en la pizarra.")
+            words_before_middle = sum(sentence_words[:middle_idx])
+            calculated_ratio = words_before_middle / total_words
+            trigger_ratio = max(0.35, min(0.65 if has_bottom else 0.80, calculated_ratio))
+
             steps.append({
                 "step_id": f"step-{elem_type}",
                 "step_index": step_counter,
                 "element_type": elem_type,
-                "label": label,
-                "tutor_speech_snippet": speech_snippet_4,
-                "trigger_ratio": 0.55,
+                "label": f"{step_counter}. {label_text}",
+                "tutor_speech_snippet": speech_snippet_2,
+                "trigger_ratio": round(trigger_ratio, 2),
                 "animation": "bounce_in",
-                "highlight_target": "phonetics" if elem_type == "phonetics" else "grammar",
+                "highlight_target": elem_type,
                 "chalk_color": "purple"
             })
             step_counter += 1
 
-        # Step 5: Interactive Audio / Spoken Practice (72-88% of audio)
-        if target_audios or not has_task:
-            speech_snippet_5 = raw_sentences[min(4, len(raw_sentences)-1)] if len(raw_sentences) > 4 else "Escucha y practica las frases clave con el micrófono."
-            steps.append({
-                "step_id": "step-audio-practice",
-                "step_index": step_counter,
-                "element_type": "audio_practice",
-                "label": f"{step_counter}. Práctica de Pronunciación",
-                "tutor_speech_snippet": speech_snippet_5,
-                "trigger_ratio": 0.72,
-                "animation": "fly_from_bottom",
-                "highlight_target": "audio_practice",
-                "chalk_color": "pink"
-            })
-            step_counter += 1
+        # Step 3: Interactive Practice or Challenge (Bottom Zone - towards end of explanation)
+        if has_bottom:
+            elem_type = "exercise" if has_task else "audio_practice"
+            label_text = "Desafío Interactivo" if has_task else "Práctica de Pronunciación"
+            
+            bottom_idx = len(raw_sentences) - 1
+            for idx in range(len(raw_sentences) - 1, 0, -1):
+                sl = raw_sentences[idx].lower()
+                if any(kw in sl for kw in ["a continuación", "ejercicio", "resuelve", "completa", "práctica", "desafío"]):
+                    bottom_idx = idx
+                    break
 
-        # Step 6: Interactive Challenge / Task (88-100% of audio)
-        if has_task:
-            speech_snippet_6 = raw_sentences[-1] if len(raw_sentences) > 5 else "Demuestra lo aprendido resolviendo el desafío interactivo en la pizarra."
+            speech_snippet_3 = raw_sentences[bottom_idx] if bottom_idx < len(raw_sentences) else "A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido."
+            words_before_bottom = sum(sentence_words[:bottom_idx])
+            calculated_ratio = words_before_bottom / total_words
+            trigger_ratio = max(0.60 if has_middle else 0.45, min(0.88, calculated_ratio))
+
             steps.append({
-                "step_id": "step-exercise",
+                "step_id": f"step-{elem_type}",
                 "step_index": step_counter,
-                "element_type": "exercise",
-                "label": f"{step_counter}. Desafío Interactivo",
-                "tutor_speech_snippet": speech_snippet_6,
-                "trigger_ratio": 0.88,
+                "element_type": elem_type,
+                "label": f"{step_counter}. {label_text}",
+                "tutor_speech_snippet": speech_snippet_3,
+                "trigger_ratio": round(trigger_ratio, 2),
                 "animation": "spotlight_glow",
-                "highlight_target": "exercise",
+                "highlight_target": elem_type,
                 "chalk_color": "gold"
             })
 

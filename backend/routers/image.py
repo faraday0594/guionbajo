@@ -4,7 +4,7 @@ Generates educational concept illustrations using MiniMax image-01 model.
 """
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
 import httpx
 import logging
 from config import settings
@@ -16,6 +16,9 @@ from auth.dependencies import get_current_user_optional
 
 router = APIRouter(prefix="/image", tags=["Image Generation"])
 logger = logging.getLogger(__name__)
+
+# Global memory cache for generated images: prompt_hash -> image_url
+_IMAGE_CACHE: Dict[str, str] = {}
 
 class ImageGenRequest(BaseModel):
     prompt: str
@@ -49,12 +52,6 @@ async def generate_image(
             "provider": "minimax"
         }
 
-    url = "https://api.minimax.io/v1/image_generation"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-
     # Clean prompt for MiniMax image-01 API
     raw = req.prompt.strip()
     if not raw.lower().endswith("no text"):
@@ -62,23 +59,52 @@ async def generate_image(
     else:
         clean_prompt = raw
 
+    cache_key = f"{clean_prompt[:300]}_{req.aspect_ratio or '16:9'}"
+    if cache_key in _IMAGE_CACHE:
+        cached_url = _IMAGE_CACHE[cache_key]
+        logger.info(f"Returning cached MiniMax image: {cached_url[:60]}...")
+        return {
+            "success": True,
+            "url": cached_url,
+            "image_url": cached_url,
+            "prompt": clean_prompt,
+            "model": "image-01",
+            "provider": "minimax",
+            "cached": True
+        }
+
+    url = "https://api.minimax.io/v1/image_generation"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
     payload = {
         "model": "image-01",
         "prompt": clean_prompt[:500],
-        "aspect_ratio": req.aspect_ratio or "16:9"
+        "aspect_ratio": req.aspect_ratio or "16:9",
+        "response_format": "url",
+        "prompt_optimizer": True
     }
 
     try:
-        async with httpx.AsyncClient(timeout=35.0) as client:
+        async with httpx.AsyncClient(timeout=90.0) as client:
             response = await client.post(url, headers=headers, json=payload)
             response_json = response.json()
 
             if response.status_code == 200 and "data" in response_json:
                 data = response_json["data"]
-                if isinstance(data, dict) and "image_urls" in data and len(data["image_urls"]) > 0:
-                    raw_image_url = data["image_urls"][0]
+                raw_image_url = None
+                if isinstance(data, dict):
+                    if "image_urls" in data and len(data["image_urls"]) > 0:
+                        raw_image_url = data["image_urls"][0]
+                    elif "images" in data and len(data["images"]) > 0 and isinstance(data["images"][0], dict):
+                        raw_image_url = data["images"][0].get("url")
+
+                if raw_image_url:
                     # Ensure HTTPS to avoid Mixed Content errors on Vercel
                     image_url = raw_image_url.replace("http://", "https://")
+                    _IMAGE_CACHE[cache_key] = image_url
                     logger.info(f"Successfully generated MiniMax image-01: {image_url[:60]}...")
                     return {
                         "success": True,
@@ -100,3 +126,4 @@ async def generate_image(
         "error": "MiniMax image generation unavailable",
         "provider": "minimax"
     }
+

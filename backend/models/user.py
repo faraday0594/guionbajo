@@ -32,6 +32,7 @@ class StudentProfile(Base):
     knowledge_map = Column(JSON, default=dict)
     phonetics_mastery = Column(JSON, default=dict)
     minimax_api_key = Column(String, nullable=True)
+    preferred_voice = Column(String, default="female-yujie")
     
     user = relationship("User", back_populates="profile")
 

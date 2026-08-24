@@ -126,15 +126,15 @@ export default function DynamicSubtitles({
       const vowelCount = (cleanWord.match(/[aeiouyáéíóúü]/gi) || []).length;
       
       // Base speech duration: syllables + character length weight
-      let weight = Math.max(cleanWord.length * 0.5 + Math.max(vowelCount, 1) * 1.5, 2.2);
+      let weight = Math.max(cleanWord.length * 0.4 + Math.max(vowelCount, 1) * 1.2, 1.8);
 
-      // Trailing punctuation pause detection (speech pause silence in TTS)
+      // Natural pause detection calibrated for Neural TTS (Edge-TTS / MiniMax)
       if (/[.!?:]$/.test(rawWord)) {
-        weight += 4.2; // pause for full stop
+        weight += 1.6; // short natural pause for full stop
       } else if (/[,;\-—]$/.test(rawWord)) {
-        weight += 2.2; // pause for comma/dash
+        weight += 0.9; // subtle breath pause for comma
       } else if (/\.\.\.$/.test(rawWord)) {
-        weight += 3.5;
+        weight += 2.0;
       }
 
       weights.push(weight);
@@ -156,17 +156,17 @@ export default function DynamicSubtitles({
     });
   }, [words]);
 
-  // Calculate current active word index calibrated to TTS audio speech window
+  // Calculate current active word index calibrated to TTS audio speech window (zero initial latency)
   const activeWordIdx = useMemo(() => {
     if (!isPlaying) return -1;
-    if (audioProgress >= 100) return words.length;
+    if (audioProgress >= 99) return words.length;
     if (!wordTimings || wordTimings.length === 0) return 0;
 
     const rawRatio = Math.min(Math.max(audioProgress / 100, 0), 1);
     
-    // Calibrate for TTS silence padding at beginning (2.5%) and end (4%)
-    const SPEECH_START = 0.025;
-    const SPEECH_END = 0.96;
+    // Calibrated for Neural TTS tight start/end padding (0.5% lead, 1.5% trail)
+    const SPEECH_START = 0.005;
+    const SPEECH_END = 0.985;
     const speechRatio = Math.min(
       Math.max((rawRatio - SPEECH_START) / (SPEECH_END - SPEECH_START), 0),
       1

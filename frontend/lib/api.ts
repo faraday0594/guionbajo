@@ -1,4 +1,5 @@
 import { getToken } from './auth';
+import { attachAudioElementToAnalyzer, detachAudioElement } from './audioAnalyzer';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -15,7 +16,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 1
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
 
   let response: Response;
   try {
@@ -200,11 +201,13 @@ export const api = {
   updateLevel: (sublevel: string) => fetchWithAuth(`/progress/level?sublevel=${encodeURIComponent(sublevel)}`, { method: 'POST' }),
 
   // ─── TTS ─────────────────────────────────────────
-  synthesize: (text: string, voice = 'female-shaonv', emotion = 'calm', speed = 1.0): Promise<Blob> =>
-    fetchAudio('/tts/synthesize', {
+  synthesize: (text: string, voice?: string, emotion = 'calm', speed = 1.0): Promise<Blob> => {
+    const selectedVoice = voice && voice !== 'default' ? voice : getSavedPreferredVoice();
+    return fetchAudio('/tts/synthesize', {
       method: 'POST',
-      body: JSON.stringify({ text, voice, emotion, speed }),
-    }),
+      body: JSON.stringify({ text, voice: selectedVoice, emotion, speed }),
+    });
+  },
 
   getVoices: () => fetchWithAuth('/tts/voices'),
 
@@ -216,10 +219,16 @@ export const api = {
     }),
 
   // ─── Settings ────────────────────────────────────
+  getSettings: () => fetchWithAuth('/settings/'),
   saveMinimaxKey: (api_key: string) =>
     fetchWithAuth('/settings/minimax-key', {
       method: 'POST',
       body: JSON.stringify({ api_key }),
+    }),
+  savePreferredVoice: (voice: string) =>
+    fetchWithAuth('/settings/voice', {
+      method: 'POST',
+      body: JSON.stringify({ voice }),
     }),
 
   testTtsConnection: () =>
@@ -229,11 +238,36 @@ export const api = {
     }),
 };
 
+let memoryPreferredVoice = 'female-yujie';
+
+export function getSavedPreferredVoice(): string {
+  if (typeof window === 'undefined') return memoryPreferredVoice;
+  try {
+    const val = localStorage.getItem('guionbajo_preferred_voice') || localStorage.getItem('tutor_ai_preferred_voice');
+    if (val) {
+      memoryPreferredVoice = val;
+      return val;
+    }
+  } catch (_) {}
+  return memoryPreferredVoice;
+}
+
+export function setSavedPreferredVoice(voiceId: string): void {
+  if (!voiceId) return;
+  memoryPreferredVoice = voiceId;
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('guionbajo_preferred_voice', voiceId);
+    localStorage.setItem('tutor_ai_preferred_voice', voiceId);
+  } catch (_) {}
+}
+
 // Global audio handle & state for linear serialization
 let activeAudioElement: HTMLAudioElement | null = null;
 let currentResolveHandler: (() => void) | null = null;
 let cachedVoices: SpeechSynthesisVoice[] = [];
 let voicesLoadedPromise: Promise<SpeechSynthesisVoice[]> | null = null;
+let activePlaybackSessionId = 0;
 
 export function ensureBrowserVoices(): Promise<SpeechSynthesisVoice[]> {
   if (typeof window === 'undefined' || !window.speechSynthesis) {
@@ -341,13 +375,16 @@ export function getBestBrowserVoice(lang: 'en' | 'es', preferredName?: string): 
 
 // Stop any currently speaking tutor voice
 export function stopTutorVoice() {
+  activePlaybackSessionId += 1;
   if (activeAudioElement) {
     try {
       activeAudioElement.pause();
       activeAudioElement.currentTime = 0;
     } catch (_) {}
+    detachAudioElement(activeAudioElement);
     activeAudioElement = null;
   }
+  detachAudioElement(null);
   if (typeof window !== 'undefined' && window.speechSynthesis) {
     try {
       window.speechSynthesis.cancel();
@@ -468,8 +505,8 @@ function createBrowserSpeechAudioAdapter(text: string, voiceId = 'female-shaonv'
   return adapter;
 }
 
-// Standard playTTS (immediate audio start for Tutor speech via MiniMax HD with fallback)
-export async function playTTS(text: string, voice = 'female-shaonv', emotion = 'calm'): Promise<HTMLAudioElement | any> {
+// Standard playTTS (immediate audio start for Tutor speech with preferred voice)
+export async function playTTS(text: string, voice?: string, emotion = 'calm', speed = 1.0): Promise<HTMLAudioElement | any> {
   const speechText = cleanTextForTTS(text);
   if (!speechText) {
     return {
@@ -485,13 +522,36 @@ export async function playTTS(text: string, voice = 'female-shaonv', emotion = '
     };
   }
 
-  // 1. Try Primary Cloud Synthesis (MiniMax HD / Microsoft Neural Studio)
+  // 🛑 Stop any currently active audio and grab a unique session ID for this request
+  stopTutorVoice();
+  const currentSessionId = activePlaybackSessionId;
+
+  const targetVoice = voice && voice !== 'default' ? voice : getSavedPreferredVoice();
+
+  // 1. Try Primary Cloud Synthesis (MiniMax HD / Microsoft Neural Studio / Google)
   try {
-    const blob = await api.synthesize(speechText, voice, emotion);
+    const blob = await api.synthesize(speechText, targetVoice, emotion, speed);
+
+    // If a newer audio request was started while fetching, abort this one!
+    if (activePlaybackSessionId !== currentSessionId) {
+      return {
+        duration: 0,
+        currentTime: 0,
+        paused: true,
+        ended: true,
+        play: async () => {},
+        pause: () => {},
+        ontimeupdate: null,
+        onended: null,
+        onerror: null,
+      };
+    }
+
     if (blob && blob.size > 200) {
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       activeAudioElement = audio;
+      attachAudioElementToAnalyzer(audio);
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
@@ -503,6 +563,7 @@ export async function playTTS(text: string, voice = 'female-shaonv', emotion = '
       }
       audio.onended = () => {
         URL.revokeObjectURL(url);
+        detachAudioElement(audio);
         if (activeAudioElement === audio) activeAudioElement = null;
       };
       return audio;
@@ -511,8 +572,56 @@ export async function playTTS(text: string, voice = 'female-shaonv', emotion = '
     console.warn('Backend TTS synthesis failed, switching to browser audio adapter:', err);
   }
 
+  // If session changed while in catch, abort
+  if (activePlaybackSessionId !== currentSessionId) {
+    return {
+      duration: 0,
+      currentTime: 0,
+      paused: true,
+      ended: true,
+      play: async () => {},
+      pause: () => {},
+      ontimeupdate: null,
+      onended: null,
+      onerror: null,
+    };
+  }
+
   // 2. High Quality Browser Synthesis fallback
-  return createBrowserSpeechAudioAdapter(speechText, voice);
+  return createBrowserSpeechAudioAdapter(speechText, targetVoice);
+}
+
+// ─── TEST VOICE PREVIEW (Plays instant audio sample for any voice ID) ───────────
+export async function testVoicePreview(voiceId: string, previewText?: string): Promise<HTMLAudioElement | void> {
+  stopTutorVoice();
+  const sampleText = previewText || '¡Hola! Soy tu tutor en Guionbajo. Esta es una prueba de mi voz.';
+  
+  try {
+    const blob = await api.synthesize(sampleText, voiceId, 'calm', 1.0);
+    if (blob && blob.size > 100) {
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      activeAudioElement = audio;
+      attachAudioElementToAnalyzer(audio);
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          if (err && err.name !== 'AbortError') {
+            console.warn('Voice preview play error:', err);
+          }
+        });
+      }
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        detachAudioElement(audio);
+        if (activeAudioElement === audio) activeAudioElement = null;
+      };
+      return audio;
+    }
+  } catch (err) {
+    console.warn('Voice preview synthesis failed:', err);
+  }
 }
 
 // ─── PLAY ENGLISH AUDIO (Roger / Jenny Neural HD / Edge-TTS) ───────────────────
@@ -530,6 +639,7 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       activeAudioElement = audio;
+      attachAudioElementToAnalyzer(audio);
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
@@ -541,6 +651,7 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
       }
       audio.onended = () => {
         URL.revokeObjectURL(url);
+        detachAudioElement(audio);
         if (activeAudioElement === audio) activeAudioElement = null;
       };
       return audio;
@@ -641,15 +752,18 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         activeAudioElement = audio;
+        attachAudioElementToAnalyzer(audio);
 
         audio.onended = () => {
           URL.revokeObjectURL(url);
+          detachAudioElement(audio);
           if (activeAudioElement === audio) activeAudioElement = null;
           cleanupAndResolve();
         };
 
         audio.onerror = () => {
           URL.revokeObjectURL(url);
+          detachAudioElement(audio);
           if (activeAudioElement === audio) activeAudioElement = null;
           fallbackToBrowserSpeech();
         };

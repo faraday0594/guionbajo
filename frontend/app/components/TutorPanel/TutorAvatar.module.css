@@ -1,0 +1,461 @@
+/* ══ TutorAvatar.module.css — Robot GuionBajo Retro-Futurista ════════════ */
+
+.avatarWrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  animation: hoverFloat 3.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes hoverFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-5px); }
+}
+
+/* ── Chorro de Vapor (Angry) ─────────────────────────────────────────── */
+.steamContainer {
+  position: absolute;
+  top: 10px;
+  width: 140px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.steamJet {
+  width: 20px;
+  height: 10px;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(248,113,113,0.5) 50%, transparent 80%);
+  border-radius: 50%;
+  opacity: 0;
+  filter: blur(1.5px);
+  transition: opacity 0.2s;
+}
+
+.steamLeft  { transform: translateX(-12px) rotate(-30deg); }
+.steamRight { transform: translateX(12px) rotate(30deg); }
+
+.steamActive {
+  opacity: 1;
+  animation: steamPuff 0.35s infinite alternate;
+}
+
+@keyframes steamPuff {
+  0%   { transform: scale(0.6) translateY(0); opacity: 0.4; }
+  100% { transform: scale(1.5) translateY(-10px); opacity: 0.95; }
+}
+
+/* ── Cabeza del Robot ───────────────────────────────────────────────── */
+.robotHead {
+  position: relative;
+  background: linear-gradient(145deg, #374151 0%, #1f2937 60%, #111827 100%);
+  border-radius: 16px;
+  border: 2px solid #4b5563;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.2);
+  transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  z-index: 10;
+}
+
+.headSpeaking {
+  transition: none !important;
+}
+
+/* Tamaños de Cabeza */
+.sizeSm .robotHead { width: 68px; height: 60px; border-radius: 12px; gap: 4px; }
+.sizeMd .robotHead { width: 100px; height: 86px; border-radius: 16px; gap: 6px; }
+.sizeLg .robotHead { width: 136px; height: 118px; border-radius: 20px; gap: 8px; }
+
+/* Inclinación de cabeza */
+.tiltThinking { transform: rotate(-7deg) translateY(-2px); }
+.tiltNervous  { transform: rotate(5deg) translateY(-1px); }
+.tiltHappy    { transform: translateY(-2px); }
+
+/* Remaches */
+.rivet {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #788a9e;
+  border-radius: 50%;
+  box-shadow: inset 1px 1px 1px #fff, 1px 1px 2px rgba(0,0,0,0.8);
+}
+.rTl { top: 5px; left: 5px; }
+.rTr { top: 5px; right: 5px; }
+.rBl { bottom: 5px; left: 5px; }
+.rBr { bottom: 5px; right: 5px; }
+
+/* Diales laterales (orejeras) */
+.earDial {
+  position: absolute;
+  background: linear-gradient(180deg, #64748b, #334155, #1e293b);
+  border: 1px solid #475569;
+  border-radius: 3px;
+  top: 40%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.sizeSm .earDial { width: 6px; height: 16px; }
+.sizeMd .earDial { width: 8px; height: 22px; }
+.sizeLg .earDial { width: 10px; height: 28px; }
+
+.earLeft  { left: -7px; }
+.earRight { right: -7px; }
+
+.dialNotch {
+  width: 3px;
+  height: 2px;
+  background: #00D4FF;
+  border-radius: 1px;
+  box-shadow: 0 0 3px #00D4FF;
+}
+
+/* ── Antena con Bulbo de Vacío ───────────────────────────────────────── */
+.robotAntenna {
+  position: absolute;
+  top: -24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sizeSm .robotAntenna { top: -16px; }
+.sizeLg .robotAntenna { top: -30px; }
+
+.antennaStem {
+  width: 3px;
+  height: 12px;
+  background: linear-gradient(180deg, #94a3b8, #475569);
+  border-radius: 2px;
+}
+.sizeSm .antennaStem { height: 8px; width: 2px; }
+.sizeLg .antennaStem { height: 16px; width: 4px; }
+
+.vacuumBulb {
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.4) 0%, rgba(255,200,100,0.15) 60%, rgba(0,0,0,0.3) 100%);
+  border: 1.5px solid rgba(255,255,255,0.5);
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 5px rgba(251,191,36,0.3);
+  transition: all 0.25s;
+}
+.sizeSm .vacuumBulb { width: 10px; height: 10px; border-width: 1px; }
+.sizeLg .vacuumBulb { width: 18px; height: 18px; }
+
+.bulbFilament {
+  width: 5px;
+  height: 5px;
+  border: 1px solid #fbbf24;
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 0 3px #f59e0b;
+}
+
+.bulbActive {
+  background: radial-gradient(circle at center, rgba(0,212,255,0.8) 0%, rgba(108,99,255,0.4) 70%, transparent 100%);
+  box-shadow: 0 0 12px 5px rgba(0,212,255,0.8);
+  border-color: #00D4FF;
+}
+
+.bulbSpark {
+  animation: sparkPulse 0.4s infinite alternate;
+}
+@keyframes sparkPulse {
+  from { box-shadow: 0 0 5px rgba(108,99,255,0.4); border-color: #6C63FF; }
+  to   { box-shadow: 0 0 16px 7px rgba(0,212,255,0.95); border-color: #fff; }
+}
+
+/* ── Ojos y Párpados Mecánicos ───────────────────────────────────────── */
+.robotEyes {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+.sizeSm .robotEyes { gap: 8px; margin-top: 2px; }
+.sizeLg .robotEyes { gap: 16px; margin-top: 8px; }
+
+.eyeSocket {
+  position: relative;
+  background: #090d14;
+  border-radius: 50%;
+  border: 1.5px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.9), 0 1px 2px rgba(255,255,255,0.1);
+}
+.sizeSm .eyeSocket { width: 18px; height: 18px; }
+.sizeMd .eyeSocket { width: 24px; height: 24px; }
+.sizeLg .eyeSocket { width: 30px; height: 30px; }
+
+.shutter {
+  position: absolute;
+  width: 100%;
+  background: linear-gradient(180deg, #475569, #1e293b);
+  border-radius: 2px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 3;
+}
+.shutterTop    { top: 0; height: 0%; border-bottom: 1px solid #64748b; }
+.shutterBottom { bottom: 0; height: 0%; border-top: 1px solid #64748b; }
+
+.eyeLens {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.pupil {
+  background: #00D4FF;
+  border-radius: 50%;
+  box-shadow: 0 0 8px 3px rgba(0,212,255,0.75);
+  transition: all 0.25s;
+}
+.sizeSm .pupil { width: 8px; height: 8px; }
+.sizeMd .pupil { width: 11px; height: 11px; }
+.sizeLg .pupil { width: 14px; height: 14px; }
+
+.eyeGlint {
+  position: absolute;
+  top: 20%;
+  left: 25%;
+  width: 2px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
+/* ── Párpados por Emoción ── */
+.happyShutterBottom {
+  height: 48% !important;
+  border-radius: 50% 50% 0 0;
+}
+.happyPupil {
+  background: #00E676 !important;
+  box-shadow: 0 0 10px 4px rgba(0,230,118,0.85) !important;
+  transform: translateY(-2px);
+}
+
+.angryShutterTop {
+  height: 52% !important;
+}
+.angryShutterLeft  { transform: rotate(14deg) scaleX(1.2); }
+.angryShutterRight { transform: rotate(-14deg) scaleX(1.2); }
+.angryPupil {
+  background: #FF5252 !important;
+  box-shadow: 0 0 12px 5px rgba(255,82,82,0.85) !important;
+}
+
+.thinkingPupil {
+  animation: pupilRoll 2.2s infinite;
+  background: #6C63FF !important;
+  box-shadow: 0 0 10px 4px rgba(108,99,255,0.8) !important;
+}
+@keyframes pupilRoll {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(3px, -4px); }
+  75%      { transform: translate(-3px, -4px); }
+}
+
+.nervousPupil {
+  width: 5px !important;
+  height: 5px !important;
+  background: #FFB627 !important;
+  box-shadow: 0 0 8px 3px rgba(255,182,39,0.8) !important;
+  animation: nervousJitter 0.3s infinite;
+}
+@keyframes nervousJitter {
+  0%, 100% { transform: scale(1) translate(0, 0); }
+  50%      { transform: scale(0.6) translate(1px, -1px); }
+}
+
+/* ── Boca: Dientes Bender / Cursor Terminal '_' ─────────────────────── */
+.mouthFrame {
+  background: #090d14;
+  border-radius: 6px;
+  border: 1.5px solid #334155;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.9), 0 1px 2px rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color 0.2s;
+  padding: 1px 2px;
+}
+.sizeSm .mouthFrame { width: 44px; }
+.sizeMd .mouthFrame { width: 68px; }
+.sizeLg .mouthFrame { width: 88px; }
+
+/* Boca en estado de habla activo (cero lag CSS, manejado por rAF 60 FPS) */
+.mouthSpeaking {
+  transition: none !important;
+}
+
+/* Boca en estado de reposo (delgada, cerrada) */
+.mouthClosed {
+  height: 6px !important;
+  border-radius: 3px;
+  transition: height 0.15s ease-out, border-color 0.2s !important;
+}
+.sizeSm .mouthClosed { height: 6px !important; }
+.sizeMd .mouthClosed { height: 8px !important; }
+.sizeLg .mouthClosed { height: 10px !important; }
+
+.terminalCursorMouth {
+  color: #00D4FF;
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(0,212,255,0.9);
+  animation: cursorBlink 0.9s infinite alternate;
+}
+.sizeSm .terminalCursorMouth { font-size: 0.8rem; }
+.sizeMd .terminalCursorMouth { font-size: 1.1rem; }
+.sizeLg .terminalCursorMouth { font-size: 1.3rem; }
+
+@keyframes cursorBlink {
+  0%, 40%   { opacity: 1; text-shadow: 0 0 10px #00D4FF; }
+  60%, 100% { opacity: 0.15; text-shadow: none; }
+}
+
+.benderTeethGrille {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 2px;
+}
+
+.toothBar {
+  background: #fffde7;
+  border-radius: 1.5px;
+  transition: none;
+}
+.sizeSm .toothBar { width: 4px; }
+.sizeMd .toothBar { width: 6px; }
+.sizeLg .toothBar { width: 8px; }
+
+/* ── Torso / Pantalla CRT ───────────────────────────────────────────── */
+.robotBody {
+  background: linear-gradient(145deg, #374151 0%, #1f2937 60%, #111827 100%);
+  border: 2px solid #4b5563;
+  border-top: none;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+  z-index: 5;
+}
+.sizeSm .robotBody { width: 52px; height: 34px; border-radius: 0 0 10px 10px; }
+.sizeMd .robotBody { width: 78px; height: 48px; border-radius: 0 0 14px 14px; }
+.sizeLg .robotBody { width: 106px; height: 64px; border-radius: 0 0 18px 18px; }
+
+.crtMonitor {
+  background: #020617;
+  border: 1.5px solid #334155;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,212,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sizeSm .crtMonitor { width: 34px; height: 18px; }
+.sizeMd .crtMonitor { width: 50px; height: 26px; }
+.sizeLg .crtMonitor { width: 68px; height: 36px; }
+
+.crtScanlines {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.45) 50%);
+  background-size: 100% 3px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.crtContent {
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+  z-index: 1;
+  text-shadow: 0 0 6px currentColor;
+}
+.sizeSm .crtContent { font-size: 0.65rem; }
+.sizeMd .crtContent { font-size: 0.8rem; }
+.sizeLg .crtContent { font-size: 0.95rem; }
+
+/* ── Micropropulsor Magnético ───────────────────────────────────────── */
+.hoverThruster {
+  position: absolute;
+  bottom: -8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sizeSm .hoverThruster { bottom: -6px; }
+.sizeLg .hoverThruster { bottom: -11px; }
+
+.thrusterNozzle {
+  background: linear-gradient(180deg, #475569, #1e293b);
+  border: 1px solid #334155;
+  border-radius: 2px;
+}
+.sizeSm .thrusterNozzle { width: 16px; height: 3px; }
+.sizeMd .thrusterNozzle { width: 24px; height: 4px; }
+.sizeLg .thrusterNozzle { width: 32px; height: 6px; }
+
+.plasmaFlame {
+  background: radial-gradient(ellipse at top, #00D4FF 0%, #6C63FF 60%, transparent 100%);
+  border-radius: 50%;
+  filter: blur(1px);
+  animation: plasmaFlicker 0.15s infinite alternate;
+}
+.sizeSm .plasmaFlame { width: 8px; height: 6px; }
+.sizeMd .plasmaFlame { width: 12px; height: 8px; }
+.sizeLg .plasmaFlame { width: 16px; height: 10px; }
+
+.plasmaHigh {
+  height: 14px !important;
+  width: 14px !important;
+  box-shadow: 0 0 10px 4px rgba(0,212,255,0.85);
+}
+
+@keyframes plasmaFlicker {
+  0%   { transform: scaleX(0.85) scaleY(0.9); opacity: 0.75; }
+  100% { transform: scaleX(1.15) scaleY(1.15); opacity: 1; }
+}
+
+/* ── Bordes de Cabeza por Emoción ───────────────────────────────────── */
+.headHappy    { border-color: #00E676 !important; box-shadow: 0 4px 22px rgba(0,230,118,0.4) !important; }
+.headThinking { border-color: #6C63FF !important; box-shadow: 0 4px 22px rgba(108,99,255,0.4) !important; }
+.headAngry    { border-color: #FF5252 !important; box-shadow: 0 4px 24px rgba(255,82,82,0.55) !important; animation: angryVibe 0.12s infinite; }
+.headNervous  { border-color: #FFB627 !important; box-shadow: 0 4px 20px rgba(255,182,39,0.4) !important; }
+.headVictory  { border-color: #FFB627 !important; box-shadow: 0 6px 28px rgba(255,182,39,0.6) !important; }
+
+@keyframes angryVibe {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-2px, 2px); }
+  75%      { transform: translate(2px, -2px); }
+}

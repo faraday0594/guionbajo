@@ -13,6 +13,7 @@ import DynamicSubtitles from '@/app/components/DynamicSubtitles';
 import MicroPhoneticCard from '@/app/components/MicroPhoneticCard';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
 import LiveStoryboardController, { StoryboardStep } from '@/app/components/LiveStoryboardController';
+import InteractiveExerciseStage from '@/app/components/InteractiveExerciseStage';
 import {
   ArrowLeft,
   Send,
@@ -1020,6 +1021,44 @@ export default function LessonPage() {
     inFlightImagePromisesRef.current[promptKey] = promise;
     return promise;
   }, [lesson, minimaxImageMap]);
+
+  const fetchExerciseImage = useCallback(async (prompt: string, promptKey: string): Promise<string> => {
+    if (minimaxImageMap[promptKey]) {
+      return minimaxImageMap[promptKey];
+    }
+    const existing = inFlightImagePromisesRef.current[promptKey];
+    if (existing) {
+      return existing;
+    }
+
+    const sanitizedPrompt = sanitizeImagePrompt(prompt, topicParam, currentPhaseIdx);
+    setGeneratingImages(prev => ({ ...prev, [promptKey]: true }));
+
+    const promise = (async () => {
+      let finalUrl = '';
+      try {
+        const res: any = await api.generateImage(sanitizedPrompt, '16:9');
+        if (res && res.success && (res.url || res.image_url)) {
+          finalUrl = res.url || res.image_url;
+        }
+      } catch (err) {
+        console.warn(`MiniMax image generation for exercise ${promptKey} failed:`, err);
+      }
+
+      if (!finalUrl) {
+        finalUrl = getFallbackImageUrl(sanitizedPrompt, topicParam, currentPhaseIdx + 29);
+      }
+
+      await preloadImage(finalUrl, 4000).catch(() => {});
+      setMinimaxImageMap(prev => ({ ...prev, [promptKey]: finalUrl }));
+      setGeneratingImages(prev => ({ ...prev, [promptKey]: false }));
+      delete inFlightImagePromisesRef.current[promptKey];
+      return finalUrl;
+    })();
+
+    inFlightImagePromisesRef.current[promptKey] = promise;
+    return promise;
+  }, [minimaxImageMap, topicParam, currentPhaseIdx]);
 
   // Preload images for current and adjacent slides
   useEffect(() => {
@@ -2131,6 +2170,22 @@ export default function LessonPage() {
   // 🎬 Hook & Multi-Image Resolution
   const isHook = currentPhaseIdx === 0 || Boolean(phase.is_hook);
 
+  // 🗣️ Dedicated Phonetic Bonus Slide Resolution (strictly at the end of the lesson)
+  const isPhoneticBonus = Boolean(
+    phase.is_phonetic_bonus ||
+    phase.interaction_type === 'phonetic_bonus' ||
+    (phase.phonetic_focus && currentPhaseIdx === (lesson?.phases?.length ? lesson.phases.length - 1 : currentPhaseIdx)) ||
+    (phase.phase_name?.toLowerCase().includes('bonus de pronunciación')) ||
+    (phase.phase_name?.toLowerCase().includes('fonét') && currentPhaseIdx === (lesson?.phases?.length ? lesson.phases.length - 1 : currentPhaseIdx))
+  );
+
+  // 🎯 Dedicated Practice Slide Resolution
+  const isPracticeSlide = !isHook && !isPhoneticBonus && Boolean(
+    phase.is_practice_slide ||
+    (phase.interaction_type === 'quiz' && ((phase.exercises && phase.exercises.length > 0) || parsedExercisesData.exercises.length > 0)) ||
+    (phase.exercises && phase.exercises.length > 0)
+  );
+
   // ─── Image Generation & Hook Visuals ───────────────────────────────────────
   const rawImagePrompt = typeof phase.image_prompt === 'string' && phase.image_prompt.trim().length > 10
     ? phase.image_prompt.trim()
@@ -2699,6 +2754,85 @@ export default function LessonPage() {
                     </motion.button>
                   </div>
                 </motion.div>
+              ) : isPracticeSlide ? (
+                /* ═══════════════════════════════════════════════════════════════════════
+                   🎯 MODE 1.4: SLIDE DEDICADA DE DESAFÍO INTERACTIVO Y EJERCICIOS CON IMÁGENES
+                   ═══════════════════════════════════════════════════════════════════════ */
+                <motion.div
+                  key={`practice-hero-stage-${currentPhaseIdx}`}
+                  initial={{ opacity: 0, scale: 0.96, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.94, y: -20, filter: 'blur(10px)' }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  className="w-full flex-1 flex flex-col justify-between"
+                >
+                  <InteractiveExerciseStage
+                    exercises={
+                      phase.exercises && phase.exercises.length > 0
+                        ? phase.exercises
+                        : parsedExercisesData.exercises.map(e => ({
+                            id: e.id,
+                            sentence: e.cleanSentence || e.question,
+                            options: e.options,
+                            expected_answer: e.options?.[0] || '',
+                            spanish_translation: `Completa la oración en el contexto de ${topicParam}.`,
+                            image_prompt: `2D flat vector educational illustration depicting ${topicParam}, clean design, no text`
+                          }))
+                    }
+                    phaseName={typeof phase.phase_name === 'string' ? phase.phase_name : `Desafío Práctico: ${topicParam}`}
+                    tutorSays={typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || ''}
+                    phaseIdx={currentPhaseIdx}
+                    topicParam={topicParam}
+                    minimaxImageMap={minimaxImageMap}
+                    generatingImages={generatingImages}
+                    onFetchExerciseImage={fetchExerciseImage}
+                    onNextSlide={handleNextSlide}
+                    nextSlideLabel={
+                      currentPhaseIdx < (lesson?.phases?.length ? lesson.phases.length - 1 : 0) &&
+                      (lesson?.phases?.[currentPhaseIdx + 1]?.is_phonetic_bonus || lesson?.phases?.[currentPhaseIdx + 1]?.phonetic_focus)
+                        ? "Bonus de Pronunciación 🌟"
+                        : "Pasar a la Práctica de Lectura 📖"
+                    }
+                  />
+                </motion.div>
+              ) : isPhoneticBonus ? (
+                /* ═══════════════════════════════════════════════════════════════════════
+                   🌟 MODE 1.5: SLIDE DEDICADA DE BONUS DE PRONUNCIACIÓN (AL FINAL DE CLASE)
+                   ═══════════════════════════════════════════════════════════════════════ */
+                <motion.div
+                  key={`phonetic-bonus-hero-stage-${currentPhaseIdx}`}
+                  initial={{ opacity: 0, scale: 0.96, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.94, y: -20, filter: 'blur(10px)' }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  className="w-full flex-1 flex flex-col justify-between space-y-4"
+                >
+                  <MicroPhoneticCard
+                    phoneticData={phase.phonetic_focus || lesson?.phonetic_focus || lesson?.phonetic_data || {}}
+                    isStandaloneSlide={true}
+                    onCompletePractice={(sym, ok) => {
+                      api.recordPhoneme(sym, ok, 90).catch(() => {});
+                    }}
+                  />
+
+                  {/* Bottom Action Footer with Direct Transition to Reading */}
+                  <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-md relative z-10 flex-shrink-0">
+                    <div className="text-xs text-white/70">
+                      🌟 <strong className="text-emerald-400">Bonus de Pronunciación:</strong> Practica los fonemas y avanza a la lectura y juego interactivo.
+                    </div>
+
+                    <motion.button
+                      type="button"
+                      onClick={handleNextSlide}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
+                      className="w-full sm:w-auto px-7 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-brand-cyan text-black font-extrabold text-sm shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:shadow-[0_0_40px_rgba(0,212,255,0.7)] flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+                    >
+                      <span>Pasar a la Práctica de Lectura 📖</span>
+                      <ChevronRight size={18} />
+                    </motion.button>
+                  </div>
+                </motion.div>
               ) : (
                 <div className={`${getBoardThemeClass(phase.board_theme)} p-5 sm:p-7 space-y-5 relative`}>
                 
@@ -2966,37 +3100,6 @@ export default function LessonPage() {
                           </motion.div>
                         )}
                       </AnimatePresence>
-
-                      {/* 🗣️ ROW 2.5: Micro-Phonetics Contrast Card (Phonetic Focus) */}
-                      {Boolean(
-                        phase.phonetic_focus ||
-                        (phase.phase_name?.toLowerCase().includes('fonét') && phase.phase_number === 4) ||
-                        (lesson?.topic?.toLowerCase().includes('fonét') && phase.phase_number === 4)
-                      ) && (
-                        <AnimatePresence>
-                          {(isFullBoardRevealed || isStepRevealed('phonetics')) && (
-                            <motion.div
-                              id="storyboard-target-phonetics"
-                              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              transition={{ duration: 0.45, ease: 'easeOut' }}
-                              className={`w-full rounded-2xl transition-all duration-300 ${
-                                isStepActive('phonetics')
-                                  ? 'ring-2 ring-purple-400 ring-offset-2 ring-offset-black/70 shadow-[0_0_30px_rgba(192,132,252,0.35)]'
-                                  : ''
-                              }`}
-                            >
-                              <MicroPhoneticCard
-                                phoneticData={phase.phonetic_focus || lesson?.phonetic_focus || {}}
-                                onCompletePractice={(sym, ok) => {
-                                  api.recordPhoneme(sym, ok, 90).catch(() => {});
-                                }}
-                              />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      )}
 
                       {/* 🎯 ROW 3: Interactive Exercises or Challenge Task */}
                       <AnimatePresence>

@@ -168,11 +168,12 @@ class AdaptiveEngine:
                     "symbols": contrast_symbols,
                     "contrast_pairs": primary_phoneme.get("contrast_pairs", []),
                     "mouth_guide": primary_phoneme.get("mouth_guide", {}),
+                    "mouth_guide_es": primary_phoneme.get("mouth_guide_es", primary_phoneme.get("mouth_guide", {})),
                     "drill_sentence": primary_phoneme.get("drill_sentence", ""),
                     "mouth_frontal_img": primary_phoneme.get("mouth_frontal_img"),
                     "mouth_lateral_img": primary_phoneme.get("mouth_lateral_img"),
                     "audio_file": primary_phoneme.get("audio_file"),
-                    "focus_title": class_node.get("phonetic_focus_title", "Micro-Módulo de Fonética")
+                    "focus_title": class_node.get("phonetic_focus_title", "Bonus de Pronunciación: Contraste Fonético")
                 }
 
         # 5. Phased time distribution based on archetype and phonetic focus

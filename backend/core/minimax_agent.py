@@ -802,12 +802,14 @@ class TutorAgent:
             contrast_pairs = ph_focus.get("contrast_pairs", [])
             pairs_str = ", ".join([f"{p[0]}/{p[1]}" for p in contrast_pairs[:3]]) if contrast_pairs else ""
             phonetics_prompt_line = f"Micro-Foco Fonético Programado: {ph_symbols} (Pares mínimos: {pairs_str})\n"
-            phase_4_desc = f"• Fase 4 (Micro-Phonetics): Micro-lección del contraste fonético {ph_symbols}, pares mínimos ({pairs_str}) y guía de pronunciación.\n"
-            extra_rule = f"6. En Fase 4 incluye en `board_content` la diferenciación sonora entre {ph_symbols}."
+            extra_rule = (
+                f"6. Flujo Ininterrumpido: Las Slides 1 a N-1 enseñan '{topic}' de forma continua y comunicativa sin pausas fonéticas intermedias. "
+                f"La pronunciación de los dos fonemas se aborda ÚNICAMENTE al final como última Slide (Slide N: Bonus de Pronunciación: {ph_symbols}), "
+                f"explicando en español la anatomía de la boca (exterior: labios y apertura; interior: lengua y tracto vocal)."
+            )
         else:
             phonetics_prompt_line = "Tipo de Clase: Clase Regular de Gramática, Vocabulario y Comunicación (SIN módulo de fonética aislado).\n"
-            phase_4_desc = f"• Fase 4 (Deep Sentence Deconstruction & Examples): Desglose a fondo de oraciones modelo de '{topic}', análisis de vocabulario y errores típicos de hispanohablantes a evitar.\n"
-            extra_rule = "6. Esta es una clase regular: la Fase 4 es de profundización gramatical y análisis de oraciones, NO de fonética aislada."
+            extra_rule = "6. Esta es una clase regular: todas las slides se enfocan en gramática, vocabulario y práctica comunicativa."
 
         system = self._build_system_prompt(student_profile)
         user = (
@@ -819,18 +821,29 @@ class TutorAgent:
             f"Tema de Repaso/Recuperación (Spaced Retrieval): {retrieval}\n"
             f"{target_guidance}"
             f"{phonetics_prompt_line}\n"
-            f"ESTRUCTURA CINEMATOGRÁFICA Y DINÁMICA DE SLIDES (DECIDE ENTRE 4 Y 8 SLIDES):\n"
+            f"ESTRUCTURA CINEMATOGRÁFICA Y DINÁMICA DE SLIDES (DECIDE ENTRE 4 Y 7 SLIDES):\n"
             f"• Slide 1: MANDATORY CINEMATIC HOOK (Apertura inmersiva).\n"
             f"   - Plantea un dilema o pregunta cotidiana sobre '{topic}' para despertar curiosidad.\n"
-            f"   - Incluye 'hook_images' con 1 o 2 descripciones de escenas visuales potentes en inglés (ej. una persona dudando o viviendo la situación, y otra mostrando el contexto o solución).\n"
+            f"   - Incluye 'hook_images' con 1 o 2 descripciones de escenas visuales potentes en inglés.\n"
             f"   - 'tutor_says': Locución intrigante y empática (2-3 oraciones) planteando el gancho.\n"
             f"   - 'student_task' y 'expected_answer': null. 'interaction_type': 'explanation'.\n"
-            f"• Slides 2 a N-2: PROFUNDIZACIÓN CONCEPTUAL CON METÁFORAS.\n"
-            f"   - Explica el concepto lingüístico usando modelos mentales vívidos (puentes, reflectores, bailarines, etc.).\n"
+            f"• Slides 2 a N-2: PROFUNDIZACIÓN CONCEPTUAL PURA Y MODELOS MENTALES.\n"
+            f"   - Explica el concepto lingüístico usando modelos mentales vívidos (puentes, reflectores, etc.).\n"
             f"   - Desglosa la fórmula gramatical sintáctica token por token ({grammar_target or topic}).\n"
-            f"   - Incluye 'image_prompt' o 'image_prompts' descriptivos para ilustrar la explicación.\n"
-            f"• Slides N-1 a N: PRÁCTICA Y DESAFÍOS INTERACTIVOS.\n"
-            f"   - Ejercicios interactivos (selección múltiple, fill-in-the-blank con opciones, práctica de pronunciación con audio y tarjeta de habla).\n\n"
+            f"   - PROHIBIDO colocar ejercicios interactivos o quizzes en estas pizarras explicativas (deben ser limpias y profundas).\n"
+            f"• Slide N-1: SLIDE DEDICADA DE DESAFÍO INTERACTIVO CON ORACIONES COMPLETAS.\n"
+            f"   - 'is_practice_slide': true, 'interaction_type': 'quiz'.\n"
+            f"   - Contiene un arreglo de 'exercises' (de 2 a 4 ejercicios).\n"
+            f"   - CADA EJERCICIO ES UNA ORACIÓN COMPLETA en inglés basada en situaciones reales (no palabras sueltas).\n"
+            f"   - CADA EJERCICIO DEBE INCLUIR:\n"
+            f"       - 'id': 'ex-1', 'ex-2'...\n"
+            f"       - 'sentence': Oración completa en inglés con '___' o reto.\n"
+            f"       - 'options': Lista de 2 a 4 opciones claras (ej: ['drinks', 'drink', 'drinking']).\n"
+            f"       - 'expected_answer': Respuesta correcta.\n"
+            f"       - 'spanish_translation': Traducción/contexto en español.\n"
+            f"       - 'image_prompt': Descripción vívida en inglés de la situación/escena exacta de esa oración para generar su ilustración, clean 2D vector art, no text.\n"
+            f"       - 'hint': Pista gramatical.\n"
+            f"• Slide N (si aplica): BONUS DE PRONUNCIACIÓN (Anatomía bucal exterior/interior en español).\n\n"
             f"REGLAS PEDAGÓGICAS Y ESTRUCTURALES OBLIGATORIAS:\n"
             f"1. EN CADA FASE CONCEPTUAL, `tutor_says` DEBE EXPLICAR A FONDO: Usa una metáfora intuitiva para explicar el concepto de '{topic}', desglosa la fórmula gramatical explicando por qué cada palabra va en ese orden exacto, y analiza los ejemplos de la pizarra palabra por palabra con errores típicos a evitar. PROHIBIDO decir 'mira la pizarra', 'observa los conceptos' o frases vagas.\n"
             f"2. Para cada fase especifica `image_style`: 'flat_art', 'comic_scene' o 'concept_art'.\n"
@@ -926,13 +939,273 @@ class TutorAgent:
             data["sublevel"] = sublevel
             data["level"] = sublevel.split(".")[0]
             data["subject"] = "English"
-            return self._audit_and_sanitize_lesson_content(data, topic, sublevel)
+            if ph_focus:
+                data["phonetic_focus"] = ph_focus
+            return self._audit_and_sanitize_lesson_content(data, topic, sublevel, adaptive_plan)
         except Exception as e:
             logger.error(f"Error in generate_adaptive_lesson_script: {e}")
-            return self._build_fallback_lesson(topic, sublevel, is_a_level)
+            fallback = self._build_fallback_lesson(topic, sublevel, is_a_level)
+            if ph_focus:
+                fallback["phonetic_focus"] = ph_focus
+            return self._audit_and_sanitize_lesson_content(fallback, topic, sublevel, adaptive_plan)
 
-    def _audit_and_sanitize_lesson_content(self, data: dict, topic: str, sublevel: str) -> dict:
-        """Pedagogical Quality Engine: Audits all phases to reject/replace robotic placeholder sentences."""
+    def _generate_default_exercises(self, topic: str, sublevel: str, grammar_target: str = "") -> list:
+        """Constructs authentic complete-sentence exercises with vivid situational image prompts."""
+        t_low = topic.lower()
+        if "past" in t_low or "irregular" in t_low or "was" in t_low:
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "Yesterday morning, Liam _____ [went / go / goes] to the central library to study.",
+                    "options": ["went", "go", "goes"],
+                    "expected_answer": "went",
+                    "spanish_translation": "Ayer por la mañana, Liam fue a la biblioteca central a estudiar.",
+                    "image_prompt": "A young male student walking into a warm sunlit modern library carrying a backpack, colorful 2D flat vector art, no text, no letters",
+                    "hint": "En pasado afirmativo de 'go', usamos la forma irregular 'went'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "Did you _____ [see / saw / seen] the beautiful sunset at the beach last night?",
+                    "options": ["see", "saw", "seen"],
+                    "expected_answer": "see",
+                    "spanish_translation": "¿Viste el hermoso atardecer en la playa anoche?",
+                    "image_prompt": "Two friends sitting on sand dunes watching a magnificent golden sunset over ocean waves, vibrant 2D vector illustration, no text",
+                    "hint": "Tras el auxiliar 'Did', el verbo principal regresa a su forma base pura (see)."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "We _____ [didn't buy / didn't bought / not buy] the expensive tickets because we had no cash.",
+                    "options": ["didn't buy", "didn't bought", "not buy"],
+                    "expected_answer": "didn't buy",
+                    "spanish_translation": "No compramos los boletos caros porque no teníamos efectivo.",
+                    "image_prompt": "A cheerful young couple checking their wallets in front of a cinema ticket counter, colorful vector illustration, no text",
+                    "hint": "Con 'didn't', el verbo se mantiene en forma base (buy) sin duplicar el pasado."
+                }
+            ]
+        elif "future" in t_low or "going to" in t_low or "will" in t_low:
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "Next summer, Maria is _____ [going to travel / go to travel / will traveling] to Japan.",
+                    "options": ["going to travel", "go to travel", "will traveling"],
+                    "expected_answer": "going to travel",
+                    "spanish_translation": "El próximo verano, María va a viajar a Japón.",
+                    "image_prompt": "A happy young woman with a travel suitcase looking at a colorful map of Tokyo Japan, vibrant 2D vector art, no text",
+                    "hint": "Para planes futuros usamos 'is going to + verbo base'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "Look at those dark clouds! It is _____ [going to rain / rain / rained] in a few minutes.",
+                    "options": ["going to rain", "rain", "rained"],
+                    "expected_answer": "going to rain",
+                    "spanish_translation": "¡Mira esas nubes oscuras! Va a llover en unos minutos.",
+                    "image_prompt": "Dark dramatic rain clouds over a cozy city street as people open colorful umbrellas, 2D vector art, no text",
+                    "hint": "Usamos 'going to' para predicciones basadas en evidencia visual presente."
+                }
+            ]
+        elif "present continuous" in t_low or "progressive" in t_low:
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "Right now, Carlos is _____ [cooking / cook / cooked] delicious pasta in the kitchen.",
+                    "options": ["cooking", "cook", "cooked"],
+                    "expected_answer": "cooking",
+                    "spanish_translation": "Ahora mismo, Carlos está cocinando deliciosa pasta en la cocina.",
+                    "image_prompt": "A young chef smiling while stirring steaming fresh pasta in a bright modern kitchen, 2D flat vector art, no text",
+                    "hint": "Para acciones en este momento usamos 'be + verbo con -ing'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "Listen! The birds are _____ [singing / sing / sang] in the garden outside.",
+                    "options": ["singing", "sing", "sang"],
+                    "expected_answer": "singing",
+                    "spanish_translation": "¡Escucha! Los pájaros están cantando en el jardín afuera.",
+                    "image_prompt": "Colorful little birds perching on blooming spring tree branches in a sunny garden, 2D vector illustration, no text",
+                    "hint": "Sujeto plural 'The birds' + 'are' + verbo con '-ing'."
+                }
+            ]
+        else:
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": f"Every morning, Sophia _____ [practices / practice / practiced] English conversation before work.",
+                    "options": ["practices", "practice", "practiced"],
+                    "expected_answer": "practices",
+                    "spanish_translation": f"Cada mañana, Sophia practica conversación en inglés antes del trabajo.",
+                    "image_prompt": f"A smiling young professional woman practicing with headphones and coffee in a sunny morning room, 2D flat vector art, no text",
+                    "hint": f"Aplica la estructura principal aprendida de {topic}."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": f"When you speak with friends, you should _____ [express / expressing / expressed] your ideas with confidence.",
+                    "options": ["express", "expressing", "expressed"],
+                    "expected_answer": "express",
+                    "spanish_translation": "Cuando hablas con amigos, debes expresar tus ideas con confianza.",
+                    "image_prompt": f"Two friends smiling and chatting over coffee in a bright modern café, 2D flat vector illustration, no text",
+                    "hint": f"Usa el verbo en su forma adecuada según las reglas de {topic}."
+                }
+            ]
+
+    def _build_practice_slide(self, raw_exercises: list, topic: str, sublevel: str, phase_number: int = 5) -> dict:
+        """
+        Constructs a dedicated interactive practice slide with complete situational English sentences,
+        contextual image prompts, options, translations, and oral drill support.
+        """
+        clean_exercises = []
+        target_audios = []
+
+        if not raw_exercises:
+            raw_exercises = self._generate_default_exercises(topic, sublevel)
+
+        for idx, ex in enumerate(raw_exercises):
+            if not isinstance(ex, dict):
+                continue
+            ex_id = ex.get("id") or f"ex-{idx+1}"
+            raw_sent = str(ex.get("sentence") or ex.get("question") or ex.get("cleanSentence") or "").strip()
+            if not raw_sent:
+                continue
+
+            opts = ex.get("options") or []
+            if isinstance(opts, str):
+                opts = [o.strip() for o in opts.split(",") if o.strip()]
+
+            inline_match = re.search(r'\[([^\]]+)\]|\(([^\)]+)\)', raw_sent)
+            if inline_match and not opts:
+                opt_str = inline_match.group(1) or inline_match.group(2)
+                if "/" in opt_str or "|" in opt_str or "," in opt_str:
+                    opts = [o.strip() for o in re.split(r'[\/\|,]', opt_str) if o.strip()]
+
+            exp_ans = str(ex.get("expected_answer") or ex.get("answer") or (opts[0] if opts else "")).strip()
+
+            if "___" not in raw_sent and not inline_match:
+                if exp_ans and exp_ans.lower() in raw_sent.lower():
+                    raw_sent = re.sub(re.escape(exp_ans), "_____", raw_sent, count=1, flags=re.IGNORECASE)
+                else:
+                    raw_sent = f"{raw_sent} _____"
+
+            raw_prompt = ex.get("image_prompt")
+            if not raw_prompt or len(raw_prompt) < 10 or "classroom" in raw_prompt.lower():
+                clean_txt = re.sub(r'[_\[\]\(\)\/\|]+', '', raw_sent).strip()
+                clean_txt = clean_txt.replace("_____", exp_ans).replace("____", exp_ans).replace("___", exp_ans)
+                raw_prompt = f"2D flat vector educational illustration depicting the real-life scene: '{clean_txt}', realistic environment, warm atmospheric lighting, expressive characters, strictly no text, no words, no letters"
+
+            clean_prompt = self._sanitize_image_prompt(raw_prompt, topic)
+            spanish_tr = ex.get("spanish_translation") or ex.get("translation") or f"Completa la oración en el contexto de {topic}."
+            hint = ex.get("hint") or f"Aplica la regla de {topic}."
+
+            clean_exercises.append({
+                "id": ex_id,
+                "sentence": raw_sent,
+                "options": opts,
+                "expected_answer": exp_ans,
+                "spanish_translation": spanish_tr,
+                "image_prompt": clean_prompt,
+                "image_style": "flat_art",
+                "hint": hint
+            })
+
+            full_spoken = raw_sent.replace("_____", exp_ans).replace("____", exp_ans).replace("___", exp_ans)
+            full_spoken = re.sub(r'\[[^\]]+\]|\([^\)]+\)', exp_ans, full_spoken).strip()
+            target_audios.append({
+                "english": full_spoken or raw_sent,
+                "translation": spanish_tr,
+                "label": f"Ejercicio {idx+1}"
+            })
+
+        board_lines = [f"🎯 DESAFÍO DE ORACIONES COMPLETAS: {topic.upper()}\n"]
+        for i, ex in enumerate(clean_exercises):
+            board_lines.append(f"{i+1}. {ex['sentence']}")
+            if ex['options']:
+                board_lines.append(f"   Opciones: {', '.join(ex['options'])}")
+            board_lines.append(f"   💡 {ex['spanish_translation']}\n")
+
+        phase = {
+            "phase_number": phase_number,
+            "phase_name": f"Desafío Práctico: Aplica {topic}",
+            "is_hook": False,
+            "is_practice_slide": True,
+            "is_phonetic_bonus": False,
+            "interaction_type": "quiz",
+            "exercises": clean_exercises,
+            "image_style": "flat_art",
+            "image_prompt": f"Flat 2D vector educational illustration of an engaging study session with flashcards, vibrant colors, strictly no text",
+            "tutor_says": f"¡Excelente progreso! Ahora pondremos a prueba tu dominio con oraciones completas contextualizadas. Observa la imagen de cada situación, completa el espacio con la opción correcta y practica diciendo la frase completa con tu micrófono.",
+            "board_content": "\n".join(board_lines),
+            "board_theme": "chalkboard_green",
+            "target_audio_items": target_audios,
+            "student_task": f"Resuelve los desafíos de oraciones completas y evalúa tu pronunciación con el micrófono.",
+            "expected_answer": clean_exercises[0]["expected_answer"] if clean_exercises else "Complete the sentence"
+        }
+        phase["storyboard_steps"] = self._build_phase_storyboard(phase)
+        return phase
+
+    def _build_phonetic_bonus_phase(self, ph_focus: dict, sublevel: str, topic: str, phase_number: int = 6) -> dict:
+        """Constructs an authentic dedicated Bonus Pronunciation slide focused strictly on the 2 phonemes."""
+        symbols = ph_focus.get("symbols", [])
+        primary = ph_focus.get("primary", {})
+        secondary = ph_focus.get("secondary", {})
+        ph_str = " vs ".join(symbols) if symbols else "/θ/ vs /ð/"
+
+        p_name = primary.get("name", "Sonido Primario")
+        s_name = secondary.get("name", "Sonido Secundario") if secondary else ""
+
+        p_mouth = primary.get("mouth_guide_es", primary.get("mouth_guide", {}))
+        s_mouth = secondary.get("mouth_guide_es", secondary.get("mouth_guide", {})) if secondary else {}
+
+        contrast_pairs = ph_focus.get("contrast_pairs", primary.get("contrast_pairs", []))
+        drill_sentence = ph_focus.get("drill_sentence", primary.get("drill_sentence", ""))
+
+        tutor_says = (
+            f"¡Excelente trabajo completando la parte principal de la clase! Como bonus de pronunciación antes de pasar a la lectura y los juegos, "
+            f"aprenderemos a dominar el contraste entre los sonidos {ph_str}. "
+            f"Para {symbols[0] if symbols else 'el primer sonido'}, en el exterior {p_mouth.get('frontal', 'ajusta la forma de los labios')}, y en el interior {p_mouth.get('lateral', 'posiciona la lengua')}. "
+        )
+        if secondary and len(symbols) > 1:
+            tutor_says += (
+                f"En contraste, para {symbols[1]}, en el exterior {s_mouth.get('frontal', 'cambia la postura labial')}, y en el interior {s_mouth.get('lateral', 'ajusta la lengua y tracto vocal')}. "
+            )
+        tutor_says += "Escucha la diferencia en los pares mínimos y practica la frase de reto con tu micrófono."
+
+        board_content = f"🌟 BONUS DE PRONUNCIACIÓN: {ph_str}\n"
+        board_content += f"• {symbols[0] if symbols else ''} ({p_name}): Exterior: {p_mouth.get('frontal', '')} | Interior: {p_mouth.get('lateral', '')}\n"
+        if secondary and len(symbols) > 1:
+            board_content += f"• {symbols[1]} ({s_name}): Exterior: {s_mouth.get('frontal', '')} | Interior: {s_mouth.get('lateral', '')}\n"
+        if contrast_pairs:
+            pairs_txt = ", ".join([f"{p[0]} vs {p[1]}" for p in contrast_pairs[:4]])
+            board_content += f"• Pares Mínimos: {pairs_txt}\n"
+        if drill_sentence:
+            board_content += f"• Reto Oral: \"{drill_sentence}\""
+
+        target_audios = []
+        for pair in contrast_pairs[:3]:
+            if len(pair) >= 2:
+                target_audios.append({"english": pair[0], "translation": f"Sonido {symbols[0] if symbols else ''}", "label": "Par Mínimo"})
+                target_audios.append({"english": pair[1], "translation": f"Sonido {symbols[1] if len(symbols) > 1 else ''}", "label": "Par Mínimo"})
+        if drill_sentence:
+            target_audios.append({"english": drill_sentence, "translation": "Reto de pronunciación", "label": "Frase de Práctica"})
+
+        phase = {
+            "phase_number": phase_number,
+            "phase_name": f"Bonus de Pronunciación: {ph_str}",
+            "is_hook": False,
+            "is_practice_slide": False,
+            "is_phonetic_bonus": True,
+            "phonetic_focus": ph_focus,
+            "image_style": "flat_art",
+            "image_prompt": f"Clean 2D flat vector educational illustration showing speech sounds, mouth articulation and vocal acoustics for {ph_str}, bright vibrant colors, no text, no letters, no words",
+            "tutor_says": tutor_says,
+            "board_content": board_content,
+            "board_theme": "chalkboard_green",
+            "interaction_type": "phonetic_bonus",
+            "target_audio_items": target_audios,
+            "expected_answer": drill_sentence,
+            "student_task": f"Escucha la pronunciación de {ph_str} y los pares mínimos. Graba la frase de práctica con tu micrófono."
+        }
+        phase["storyboard_steps"] = self._build_phase_storyboard(phase)
+        return phase
+
+    def _audit_and_sanitize_lesson_content(self, data: dict, topic: str, sublevel: str, adaptive_plan: Optional[dict] = None) -> dict:
+        """Pedagogical Quality Engine: Isolates practice exercises into a dedicated slide and places phonetics strictly at the end."""
         if not data or not isinstance(data.get("phases"), list):
             return data
 
@@ -952,7 +1225,38 @@ class TutorAgent:
             re.compile(r'I study past continuous', re.IGNORECASE),
         ]
 
+        ph_focus = (adaptive_plan.get("phonetic_focus") if adaptive_plan else None) or data.get("phonetic_focus")
+        has_ph = bool(ph_focus and ph_focus.get("symbols"))
+
+        clean_phases = []
+        all_collected_exercises = []
+        existing_bonus_phase = None
+
         for idx, p in enumerate(data["phases"]):
+            # Check for phonetic bonus phase
+            is_p_ph = bool(
+                p.get("is_phonetic_bonus") or 
+                p.get("phonetic_focus") or 
+                "fonét" in str(p.get("phase_name", "")).lower() or 
+                "micro-phonetic" in str(p.get("phase_name", "")).lower() or
+                ("pronunciación" in str(p.get("phase_name", "")).lower() and ("bonus" in str(p.get("phase_name", "")).lower() or "micro" in str(p.get("phase_name", "")).lower()))
+            )
+            if is_p_ph:
+                existing_bonus_phase = p
+                continue  # Exclude from middle phases
+
+            # Check if this phase has exercises to extract
+            ex_list = p.get("exercises") or []
+            if ex_list and isinstance(ex_list, list):
+                all_collected_exercises.extend(ex_list)
+                p["exercises"] = []  # Clear from conceptual phase
+
+            # If this is already marked as a dedicated practice slide, extract its exercises and skip adding duplicate
+            if p.get("is_practice_slide") or p.get("interaction_type") == "quiz":
+                if p.get("student_task") and not all_collected_exercises:
+                    all_collected_exercises.append({"sentence": p.get("student_task"), "expected_answer": p.get("expected_answer")})
+                continue
+
             # Check target audio items for robotic phrases
             audio_items = p.get("target_audio_items") or []
             has_robotic_audio = False
@@ -982,10 +1286,35 @@ class TutorAgent:
                 if c_phase.get("tutor_says") and any(pat.search(p.get("tutor_says", "")) for pat in robotic_patterns):
                     p["tutor_says"] = c_phase["tutor_says"]
 
-            # Always ensure diagram_svg is resolved with precision
+            # Keep explanation phases clean from bottom exercise clutter
+            p["is_practice_slide"] = False
+            p["exercises"] = []
             p["diagram_svg"] = self._resolve_didactic_diagram_svg(p, topic)
             p["storyboard_steps"] = self._build_phase_storyboard(p)
+            clean_phases.append(p)
 
+        # Append dedicated Practice Slide before bonus slide
+        practice_phase = self._build_practice_slide(
+            all_collected_exercises,
+            topic,
+            sublevel,
+            phase_number=len(clean_phases) + 1
+        )
+        clean_phases.append(practice_phase)
+
+        # If this lesson has a scheduled phonetic focus, place the dedicated bonus slide as the FINAL slide
+        if has_ph:
+            bonus_phase = self._build_phonetic_bonus_phase(ph_focus, sublevel, topic, phase_number=len(clean_phases) + 1)
+            clean_phases.append(bonus_phase)
+            data["phonetic_focus"] = ph_focus
+        elif existing_bonus_phase:
+            clean_phases.append(existing_bonus_phase)
+
+        # Re-number all phases consecutively
+        for i, p in enumerate(clean_phases):
+            p["phase_number"] = i + 1
+
+        data["phases"] = clean_phases
         return data
 
     async def generate_lesson_script(self, topic: str, sublevel: str, student_profile: Optional[dict] = None) -> dict:
@@ -1146,7 +1475,7 @@ class TutorAgent:
         board = str(p.get("board_content") or "")
         target_audios = p.get("target_audio_items") or []
         has_grammar = bool(p.get("grammar_structure") or p.get("key_structure"))
-        has_phonetics = bool(p.get("phonetic_focus") or p.get("phoneme_symbol") or p.get("phase_number") == 4 or "fonét" in str(p.get("phase_name", "")).lower())
+        has_phonetics = bool(p.get("phonetic_focus") or p.get("phoneme_symbol") or p.get("is_phonetic_bonus") or "fonét" in str(p.get("phase_name", "")).lower() or "bonus de pronunciación" in str(p.get("phase_name", "")).lower())
         has_middle = bool(p.get("diagram_svg") or has_grammar or has_phonetics)
         has_audio = bool(target_audios and not has_task)
         has_bottom = has_task or has_audio

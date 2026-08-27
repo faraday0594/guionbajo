@@ -21,11 +21,24 @@ class HookImage(BaseModel):
     caption: Optional[str] = None
     role: Optional[str] = "hook_situation"  # "hook_situation" | "hook_context" | "hook_contrast"
 
+class ExerciseItem(BaseModel):
+    id: Optional[str] = None
+    sentence: str                  # Oración completa en inglés con '___' o espacio de desafío
+    options: Optional[List[str]] = []  # Opciones para elegir o completar
+    expected_answer: Optional[str] = None
+    spanish_translation: Optional[str] = None
+    image_prompt: Optional[str] = None
+    image_style: Optional[str] = "flat_art"
+    hint: Optional[str] = None
+
 class LessonPhase(BaseModel):
     phase_number: int
     phase_name: str
     tutor_says: str
     is_hook: Optional[bool] = False
+    is_practice_slide: Optional[bool] = False
+    is_phonetic_bonus: Optional[bool] = False
+    interaction_type: Optional[str] = None
     hook_type: Optional[str] = None  # "dilemma" | "curiosity_question" | "daily_scenario" | "contrast"
     hook_images: Optional[List[Dict[str, Any]]] = None
     student_task: Optional[str] = None
@@ -33,6 +46,7 @@ class LessonPhase(BaseModel):
     key_structure: Optional[str] = None
     grammar_structure: Optional[Dict[str, Any]] = None
     exercises: List[Dict[str, Any]] = []
+    phonetic_focus: Optional[Dict[str, Any]] = None
     image_prompt: Optional[str] = None
     image_prompts: Optional[List[str]] = None
     image_style: Optional[str] = "flat_art"

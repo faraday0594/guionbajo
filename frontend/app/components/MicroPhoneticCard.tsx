@@ -4,53 +4,48 @@ import React, { useState } from 'react';
 import { Volume2, Sparkles, Layers, Mic, CheckCircle2, RefreshCw } from 'lucide-react';
 import { api, playEnglishAudio } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
+
+interface PhonemeData {
+  ipa?: string;
+  name?: string;
+  category?: string;
+  mouth_guide?: {
+    frontal?: string;
+    lateral?: string;
+  };
+  mouth_guide_es?: {
+    frontal?: string;
+    lateral?: string;
+  };
+  mouth_frontal_img?: string;
+  mouth_lateral_img?: string;
+  audio_file?: string;
+  contrast_pairs?: string[][];
+  drill_sentence?: string;
+  examples?: string[];
+}
 
 interface MicroPhoneticProps {
   phoneticData: {
-    primary?: any;
-    secondary?: any;
+    primary?: PhonemeData;
+    secondary?: PhonemeData;
     symbols?: string[];
     contrast_pairs?: string[][];
     mouth_guide?: {
       frontal?: string;
       lateral?: string;
     };
+    mouth_guide_es?: {
+      frontal?: string;
+      lateral?: string;
+    };
     drill_sentence?: string;
+    focus_title?: string;
   };
   onCompletePractice?: (symbol: string, success: boolean) => void;
+  isStandaloneSlide?: boolean;
 }
-
-export default function MicroPhoneticCard({ phoneticData, onCompletePractice }: MicroPhoneticProps) {
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedSuccess, setRecordedSuccess] = useState<boolean | null>(null);
-
-  if (!phoneticData || (!phoneticData.symbols && !phoneticData.primary)) {
-    return null;
-  }
-
-  const primary = phoneticData.primary || {};
-  const symbols = phoneticData.symbols || [primary.ipa || '/θ/'];
-  const contrastPairs = phoneticData.contrast_pairs || primary.contrast_pairs || [];
-  const mouthGuide = phoneticData.mouth_guide || primary.mouth_guide || {};
-  const drillSentence = phoneticData.drill_sentence || primary.drill_sentence || '';
-
-  const activeAudioRef = React.useRef<HTMLAudioElement | null>(null);
-
-  const stopActiveAudio = () => {
-    if (activeAudioRef.current) {
-      try {
-        activeAudioRef.current.pause();
-        activeAudioRef.current.currentTime = 0;
-      } catch (_) {}
-      activeAudioRef.current = null;
-    }
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch (_) {}
-    }
-  };
 
 const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
   "/ɪ/": "/audio/phonemes/vowel_short_i.ogg",
@@ -99,13 +94,46 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
   "/w/": "/audio/phonemes/approximant_w.ogg",
 };
 
+export default function MicroPhoneticCard({ phoneticData, onCompletePractice, isStandaloneSlide = false }: MicroPhoneticProps) {
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedSuccess, setRecordedSuccess] = useState<boolean | null>(null);
+
+  const activeAudioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  if (!phoneticData || (!phoneticData.symbols && !phoneticData.primary)) {
+    return null;
+  }
+
+  const primary = phoneticData.primary || {};
+  const secondary = phoneticData.secondary || null;
+  const symbols = phoneticData.symbols || [primary.ipa || '/θ/'];
+  const contrastPairs = phoneticData.contrast_pairs || primary.contrast_pairs || [];
+  const drillSentence = phoneticData.drill_sentence || primary.drill_sentence || '';
+  const focusTitle = phoneticData.focus_title || 'Bonus de Pronunciación';
+
+  const stopActiveAudio = () => {
+    if (activeAudioRef.current) {
+      try {
+        activeAudioRef.current.pause();
+        activeAudioRef.current.currentTime = 0;
+      } catch (_) {}
+      activeAudioRef.current = null;
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (_) {}
+    }
+  };
+
   const playSound = async (text: string) => {
     try {
       stopActiveAudio();
       setPlayingAudio(text);
-      // If text looks like a phoneme (/.../)
-      if (text.startsWith('/') || (text.length <= 4 && PHONEME_LOCAL_AUDIO_MAP[`/${text.replace(/\//g, '')}/`])) {
-        const cleanSym = text.startsWith('/') ? text : `/${text}/`;
+
+      const cleanSym = text.startsWith('/') ? text : `/${text.replace(/\//g, '')}/`;
+      if (PHONEME_LOCAL_AUDIO_MAP[cleanSym] || text.startsWith('/')) {
         const localPath = PHONEME_LOCAL_AUDIO_MAP[cleanSym];
         if (localPath) {
           try {
@@ -123,7 +151,7 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
         return;
       }
 
-      // Word / Drill playback via High-Definition Roger Neural HD Engine
+      // Word / Drill playback
       await playEnglishAudio(text);
       setTimeout(() => setPlayingAudio(null), 1200);
     } catch (err) {
@@ -156,150 +184,272 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
     }
   };
 
-  const handleTestRecording = (word: string) => {
+  const handleTestRecording = (sentence: string) => {
     setIsRecording(true);
     setRecordedSuccess(null);
-    toast('Di la palabra: ' + word, { icon: '🎙️' });
+    toast('Di la frase: ' + sentence, { icon: '🎙️' });
 
     setTimeout(() => {
       setIsRecording(false);
       setRecordedSuccess(true);
-      toast.success('¡Excelente pronunciación del fonema ' + symbols[0] + '!');
+      toast.success('¡Excelente pronunciación! Dominio registrado de ' + symbols.join(' y ') + ' 🎉');
       if (onCompletePractice) {
         onCompletePractice(symbols[0], true);
       }
-    }, 2500);
+    }, 2800);
   };
 
+  // Helper to extract anatomical image paths and Spanish instructions
+  const getPhonemeCardInfo = (symbolStr: string, customData?: PhonemeData | null, fallbackIdx = 0) => {
+    const rawSym = symbolStr || (fallbackIdx === 0 ? '/θ/' : '/ð/');
+    const cleanSym = rawSym.startsWith('/') ? rawSym : `/${rawSym}/`;
+    const audioKey = PHONEME_LOCAL_AUDIO_MAP[cleanSym];
+    const base = audioKey ? audioKey.replace('/audio/phonemes/', '').replace('.ogg', '') : (fallbackIdx === 0 ? 'fricative_th_voiceless' : 'fricative_th_voiced');
+    
+    const frontalImg = customData?.mouth_frontal_img || `/images/phonemes/${base}_frontal.svg`;
+    const lateralImg = customData?.mouth_lateral_img || `/images/phonemes/${base}_lateral.svg`;
+    
+    const guide = customData?.mouth_guide_es || customData?.mouth_guide || {};
+    const frontalText = guide.frontal || 'Coloca y abre los labios según el sonido objetivo.';
+    const lateralText = guide.lateral || 'Posiciona la lengua y el tracto vocal adecuadamente.';
+    const name = customData?.name || cleanSym;
+
+    return { cleanSym, base, frontalImg, lateralImg, frontalText, lateralText, name };
+  };
+
+  const ph1 = getPhonemeCardInfo(symbols[0], primary, 0);
+  const ph2 = symbols.length > 1 ? getPhonemeCardInfo(symbols[1], secondary, 1) : null;
+
   return (
-    <div className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 border border-emerald-500/30 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-mono font-bold text-lg">
+    <div className={`w-full rounded-3xl bg-gradient-to-br from-[#0c1220] via-[#090d17] to-[#05080f] border border-brand-cyan/35 p-4 sm:p-7 md:p-8 shadow-2xl space-y-6 text-white relative overflow-hidden ${
+      isStandaloneSlide ? 'min-h-[520px] flex flex-col justify-between' : ''
+    }`}>
+      {/* Background Glow */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-brand-cyan/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+      {/* Top Header Badge & Title */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4 relative z-10">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-cyan/30 to-emerald-500/20 border border-brand-cyan/40 flex items-center justify-center text-brand-cyan font-mono font-extrabold text-xl shadow-lg shadow-brand-cyan/10">
             {symbols.join(' ')}
           </div>
           <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              Micro-Lección Fonética Integrada
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-cyan uppercase tracking-wider bg-brand-cyan/15 px-2.5 py-0.5 rounded-full border border-brand-cyan/30">
+              <Sparkles className="w-3.5 h-3.5 text-brand-cyan animate-pulse" />
+              <span>{focusTitle}</span>
             </div>
-            <h4 className="text-base font-bold text-white">
+            <h3 className="text-lg sm:text-xl font-extrabold text-white mt-1">
               Entrenamiento de Contraste: {symbols.join(' vs ')}
-            </h4>
+            </h3>
           </div>
         </div>
 
-        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium self-start sm:self-auto">
-          2–5 Minutos de Precisión
-        </span>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold flex items-center gap-1.5 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            Anatomía Bucal & Pares Mínimos
+          </span>
+        </div>
       </div>
 
-      {/* Articulatory Mouth Diagrams & Instructions */}
-      {(mouthGuide.frontal || mouthGuide.lateral || symbols.length > 0) && (
-        <div className="space-y-3 bg-zinc-950/70 p-4 rounded-xl border border-zinc-800/80">
-          <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <Layers className="w-3.5 h-3.5" />
-              Guía Visual y Postura de la Boca ({symbols[0]})
-            </span>
-            <span className="text-[11px] text-zinc-500 font-mono">Anatomía Articulada</span>
+      {/* 🌟 DUAL PHONEME ANATOMICAL COMPARISON (Exterior Lips & Interior Tongue in Spanish) */}
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-zinc-300 uppercase tracking-wider">
+            <Layers className="w-4 h-4 text-brand-cyan" />
+            <span>Colocación de la Boca: Exterior (Labios) e Interior (Lengua y Tracto)</span>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Frontal Lip View */}
-            <div className="flex items-center gap-3 p-3 bg-zinc-900/90 rounded-xl border border-zinc-800/80">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800 p-1 shadow-inner">
-                {(() => {
-                  const sym = symbols[0] || '/θ/';
-                  const cleanSym = sym.startsWith('/') ? sym : `/${sym}/`;
-                  const audioKey = PHONEME_LOCAL_AUDIO_MAP[cleanSym];
-                  const base = audioKey ? audioKey.replace('/audio/phonemes/', '').replace('.ogg', '') : 'vowel_long_i';
-                  const imgPath = `/images/phonemes/${base}_frontal.svg`;
-                  return (
-                    <img
-                      src={imgPath}
-                      alt={`Frontal Lip shape for ${sym}`}
-                      className="w-full h-full object-contain"
-                      loading="lazy"
-                    />
-                  );
-                })()}
-              </div>
-              <div className="text-xs space-y-1">
-                <span className="text-rose-400 font-bold block text-[11px] uppercase tracking-wide">
-                  👄 Forma de Labios
-                </span>
-                <p className="text-zinc-300 leading-relaxed text-[11.5px]">
-                  {mouthGuide.frontal || 'Ajusta la apertura de labios según el sonido objetivo.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Lateral Sagittal Tongue View */}
-            <div className="flex items-center gap-3 p-3 bg-zinc-900/90 rounded-xl border border-zinc-800/80">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800 p-1 shadow-inner">
-                {(() => {
-                  const sym = symbols[0] || '/θ/';
-                  const cleanSym = sym.startsWith('/') ? sym : `/${sym}/`;
-                  const audioKey = PHONEME_LOCAL_AUDIO_MAP[cleanSym];
-                  const base = audioKey ? audioKey.replace('/audio/phonemes/', '').replace('.ogg', '') : 'vowel_long_i';
-                  const imgPath = `/images/phonemes/${base}_lateral.svg`;
-                  return (
-                    <img
-                      src={imgPath}
-                      alt={`Lateral Vocal Tract shape for ${sym}`}
-                      className="w-full h-full object-contain"
-                      loading="lazy"
-                    />
-                  );
-                })()}
-              </div>
-              <div className="text-xs space-y-1">
-                <span className="text-cyan-400 font-bold block text-[11px] uppercase tracking-wide">
-                  👅 Posición de Lengua
-                </span>
-                <p className="text-zinc-300 leading-relaxed text-[11.5px]">
-                  {mouthGuide.lateral || 'Dirige la punta o dorso de la lengua al punto de articulación.'}
-                </p>
-              </div>
-            </div>
-          </div>
+          <span className="text-[11px] text-zinc-400 font-medium">Explicación 100% en Español</span>
         </div>
-      )}
 
-      {/* Contrast Pairs */}
-      {contrastPairs.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-xs font-semibold text-zinc-400">
-            Escucha la diferencia en pares mínimos:
+        {/* Dual Cards Grid: Phoneme 1 & Phoneme 2 */}
+        <div className={`grid grid-cols-1 ${ph2 ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-5`}>
+          {/* Card for Phoneme 1 */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-black/60 border border-brand-cyan/30 shadow-xl space-y-4 hover:border-brand-cyan/60 transition-all">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl sm:text-2xl font-mono font-black text-brand-cyan bg-brand-cyan/20 px-3 py-1 rounded-xl border border-brand-cyan/40">
+                  {ph1.cleanSym}
+                </span>
+                <div>
+                  <h4 className="text-sm font-bold text-white leading-tight">{ph1.name}</h4>
+                  <span className="text-[11px] text-zinc-400 font-medium">Primer Fonema Objetivo</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => playSound(ph1.cleanSym)}
+                className={`p-2.5 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                  playingAudio === ph1.cleanSym
+                    ? 'bg-brand-cyan text-black border-brand-cyan shadow-lg shadow-brand-cyan/30 scale-105'
+                    : 'bg-white/10 hover:bg-white/20 border-white/20 text-brand-cyan'
+                }`}
+                title={`Escuchar sonido ${ph1.cleanSym}`}
+              >
+                <Volume2 className="w-4 h-4" />
+                <span>Escuchar</span>
+              </button>
+            </div>
+
+            {/* Frontal (Exterior) and Lateral (Interior) Diagram Views */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {/* Exterior: Frontal Lips */}
+              <div className="flex flex-col p-3 rounded-xl bg-zinc-950/80 border border-white/10 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-rose-400 uppercase tracking-wider">
+                  <span>👄 Exterior: Labios</span>
+                  <span className="text-[10px] text-zinc-500 font-mono">Frontal</span>
+                </div>
+                <div className="w-full h-28 sm:h-32 rounded-lg overflow-hidden bg-black/90 border border-zinc-800 p-1 flex items-center justify-center shadow-inner">
+                  <img
+                    src={ph1.frontalImg}
+                    alt={`Vista frontal de labios para ${ph1.cleanSym}`}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed min-h-[48px]">
+                  {ph1.frontalText}
+                </p>
+              </div>
+
+              {/* Interior: Lateral Sagittal Tongue */}
+              <div className="flex flex-col p-3 rounded-xl bg-zinc-950/80 border border-white/10 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
+                  <span>👅 Interior: Lengua</span>
+                  <span className="text-[10px] text-zinc-500 font-mono">Sagital</span>
+                </div>
+                <div className="w-full h-28 sm:h-32 rounded-lg overflow-hidden bg-black/90 border border-zinc-800 p-1 flex items-center justify-center shadow-inner">
+                  <img
+                    src={ph1.lateralImg}
+                    alt={`Vista sagital de lengua para ${ph1.cleanSym}`}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed min-h-[48px]">
+                  {ph1.lateralText}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+          {/* Card for Phoneme 2 (if contrast pair exists) */}
+          {ph2 && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-black/60 border border-amber-500/30 shadow-xl space-y-4 hover:border-amber-500/60 transition-all">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl sm:text-2xl font-mono font-black text-amber-400 bg-amber-500/20 px-3 py-1 rounded-xl border border-amber-500/40">
+                    {ph2.cleanSym}
+                  </span>
+                  <div>
+                    <h4 className="text-sm font-bold text-white leading-tight">{ph2.name}</h4>
+                    <span className="text-[11px] text-zinc-400 font-medium">Segundo Fonema (Contraste)</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => playSound(ph2.cleanSym)}
+                  className={`p-2.5 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                    playingAudio === ph2.cleanSym
+                      ? 'bg-amber-400 text-black border-amber-400 shadow-lg shadow-amber-400/30 scale-105'
+                      : 'bg-white/10 hover:bg-white/20 border-white/20 text-amber-400'
+                  }`}
+                  title={`Escuchar sonido ${ph2.cleanSym}`}
+                >
+                  <Volume2 className="w-4 h-4" />
+                  <span>Escuchar</span>
+                </button>
+              </div>
+
+              {/* Frontal (Exterior) and Lateral (Interior) Diagram Views */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Exterior: Frontal Lips */}
+                <div className="flex flex-col p-3 rounded-xl bg-zinc-950/80 border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-rose-400 uppercase tracking-wider">
+                    <span>👄 Exterior: Labios</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">Frontal</span>
+                  </div>
+                  <div className="w-full h-28 sm:h-32 rounded-lg overflow-hidden bg-black/90 border border-zinc-800 p-1 flex items-center justify-center shadow-inner">
+                    <img
+                      src={ph2.frontalImg}
+                      alt={`Vista frontal de labios para ${ph2.cleanSym}`}
+                      className="w-full h-full object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-300 leading-relaxed min-h-[48px]">
+                    {ph2.frontalText}
+                  </p>
+                </div>
+
+                {/* Interior: Lateral Sagittal Tongue */}
+                <div className="flex flex-col p-3 rounded-xl bg-zinc-950/80 border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
+                    <span>👅 Interior: Lengua</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">Sagital</span>
+                  </div>
+                  <div className="w-full h-28 sm:h-32 rounded-lg overflow-hidden bg-black/90 border border-zinc-800 p-1 flex items-center justify-center shadow-inner">
+                    <img
+                      src={ph2.lateralImg}
+                      alt={`Vista sagital de lengua para ${ph2.cleanSym}`}
+                      className="w-full h-full object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-300 leading-relaxed min-h-[48px]">
+                    {ph2.lateralText}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 🎯 MINIMAL PAIRS SECTION (Pares Mínimos con Audio) */}
+      {contrastPairs.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-3 relative z-10">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Volume2 className="w-4 h-4 text-emerald-400" />
+              Diferenciación Sonora en Pares Mínimos
+            </span>
+            <span className="text-[11px] text-zinc-400 font-medium">Toca para escuchar cada palabra</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
             {contrastPairs.slice(0, 4).map((pair: string[], idx: number) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-2.5 bg-zinc-800/60 border border-zinc-700/60 rounded-xl text-xs"
+                className="flex items-center justify-between p-2.5 bg-black/50 border border-white/10 rounded-xl text-xs hover:border-brand-cyan/40 transition-all shadow-sm"
               >
                 <button
+                  type="button"
                   onClick={() => playSound(pair[0])}
-                  className={`flex items-center gap-1.5 font-bold transition-colors ${
-                    playingAudio === pair[0] ? 'text-emerald-400' : 'text-zinc-200 hover:text-white'
+                  className={`flex items-center gap-1 font-extrabold transition-colors ${
+                    playingAudio === pair[0] ? 'text-brand-cyan scale-105' : 'text-zinc-100 hover:text-brand-cyan'
                   }`}
+                  title={`Escuchar "${pair[0]}"`}
                 >
-                  <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
-                  {pair[0]}
+                  <Volume2 className="w-3.5 h-3.5 text-brand-cyan" />
+                  <span>{pair[0]}</span>
                 </button>
 
-                <span className="text-zinc-500 font-mono text-[11px]">vs</span>
+                <span className="text-zinc-500 font-mono text-[10px] uppercase font-bold">vs</span>
 
                 <button
+                  type="button"
                   onClick={() => playSound(pair[1])}
-                  className={`flex items-center gap-1.5 font-bold transition-colors ${
-                    playingAudio === pair[1] ? 'text-amber-400' : 'text-zinc-200 hover:text-white'
+                  className={`flex items-center gap-1 font-extrabold transition-colors ${
+                    playingAudio === pair[1] ? 'text-amber-400 scale-105' : 'text-zinc-100 hover:text-amber-400'
                   }`}
+                  title={`Escuchar "${pair[1]}"`}
                 >
                   <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-                  {pair[1]}
+                  <span>{pair[1]}</span>
                 </button>
               </div>
             ))}
@@ -307,43 +457,53 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
         </div>
       )}
 
-      {/* Drill Sentence & Recording Challenge */}
+      {/* 🎙️ ORAL DRILL SENTENCE & INTERACTIVE MIC CHALLENGE */}
       {drillSentence && (
-        <div className="p-4 bg-zinc-950/80 border border-zinc-800 rounded-xl space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-400">Reto de Producción Oral</span>
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-black/70 to-zinc-950/80 border border-emerald-500/30 space-y-3.5 relative z-10">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
+              Reto Oral de Pronunciación
+            </span>
             <button
+              type="button"
               onClick={() => playSound(drillSentence)}
-              className="flex items-center gap-1 text-xs text-emerald-400 hover:underline"
+              className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 font-bold border border-emerald-500/30 transition-all hover:scale-105"
             >
-              <Volume2 className="w-3.5 h-3.5" />
-              Escuchar Frase
+              <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Escuchar Frase Modelo</span>
             </button>
           </div>
 
-          <p className="text-sm font-semibold text-white italic">
+          <p className="text-sm sm:text-base font-semibold text-white italic font-outfit bg-black/40 p-3 rounded-xl border border-white/5">
             "{drillSentence}"
           </p>
 
           <div className="flex items-center justify-between pt-1">
-            <button
+            <motion.button
+              type="button"
               disabled={isRecording}
+              whileTap={{ scale: 0.95 }}
               onClick={() => handleTestRecording(drillSentence)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all shadow-lg ${
                 isRecording
-                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse'
-                  : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/20'
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black shadow-emerald-500/25'
               }`}
             >
               <Mic className="w-4 h-4" />
-              {isRecording ? 'Escuchando...' : 'Grabar & Probar Pronunciación'}
-            </button>
+              <span>{isRecording ? 'Escuchando tu voz...' : 'Grabar & Validar Pronunciación'}</span>
+            </motion.button>
 
             {recordedSuccess && (
-              <span className="inline-flex items-center gap-1 text-xs text-emerald-400 font-semibold">
-                <CheckCircle2 className="w-4 h-4" />
-                Dominio Registrado
-              </span>
+              <motion.span
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>¡Dominio Fonético Registrado!</span>
+              </motion.span>
             )}
           </div>
         </div>

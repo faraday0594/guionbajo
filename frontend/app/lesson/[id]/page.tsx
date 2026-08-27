@@ -1939,22 +1939,22 @@ export default function LessonPage() {
     };
   }, [tutorState, cinemaModeActive, lesson]);
 
-  // 🎬 Smooth Guided Auto-Scroll & Viewport Focus for Active Storyboard Step
+  // 🎬 Stable Viewport Focus: Keeps student focused on words being revealed & spoken
   useEffect(() => {
     if (viewMode !== 'board') return;
-    if (!phaseStoryboardSteps || phaseStoryboardSteps.length === 0) return;
 
+    // When starting a new phase, smoothly ensure the top teaching board is visible
     if (activeStepIdx === 0) {
       const topEl = document.getElementById('storyboard-target-title') || document.getElementById('storyboard-target-concepts');
       if (topEl) {
-        const timer = setTimeout(() => {
+        const rect = topEl.getBoundingClientRect();
+        if (rect.top < -80 || rect.top > 250) {
           topEl.scrollIntoView({
             behavior: 'smooth',
             block: 'start',
             inline: 'nearest',
           });
-        }, 120);
-        return () => clearTimeout(timer);
+        }
       }
       return;
     }
@@ -1962,33 +1962,59 @@ export default function LessonPage() {
     const currentStep = phaseStoryboardSteps[activeStepIdx];
     if (!currentStep) return;
 
+    // NEVER yank the screen down while the tutor is explaining concepts/grammar/vocabulary!
+    // Only scroll to the final exercise if the audio has transitioned to the practice phase (>= 85%)
+    const isBottomExercise = currentStep.element_type === 'exercise' || currentStep.element_type === 'audio_practice';
+    if (!isBottomExercise || audioProgress < 85) {
+      return;
+    }
+
     const candidateIds = [
       currentStep.element_type ? `storyboard-target-${currentStep.element_type}` : '',
       currentStep.highlight_target ? `storyboard-target-${currentStep.highlight_target}` : '',
-      currentStep.step_id ? `storyboard-target-${currentStep.step_id.replace(/^step-/, '')}` : '',
-      currentStep.step_id ? `storyboard-target-${currentStep.step_id.replace(/^step-/, '').replace(/-/g, '_')}` : '',
     ].filter(Boolean);
 
-    let targetEl: HTMLElement | null = null;
     for (const id of candidateIds) {
       const el = document.getElementById(id);
       if (el) {
-        targetEl = el;
+        const rect = el.getBoundingClientRect();
+        const isInViewport = rect.top >= 60 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
+        if (!isInViewport) {
+          el.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'nearest',
+          });
+        }
         break;
       }
     }
+  }, [activeStepIdx, audioProgress, viewMode, phaseStoryboardSteps]);
 
-    if (targetEl) {
-      const timer = setTimeout(() => {
-        targetEl?.scrollIntoView({
+  // 👁️ Gently keep the active spoken line in view if the whiteboard is long
+  const activeLineIdx = useMemo(() => {
+    if (tutorState !== 'speaking' || isFullBoardRevealed || boardLinesTiming.length === 0) return -1;
+    const currentRatio = audioProgress / 100;
+    return boardLinesTiming.findIndex(
+      t => currentRatio >= t.startRatio && currentRatio <= t.endRatio
+    );
+  }, [tutorState, isFullBoardRevealed, audioProgress, boardLinesTiming]);
+
+  useEffect(() => {
+    if (activeLineIdx < 0 || viewMode !== 'board') return;
+    const lineEl = document.getElementById(`board-line-${activeLineIdx}`);
+    if (lineEl) {
+      const rect = lineEl.getBoundingClientRect();
+      const isVisible = rect.top >= 80 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) - 80;
+      if (!isVisible) {
+        lineEl.scrollIntoView({
           behavior: 'smooth',
-          block: 'center',
+          block: 'nearest',
           inline: 'nearest',
         });
-      }, 150);
-      return () => clearTimeout(timer);
+      }
     }
-  }, [activeStepIdx, viewMode, phaseStoryboardSteps]);
+  }, [activeLineIdx, viewMode]);
 
   if (loadingLesson) {
     return (
@@ -2040,6 +2066,19 @@ export default function LessonPage() {
     if (!step) return;
     setActiveStepIdx(stepIndex);
     setRevealedStepCount(prev => Math.max(prev, stepIndex + 1));
+
+    const candidateIds = [
+      step.element_type ? `storyboard-target-${step.element_type}` : '',
+      step.highlight_target ? `storyboard-target-${step.highlight_target}` : '',
+    ].filter(Boolean);
+
+    for (const id of candidateIds) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        break;
+      }
+    }
 
     if (currentAudioRef.current && currentAudioRef.current.duration && !currentAudioRef.current.paused) {
       currentAudioRef.current.currentTime = step.trigger_ratio * currentAudioRef.current.duration;
@@ -2879,6 +2918,7 @@ export default function LessonPage() {
                                     return (
                                       <motion.div
                                         key={`bl-${idx}`}
+                                        id={`board-line-${idx}`}
                                         initial={isRevealed ? false : { opacity: 0, y: 12 }}
                                         animate={{
                                           opacity: isRevealed ? (isActiveLine ? 1 : 0.80) : 0.15,

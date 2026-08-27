@@ -84,11 +84,11 @@ async def generate_image(
         "prompt": clean_prompt[:500],
         "aspect_ratio": req.aspect_ratio or "16:9",
         "response_format": "url",
-        "prompt_optimizer": True
+        "prompt_optimizer": False
     }
 
     try:
-        async with httpx.AsyncClient(timeout=90.0) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(url, headers=headers, json=payload)
             response_json = response.json()
 

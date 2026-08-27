@@ -675,6 +675,129 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
   return null;
 }
 
+// ─── ACOUSTIC SPEECH TIMELINE & SEMANTIC PHRASE MATCHER ─────────────────────
+export interface SpeechWordTiming {
+  word: string;
+  startRatio: number; // 0.0 to 1.0
+  endRatio: number;   // 0.0 to 1.0
+}
+
+export interface PhaseSpeechTimeline {
+  cleanSpeech: string;
+  words: string[];
+  wordTimings: SpeechWordTiming[];
+}
+
+export function buildPhaseSpeechTimeline(tutorSpeech: string): PhaseSpeechTimeline {
+  if (!tutorSpeech || typeof tutorSpeech !== 'string') {
+    return { cleanSpeech: '', words: [], wordTimings: [] };
+  }
+
+  const clean = tutorSpeech.replace(/[*_#~`]/g, '').replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return { cleanSpeech: clean, words: [], wordTimings: [] };
+  }
+
+  const weights: number[] = [];
+  for (let i = 0; i < words.length; i++) {
+    const rawWord = words[i];
+    const cleanWord = rawWord.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ]/g, '');
+    const vowelCount = (cleanWord.match(/[aeiouyáéíóúü]/gi) || []).length;
+    let weight = Math.max(cleanWord.length * 0.4 + Math.max(vowelCount, 1) * 1.2, 1.8);
+    if (/[.!?:]$/.test(rawWord)) {
+      weight += 1.6;
+    } else if (/[,;\-—]$/.test(rawWord)) {
+      weight += 0.9;
+    } else if (/\.\.\.$/.test(rawWord)) {
+      weight += 2.0;
+    }
+    weights.push(weight);
+  }
+
+  const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
+  let accum = 0;
+  const wordTimings: SpeechWordTiming[] = weights.map((w, i) => {
+    const startRatio = accum / totalWeight;
+    accum += w;
+    const endRatio = accum / totalWeight;
+    return {
+      word: words[i],
+      startRatio,
+      endRatio,
+    };
+  });
+
+  return { cleanSpeech: clean, words, wordTimings };
+}
+
+export function findPhraseTimingInTimeline(
+  phrase: string,
+  timeline: PhaseSpeechTimeline,
+  fallbackStartRatio = 0.0
+): { startRatio: number; endRatio: number; found: boolean } {
+  if (!phrase || !timeline || timeline.words.length === 0) {
+    return { startRatio: fallbackStartRatio, endRatio: Math.min(fallbackStartRatio + 0.15, 1.0), found: false };
+  }
+
+  const cleanPhrase = phrase.toLowerCase().replace(/[^a-z0-9áéíóúñü]/g, ' ').trim();
+  const phraseTokens = cleanPhrase.split(/\s+/).filter(Boolean);
+  if (phraseTokens.length === 0) {
+    return { startRatio: fallbackStartRatio, endRatio: Math.min(fallbackStartRatio + 0.15, 1.0), found: false };
+  }
+
+  const speechTokens = timeline.words.map(w => w.toLowerCase().replace(/[^a-z0-9áéíóúñü]/g, ''));
+
+  // 1. Exact contiguous token sequence
+  for (let i = 0; i <= speechTokens.length - phraseTokens.length; i++) {
+    let match = true;
+    for (let j = 0; j < phraseTokens.length; j++) {
+      if (speechTokens[i + j] !== phraseTokens[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      const startIdx = Math.max(0, i);
+      const endIdx = Math.min(i + phraseTokens.length - 1, timeline.wordTimings.length - 1);
+      const startRatio = timeline.wordTimings[startIdx]?.startRatio ?? fallbackStartRatio;
+      const endRatio = timeline.wordTimings[endIdx]?.endRatio ?? (startRatio + 0.15);
+      return { startRatio, endRatio, found: true };
+    }
+  }
+
+  // 2. Multi-token partial match
+  if (phraseTokens.length >= 2) {
+    const firstWord = phraseTokens[0];
+    const lastWord = phraseTokens[phraseTokens.length - 1];
+    for (let i = 0; i < speechTokens.length; i++) {
+      if (speechTokens[i] === firstWord) {
+        for (let j = i + 1; j < Math.min(i + phraseTokens.length + 3, speechTokens.length); j++) {
+          if (speechTokens[j] === lastWord) {
+            const startRatio = timeline.wordTimings[i]?.startRatio ?? fallbackStartRatio;
+            const endRatio = timeline.wordTimings[j]?.endRatio ?? (startRatio + 0.20);
+            return { startRatio, endRatio, found: true };
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Significant single keyword match (length >= 4)
+  for (const token of phraseTokens) {
+    if (token.length >= 4) {
+      const idx = speechTokens.indexOf(token);
+      if (idx !== -1) {
+        const startRatio = timeline.wordTimings[idx]?.startRatio ?? fallbackStartRatio;
+        const endRatio = Math.min(startRatio + 0.20, 1.0);
+        return { startRatio, endRatio, found: true };
+      }
+    }
+  }
+
+  return { startRatio: fallbackStartRatio, endRatio: Math.min(fallbackStartRatio + 0.15, 1.0), found: false };
+}
+
 // ─── HELPER: Generate or Normalize Phase Storyboard Steps ───────────────────
 function getPhaseStoryboardSteps(phase: any, topic: string): StoryboardStep[] {
   const diagSvg = getPhaseDiagramSvg(phase, topic);
@@ -834,12 +957,13 @@ export default function LessonPage() {
   // 🎨 Consolidated View Modes: 'board' (Pizarra Interactiva), 'timeline' (Flujo Didáctico), 'reading' (Práctica de Lectura), or 'games' (Game Arena)
   const [viewMode, setViewMode] = useState<'board' | 'timeline' | 'reading' | 'games'>('board');
   const [isImageZoomed, setIsImageZoomed] = useState(false);
+  const [zoomedImageUrl, setZoomedImageUrl] = useState<string>('');
   const [minimaxImageMap, setMinimaxImageMap] = useState<Record<string, string>>({});
   const [generatingImages, setGeneratingImages] = useState<Record<string, boolean>>({});
   const inFlightImagePromisesRef = useRef<{ [key: string]: Promise<string> | undefined }>({});
 
-  const fetchPhaseImage = useCallback(async (phaseIdx: number, topic: string, phaseObj?: any): Promise<string> => {
-    const promptKey = `${phaseIdx}-${topic}`;
+  const fetchPhaseImage = useCallback(async (phaseIdx: number, topic: string, phaseObj?: any, imageIdx = 0, customPrompt?: string): Promise<string> => {
+    const promptKey = `${phaseIdx}-${topic}${imageIdx > 0 ? `-img${imageIdx}` : ''}`;
     if (minimaxImageMap[promptKey]) {
       return minimaxImageMap[promptKey];
     }
@@ -849,8 +973,18 @@ export default function LessonPage() {
     }
 
     const p = phaseObj || lesson?.phases?.[phaseIdx];
-    const pPrompt = typeof p?.image_prompt === 'string' && p.image_prompt.trim().length > 8
-      ? p.image_prompt.trim()
+    let promptToUse = customPrompt;
+    if (!promptToUse) {
+      if (p?.hook_images && Array.isArray(p.hook_images) && p.hook_images[imageIdx]) {
+        const hi = p.hook_images[imageIdx];
+        promptToUse = typeof hi === 'string' ? hi : (hi.prompt || hi.image_prompt);
+      } else if (imageIdx === 0) {
+        promptToUse = p?.image_prompt;
+      }
+    }
+
+    const pPrompt = typeof promptToUse === 'string' && promptToUse.trim().length > 8
+      ? promptToUse.trim()
       : `Educational 2D vector illustration of ${topic} for English lesson (${p?.phase_name || 'Clase'}), clean minimal graphic style`;
     const sanitizedPrompt = sanitizeImagePrompt(pPrompt, topic, phaseIdx);
 
@@ -862,17 +996,17 @@ export default function LessonPage() {
         const res: any = await api.generateImage(sanitizedPrompt, '16:9');
         if (res && res.success && (res.url || res.image_url)) {
           finalUrl = res.url || res.image_url;
-          console.log(`🎨 MiniMax image-01 generated for slide ${phaseIdx}:`, finalUrl);
+          console.log(`🎨 MiniMax image-01 generated for slide ${phaseIdx} img ${imageIdx}:`, finalUrl);
         } else {
-          console.warn(`MiniMax image-01 returned no URL for slide ${phaseIdx}:`, res);
+          console.warn(`MiniMax image-01 returned no URL for slide ${phaseIdx} img ${imageIdx}:`, res);
         }
       } catch (err) {
-        console.warn(`MiniMax image generation for slide ${phaseIdx} failed:`, err);
+        console.warn(`MiniMax image generation for slide ${phaseIdx} img ${imageIdx} failed:`, err);
       }
 
       if (!finalUrl) {
         // Fallback only if MiniMax generation explicitly failed
-        finalUrl = getFallbackImageUrl(sanitizedPrompt, topic, phaseIdx);
+        finalUrl = getFallbackImageUrl(sanitizedPrompt, topic, phaseIdx + imageIdx * 17);
       }
 
       await preloadImage(finalUrl, 4000).catch(() => {});
@@ -886,6 +1020,25 @@ export default function LessonPage() {
     return promise;
   }, [lesson, minimaxImageMap]);
 
+  // Preload images for current and adjacent slides
+  useEffect(() => {
+    if (!lesson?.phases) return;
+    const currentP = lesson.phases[currentPhaseIdx];
+    if (currentP) {
+      fetchPhaseImage(currentPhaseIdx, topicParam, currentP, 0);
+      if (currentP.hook_images && Array.isArray(currentP.hook_images) && currentP.hook_images.length > 1) {
+        fetchPhaseImage(currentPhaseIdx, topicParam, currentP, 1);
+      }
+    }
+    if (currentPhaseIdx + 1 < lesson.phases.length) {
+      const nextP = lesson.phases[currentPhaseIdx + 1];
+      fetchPhaseImage(currentPhaseIdx + 1, topicParam, nextP, 0);
+      if (nextP.hook_images && Array.isArray(nextP.hook_images) && nextP.hook_images.length > 1) {
+        fetchPhaseImage(currentPhaseIdx + 1, topicParam, nextP, 1);
+      }
+    }
+  }, [lesson, currentPhaseIdx, topicParam, fetchPhaseImage]);
+
   // 🎬 Cinema mode & audio tracking
   const [cinemaModeActive, setCinemaModeActive] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0); // 0–100
@@ -894,8 +1047,8 @@ export default function LessonPage() {
 
   // 🎬 Progressive Live Classroom & Storyboard Stepper
   const [activeStepIdx, setActiveStepIdx] = useState<number>(0);
-  const [revealedStepCount, setRevealedStepCount] = useState<number>(99);
-  const [isFullBoardRevealed, setIsFullBoardRevealed] = useState<boolean>(true);
+  const [revealedStepCount, setRevealedStepCount] = useState<number>(1);
+  const [isFullBoardRevealed, setIsFullBoardRevealed] = useState<boolean>(false);
 
   const phase = lesson?.phases?.[currentPhaseIdx] || {};
   const isALevel = (sublevelParam || '').startsWith('A1') || (sublevelParam || '').startsWith('A2');
@@ -907,6 +1060,166 @@ export default function LessonPage() {
   const currentDiagramSvg = useMemo(() => {
     return getPhaseDiagramSvg(phase, topicParam);
   }, [phase, topicParam]);
+
+  const phaseTimeline = useMemo(() => {
+    const speech = typeof phase?.tutor_says === 'string' ? phase.tutor_says : phase?.tutor_says?.text || '';
+    return buildPhaseSpeechTimeline(speech);
+  }, [phase]);
+
+  const targetAudioItems = useMemo(() => {
+    return extractTargetAudioItems(phase);
+  }, [phase]);
+
+  const parsedExercisesData = useMemo(() => {
+    return parseExercisesAndBoardLines(
+      phase?.board_content,
+      phase?.student_task,
+      phase?.phase_number || (currentPhaseIdx + 1),
+      phase?.interaction_type
+    );
+  }, [phase, currentPhaseIdx]);
+
+  const cleanBoardLines = parsedExercisesData.cleanBoardLines;
+  const exercises = parsedExercisesData.exercises;
+  const instructionHeader = parsedExercisesData.instructionHeader;
+
+  // Exact acoustic timings for board lines
+  const boardLinesTiming = useMemo(() => {
+    return cleanBoardLines.map((line, idx) => {
+      const quoteMatch = line.match(/"([^"]+)"|'([^']+)'|«([^»]+)»/);
+      const textToSearch = quoteMatch
+        ? (quoteMatch[1] || quoteMatch[2] || quoteMatch[3])
+        : line.replace(/^[•📌🎯⚡👉✔❌✅\d\.\-\s:]+/, '').trim();
+      const fallbackRatio = (idx / Math.max(cleanBoardLines.length, 1)) * 0.60;
+      return findPhraseTimingInTimeline(textToSearch, phaseTimeline, fallbackRatio);
+    });
+  }, [cleanBoardLines, phaseTimeline]);
+
+  // Exact acoustic timings for target audio examples
+  const targetAudioItemsTiming = useMemo(() => {
+    return targetAudioItems.map((item, idx) => {
+      const fallbackRatio = 0.35 + (idx / Math.max(targetAudioItems.length, 1)) * 0.50;
+      return findPhraseTimingInTimeline(item.english, phaseTimeline, fallbackRatio);
+    });
+  }, [targetAudioItems, phaseTimeline]);
+
+  // Normalized Grammar Structure Object
+  const normalizedGrammarStructure = useMemo<any>(() => {
+    const raw = phase?.grammar_structure || phase?.key_structure;
+    if (!raw) return null;
+    if (typeof raw === 'object' && raw.formula_tokens && Array.isArray(raw.formula_tokens) && raw.formula_tokens.length > 0) {
+      return raw;
+    }
+    if (typeof raw === 'string') {
+      const tokens = raw
+        .split(/\s*\+\s*|\s*→\s*|\s*\|\s*/)
+        .filter(Boolean)
+        .map((tok: string, idx: number) => {
+          const colors = ['blue', 'purple', 'emerald', 'amber', 'rose', 'cyan'];
+          const cleanTok = tok.replace(/[\[\]]/g, '').trim();
+          return {
+            role: cleanTok,
+            pattern: cleanTok,
+            color: colors[idx % colors.length],
+          };
+        });
+      return {
+        title: typeof phase.key_structure === 'string' ? phase.key_structure : 'Estructura Gramatical Clave',
+        formula: raw,
+        formula_tokens: tokens,
+      };
+    }
+    if (typeof raw === 'object') {
+      return raw;
+    }
+    return null;
+  }, [phase]);
+
+  // Exact acoustic timings for formula tokens with token trigger expansion
+  const grammarTokensTiming = useMemo(() => {
+    if (!normalizedGrammarStructure?.formula_tokens || !Array.isArray(normalizedGrammarStructure.formula_tokens) || normalizedGrammarStructure.formula_tokens.length === 0) {
+      return [];
+    }
+    const tokens = normalizedGrammarStructure.formula_tokens;
+
+    // Estimate grammar explanation window in speech
+    const grammarGeneralTiming = findPhraseTimingInTimeline(
+      'fórmula estructura patrón orden regla sintaxis',
+      phaseTimeline,
+      0.30
+    );
+
+    const gStart = grammarGeneralTiming.found ? grammarGeneralTiming.startRatio : 0.25;
+    const gEnd = Math.min(Math.max(grammarGeneralTiming.endRatio, gStart + 0.35), 0.85);
+    const tokenSpan = (gEnd - gStart) / Math.max(tokens.length, 1);
+
+    return tokens.map((token: any, idx: number) => {
+      const role = (token.role || token.label || '').toLowerCase();
+      const pattern = (token.pattern || token.token || '').toLowerCase();
+      const triggers: string[] = [];
+
+      if (role) {
+        triggers.push(role);
+        if (role.includes('sujeto') || role.includes('subject') || role.includes('pronombre')) {
+          triggers.push('sujeto', 'sujetos', 'subject', 'pronombre', 'pronombres', 'persona', 'i', 'you', 'he', 'she', 'we', 'they');
+        } else if (role.includes('verbo') || role.includes('verb') || role.includes('acción')) {
+          triggers.push('verbo', 'verbos', 'verb', 'acción', 'acciones', 'base');
+        } else if (role.includes('auxiliar') || role.includes('aux')) {
+          triggers.push('auxiliar', 'auxiliares', 'do', 'does', 'don\'t', 'doesn\'t', 'did', 'didn\'t');
+        } else if (role.includes('frecuencia') || role.includes('frequency') || role.includes('adverb')) {
+          triggers.push('frecuencia', 'adverbio', 'adverbios', 'always', 'usually', 'sometimes', 'never');
+        } else if (role.includes('complemento') || role.includes('complement') || role.includes('objeto')) {
+          triggers.push('complemento', 'complementos', 'objeto', 'predicado', 'resto');
+        }
+      }
+
+      if (pattern) {
+        triggers.push(pattern);
+        const patternWords = pattern.split(/[\s\/\+\,\.\(\)]+/).filter((w: string) => w.length >= 2);
+        triggers.push(...patternWords);
+      }
+
+      let bestMatch = {
+        startRatio: gStart + idx * tokenSpan,
+        endRatio: gStart + (idx + 1) * tokenSpan,
+        found: false,
+      };
+
+      for (const trigger of triggers) {
+        const match = findPhraseTimingInTimeline(trigger, phaseTimeline, bestMatch.startRatio);
+        if (match.found) {
+          bestMatch = match;
+          break;
+        }
+      }
+
+      return {
+        tokenIndex: idx,
+        role: token.role || '',
+        pattern: token.pattern || '',
+        startRatio: bestMatch.startRatio,
+        endRatio: Math.max(bestMatch.endRatio, bestMatch.startRatio + 0.08),
+        found: bestMatch.found,
+      };
+    });
+  }, [normalizedGrammarStructure, phaseTimeline]);
+
+  // Active grammar token detection with high-accuracy matching
+  const activeGrammarToken = useMemo(() => {
+    if (tutorState !== 'speaking' || isFullBoardRevealed || grammarTokensTiming.length === 0) return null;
+    const currentRatio = audioProgress / 100;
+
+    for (const t of grammarTokensTiming) {
+      if (currentRatio >= t.startRatio && currentRatio <= t.endRatio) {
+        return {
+          tokenIndex: t.tokenIndex,
+          role: t.role,
+          pattern: t.pattern,
+        };
+      }
+    }
+    return null;
+  }, [tutorState, isFullBoardRevealed, audioProgress, grammarTokensTiming]);
 
   // 🎙️ Universal Per-Item Pronunciation Practice States (Works in ALL views)
   const [itemRecordingKey, setItemRecordingKey] = useState<string | null>(null);
@@ -1122,12 +1435,17 @@ export default function LessonPage() {
         setImageLoading(false);
         setLoadingLesson(false);
 
-        // 🚀 NON-BLOCKING BACKGROUND WORKER: Pre-generate remaining slide images with MiniMax
-        for (let i = 1; i < data.phases.length; i++) {
-          fetchPhaseImage(i, topicParam, data.phases[i]).catch((err: any) => {
-            console.warn(`Background image generation for slide ${i} failed:`, err);
-          });
-        }
+        // 🚀 NON-BLOCKING BACKGROUND WORKER: Sequentially pre-generate remaining slide images with MiniMax
+        (async () => {
+          for (let i = 1; i < data.phases.length; i++) {
+            try {
+              await new Promise(r => setTimeout(r, 1200));
+              await fetchPhaseImage(i, topicParam, data.phases[i]);
+            } catch (err: any) {
+              console.warn(`Background image generation for slide ${i} failed:`, err);
+            }
+          }
+        })();
 
       } catch (err: any) {
         console.error('Failed to load lesson:', err);
@@ -1213,6 +1531,11 @@ export default function LessonPage() {
     const stepsList = getPhaseStoryboardSteps(currentPhaseObj, topicParam);
 
     if (isMainLecture) {
+      setIsFullBoardRevealed(false);
+      audioFinishedNaturallyRef.current = false;
+      setActiveStepIdx(0);
+      setRevealedStepCount(1);
+      setAudioProgress(0);
       const boardContent = currentPhaseObj?.board_content;
       const boardLines: string[] = typeof boardContent === 'string'
         ? boardContent.split('\n').filter((l: string) => l.trim().length > 0)
@@ -1696,12 +2019,14 @@ export default function LessonPage() {
   }
 
   const isStepRevealed = (type: string) => {
-    if (isFullBoardRevealed) return true;
-    const stepIdx = phaseStoryboardSteps.findIndex(
+    if (isFullBoardRevealed || audioFinishedNaturallyRef.current) return true;
+    if (type === 'illustration' || type === 'concepts') return true;
+    const step = phaseStoryboardSteps.find(
       (s) => s.element_type === type || s.highlight_target === type
     );
-    if (stepIdx === -1) return true;
-    return stepIdx < revealedStepCount;
+    if (!step) return true;
+    const currentRatio = audioProgress / 100;
+    return currentRatio >= step.trigger_ratio || (revealedStepCount >= step.step_index);
   };
 
   const isStepActive = (type: string) => {
@@ -1763,13 +2088,29 @@ export default function LessonPage() {
     }
   };
 
-  // Structured target audio items defined by AI Tutor Agent or deterministic phase extractor
-  const targetAudioItems = extractTargetAudioItems(phase);
+  // 🎬 Hook & Multi-Image Resolution
+  const isHook = currentPhaseIdx === 0 || Boolean(phase.is_hook);
 
-  // ─── Image Generation ──────────────────────────────────────────────────────
+  // ─── Image Generation & Hook Visuals ───────────────────────────────────────
   const rawImagePrompt = typeof phase.image_prompt === 'string' && phase.image_prompt.trim().length > 10
     ? phase.image_prompt.trim()
     : `flat 2D vector illustration of ${topicParam} for English lesson (${phase.phase_name}), clean minimal graphic design, bright clear colors, white background`;
+
+  const hookImagesData: Array<{ prompt: string; caption?: string; role?: string }> = (
+    phase?.hook_images && Array.isArray(phase.hook_images) && phase.hook_images.length > 0
+      ? phase.hook_images.map((hi: any, i: number) => ({
+          prompt: typeof hi === 'string' ? hi : (hi.prompt || hi.image_prompt || rawImagePrompt),
+          caption: typeof hi === 'object' ? hi.caption : undefined,
+          role: typeof hi === 'object' ? (hi.role || (i === 0 ? 'hook_situation' : 'hook_context')) : 'hook_situation',
+        }))
+      : [
+          {
+            prompt: rawImagePrompt,
+            caption: `Descubriendo: ${topicParam}`,
+            role: 'hook_situation',
+          }
+        ]
+  );
 
   const styleType = (phase.image_style as string) || 'flat_art';
   const cleanImagePrompt = sanitizeImagePrompt(rawImagePrompt, topicParam, currentPhaseIdx);
@@ -1789,7 +2130,9 @@ export default function LessonPage() {
     item: { english: string; translation?: string; label?: string },
     key: string,
     idx: number,
-    theme: 'studio' | 'chalk' = 'studio'
+    theme: 'studio' | 'chalk' = 'studio',
+    isRevealed = true,
+    isActiveSpoken = false
   ) => {
     const isThisRecording = itemRecordingKey === key;
     const isThisProcessing = itemProcessingKey === key;
@@ -1798,11 +2141,17 @@ export default function LessonPage() {
     return (
       <motion.div
         key={key}
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: idx * 0.06 }}
+        initial={isRevealed ? false : { opacity: 0, scale: 0.92, y: 15 }}
+        animate={{
+          opacity: isRevealed ? (isActiveSpoken ? 1 : 0.85) : 0.20,
+          scale: isActiveSpoken ? 1.025 : 1,
+          y: isRevealed ? 0 : 8,
+        }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
         className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden ${
-          itemResult
+          isActiveSpoken
+            ? 'bg-brand-cyan/20 border-brand-cyan ring-2 ring-brand-cyan shadow-[0_0_35px_rgba(0,212,255,0.45)]'
+            : itemResult
             ? itemResult.is_correct
               ? 'bg-brand-success/10 border-brand-success/40 shadow-[0_0_20px_rgba(0,230,118,0.12)]'
               : 'bg-brand-error/10 border-brand-error/40 shadow-[0_0_20px_rgba(255,82,82,0.12)]'
@@ -1824,6 +2173,12 @@ export default function LessonPage() {
               }`}>
                 {item.label || `Frase #${idx + 1}`}
               </span>
+              {isActiveSpoken && (
+                <span className="text-[10px] bg-brand-cyan text-black px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                  <Volume2 size={11} className="animate-bounce" />
+                  Nombrada por el tutor
+                </span>
+              )}
               {itemResult && (
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 ${
                   itemResult.is_correct ? 'text-brand-success bg-brand-success/20' : 'text-brand-error bg-brand-error/20'
@@ -1865,10 +2220,12 @@ export default function LessonPage() {
               <span>Escuchar</span>
             </button>
 
-            {/* 🎙️ Mic Practice Button */}
+            {/* 🎙️ Mic Practice Button — Hero Circle */}
             {!itemResult ? (
-              <button
+              <motion.button
                 type="button"
+                whileTap={{ scale: 0.9 }}
+                whileHover={!isThisProcessing && !isThisRecording ? { scale: 1.1 } : {}}
                 onClick={() => {
                   if (isThisRecording) {
                     setItemRecordingKey(null);
@@ -1877,24 +2234,26 @@ export default function LessonPage() {
                   }
                 }}
                 disabled={isThisProcessing || (itemRecordingKey !== null && !isThisRecording)}
-                className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shadow-md ${
+                className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-lg disabled:opacity-40 flex-shrink-0 ${
                   isThisProcessing
-                    ? 'bg-brand-surface border-brand-accent text-brand-cyan animate-pulse'
+                    ? 'bg-brand-surface border-2 border-brand-accent text-brand-cyan animate-pulse'
                     : isThisRecording
-                    ? 'bg-brand-error border-brand-error text-white shadow-[0_0_18px_rgba(255,82,82,0.6)] scale-105 animate-pulse'
-                    : 'bg-brand-accent hover:bg-brand-accent/90 text-white border-brand-accent hover:scale-105'
+                    ? 'bg-brand-error text-white border-2 border-red-300 shadow-[0_0_30px_rgba(255,82,82,0.7)]'
+                    : 'bg-brand-accent text-white border-2 border-brand-accent/60 hover:shadow-[0_0_25px_rgba(108,99,255,0.6)]'
                 }`}
                 title="Grabar tu voz para practicar esta frase"
               >
-                {isThisProcessing ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : isThisRecording ? (
-                  <Square size={13} className="fill-white" />
-                ) : (
-                  <Mic size={13} />
+                {isThisRecording && (
+                  <span className="absolute inset-0 rounded-full border-2 border-brand-error animate-ping opacity-60" />
                 )}
-                <span>{isThisProcessing ? 'Evaluando...' : isThisRecording ? 'Detener' : 'Practicar 🎤'}</span>
-              </button>
+                {isThisProcessing ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : isThisRecording ? (
+                  <Square size={16} className="fill-white" />
+                ) : (
+                  <Mic size={18} />
+                )}
+              </motion.button>
             ) : (
               <button
                 type="button"
@@ -2138,9 +2497,9 @@ export default function LessonPage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={`${currentPhaseIdx}-${viewMode}`}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
+            initial={{ opacity: 0, x: 40, scale: 0.98 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -40, scale: 0.98 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
             className="w-full flex-1"
           >
@@ -2173,9 +2532,135 @@ export default function LessonPage() {
               />
             ) : viewMode === 'board' ? (
               /* ═══════════════════════════════════════════════════════════════════════
-                 🎨 MODE 1: PIZARRA INTERACTIVA (STUDIO BOARD)
+                 🎨 MODE 1: PIZARRA INTERACTIVA / HOOK CINEMATOGRÁFICO
                  ═══════════════════════════════════════════════════════════════════════ */
-              <div className={`${getBoardThemeClass(phase.board_theme)} p-5 sm:p-7 space-y-5 relative`}>
+              isHook ? (
+                <motion.div
+                  key={`hook-hero-stage-${currentPhaseIdx}`}
+                  initial={{ opacity: 0, scale: 0.96, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.94, y: -20, filter: 'blur(10px)' }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  className="w-full flex-1 flex flex-col justify-between p-4 sm:p-7 md:p-8 rounded-3xl bg-gradient-to-b from-[#0a0f1d]/95 via-[#070a14]/98 to-[#04060b]/99 border border-brand-cyan/25 shadow-2xl relative overflow-hidden min-h-[560px]"
+                >
+                  {/* Cinematic Background Ambient Glows */}
+                  <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-brand-cyan/15 rounded-full blur-[120px] pointer-events-none" />
+                  <div className="absolute -bottom-32 right-1/4 w-[400px] h-[300px] bg-brand-accent/15 rounded-full blur-[100px] pointer-events-none" />
+
+                  {/* Top Minimalist Hook Header Bar */}
+                  <div className="w-full flex items-center justify-between gap-3 relative z-10 pb-3 border-b border-white/10 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                      <span className="px-3.5 py-1.5 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm">
+                        <Sparkles size={14} className="text-brand-cyan animate-pulse" />
+                        <span>Hook de Apertura</span>
+                      </span>
+                      <h2 className="text-sm sm:text-base font-bold text-white/90 hidden sm:inline truncate max-w-md">
+                        {renderTextContent(phase.phase_name)}
+                      </h2>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => speakText(typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '', true)}
+                        className="text-xs px-3 py-1.5 rounded-xl bg-brand-cyan/15 hover:bg-brand-cyan/30 border border-brand-cyan/35 text-brand-cyan hover:text-white flex items-center gap-1.5 transition-all font-semibold shadow-sm"
+                        title="Escuchar la locución del hook"
+                      >
+                        <Volume2 size={13} className="text-brand-cyan" />
+                        <span>Escuchar Hook</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowDynamicSubtitles(!showDynamicSubtitles)}
+                        className={`text-xs px-2.5 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 ${
+                          showDynamicSubtitles
+                            ? 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/40 shadow-sm'
+                            : 'glass border-brand-border text-brand-text-muted hover:text-white'
+                        }`}
+                        title={showDynamicSubtitles ? 'Ocultar subtítulos' : 'Mostrar subtítulos dinámicos'}
+                      >
+                        <Subtitles size={12} className={showDynamicSubtitles && tutorState === 'speaking' ? 'text-brand-cyan animate-pulse' : ''} />
+                        <span>{showDynamicSubtitles ? 'Subtítulos ON' : 'Subtítulos'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Dual Hero Image Cards (Diptych / Split View) */}
+                  <div className={`w-full grid ${hookImagesData.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'} gap-5 my-auto py-5 relative z-10 max-w-5xl mx-auto`}>
+                    {hookImagesData.map((hi, hIdx) => {
+                      const hKey = `${currentPhaseIdx}-${topicParam}${hIdx > 0 ? `-img${hIdx}` : ''}`;
+                      const hUrl = minimaxImageMap[hKey] || (hIdx === 0 ? imageUrl : getFallbackImageUrl(hi.prompt, topicParam, currentPhaseIdx + 17));
+                      const isHGenerating = generatingImages[hKey] || !hUrl;
+
+                      return (
+                        <motion.div
+                          key={hIdx}
+                          initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          transition={{ duration: 0.55, delay: hIdx * 0.15, ease: [0.22, 1, 0.36, 1] }}
+                          whileHover={{ scale: 1.015 }}
+                          onClick={() => {
+                            if (hUrl) {
+                              setZoomedImageUrl(hUrl);
+                              setIsImageZoomed(true);
+                            }
+                          }}
+                          className="group relative rounded-3xl border border-white/20 overflow-hidden bg-black/60 shadow-[0_20px_50px_rgba(0,0,0,0.8)] cursor-pointer flex flex-col justify-end min-h-[280px] sm:min-h-[350px] transition-all hover:border-brand-cyan/50 hover:shadow-[0_0_40px_rgba(0,212,255,0.25)]"
+                        >
+                          {hUrl ? (
+                            <>
+                              <img
+                                src={hUrl}
+                                alt={hi.caption || 'Ilustración del Hook'}
+                                className="w-full h-full max-h-[360px] sm:max-h-[420px] object-cover rounded-3xl transition-transform duration-700 group-hover:scale-105"
+                              />
+                              {/* Soft Vignette Overlay */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+
+                              {/* Bottom Caption Pill */}
+                              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-2 z-10">
+                                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-black/80 backdrop-blur-md border border-white/20 text-xs text-white font-medium shadow-lg">
+                                  <Sparkles size={12} className="text-yellow-300 flex-shrink-0" />
+                                  <span className="truncate">{hi.caption || (hIdx === 0 ? 'Situación / Dilema' : 'Contexto de Aprendizaje')}</span>
+                                </div>
+
+                                <span className="p-2 rounded-xl bg-black/80 backdrop-blur-md border border-white/20 text-white/80 group-hover:text-white transition-colors">
+                                  <Maximize2 size={13} />
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-black/50 min-h-[280px]">
+                              <Loader2 size={24} className="text-brand-cyan animate-spin mb-3" />
+                              <p className="text-xs text-white/70 font-mono">Generando imagen neuronal de apertura...</p>
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Bottom Action Footer with Cinematic CTA */}
+                  <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10 relative z-10 flex-shrink-0">
+                    <div className="text-xs text-white/70 font-chalk text-center sm:text-left">
+                      💡 <strong className="text-brand-cyan font-sans">El Hook:</strong> Escucha la introducción inmersiva y avanza a los conceptos.
+                    </div>
+
+                    <motion.button
+                      type="button"
+                      onClick={handleNextSlide}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
+                      className="w-full sm:w-auto px-7 py-3 rounded-2xl bg-gradient-to-r from-brand-accent via-indigo-500 to-brand-cyan text-white font-bold text-sm shadow-[0_0_30px_rgba(108,99,255,0.5)] hover:shadow-[0_0_40px_rgba(0,212,255,0.7)] flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+                    >
+                      <span>Comenzar Explicación de la Clase</span>
+                      <ChevronRight size={18} />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className={`${getBoardThemeClass(phase.board_theme)} p-5 sm:p-7 space-y-5 relative`}>
                 
                 {/* Board Header Bar */}
                 <div id="storyboard-target-title" className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-white/10 z-10">
@@ -2253,12 +2738,6 @@ export default function LessonPage() {
                 {/* Set of target audio phrases to prevent duplicate audio buttons on the whiteboard */}
                 {(() => {
                   const targetAudioPhrases = new Set(targetAudioItems.map((it: any) => it.english.toLowerCase().trim()));
-                  const { cleanBoardLines, exercises, instructionHeader } = parseExercisesAndBoardLines(
-                    phase.board_content,
-                    phase.student_task,
-                    phase.phase_number || currentPhaseIdx + 1,
-                    phase.interaction_type
-                  );
 
                   return (
                     <div className="flex flex-col gap-5 z-10 w-full">
@@ -2277,7 +2756,7 @@ export default function LessonPage() {
                         onResetReveal={handleResetReveal}
                       />
 
-                      {/* 🌟 ROW 1: Visual Illustration (5 cols) + Whiteboard Concepts & Rules (7 cols) */}
+                      {/* 🌟 ROW 1: Visual Illustration (6 cols) + Whiteboard Concepts & Rules (6 cols) */}
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
                         
                         {/* Visual Illustration Card */}
@@ -2285,54 +2764,59 @@ export default function LessonPage() {
                           {(isFullBoardRevealed || isStepRevealed('illustration')) && (
                             <motion.div
                               id="storyboard-target-illustration"
-                              initial={{ opacity: 0, scale: 0.92, y: 15 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.92 }}
-                              transition={{ duration: 0.45, ease: 'easeOut' }}
-                              className={`lg:col-span-5 flex flex-col rounded-2xl transition-all duration-300 ${
+                              initial={{ opacity: 0, scale: 0.88, y: 20, filter: 'blur(8px)' }}
+                              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                              exit={{ opacity: 0, scale: 0.88, filter: 'blur(8px)' }}
+                              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                              className={`lg:col-span-6 flex flex-col rounded-2xl transition-all duration-500 ${
                                 isStepActive('illustration')
-                                  ? 'ring-2 ring-brand-cyan ring-offset-2 ring-offset-black/70 shadow-[0_0_30px_rgba(0,212,255,0.35)]'
-                                  : ''
+                                  ? 'ring-2 ring-brand-cyan ring-offset-4 ring-offset-black/80 shadow-[0_0_50px_rgba(0,212,255,0.5)]'
+                                  : 'shadow-2xl'
                               }`}
                             >
                               {minimaxGeneratedUrl ? (
-                                <div className="rounded-2xl border border-white/10 overflow-hidden relative shadow-lg bg-black/35 flex flex-col items-center justify-center p-2.5 group transition-all h-full">
+                                <motion.div
+                                  className="rounded-2xl border border-white/15 overflow-hidden relative shadow-2xl bg-black/40 flex flex-col items-center justify-center group transition-all h-full"
+                                  whileHover={{ scale: 1.01 }}
+                                  transition={{ duration: 0.25 }}
+                                >
                                   <div
                                     onClick={() => setIsImageZoomed(true)}
-                                    className="relative w-full flex-1 overflow-hidden rounded-xl cursor-pointer group/img flex items-center justify-center bg-black/20 border border-white/5 min-h-[180px] sm:min-h-[220px]"
+                                    className="relative w-full overflow-hidden rounded-xl cursor-pointer group/img flex items-center justify-center bg-black/20 border border-white/5 min-h-[220px] sm:min-h-[280px]"
                                   >
                                     <img
                                       src={minimaxGeneratedUrl}
                                       alt="Ilustración didáctica principal"
-                                      className="w-full max-h-56 sm:max-h-64 object-contain rounded-xl group-hover/img:scale-105 transition-transform duration-300"
+                                      className="w-full max-h-72 sm:max-h-80 object-cover rounded-xl transition-transform duration-500 group-hover/img:scale-105"
                                     />
-                                    <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[2px]">
-                                      <span className="px-3.5 py-1.5 rounded-xl bg-brand-accent text-white text-xs font-bold flex items-center gap-1.5 shadow-xl">
-                                        <ZoomIn size={14} /> Ampliar Imagen
+                                    {/* Gradient overlay for text readability */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-xl" />
+                                    {/* Zoom hover overlay */}
+                                    <div className="absolute inset-0 bg-brand-dark/50 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 backdrop-blur-[2px]">
+                                      <span className="px-4 py-2 rounded-xl bg-brand-accent text-white text-sm font-bold flex items-center gap-2 shadow-2xl">
+                                        <ZoomIn size={16} /> Ampliar Imagen
                                       </span>
                                     </div>
-                                  </div>
-
-                                  <div className="w-full pt-2 px-1.5 flex items-center justify-between text-[11px] font-semibold text-white/50">
-                                    <span className="flex items-center gap-1 text-[10px] text-brand-cyan font-mono">
-                                      <Sparkles size={11} className="text-brand-cyan" /> MiniMax image-01
-                                    </span>
+                                    {/* Badge bottom-left */}
+                                    <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/70 backdrop-blur-sm border border-white/10 text-[10px] text-brand-cyan font-mono font-semibold">
+                                      <Sparkles size={10} className="text-brand-cyan" /> MiniMax image-01
+                                    </div>
+                                    {/* Expand button bottom-right */}
                                     <button
                                       type="button"
-                                      onClick={() => setIsImageZoomed(true)}
-                                      className="hover:text-white transition-colors flex items-center gap-1.5"
+                                      onClick={(e) => { e.stopPropagation(); setIsImageZoomed(true); }}
+                                      className="absolute bottom-3 right-3 p-1.5 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10 text-white/60 hover:text-white transition-colors"
                                     >
-                                      <Maximize2 size={12} />
-                                      <span>Ampliar Imagen</span>
+                                      <Maximize2 size={13} />
                                     </button>
                                   </div>
-                                </div>
+                                </motion.div>
                               ) : (
-                                <div className="rounded-2xl border border-brand-cyan/30 overflow-hidden relative shadow-lg bg-gradient-to-br from-brand-accent/15 via-black/60 to-brand-cyan/10 flex flex-col items-center justify-center p-6 text-center group transition-all h-full min-h-[220px]">
+                                <div className="rounded-2xl border border-brand-cyan/30 overflow-hidden relative shadow-lg bg-gradient-to-br from-brand-accent/15 via-black/60 to-brand-cyan/10 flex flex-col items-center justify-center p-6 text-center group transition-all h-full min-h-[280px]">
                                   <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-cyan/15 via-transparent to-transparent opacity-80 pointer-events-none" />
                                   <div className="relative mb-3">
-                                    <div className="w-12 h-12 rounded-2xl bg-brand-cyan/20 border border-brand-cyan/40 flex items-center justify-center shadow-[0_0_25px_rgba(0,212,255,0.3)]">
-                                      <Sparkles className="w-6 h-6 text-brand-cyan animate-pulse" />
+                                    <div className="w-14 h-14 rounded-2xl bg-brand-cyan/20 border border-brand-cyan/40 flex items-center justify-center shadow-[0_0_30px_rgba(0,212,255,0.4)]">
+                                      <Sparkles className="w-7 h-7 text-brand-cyan animate-pulse" />
                                     </div>
                                   </div>
                                   <h4 className="text-sm font-bold text-white tracking-wide font-chalk">
@@ -2351,28 +2835,28 @@ export default function LessonPage() {
                           )}
                         </AnimatePresence>
 
-                        {/* Whiteboard Rules & Karaoke (7 cols) */}
+                        {/* Whiteboard Rules & Karaoke (6 cols) */}
                         <AnimatePresence>
                           {(isFullBoardRevealed || isStepRevealed('concepts')) && (
                             <motion.div
                               id="storyboard-target-concepts"
-                              initial={{ opacity: 0, y: 15 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.4, ease: 'easeOut' }}
-                              className={`lg:col-span-7 flex flex-col rounded-2xl transition-all duration-300 ${
+                              initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
+                              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                              exit={{ opacity: 0, filter: 'blur(4px)' }}
+                              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                              className={`lg:col-span-6 flex flex-col rounded-2xl transition-all duration-300 ${
                                 isStepActive('concepts')
-                                  ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-black/70 shadow-[0_0_30px_rgba(52,211,153,0.35)]'
+                                  ? 'ring-2 ring-emerald-400 ring-offset-4 ring-offset-black/80 shadow-[0_0_45px_rgba(52,211,153,0.4)]'
                                   : ''
                               }`}
                             >
-                              <div className="bg-black/30 p-4 sm:p-5 rounded-2xl border border-white/10 space-y-2.5 backdrop-blur-sm shadow-inner flex-1 flex flex-col justify-center">
-                                <span className="text-xs font-bold uppercase tracking-wider text-brand-cyan/80 block pb-1 border-b border-white/5 flex items-center justify-between">
+                              <div className="bg-black/35 p-4 sm:p-5 rounded-2xl border border-white/10 space-y-1.5 backdrop-blur-sm shadow-inner flex-1 flex flex-col justify-center">
+                                <span className="text-xs font-bold uppercase tracking-wider text-brand-cyan/80 block pb-2 border-b border-white/8 flex items-center justify-between mb-1">
                                   <span>✏️ Conceptos y Reglas de la Fase:</span>
                                   {isStepActive('concepts') && (
                                     <span className="text-[10px] text-emerald-300 font-mono flex items-center gap-1">
                                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                                      Enfoque activo
+                                      Explicando ahora
                                     </span>
                                   )}
                                 </span>
@@ -2380,23 +2864,49 @@ export default function LessonPage() {
                                   const lines = cleanBoardLines.length > 0
                                     ? cleanBoardLines
                                     : [`📌 ${topicParam}`, typeof phase.tutor_says === 'string' ? phase.tutor_says : 'Revisa los conceptos clave de la lección.'];
+                                  const totalLines = lines.length;
                                   return lines.map((line: string, idx: number) => {
                                     const isHeader = line.startsWith('📌') || line.startsWith('🎯') || line.startsWith('#') || line.startsWith('⚡');
-                                    const totalLines = lines.length;
-                                    const isRevealed = (tutorState !== 'speaking' && audioProgress === 0)
-                                      ? true
-                                      : (isFullBoardRevealed || tutorState !== 'speaking' || audioProgress >= (5 + (idx / Math.max(totalLines, 1)) * 60) || idx < revealedLineCount);
+                                    const timing = boardLinesTiming[idx] || {
+                                      startRatio: (idx / Math.max(totalLines, 1)) * 0.60,
+                                      endRatio: ((idx + 1) / Math.max(totalLines, 1)) * 0.60,
+                                    };
+                                    const currentRatio = audioProgress / 100;
+                                    const isRevealed = isFullBoardRevealed || audioFinishedNaturallyRef.current || currentRatio >= timing.startRatio || idx === 0;
+                                    
+                                    const isActiveLine = tutorState === 'speaking' && !isFullBoardRevealed && currentRatio >= timing.startRatio && currentRatio <= timing.endRatio;
 
                                     return (
                                       <motion.div
                                         key={`bl-${idx}`}
-                                        animate={{ opacity: isRevealed ? 1 : 0.25 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="flex items-center justify-between gap-2 py-0.5"
+                                        initial={isRevealed ? false : { opacity: 0, y: 12 }}
+                                        animate={{
+                                          opacity: isRevealed ? (isActiveLine ? 1 : 0.80) : 0.15,
+                                          y: isRevealed ? 0 : 8,
+                                          scale: isActiveLine ? 1.015 : 1,
+                                        }}
+                                        transition={{ duration: 0.35, ease: 'easeOut' }}
+                                        className={`flex items-start gap-2.5 rounded-xl px-3 py-1.5 transition-all duration-300 ${
+                                          isActiveLine
+                                            ? 'border-l-[3px] border-emerald-400 bg-emerald-400/12 shadow-[0_0_25px_rgba(52,211,153,0.3)]'
+                                            : 'border-l-[3px] border-transparent'
+                                        }`}
                                       >
-                                        <span className={`flex-1 leading-relaxed ${isHeader ? 'font-bold text-white text-base' : 'text-sm sm:text-base text-white/90 font-chalk'}`}>
+                                        <span className={`flex-1 leading-relaxed ${
+                                          isHeader
+                                            ? 'font-bold text-white text-base'
+                                            : isActiveLine
+                                            ? 'text-sm sm:text-base text-white font-chalk font-semibold'
+                                            : 'text-sm sm:text-base text-white/80 font-chalk'
+                                        }`}>
                                           {line}
                                         </span>
+                                        {isActiveLine && (
+                                          <span className="text-[10px] text-emerald-300 font-mono flex items-center gap-1 font-semibold flex-shrink-0 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-400/30">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                            Explicando
+                                          </span>
+                                        )}
                                       </motion.div>
                                     );
                                   });
@@ -2412,23 +2922,23 @@ export default function LessonPage() {
                         {currentDiagramSvg && (isFullBoardRevealed || isStepRevealed('diagram')) && (
                           <motion.div
                             id="storyboard-target-diagram"
-                            initial={{ opacity: 0, scale: 0.96, y: 15 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.96 }}
-                            transition={{ duration: 0.45, ease: 'easeOut' }}
-                            className={`w-full rounded-2xl transition-all duration-300 ${
+                            initial={{ opacity: 0, scale: 0.82, y: 30, filter: 'blur(10px)' }}
+                            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                            exit={{ opacity: 0, scale: 0.9, filter: 'blur(6px)' }}
+                            transition={{ type: 'spring', stiffness: 180, damping: 22, mass: 0.8 }}
+                            className={`w-full rounded-2xl transition-all duration-500 ${
                               isStepActive('diagram')
-                                ? 'ring-2 ring-brand-cyan ring-offset-2 ring-offset-black/70 shadow-[0_0_30px_rgba(0,212,255,0.35)]'
-                                : ''
+                                ? 'ring-2 ring-brand-cyan ring-offset-4 ring-offset-black/80 shadow-[0_0_50px_rgba(0,212,255,0.5)]'
+                                : 'shadow-2xl'
                             }`}
                           >
-                            <div className="rounded-2xl border border-white/10 bg-black/40 p-4 sm:p-5 backdrop-blur-sm shadow-xl space-y-3">
-                              <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div className="rounded-2xl border border-white/15 bg-black/50 p-4 sm:p-5 backdrop-blur-sm shadow-2xl space-y-3">
+                              <div className="flex items-center justify-between border-b border-white/8 pb-2">
                                 <span className="text-xs font-bold uppercase tracking-wider text-brand-cyan flex items-center gap-1.5">
-                                  <Sparkles size={14} className="text-brand-cyan" />
+                                  <Sparkles size={14} className="text-brand-cyan animate-pulse" />
                                   <span>Gráfico Didáctico & Línea Conceptual</span>
                                 </span>
-                                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-brand-cyan/10 border border-brand-cyan/25 text-brand-cyan font-mono font-semibold">
+                                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-brand-cyan/15 border border-brand-cyan/30 text-brand-cyan font-mono font-semibold">
                                   Esquema Vectorial Didáctico
                                 </span>
                               </div>
@@ -2443,23 +2953,26 @@ export default function LessonPage() {
 
                       {/* ⚡ ROW 2: Structured Visual Grammar Formula Card */}
                       <AnimatePresence>
-                        {(phase.grammar_structure || phase.key_structure) && (isFullBoardRevealed || isStepRevealed('grammar')) && (
+                        {(normalizedGrammarStructure || phase.grammar_structure || phase.key_structure) && (isFullBoardRevealed || isStepRevealed('grammar')) && (
                           <motion.div
                             id="storyboard-target-grammar"
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 0.45, ease: 'easeOut' }}
-                            className={`w-full rounded-2xl transition-all duration-300 ${
+                            initial={{ opacity: 0, scale: 0.72, y: 35, filter: 'blur(12px)' }}
+                            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                            exit={{ opacity: 0, scale: 0.85, filter: 'blur(8px)' }}
+                            transition={{ type: 'spring', stiffness: 220, damping: 20, mass: 0.7 }}
+                            className={`w-full rounded-2xl transition-all duration-500 ${
                               isStepActive('grammar')
-                                ? 'ring-2 ring-purple-400 ring-offset-2 ring-offset-black/70 shadow-[0_0_30px_rgba(192,132,252,0.35)]'
-                                : ''
+                                ? 'ring-2 ring-purple-400 ring-offset-4 ring-offset-black/80 shadow-[0_0_50px_rgba(192,132,252,0.5)]'
+                                : 'shadow-2xl'
                             }`}
                           >
                             <GrammarStructureCard
-                              structure={phase.grammar_structure || phase.key_structure}
+                              structure={normalizedGrammarStructure || phase.grammar_structure || phase.key_structure}
                               onPlayAudio={handlePlayIndividualAudio}
                               theme={phase.board_theme?.includes('chalkboard') ? 'chalk' : 'studio'}
+                              activeTokenRole={activeGrammarToken?.role}
+                              activeTokenPattern={activeGrammarToken?.pattern}
+                              activeTokenIndex={activeGrammarToken?.tokenIndex}
                             />
                           </motion.div>
                         )}
@@ -2544,16 +3057,17 @@ export default function LessonPage() {
                                     return (
                                       <motion.div
                                         key={exKey}
-                                        initial={{ opacity: 0, y: 15 }}
-                                        animate={{ opacity: 1, y: 0 }}
+                                        initial={{ opacity: 0, x: 30, scale: 0.96 }}
+                                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                                        transition={{ duration: 0.4, delay: exercises.indexOf(ex) * 0.08, ease: [0.22, 1, 0.36, 1] }}
                                         className={`p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden space-y-3 flex flex-col justify-between ${
                                           exResult
                                             ? exResult.is_correct
-                                              ? 'bg-brand-success/10 border-brand-success/40 shadow-[0_0_20px_rgba(0,230,118,0.12)]'
-                                              : 'bg-brand-error/10 border-brand-error/40 shadow-[0_0_20px_rgba(255,82,82,0.12)]'
+                                              ? 'bg-brand-success/10 border-brand-success/40 shadow-[0_0_30px_rgba(0,230,118,0.2)]'
+                                              : 'bg-brand-error/10 border-brand-error/40 shadow-[0_0_25px_rgba(255,82,82,0.15)]'
                                             : isThisRecording
-                                            ? 'bg-brand-error/15 border-brand-error shadow-[0_0_25px_rgba(255,82,82,0.35)] scale-[1.01]'
-                                            : 'bg-black/50 border-white/10 hover:border-brand-accent/40 shadow-md'
+                                            ? 'bg-brand-error/15 border-brand-error shadow-[0_0_40px_rgba(255,82,82,0.5)] scale-[1.02]'
+                                            : 'bg-black/50 border-white/10 hover:border-brand-accent/50 hover:shadow-[0_0_20px_rgba(108,99,255,0.15)] shadow-md'
                                         }`}
                                       >
                                         <div className="space-y-2.5">
@@ -2574,12 +3088,17 @@ export default function LessonPage() {
                                               </button>
                                             </div>
                                             {exResult && (
-                                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1 ${
-                                                exResult.is_correct ? 'text-brand-success bg-brand-success/20 border border-brand-success/30' : 'text-brand-error bg-brand-error/20 border border-brand-error/30'
-                                              }`}>
+                                              <motion.span
+                                                initial={{ scale: 0.7, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+                                                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1 ${
+                                                  exResult.is_correct ? 'text-brand-success bg-brand-success/20 border border-brand-success/30' : 'text-brand-error bg-brand-error/20 border border-brand-error/30'
+                                                }`}
+                                              >
                                                 {exResult.is_correct ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                                                 {exResult.is_correct ? '¡Correcto!' : 'Reintentar'} ({exResult.overall_score}%)
-                                              </span>
+                                              </motion.span>
                                             )}
                                           </div>
 
@@ -2588,12 +3107,13 @@ export default function LessonPage() {
                                             {parts.map((p, pIdx) => {
                                               if (/^_{2,}$/.test(p)) {
                                                 return (
-                                                  <span
+                                                  <motion.span
                                                     key={pIdx}
+                                                    animate={currentVal ? { borderColor: 'rgba(108,99,255,0.8)', backgroundColor: 'rgba(108,99,255,0.2)' } : {}}
                                                     className="inline-flex items-center justify-center min-w-[80px] px-2.5 py-0.5 rounded-lg bg-brand-accent/20 border border-brand-accent/50 text-brand-cyan font-mono text-xs shadow-inner"
                                                   >
                                                     {currentVal || '________'}
-                                                  </span>
+                                                  </motion.span>
                                                 );
                                               }
                                               return <span key={pIdx}>{p}</span>;
@@ -2635,11 +3155,14 @@ export default function LessonPage() {
                                           )}
                                         </div>
 
-                                        {/* Bottom Actions: Mic + Direct Input or Feedback */}
+                                        {/* Bottom Actions: Hero Mic + Input or Feedback */}
                                         {!exResult ? (
                                           <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                                            <button
+                                            {/* Hero Mic Button */}
+                                            <motion.button
                                               type="button"
+                                              whileTap={{ scale: 0.92 }}
+                                              whileHover={!isThisProcessing && !isThisRecording ? { scale: 1.08 } : {}}
                                               onClick={() => {
                                                 if (isThisRecording) {
                                                   setItemRecordingKey(null);
@@ -2648,24 +3171,26 @@ export default function LessonPage() {
                                                 }
                                               }}
                                               disabled={isThisProcessing || (itemRecordingKey !== null && !isThisRecording)}
-                                              className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shadow-md flex-shrink-0 ${
+                                              className={`relative flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-lg disabled:opacity-40 ${
                                                 isThisProcessing
-                                                  ? 'bg-brand-surface border-brand-accent text-brand-cyan animate-pulse'
+                                                  ? 'bg-brand-surface border-2 border-brand-accent text-brand-cyan animate-pulse'
                                                   : isThisRecording
-                                                  ? 'bg-brand-error border-brand-error text-white shadow-[0_0_18px_rgba(255,82,82,0.6)] animate-pulse'
-                                                  : 'bg-brand-accent hover:bg-brand-accent/90 text-white border-brand-accent hover:scale-105'
+                                                  ? 'bg-brand-error text-white border-2 border-red-300 shadow-[0_0_30px_rgba(255,82,82,0.7)]'
+                                                  : 'bg-brand-accent text-white border-2 border-brand-accent/60 hover:shadow-[0_0_25px_rgba(108,99,255,0.6)]'
                                               }`}
                                               title="Pronunciar tu respuesta con el micrófono"
                                             >
-                                              {isThisProcessing ? (
-                                                <Loader2 size={12} className="animate-spin" />
-                                              ) : isThisRecording ? (
-                                                <Square size={12} className="fill-white" />
-                                              ) : (
-                                                <Mic size={12} />
+                                              {isThisRecording && (
+                                                <span className="absolute inset-0 rounded-full border-2 border-brand-error animate-ping opacity-60" />
                                               )}
-                                              <span>{isThisProcessing ? 'Evaluando...' : isThisRecording ? 'Detener' : 'Hablar 🎤'}</span>
-                                            </button>
+                                              {isThisProcessing ? (
+                                                <Loader2 size={18} className="animate-spin" />
+                                              ) : isThisRecording ? (
+                                                <Square size={16} className="fill-white" />
+                                              ) : (
+                                                <Mic size={18} />
+                                              )}
+                                            </motion.button>
 
                                             <input
                                               type="text"
@@ -2871,11 +3396,21 @@ export default function LessonPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto custom-scrollbar pr-1">
                               {targetAudioItems.map((item, idx) => {
                                 const itemKey = `board-item-${idx}-${item.english}`;
+                                const timing = targetAudioItemsTiming[idx] || {
+                                  startRatio: 0.35 + (idx / Math.max(targetAudioItems.length, 1)) * 0.50,
+                                  endRatio: 0.35 + ((idx + 1) / Math.max(targetAudioItems.length, 1)) * 0.50,
+                                };
+                                const currentRatio = audioProgress / 100;
+                                const isRevealed = isFullBoardRevealed || audioFinishedNaturallyRef.current || currentRatio >= timing.startRatio;
+                                const isActiveSpoken = tutorState === 'speaking' && !isFullBoardRevealed && currentRatio >= timing.startRatio && currentRatio <= timing.endRatio;
+
                                 return renderPronunciationCard(
                                   item,
                                   itemKey,
                                   idx,
-                                  phase.board_theme?.includes('chalkboard') ? 'chalk' : 'studio'
+                                  phase.board_theme?.includes('chalkboard') ? 'chalk' : 'studio',
+                                  isRevealed,
+                                  isActiveSpoken
                                 );
                               })}
                             </div>
@@ -2885,7 +3420,8 @@ export default function LessonPage() {
                     </div>
                   );
                 })()}
-              </div>
+                </div>
+              )
             ) : (
               /* ═══════════════════════════════════════════════════════════════════════
                  ✨ MODE 2: FLUJO DIDÁCTICO (SMART TIMELINE FEED)
@@ -3173,42 +3709,51 @@ export default function LessonPage() {
               <span>Anterior</span>
             </button>
 
-            {/* Center slide dots + audio progress bar */}
-            <div className="flex flex-col items-center gap-1.5">
-              <div className="flex items-center gap-1.5">
-                {lesson?.phases?.map((_: any, idx: number) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentPhaseIdx(idx)}
-                    className={`h-2.5 rounded-full transition-all duration-300 ${
-                      idx === currentPhaseIdx
-                        ? 'bg-brand-cyan w-6 shadow-[0_0_8px_rgba(0,212,255,0.6)]'
-                        : idx < currentPhaseIdx
-                        ? 'bg-brand-accent/60 w-2.5'
-                        : 'bg-brand-border w-2.5'
-                    }`}
-                    title={`Ir a la Fase ${idx + 1}`}
-                  />
-                ))}
+            {/* Center: Instagram Stories-style Phase Progress Rail */}
+            <div className="flex flex-col items-center gap-2 flex-1">
+              {/* Phase Pill Rail */}
+              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                {lesson?.phases?.map((_: any, idx: number) => {
+                  const isActive = idx === currentPhaseIdx;
+                  const isPast = idx < currentPhaseIdx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentPhaseIdx(idx)}
+                      title={`Fase ${idx + 1}`}
+                      className="relative overflow-hidden rounded-full transition-all duration-500 focus:outline-none group"
+                      style={{
+                        width: isActive ? '40px' : '10px',
+                        height: '10px',
+                      }}
+                    >
+                      {/* Background track */}
+                      <span className={`absolute inset-0 rounded-full transition-colors duration-300 ${
+                        isActive ? 'bg-brand-border/40' :
+                        isPast ? 'bg-brand-accent/50' : 'bg-brand-border/30'
+                      }`} />
+                      {/* Fill: audio progress for active, full fill for past */}
+                      <motion.span
+                        className={`absolute inset-y-0 left-0 rounded-full ${
+                          isActive
+                            ? 'bg-gradient-to-r from-brand-cyan to-brand-accent shadow-[0_0_10px_rgba(0,212,255,0.7)]'
+                            : 'bg-brand-accent/70'
+                        }`}
+                        animate={{
+                          width: isActive
+                            ? `${Math.max(8, audioProgress)}%`
+                            : isPast ? '100%' : '0%'
+                        }}
+                        transition={isActive ? { duration: 0.3, ease: 'linear' } : { duration: 0.4 }}
+                      />
+                    </button>
+                  );
+                })}
               </div>
-              {/* Audio progress bar while tutor speaks */}
-              <AnimatePresence>
-                {(tutorState === 'speaking' || (audioProgress > 0 && audioProgress < 100)) && (
-                  <motion.div
-                    initial={{ opacity: 0, scaleX: 0.8 }}
-                    animate={{ opacity: 1, scaleX: 1 }}
-                    exit={{ opacity: 0, scaleX: 0.8 }}
-                    className="w-28 sm:w-40 h-1 bg-brand-border/40 rounded-full overflow-hidden"
-                  >
-                    <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-brand-cyan to-brand-accent"
-                      animate={{ width: `${audioProgress}%` }}
-                      transition={{ duration: 0.3, ease: 'linear' }}
-                      style={{ width: `${audioProgress}%` }}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Phase label */}
+              <span className="text-[10px] text-brand-text-muted font-mono">
+                Fase {currentPhaseIdx + 1} de {lesson?.phases?.length || 1}
+              </span>
             </div>
 
             {/* Right: Modo Cine + Fonemas + Siguiente */}
@@ -3242,9 +3787,11 @@ export default function LessonPage() {
                 <span>{cinemaModeActive ? '▶ Cine ON' : 'Modo Cine'}</span>
               </button>
 
-              <button
+              <motion.button
                 onClick={handleNextSlide}
-                className="px-5 py-2.5 bg-brand-accent hover:bg-brand-accent/90 text-white text-xs sm:text-sm font-bold rounded-xl transition-all glow-accent btn-lift flex items-center justify-center gap-1.5"
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+                className="px-6 py-2.5 bg-gradient-to-r from-brand-accent to-indigo-600 hover:from-brand-accent/90 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(108,99,255,0.4)] hover:shadow-[0_0_30px_rgba(108,99,255,0.6)] flex items-center justify-center gap-1.5"
               >
                 <span>
                   {currentPhaseIdx < (lesson?.phases?.length || 1) - 1
@@ -3252,7 +3799,7 @@ export default function LessonPage() {
                     : '📖 Práctica de Lectura'}
                 </span>
                 <ChevronRight size={16} />
-              </button>
+              </motion.button>
             </div>
           </footer>
         )}
@@ -3264,6 +3811,7 @@ export default function LessonPage() {
           text={currentSpeakingText || (typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '')}
           audioProgress={audioProgress}
           isPlaying={tutorState === 'speaking'}
+          isHookMode={isHook}
           onClose={() => setShowDynamicSubtitles(false)}
         />
       )}
@@ -3288,7 +3836,7 @@ export default function LessonPage() {
               </button>
 
               <img
-                src={imageUrl}
+                src={zoomedImageUrl || imageUrl}
                 alt="Vista ampliada de la ilustración"
                 className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-brand-cyan/30"
               />

@@ -35,6 +35,9 @@ interface GrammarStructureCardProps {
   structure: GrammarStructureData | string | null | undefined;
   onPlayAudio?: (text: string) => void;
   theme?: 'studio' | 'chalk' | 'neon' | 'whiteboard';
+  activeTokenRole?: string | null;
+  activeTokenPattern?: string | null;
+  activeTokenIndex?: number | null;
 }
 
 // ─── Color Helper for Tokens ─────────────────────────────────────────────────
@@ -95,6 +98,9 @@ export default function GrammarStructureCard({
   structure,
   onPlayAudio,
   theme = 'studio',
+  activeTokenRole,
+  activeTokenPattern,
+  activeTokenIndex,
 }: GrammarStructureCardProps) {
   if (!structure) return null;
 
@@ -177,19 +183,52 @@ export default function GrammarStructureCard({
                 ? textContent.split(/\s*\/\s*/).filter(Boolean)
                 : [];
 
+              const isTokenActive = Boolean(
+                (typeof activeTokenIndex === 'number' && activeTokenIndex === idx) ||
+                (activeTokenRole && (
+                  roleName.toLowerCase().trim() === activeTokenRole.toLowerCase().trim() ||
+                  roleName.toLowerCase().includes(activeTokenRole.toLowerCase()) ||
+                  activeTokenRole.toLowerCase().includes(roleName.toLowerCase())
+                )) ||
+                (activeTokenPattern && (
+                  textContent.toLowerCase().trim() === activeTokenPattern.toLowerCase().trim() ||
+                  textContent.toLowerCase().includes(activeTokenPattern.toLowerCase()) ||
+                  activeTokenPattern.toLowerCase().includes(textContent.toLowerCase())
+                ))
+              );
+
               return (
                 <React.Fragment key={idx}>
                   <motion.div
+                    animate={{
+                      scale: isTokenActive ? 1.07 : 1,
+                      y: isTokenActive ? -3 : 0,
+                    }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                     whileHover={{ scale: 1.02 }}
-                    className={`flex flex-col justify-between gap-1.5 p-2.5 sm:p-3 rounded-xl border transition-all min-w-[120px] flex-1 ${style.bg} ${style.glow}`}
+                    className={`flex flex-col justify-between gap-1.5 p-2.5 sm:p-3 rounded-xl border transition-all min-w-[125px] flex-1 relative ${
+                      isTokenActive
+                        ? 'bg-yellow-400/25 border-yellow-300 ring-4 ring-yellow-400 shadow-[0_0_45px_rgba(250,204,21,0.75)] z-10'
+                        : `${style.bg} ${style.glow}`
+                    }`}
                   >
                     {/* Top Role Badge */}
                     <div className="flex items-center justify-between gap-1">
                       <span
-                        className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${style.badge}`}
+                        className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                          isTokenActive
+                            ? 'bg-gradient-to-r from-yellow-400 to-amber-300 text-black border-yellow-200 shadow-[0_0_15px_rgba(250,204,21,0.9)] font-extrabold'
+                            : style.badge
+                        }`}
                       >
                         {roleName}
                       </span>
+                      {isTokenActive && (
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-yellow-300 animate-ping" />
+                          <span className="text-[9px] text-yellow-300 font-mono font-bold">Activo</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Pattern Content */}
@@ -198,14 +237,20 @@ export default function GrammarStructureCard({
                         {optionList.map((opt, optIdx) => (
                           <span
                             key={optIdx}
-                            className={`text-[11px] sm:text-xs font-bold font-mono px-1.5 py-0.5 rounded border ${style.chip}`}
+                            className={`text-[11px] sm:text-xs font-bold font-mono px-1.5 py-0.5 rounded border ${
+                              isTokenActive
+                                ? 'bg-yellow-400/40 border-yellow-300 text-white font-extrabold shadow-sm'
+                                : style.chip
+                            }`}
                           >
                             {opt}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs sm:text-sm font-bold font-mono text-white leading-snug">
+                      <span className={`text-xs sm:text-sm font-bold font-mono leading-snug ${
+                        isTokenActive ? 'text-yellow-100 font-extrabold' : 'text-white'
+                      }`}>
                         {textContent}
                       </span>
                     )}

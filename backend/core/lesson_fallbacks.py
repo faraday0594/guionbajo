@@ -46,6 +46,8 @@ def build_curated_fallback(topic: str, sublevel: str, is_a_level: bool) -> dict:
         data = _build_there_is_there_are_fallback(sublevel)
     elif "do / does" in low or "do/does" in low or ("question" in low and "negative" in low):
         data = _build_do_does_questions_fallback(sublevel)
+    elif "a1.2 integration" in low or ("integration" in low and ("a1.2" in sublevel.lower() or "a1.2" in low)):
+        data = _build_a1_2_integration_fallback(sublevel)
     elif "time & frequency" in low or "adverbs of frequency" in low or "frequency" in low:
         data = _build_time_frequency_fallback(sublevel)
     elif "objects & possession" in low or "demonstrative" in low or ("object" in low and "possession" in low):
@@ -1506,6 +1508,149 @@ def _build_narrative_tenses_fallback(sublevel: str) -> dict:
     }
 
 
+def _build_a1_2_integration_fallback(sublevel: str) -> dict:
+    """Mastery fallback for A1.2 Integration: Full Present Simple & Habits Synthesis."""
+    return {
+        "schema": "ai_tutor.lesson.v2",
+        "topic": "A1.2 Integration: Present Simple & Daily Habits",
+        "level": "A1",
+        "sublevel": sublevel,
+        "subject": "English",
+        "phases": [
+            {
+                "phase_number": 1,
+                "phase_name": "Hook: El Enigma de las Rutinas Semanales",
+                "is_hook": True,
+                "hook_type": "dilemma",
+                "hook_images": [
+                    {
+                        "prompt": "A person looking at a busy weekly planner calendar on a modern wooden desk with a cup of coffee, morning sunlight, vibrant 2D vector art, strictly no text",
+                        "caption": "Tu semana en inglés: Hábitos y rutinas",
+                        "role": "hook_situation"
+                    },
+                    {
+                        "prompt": "Split illustration of a young adult practicing guitar in the afternoon and relaxing with friends on the weekend, colorful minimal 2D vector style, strictly no text",
+                        "caption": "Expresando todo tu día a día",
+                        "role": "hook_context"
+                    }
+                ],
+                "image_style": "comic_scene",
+                "image_prompt": "A person looking at a weekly planner calendar on a desk with coffee, 2D vector illustration, no text",
+                "tutor_says": "¿Sabías que dominar el presente simple te permite describir el 80% de lo que haces en tu vida cotidiana? En esta sesión de integración uniremos afirmaciones, preguntas y adverbios de frecuencia para que puedas sostener una conversación fluida y natural sobre tus hábitos.",
+                "board_content": "🌟 SÍNTESIS TOTAL DE A1.2 (INTEGRACIÓN):\n\n• Afirmaciones: \"I wake up at 7 AM every day\"\n• Negaciones: \"She doesn't work on Sundays\"\n• Preguntas: \"Do you usually drink coffee in the morning?\"\n• Adverbios de frecuencia: always (100%), usually (80%), sometimes (50%), never (0%)\n\n👉 Meta de hoy: Describir tu semana completa con ritmo y naturalidad.",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Full Present Simple & Frequency",
+                "target_audio_items": [
+                    {"english": "I always drink coffee in the morning", "translation": "Siempre tomo café por la mañana", "label": "Hábito Diario"},
+                    {"english": "Do you usually study on weekends?", "translation": "¿Usualmente estudias los fines de semana?", "label": "Pregunta de Rutina"},
+                    {"english": "She doesn't watch TV at night", "translation": "Ella no ve televisión por la noche", "label": "Negación"}
+                ],
+                "grammar_structure": {
+                    "title": "Síntesis del Presente Simple y Frecuencia",
+                    "formula": "[ Sujeto ] + [ Adverbio de Frecuencia ] + [ Verbo ] + [ Complemento de Tiempo ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / He / She / We / They", "color": "blue"},
+                        {"role": "Frecuencia", "pattern": "always / usually / sometimes / never", "color": "purple"},
+                        {"role": "Verbo", "pattern": "drink / work / study / play", "color": "emerald"},
+                        {"role": "Complemento", "pattern": "coffee / at 8 AM / on weekends", "color": "amber"}
+                    ],
+                    "explanation": "Los adverbios de frecuencia van antes del verbo de acción, y el complemento de tiempo cierra la idea.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I always drink coffee in the morning.",
+                            "spanish": "Siempre tomo café por la mañana.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Frecuencia", "text": "always", "color": "purple"},
+                                {"role": "Verbo", "text": "drink", "color": "emerald"},
+                                {"role": "Complemento", "text": "coffee in the morning", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Recuerda añadir '-s' o '-es' al verbo cuando hables de He, She o It (She usually works)."
+                }
+            },
+            {
+                "phase_number": 2,
+                "phase_name": "2. Arquitectura de Preguntas y Respuestas Rápidas",
+                "tutor_says": "Para preguntar por hábitos usamos 'Do' o 'Does' al inicio. Piensa en 'Do' y 'Does' como llaves que abren la pregunta: 'Do you study English every day?'. Para responder brevemente decimos 'Yes, I do' o 'No, I don't'.",
+                "board_content": "⚡ FÓRMULAS DE PREGUNTA CON DO / DOES:\n\n• [ Do / Does ] + [ Sujeto ] + [ Verbo Base ] + [ Complemento ] ?\n\nEjemplos:\n• \"Do you live in a big city?\" ➔ \"Yes, I do / No, I don't\"\n• \"Does he practice sports on Saturday?\" ➔ \"Yes, he does\"\n\n📌 Regla: Con He/She/It el verbo vuelve a su forma base porque 'Does' ya lleva la -s.",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector educational illustration of two friendly coworkers discussing their daily routine at an office coffee corner, bright colorful palette, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "Do/Does + Subject + Base Verb?",
+                "target_audio_items": [
+                    {"english": "Do you usually wake up early?", "translation": "¿Usualmente te despiertas temprano?", "label": "Pregunta de Hábito"},
+                    {"english": "Yes, I always wake up at six", "translation": "Sí, siempre me despierto a las seis", "label": "Respuesta Fluida"}
+                ]
+            },
+            {
+                "phase_number": 3,
+                "phase_name": "3. Práctica de Pronunciación y Ritmo de Frase",
+                "tutor_says": "En inglés, las palabras de contenido (como 'always' y 'coffee') llevan más fuerza de voz, mientras que los pronombres se dicen de manera ligera y rápida. Escucha cómo conectamos las palabras: 'I always drink coffee in the morning'. ¡Graba tu voz!",
+                "board_content": "🎙️ RETO DE RITMO Y FLUIDEZ:\n\n• Frase: \"I always drink coffee in the morning\"\n• Enlace fonético: drink_coffee / in_the_morning\n\nPresiona el micrófono y pronuncia con naturalidad.",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book illustration of a student speaking enthusiastically into a studio microphone with sound waves, vibrant lighting, strictly no text",
+                "interaction_type": "pronunciation",
+                "student_task": "Pronuncia en voz alta: 'I always drink coffee in the morning'",
+                "expected_answer": "I always drink coffee in the morning",
+                "key_structure": "Spoken Rhythm & Linking",
+                "target_audio_items": [
+                    {"english": "I always drink coffee in the morning", "translation": "Siempre tomo café por la mañana", "label": "Práctica de Voz"}
+                ]
+            },
+            {
+                "phase_number": 4,
+                "phase_name": "4. Corrección de Errores: El Desafío de la 3ra Persona",
+                "tutor_says": "Uno de los errores más comunes al integrar el presente simple es olvidar cambiar el auxiliar 'don't' por 'doesn't' cuando hablamos de otra persona. Fíjate en la pizarra y corrige la oración.",
+                "board_content": "⚔️ DETECCIÓN DE ERRORES FRECUENTES:\n\n❌ Error común: \"She don't work on weekends\"\n✅ Corrección: \"She doesn't work on weekends\"\n\n📌 Explicación: Con He, She o It la negación siempre es 'doesn't' + verbo base.",
+                "image_style": "concept_art",
+                "image_prompt": "cinematic 2D illustration of a blackboard with glowing checkmarks and grammatical formulas, strictly no text",
+                "interaction_type": "error_correction",
+                "student_task": "Corrige la oración: 'She don't work on weekends'",
+                "expected_answer": "She doesn't work on weekends",
+                "key_structure": "Subject + doesn't + Base Verb",
+                "target_audio_items": [
+                    {"english": "She doesn't work on weekends", "translation": "Ella no trabaja los fines de semana", "label": "Frase Correcta"}
+                ]
+            },
+            {
+                "phase_number": 5,
+                "phase_name": "5. Diálogo Continuo y Producción Conversacional",
+                "tutor_says": "¡Excelente! Ahora pondremos todo en práctica en una conversación real. Te pregunto sobre tus fines de semana y tú responderás usando un adverbio de frecuencia.",
+                "board_content": "🎭 DIÁLOGO EN VIVO:\n\nTutor: \"What do you usually do on Saturday morning?\"\n\nTu respuesta modelo:\n• \"I usually meet my friends and play sports.\"",
+                "image_style": "comic_scene",
+                "image_prompt": "comic book panel illustration of two friends meeting at a sunny park cafe discussing weekend plans, vibrant colors, strictly no text",
+                "interaction_type": "roleplay",
+                "student_task": "Responde: 'I usually meet my friends and play sports.'",
+                "expected_answer": "I usually meet my friends and play sports",
+                "key_structure": "Conversational Habit Dialogue",
+                "target_audio_items": [
+                    {"english": "What do you usually do on Saturday morning?", "translation": "¿Qué haces usualmente el sábado por la mañana?", "label": "Pregunta"},
+                    {"english": "I usually meet my friends and play sports", "translation": "Usualmente me reúno con mis amigos y practico deportes", "label": "Respuesta"}
+                ]
+            },
+            {
+                "phase_number": 6,
+                "phase_name": "6. Resumen de Dominio: Presente Simple Total",
+                "tutor_says": "¡Felicitaciones! Has completado el módulo de integración de A1.2. Ahora dominas cómo afirmar, negar, preguntar y expresar la frecuencia exacta de tus actividades diarias en inglés. ¡Estás listo para el siguiente nivel!",
+                "board_content": "🏆 RESUMEN DE DOMINIO A1.2:\n\n✔ Afirmaciones con hábitos diarios\n✔ Preguntas con Do y Does\n✔ Adverbios de frecuencia (always, usually, sometimes, never)\n✔ Fluidez oral en diálogos de rutina",
+                "image_style": "flat_art",
+                "image_prompt": "flat 2D vector illustration of a shining gold medal award with stars, celebration banner, clean vibrant colors, strictly no text",
+                "interaction_type": "explanation",
+                "student_task": None,
+                "expected_answer": None,
+                "key_structure": "A1.2 Integration Complete",
+                "target_audio_items": []
+            }
+        ]
+    }
+
+
 def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
     """Dynamically builds an authentic pedagogical 6-phase lesson from any CURRICULUM_GRAPH class node."""
     topic = node.get("topic", "English Lesson")
@@ -1516,20 +1661,20 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
     first_grammar_rule = grammar_core.split(",")[0].strip() if grammar_core else topic
     first_vocab = vocab_core.split(",")[0].strip() if vocab_core else "everyday situations"
 
-    # Contextual sentence models based on CEFR level
+    # Contextual authentic sentence models based on CEFR level
     is_b_level = sublevel.startswith("B1") or sublevel.startswith("B2")
     if is_b_level:
-        model_sent_1 = f"In professional discussions, we apply {first_grammar_rule.lower()} to communicate with precision."
+        model_sent_1 = f"In professional environments, we communicate clearly and express our ideas with confidence."
         model_sent_2 = f"This structure allows us to express complex nuances effectively."
-        model_sent_trans_1 = f"En discusiones profesionales, aplicamos {first_grammar_rule.lower()} para comunicarnos con precisión."
-        practice_dialogue_q = f"How would you explain this perspective in an interactive discussion?"
+        model_sent_trans_1 = f"En entornos profesionales, nos comunicamos con claridad y expresamos nuestras ideas con confianza."
+        practice_dialogue_q = f"How would you explain your perspective in an interactive discussion?"
         practice_dialogue_a = f"From my perspective, this approach is the most effective solution."
         err_wrong = f"He explained me the whole situation yesterday."
         err_correct = f"He explained the whole situation to me yesterday."
     else:
-        model_sent_1 = f"I use {first_vocab.lower()} when I speak with friends."
-        model_sent_2 = f"She practices this English structure every morning."
-        model_sent_trans_1 = f"Uso {first_vocab.lower()} cuando hablo con amigos."
+        model_sent_1 = f"I speak English every day with my friends."
+        model_sent_2 = f"She practices conversation in English every morning."
+        model_sent_trans_1 = f"Hablo inglés todos los días con mis amigos."
         practice_dialogue_q = f"Where do you usually practice your English?"
         practice_dialogue_a = f"I practice speaking English at home and in my classes."
         err_wrong = f"She don't have enough time today."

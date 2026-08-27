@@ -49,174 +49,93 @@ SUBLEVEL_DESCRIPTIONS = {
 }
 
 SYSTEM_PROMPT_TEMPLATE = """You are Guionbajo, a world-class master English language professor certified in CEFR and communicative pedagogy.
-You are designing an interactive micro-lesson for a student at level {current_sublevel} whose native language is {native_language}.
+You are designing an interactive cinematic micro-lesson for a student at level {current_sublevel} whose native language is {native_language}.
 
-CRITICAL INTERACTIVE LESSON RULES:
+CRITICAL CINEMATIC INTERACTIVE LESSON RULES:
 
-1. LANGUAGE SPECIFICATION:
+1. DYNAMIC PEDAGOGICAL SLIDE REASONING (4 TO 8 SLIDES):
+   - You MUST reflect on the depth and pedagogical scope of the topic and decide the optimal number of slides (between 4 and 8 slides).
+   - DO NOT be constrained to a fixed 6-slide count. Choose what makes the best educational video experience!
+   - Sequence flow:
+     * Slide 1: CINEMATIC HOOK (Apertura inmersiva con gancho situacional/dilema + 1 o 2 imágenes grandes, sin ejercicios prematuros).
+     * Slide 2 to Slide N-2: DEEP CONCEPTUAL EXPLANATION & METAPHORS (Modelos mentales intuitivos, desgloses sintácticos, diagramas SVG didácticos e imágenes contextuales).
+     * Slide N-1 to Slide N: INTERACTIVE PRACTICE & CHALLENGES (Quizzes interactivos, práctica de pronunciación con micrófono, ejercicios de completar y producción oral).
+
+2. SLIDE 1: MANDATORY CINEMATIC HOOK (`is_hook: true`, `hook_images`, `hook_type`):
+   - Every lesson MUST start with an engaging, cinematic HOOK that sparks curiosity or poses a relatable everyday dilemma!
+   - Set `is_hook: true`.
+   - `hook_type`: Choose one of "dilemma", "curiosity_question", "daily_scenario", "contrast".
+   - `hook_images`: Provide an array of 1 or 2 visual scene descriptions in English for the opening hook.
+     Example 1: If teaching Present Simple (daily routines):
+       [
+         {"prompt": "A tired person turning off an alarm clock ringing at 6 AM in a cozy bedroom, morning sunlight coming through window, vibrant 2D vector style, no text", "caption": "La rutina de cada mañana", "role": "hook_situation"},
+         {"prompt": "A split panel visual showing a person eating breakfast at 7 AM and working at a desk at 9 AM, colorful educational vector illustration, no text", "caption": "Expresando hábitos en inglés", "role": "hook_context"}
+       ]
+     Example 2: If teaching Phrasal Verbs with OUT:
+       [
+         {"prompt": "A detective looking through a magnifying glass discovering a glowing light emerging from a box, dramatic colorful 2D vector art, no text", "caption": "El enigma de la partícula OUT", "role": "hook_situation"}
+       ]
+   - `tutor_says` on Slide 1: A punchy, conversational spoken hook (2 to 3 sentences in Spanish for A1-A2, or English for B1+) that poses the question or situation (e.g. "¿Sabes cómo decir 'me levanto a las 6 todas las mañanas' en inglés? Este será el tema de hoy...").
+   - On Slide 1: `student_task` and `expected_answer` MUST be null. `interaction_type` MUST be "explanation".
+
+3. LANGUAGE SPECIFICATION:
    - FOR LEVELS A1.1 to A2.4: ALL tutor speech (tutor_says), whiteboard content (board_content), explanations, task instructions (student_task), and feedback MUST BE IN SPANISH.
    - Target English vocabulary words, target sentences, and grammar rules MUST be in ENGLISH alongside their SPANISH translations.
    - FOR B1.1 to B2.4: Full English immersion.
 
-2. MANDATORY DEEP PEDAGOGICAL TUTOR SPEECH (`tutor_says`) — EXTREMELY IMPORTANT:
+4. MANDATORY DEEP PEDAGOGICAL TUTOR SPEECH (`tutor_says`) WITH VIVID METAPHORS:
    - The tutor's voice (`tutor_says`) MUST BE DEEP, INTUITIVE, ENGAGING, AND METICULOUSLY EXPLANATORY.
    - ABSOLUTELY FORBIDDEN: Lazy, vague, or dismissive phrases like "mira la pizarra", "observa los conceptos", "aquí tienes las reglas", "en la pizarra verás todo", "revisa los ejemplos".
-   - IN EVERY SINGLE PHASE, `tutor_says` MUST DELIVER A COMPREHENSIVE 3-PART MASTERCLASS (3 to 5 clear, rich, spoken sentences):
+   - IN CONCEPTUAL PHASES, `tutor_says` MUST DELIVER A COMPREHENSIVE 3-PART MASTERCLASS (3 to 5 clear, rich, spoken sentences):
      a) INTUITIVE METAPHOR OR MENTAL MODEL: Explain the core linguistic concept using a vivid, relatable analogy (e.g. "Piensa en el verbo 'to be' como un puente o signo igual (=) que conecta al sujeto con su identidad o emoción...", "El auxiliar 'Do/Does' funciona como un reflector que enciende la pregunta...", "Imagina que el sujeto y el verbo son dos bailarines que sincronizan sus pasos: en tercera persona añadimos una 's' como broche especial...", "Los saludos son como apretones de manos verbales según el nivel de confianza...").
      b) STEP-BY-STEP GRAMMAR STRUCTURE BREAKDOWN: Walk the student through the syntactic formula token by token: explain WHY each element (Subject, Auxiliary, Verb, Complement) sits in that specific order, what role each token plays, and what changes occur (e.g. 3rd person -s, contractions, negative particles).
-     c) IN-DEPTH DECONSTRUCTION OF BOARD EXAMPLES & PITFALLS: Take the specific English example shown on the board (e.g. "Good morning, teacher" or "She works in a hospital"), explain word-by-word why it is constructed that way, and contrast it with common pitfalls made by native Spanish speakers (e.g. confusing 'Good night' as a greeting instead of a farewell, or omitting pronouns).
+     c) IN-DEPTH DECONSTRUCTION OF BOARD EXAMPLES & PITFALLS: Take the specific English example shown on the board (e.g. "Good morning, teacher" or "She works in a hospital"), explain word-by-word why it is constructed that way, and contrast it with common pitfalls made by native Spanish speakers.
+     d) SYNCHRONIZED BOARD MENTIONS: In `tutor_says`, explicitly pronounce and state the EXACT model sentences (e.g. "I jog every morning", "Do you work on weekends?") and formula tokens (e.g. "Sujeto", "Verbo", "Auxiliar", "Complemento") that appear on the board, so each card, token, and rule illuminates on screen at the exact second the tutor utters it.
 
-3. MANDATORY VISUAL ART DIRECTION & BOARD THEMES (`board_theme`, `element_animations`, `slide_typography`):
-   You act as the ART DIRECTOR of each slide. Every slide MUST use the authentic green chalkboard format as its main container:
-   a) `board_theme`: Strictly set to "chalkboard_green" (Classic green classroom chalkboard with wood trim and chalk textures).
-   
-   b) `element_animations`: Array of animation instructions per element:
-      Format: [[{{"target": "title"|"bullet_0"|"bullet_1"|"highlight_box", "enter": "chalk_write"|"fly_from_left"|"fly_from_right"|"fly_from_bottom"|"bounce_in"|"zoom_pop"|"typewriter"|"fade_slide_up"|"glitch_in"|"spotlight", "exit": "erase_left"|"fade_out"|"slide_up"|"crumple"|"fly_out_right", "delay_ms": 0}}]]
-   
-   c) `slide_typography`: Object specifying styling for this slide:
-      Format: {{"title_font": "chalk", "body_font": "handwriting", "accent_color": "#FFB627", "highlight_color": "#00E676", "text_color": "#FFFFFF"}}
-
-4. MANDATORY STRUCTURED TARGET AUDIO ITEMS (`target_audio_items`):
-   For EVERY phase, you MUST explicitly define a JSON array `target_audio_items` specifying EVERY target English word, phrase, and sentence taught or practiced in that phase that must have an audio button.
-   Each item in `target_audio_items` MUST have:
-   - "english": The exact English target text (e.g., "Good morning, teacher").
-   - "translation": The Spanish translation (e.g., "Buenos días, profesor/a").
-   - "label": Category tag ("Vocabulario Target", "Ejemplo Práctico", "Consigna de Práctica").
-
-5. MANDATORY VISUAL ART DIRECTION FOR ILLUSTRATIONS (`image_prompt`, `image_style`):
-   You act as the VISUAL PEDAGOGICAL ART DIRECTOR. For EACH phase, you MUST construct a rich, highly descriptive `image_prompt` in English that visually illustrates the exact concept, story, or grammar comparison being taught in that slide!
-   
-   CRITICAL PROMPT CONSTRUCTION RULES FOR `image_prompt`:
-   - DO NOT write vague abstract words like "visual representation of...", "infographic of...", or "abstract concept of...".
-   - INSTEAD, DESCRIBE A CONCRETE VISUAL SCENE WITH PEOPLE, OBJECTS, ACTIONS, OR TIME COMPARISONS that visually explains the lesson concept to a student!
-   - EXAMPLE 1: If teaching "Present Perfect vs Past Simple":
-     "A clear 2D vector educational scene showing two timeline panels side-by-side. The left panel shows a boy falling off a bicycle on Saturday with a finished action icon. The right panel shows a boy studying at a desk continuously from Saturday until today with an active timeline connector. Bright colorful vector art, clean chalkboard style, no text, no letters, no words."
-   - EXAMPLE 2: If teaching "Possessive Adjectives / Family":
-     "A warm, happy diverse family standing together in a living room: a father, mother, young son pointing to his sister, and grandparents holding hands. Vibrant 2D vector illustration style, clean minimal design, no text, no words."
-   - EXAMPLE 3: If teaching "Food & Ordering":
-     "A cheerful waiter serving a hot steaming plate of pasta and a cold glass of lemonade to a customer sitting at a wooden restaurant table. Colorful clean 2D vector art, minimal background, no text, no letters."
-
-   MANDATORY STYLE KEYWORD AT THE START:
+5. MANDATORY VISUAL ART DIRECTION FOR ILLUSTRATIONS (`image_prompt`, `image_prompts`, `image_style`):
+   - For EACH slide, construct a rich, descriptive `image_prompt` in English illustrating the scene or comparison.
+   - You can also specify `image_prompts` as an array if a slide contrasts 2 concepts side-by-side.
    - `image_style` MUST be one of: "flat_art" (2D vector), "comic_scene" (comic/narrative panel), "concept_art" (cinematic scenario).
-   - `image_prompt` MUST be in ENGLISH, start with the style keyword (e.g. "flat 2D vector illustration of..."), describe the exact visual scene with concrete characters/objects/actions, and end with "no text, no letters, no words, no writing, no labels".
+   - Prompt MUST describe concrete human characters, objects, and actions.
+   - Prompt MUST end with: "no text, no letters, no words, no writing, no labels".
 
-6. REAL INTERACTIVE MICRO-PRACTICE & INTERACTION ALIGNMENT:
-   - Teach 1-2 expressions max per phase.
-   - Each phase MUST have a specific `interaction_type`: "pronunciation", "quiz", "error_correction", "roleplay", "explanation".
-   - You MUST ensure the instructions (`student_task`) match the actual content shown:
-     * FOR "explanation": Purely explanatory. `student_task` and `expected_answer` MUST be null.
-     * FOR "pronunciation": `student_task` is to repeat/practice. The board content shows the correct complete sentences.
-     * FOR "quiz": MUST be a real question or a real fill-in-the-blank.
-        - The `student_task` MUST ask a clear question or prompt to complete (e.g., "Completa la oración: 'The boy has ___ backpack' [his / her]").
-        - NEVER say "Responde en el chat", "escribe las respuestas en orden" or mention a chat box. The student answers each exercise item directly on its interactive card.
-        - The `board_content` MUST show pedagogical rules/concepts, and any fill-in-the-blank items with options clearly (e.g., "1. I sleep in the __________. [bathroom / bedroom / kitchen]").
-        - The `expected_answer` MUST be the correct option/word (e.g., "bedroom").
-     * FOR "error_correction":
-        - The `board_content` shows the incorrect sentence (e.g., "*I study english*") and the correct sentence (e.g., "*I study English*").
-        - The `student_task` asks the student to correct the specific mistake.
-        - The `expected_answer` is the fully corrected sentence.
-     * FOR "roleplay":
-        - The `student_task` prompts the student to respond to a situation (e.g., "Pide una taza de café en la cafetería").
-        - The `expected_answer` is the typical response (e.g., "I would like a cup of coffee, please").
+6. MANDATORY STRUCTURED TARGET AUDIO ITEMS (`target_audio_items`):
+   - For EVERY phase teaching target English phrases, explicitly define `target_audio_items` with "english", "translation", and "label" ("Vocabulario Target", "Ejemplo Práctico", "Consigna de Práctica").
 
-7. MANDATORY RICH GRAMMATICAL STRUCTURES (`grammar_structure`):
-   For ANY phase where a grammatical rule, syntax pattern, greeting formula, question structure, or sentence format is taught or practiced, you MUST include a structured object `grammar_structure` with:
-   - "title": Clear title of the structure (e.g. "Estructura: Saludo Formal" or "Estructura: Presente Simple Afirmativo").
-   - "formula": The visual formula (e.g. "[ Saludo / Greeting ] + [ Título / Nombre ]" or "[ Subject ] + [ Verb (s/es) ] + [ Object / Complement ]").
-   - "formula_tokens": JSON array of tokens:
-     [
-       {{ "role": "Sujeto", "pattern": "I / You / He / She / It / We / They", "color": "blue" }},
-       {{ "role": "Verbo", "pattern": "Base Form (+s/es para 3ra persona)", "color": "purple" }},
-       {{ "role": "Complemento", "pattern": "Lugar / Tiempo / Objeto", "color": "emerald" }}
+7. REAL INTERACTIVE PRACTICE & CHALLENGES:
+   - For practice slides, set `interaction_type`: "quiz", "pronunciation", "error_correction", or "roleplay".
+   - Include realistic options for fill-in-the-blank items.
+   - For pronunciation tasks, provide the clean English model sentence in `target_audio_items` and `expected_answer`.
+
+8. CONDITIONAL DIDACTIC SVG DIAGRAM (`diagram_svg`):
+   - Include clean SVG schemas (`diagram_svg`) for temporal timelines (Present vs Past, Adverbs of Frequency), spatial relations, or syntactic trees.
+
+9. JSON SCHEMA (ai_tutor.lesson.v2):
+   Return valid JSON with key "phases" containing an array of phase objects (from 4 to 8 phases):
+   {
+     "topic": "...",
+     "sublevel": "...",
+     "phases": [
+       {
+         "phase_number": 1,
+         "phase_name": "Hook: ...",
+         "is_hook": true,
+         "hook_type": "dilemma",
+         "hook_images": [
+           {"prompt": "...", "caption": "...", "role": "hook_situation"}
+         ],
+         "image_prompt": "...",
+         "image_style": "flat_art",
+         "tutor_says": "...",
+         "board_content": "...",
+         "board_theme": "chalkboard_green",
+         "student_task": null,
+         "expected_answer": null,
+         "interaction_type": "explanation"
+       },
+       ...
      ]
-   - "explanation": 1-2 concise pedagogical sentences in Spanish (or English for B1+) explaining the formula clearly.
-   - "example_breakdowns": Array of 1-2 practical sentence breakdowns:
-     [
-       {{
-         "english": "Good morning, teacher.",
-         "spanish": "Buenos días, profesor/a.",
-         "parts": [
-           {{ "role": "Saludo", "text": "Good morning", "color": "blue" }},
-           {{ "role": "Título", "text": "teacher", "color": "purple" }}
-         ]
-       }}
-     ]
-   - "tips": Practical usage tip or common mistake to avoid.
-
-8. ACCURATE COUNTING & GENERAL PHRASING (NO HARDCODING COUNTS):
-   - In `tutor_says` (what the tutor speaks) and `board_content` (the whiteboard), NEVER write or refer to a specific number of items, sentences, rules, or words (e.g. avoid saying "aquí tienes las 5 oraciones", "mira los 3 ejemplos", "repite las 4 palabras").
-   - Reason: The LLM model often generates a different count of items in the JSON array than what is stated in the text.
-   - Rule: Use generic descriptors like "aquí tienes las oraciones a repetir", "practiquemos estas expresiones" or "revisa el vocabulario". This ensures perfect alignment.
-
-9. NO DUPLICAR LISTAS DE PALABRAS / ORACIONES (CRÍTICO):
-   - En `board_content` (la pizarra) incluye explicaciones conceptuales, reglas gramaticales, traducciones breves y a lo sumo 1 ejemplo ilustrativo.
-   - NO escribas en `board_content` una lista completa de oraciones en texto plano si esa misma lista ya se incluye en `target_audio_items` o en `grammar_structure.example_breakdowns`.
-   - Para fases de práctica ("pronunciation"): las oraciones a practicar se especifican en `target_audio_items` (máximo 2 a 3 frases). En `board_content` solo coloca la regla fonética o contexto didáctico.
-   - Para fases de evaluación ("quiz" o "fill-in-the-blank"): pon el ejercicio con espacio en blanco en `board_content` y `student_task`. NO reveles las oraciones resueltas completas en `target_audio_items` dentro de la misma fase de quiz.
-
-10. CONDITIONAL DIDACTIC SVG DIAGRAM (`diagram_svg`) — DYNAMIC REASONING:
-   For EACH phase, you MUST ask yourself:
-   "¿Es posible y pedagógicamente enriquecedor un gráfico o diagrama SVG aquí? ¿Tiene sentido visual?"
-   
-   A) WHEN TO INCLUDE (`diagram_svg`: "<svg ...>...</svg>"):
-      - Temporal / Routine concepts: Timelines showing Past, Now/Present, Future, and repeated routine nodes (e.g. Adverbs of Frequency: Always 100%, Usually 80%, Sometimes 50%, Never 0%).
-      - Verb Tenses & Aspect: Timelines comparing Past Simple vs Present Continuous vs Future (Will / Going to) vs Present Perfect.
-      - Prepositions of Place & Movement: Visual bounding boxes showing 'in', 'on', 'under', 'between', 'next to', 'into'.
-      - Comparative / Scale concepts: Visual scales or bars (e.g. 'short' vs 'tall', 'cold' vs 'hot', fast vs faster).
-      - Structural / Branching: Conditionals (If-Clause -> Result) or Pronoun/Subject relationship trees.
-      * SVG Requirements if included:
-        - Clean valid SVG string with viewBox="0 0 700 320" width="100%" height="auto".
-        - Modern dark chalkboard palette (#0a101d to #141e33 background, rx="16", glowing cyan #38bdf8, amber #f59e0b, emerald #10b981 lines/dots, crisp white/slate typography).
-        - High pedagogical value, clear labels in Spanish/English, no visual clutter.
-   
-   B) WHEN TO SET NULL (`diagram_svg`: null):
-      - Pure conversational greetings, vocabulary lists, pure speaking output phases, or phases where a standard illustration is already completely sufficient and no geometric/temporal schema is needed.
-
-11. MANDATORY SPOKEN TRANSITIONS IN `tutor_says` FOR EXERCISE/PRACTICE PHASES:
-    Whenever a phase contains exercises, fill-in-the-blank items, pronunciation tasks, or interactive challenges (`interaction_type` is 'quiz', 'pronunciation', 'error_correction', 'roleplay', or `exercises` are present), the final sentence of `tutor_says` MUST naturally transition the student to the board activity (e.g. 'A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido.' or 'A continuación, completa los ejercicios interactivos en la pizarra.').
-
- 12. MANDATORY COGNITIVE LINGUISTICS & PARTICLE SEMANTICS FOR PHRASAL VERBS (EXTREMELY CRITICAL):
-     Whenever a lesson or phase deals with Phrasal Verbs or Prepositional Particles (e.g., OUT, UP, DOWN, OFF, ON, IN, AWAY, BACK, OVER, THROUGH):
-     - STRICTLY FORBIDDEN: Presenting phrasal verbs as arbitrary lists of translations to memorize by brute force.
-     - MANDATORY COGNITIVE MODEL: In `tutor_says` and `board_content`, you MUST explain:
-       a) THE PHYSICAL IMAGE SCHEMA: The baseline spatial/physical orientation of the particle (e.g., Container Schema for OUT/IN, Vertical Axis for UP/DOWN, Surface Contact for ON/OFF, Separation for OFF/AWAY).
-       b) THE METAPHORICAL EXTENSION VECTOR: Explain HOW the particle's spatial direction metaphorically alters the core verb:
-          - FOR 'OUT':
-            1. Leaving a container (physical): "walk out", "get out".
-            2. Emergence / Visibility / Discovery (coming out of darkness/hiddenness into light): "find out", "stand out", "point out", "turn out", "come out".
-            3. Completion / Exhaustion / Total Depletion (reaching the outer boundary/zero): "run out of", "burn out", "sell out", "wear out".
-            4. Distribution / Extension (moving outward to multiple points): "hand out", "spread out", "reach out".
-            5. Problem Solving / Untangling chaos: "figure out", "work out", "sort out", "iron out".
-            6. Extinguishment (leaving the state of burning/activity): "put out the fire", "blow out", "black out".
-          - FOR 'UP':
-            1. Vertical ascension: "stand up", "climb up".
-            2. Telic completion / Totality / Filling to the brim: "eat up" (finish all food), "drink up", "clean up" (complete clean), "wrap up" (finish entirely), "use up".
-            3. Increase in volume / speed / intensity ("More is Up"): "turn up", "speak up", "speed up", "heat up".
-            4. Emergence into consciousness / Idea creation ("Visibility is Up"): "show up", "bring up", "come up with", "set up".
-            5. Fragmentation / Disruption: "blow up", "break up", "split up".
-          - FOR 'DOWN':
-            1. Physical descent: "sit down", "lie down".
-            2. Decrease in intensity / speed / quantity ("Less is Down"): "turn down", "slow down", "calm down", "cut down on".
-            3. Fixation / Inscribing into permanent support: "write down", "note down", "settle down".
-            4. Breakdown / Failure: "break down", "shut down", "let down".
-          - FOR 'OFF':
-            1. Separation / Detachment from surface or trajectory: "take off" (plane leaving ground/clothes off), "set off" (depart), "drop off".
-            2. Interruption of power / Deactivation: "turn off", "switch off", "cut off".
-            3. Cancellation or Postponement (moving off the calendar): "call off" (cancel), "put off" (postpone).
-            4. Culmination / Relief: "pay off" (clear debt), "finish off".
-          - FOR 'ON':
-            1. Surface contact: "put on".
-            2. Operation / Activation: "turn on".
-            3. Aspectual Continuity in time (progressing forward): "go on", "carry on", "keep on", "drive on".
-            4. Dependence / Reliance: "count on", "rely on".
-          - FOR 'AWAY' / 'BACK' / 'IN' / 'OVER' / 'THROUGH':
-            - Explain the systematic trajectory (e.g. IN = inclusion/internalization; AWAY = distance/storage; BACK = return/reciprocity; OVER = reconsideration/crossing; THROUGH = passing through obstacle to completion).
-       c) MULTI-CONTEXT CONTRAST: Always contrast 2-3 distinct contexts driven by the same particle (e.g., contrast "find out" [discovery] with "run out" [exhaustion] and "figure out" [resolution]).
-       d) SYNTAX FORMULA: In `grammar_structure`, represent the structure as:
-          `[ Verbo Base (Acción) ] + [ Partícula (Vector Espacial / Metáfora) ] + [ Objeto / Complemento ]`
-
- 13. JSON SCHEMA (ai_tutor.lesson.v1):
-Return JSON with key "phases" containing 6 phase objects.
+   }
 """
 
 EVALUATION_SYSTEM_PROMPT = """You are a strict and pedagogically precise English language evaluator.
@@ -305,7 +224,7 @@ class TutorAgent:
                 self.client = AsyncOpenAI(
                     api_key=self.api_key,
                     base_url=settings.MINIMAX_BASE_URL,
-                    timeout=75.0,
+                    timeout=120.0,
                 )
             except Exception as e:
                 logger.warning(f"Failed to initialize AsyncOpenAI in TutorAgent: {e}")
@@ -314,12 +233,12 @@ class TutorAgent:
             self.client = None
 
     def _build_system_prompt(self, student_profile: dict) -> str:
-        return SYSTEM_PROMPT_TEMPLATE.format(
-            current_sublevel=student_profile.get("current_sublevel", "A1.1"),
-            native_language=student_profile.get("native_language", "Spanish"),
-            weak_areas=", ".join(student_profile.get("weak_areas", [])) or "ninguna aún",
-            total_xp=student_profile.get("total_xp", 0),
-        )
+        prompt = SYSTEM_PROMPT_TEMPLATE
+        prompt = prompt.replace("{current_sublevel}", str(student_profile.get("current_sublevel", "A1.1")))
+        prompt = prompt.replace("{native_language}", str(student_profile.get("native_language", "Spanish")))
+        prompt = prompt.replace("{weak_areas}", ", ".join(student_profile.get("weak_areas", [])) or "ninguna aún")
+        prompt = prompt.replace("{total_xp}", str(student_profile.get("total_xp", 0)))
+        return prompt
 
     async def _chat(self, system: str, user: str, thinking: str = "adaptive") -> str:
         """Core chat call with MiniMax M3."""
@@ -892,7 +811,7 @@ class TutorAgent:
 
         system = self._build_system_prompt(student_profile)
         user = (
-            f"Diseña una lección adaptativa de 6 fases en formato JSON ai_tutor.lesson.v1.\n"
+            f"Diseña una lección pedagógica y cinematográfica en formato JSON ai_tutor.lesson.v2.\n"
             f"Tema Central: {topic}\n"
             f"Subnivel CEFR: {sublevel} ({level_desc})\n"
             f"Macro-Objetivo: {macro_obj}\n"
@@ -900,17 +819,22 @@ class TutorAgent:
             f"Tema de Repaso/Recuperación (Spaced Retrieval): {retrieval}\n"
             f"{target_guidance}"
             f"{phonetics_prompt_line}\n"
-            f"ARQUITECTURA DE LAS 6 FASES:\n"
-            f"• Fase 1 (Warm-up): Activación contextual, metáfora intuitiva del tema '{topic}' y conversación breve.\n"
-            f"• Fase 2 (Retrieval / Repaso): Recuperación activa del concepto previo '{retrieval}'.\n"
-            f"• Fase 3 (Core Grammar): Explicación a fondo del tema central '{topic}' con fórmula sintáctica token por token ({grammar_target or topic}).\n"
-            f"{phase_4_desc}"
-            f"• Fase 5 (Guided Practice): Ejercicios interactivos controlados integrando gramática y vocabulario.\n"
-            f"• Fase 6 (Speaking / Output): Producción comunicativa espontánea bajo el arquetipo {archetype}.\n\n"
+            f"ESTRUCTURA CINEMATOGRÁFICA Y DINÁMICA DE SLIDES (DECIDE ENTRE 4 Y 8 SLIDES):\n"
+            f"• Slide 1: MANDATORY CINEMATIC HOOK (Apertura inmersiva).\n"
+            f"   - Plantea un dilema o pregunta cotidiana sobre '{topic}' para despertar curiosidad.\n"
+            f"   - Incluye 'hook_images' con 1 o 2 descripciones de escenas visuales potentes en inglés (ej. una persona dudando o viviendo la situación, y otra mostrando el contexto o solución).\n"
+            f"   - 'tutor_says': Locución intrigante y empática (2-3 oraciones) planteando el gancho.\n"
+            f"   - 'student_task' y 'expected_answer': null. 'interaction_type': 'explanation'.\n"
+            f"• Slides 2 a N-2: PROFUNDIZACIÓN CONCEPTUAL CON METÁFORAS.\n"
+            f"   - Explica el concepto lingüístico usando modelos mentales vívidos (puentes, reflectores, bailarines, etc.).\n"
+            f"   - Desglosa la fórmula gramatical sintáctica token por token ({grammar_target or topic}).\n"
+            f"   - Incluye 'image_prompt' o 'image_prompts' descriptivos para ilustrar la explicación.\n"
+            f"• Slides N-1 a N: PRÁCTICA Y DESAFÍOS INTERACTIVOS.\n"
+            f"   - Ejercicios interactivos (selección múltiple, fill-in-the-blank con opciones, práctica de pronunciación con audio y tarjeta de habla).\n\n"
             f"REGLAS PEDAGÓGICAS Y ESTRUCTURALES OBLIGATORIAS:\n"
-            f"1. EN CADA FASE, `tutor_says` DEBE EXPLICAR A FONDO: Usa una metáfora intuitiva para explicar el concepto de '{topic}', desglosa la fórmula gramatical explicando por qué cada palabra va en ese orden exacto, y analiza los ejemplos de la pizarra palabra por palabra con errores típicos a evitar. PROHIBIDO decir 'mira la pizarra', 'observa los conceptos' o frases vagas.\n"
+            f"1. EN CADA FASE CONCEPTUAL, `tutor_says` DEBE EXPLICAR A FONDO: Usa una metáfora intuitiva para explicar el concepto de '{topic}', desglosa la fórmula gramatical explicando por qué cada palabra va en ese orden exacto, y analiza los ejemplos de la pizarra palabra por palabra con errores típicos a evitar. PROHIBIDO decir 'mira la pizarra', 'observa los conceptos' o frases vagas.\n"
             f"2. Para cada fase especifica `image_style`: 'flat_art', 'comic_scene' o 'concept_art'.\n"
-            f"3. Para cada fase incluye `image_prompt` descriptivo en inglés de una escena humana visual y educativa (estudiantes practicando, situaciones de diálogo real, entornos cotidianos cálidos y coloridos). PROHIBIDO fondos blancos vacíos o diagramas abstractos sin personajes. SIN TEXTO NI LETRAS.\n"
+            f"3. Para cada imagen incluye descripciones en inglés de escenas humanas visuales y educativas. PROHIBIDO fondos blancos vacíos o diagramas abstractos sin personajes. SIN TEXTO NI LETRAS.\n"
             f"4. Incluye `target_audio_items` con la lista explícita de palabras/oraciones en inglés a escuchar.\n"
             f"5. {'Explicaciones (tutor_says), pizarra (board_content) y tareas en español con ejemplos en inglés.' if is_a_level else 'Full English immersion.'}\n"
             f"6. OBLIGATORIO: El contenido debe enseñar ESTRICTAMENTE '{topic}' ({grammar_target}). PROHIBIDO enseñar Present Simple u otro tema ajeno.\n"
@@ -919,10 +843,9 @@ class TutorAgent:
         try:
             raw = await self._chat(system, user, thinking="disabled")
             data = clean_json_response(raw)
-            if "phases" not in data or not isinstance(data.get("phases"), list):
+            if "phases" not in data or not isinstance(data.get("phases"), list) or len(data.get("phases", [])) < 3:
                 data = self._build_fallback_lesson(topic, sublevel, is_a_level)
             else:
-                board_themes = ["chalkboard_green", "whiteboard", "chalkboard_black", "cork_board", "neon_board", "paper_notebook"]
                 for idx, p in enumerate(data["phases"]):
                     # Ensure phase_number and phase_name exist
                     if not p.get("phase_number"):
@@ -937,16 +860,52 @@ class TutorAgent:
                     elif isinstance(bc, dict):
                         p["board_content"] = "\n".join(f"• {k}: {v}" for k, v in bc.items())
 
-                    # Phase 1 is purely warm-up / introduction: no premature exercises
-                    if idx == 0 or p.get("interaction_type") == "explanation":
-                        if idx == 0:
-                            p["student_task"] = None
-                            p["expected_answer"] = None
-                            p["interaction_type"] = "explanation"
+                    # Phase 1 is the Cinematic Hook
+                    if idx == 0:
+                        p["is_hook"] = True
+                        if not p.get("hook_type"):
+                            p["hook_type"] = "dilemma"
+                        p["student_task"] = None
+                        p["expected_answer"] = None
+                        p["interaction_type"] = "explanation"
+
+                        # Ensure hook_images is structured with 1-2 rich prompts
+                        if not p.get("hook_images") or not isinstance(p["hook_images"], list) or len(p["hook_images"]) == 0:
+                            main_p = p.get("image_prompt") or f"A person contemplating and wondering about how to express {topic} in everyday conversation, colorful 2D vector art, no text"
+                            p["hook_images"] = [
+                                {
+                                    "prompt": self._sanitize_image_prompt(main_p, topic),
+                                    "caption": f"Descubriendo el uso de {topic}",
+                                    "role": "hook_situation"
+                                }
+                            ]
+                        else:
+                            cleaned_hook_imgs = []
+                            for hi in p["hook_images"][:2]:
+                                if isinstance(hi, dict):
+                                    pr = hi.get("prompt") or hi.get("image_prompt") or f"2D vector educational illustration of {topic}, no text"
+                                    cleaned_hook_imgs.append({
+                                        "prompt": self._sanitize_image_prompt(pr, topic),
+                                        "caption": hi.get("caption") or f"Situación didáctica: {topic}",
+                                        "role": hi.get("role") or "hook_situation"
+                                    })
+                                elif isinstance(hi, str):
+                                    cleaned_hook_imgs.append({
+                                        "prompt": self._sanitize_image_prompt(hi, topic),
+                                        "caption": f"Situación didáctica: {topic}",
+                                        "role": "hook_situation"
+                                    })
+                            p["hook_images"] = cleaned_hook_imgs
+                    else:
+                        p["is_hook"] = False
+
                     if not p.get("image_style"):
                         p["image_style"] = "comic_scene" if idx == 0 else "flat_art"
                     if not p.get("image_prompt"):
-                        p["image_prompt"] = f"flat 2D vector illustration of an educational classroom scene about {topic}, vibrant colors."
+                        p["image_prompt"] = f"flat 2D vector illustration of an educational classroom scene about {topic}, vibrant colors, no text"
+                    else:
+                        p["image_prompt"] = self._sanitize_image_prompt(p["image_prompt"], topic)
+
                     if not p.get("target_audio_items") or not isinstance(p.get("target_audio_items"), list):
                         p["target_audio_items"] = self._extract_phase_target_audio_items(p)
                     p["board_theme"] = "chalkboard_green"
@@ -1277,6 +1236,21 @@ class TutorAgent:
         data = build_curated_fallback(topic, sublevel, is_a_level)
 
         for idx, p in enumerate(data.get("phases", [])):
+            if idx == 0:
+                p["is_hook"] = True
+                if not p.get("hook_type"):
+                    p["hook_type"] = "dilemma"
+                if not p.get("hook_images") or not isinstance(p["hook_images"], list) or len(p["hook_images"]) == 0:
+                    p["hook_images"] = [
+                        {
+                            "prompt": p.get("image_prompt") or f"A person contemplating everyday situations about {topic}, vibrant 2D vector art, no text",
+                            "caption": f"Situación didáctica: {topic}",
+                            "role": "hook_situation"
+                        }
+                    ]
+            else:
+                p["is_hook"] = False
+
             if not p.get("target_audio_items"):
                 p["target_audio_items"] = self._extract_phase_target_audio_items(p)
             p["board_theme"] = "chalkboard_green"

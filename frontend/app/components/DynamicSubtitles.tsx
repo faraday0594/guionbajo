@@ -10,6 +10,7 @@ interface DynamicSubtitlesProps {
   text: string;
   audioProgress: number; // 0 to 100
   isPlaying: boolean;
+  isHookMode?: boolean;
   onClose?: () => void;
 }
 
@@ -77,6 +78,7 @@ export default function DynamicSubtitles({
   text,
   audioProgress,
   isPlaying,
+  isHookMode = false,
   onClose,
 }: DynamicSubtitlesProps) {
   const [currentStyle, setCurrentStyle] = useState<SubtitleStyle>('pop');
@@ -197,17 +199,21 @@ export default function DynamicSubtitles({
         drag
         dragMomentum={false}
         dragElastic={0.08}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 8, transition: { duration: 0.15 } }}
         whileDrag={{ scale: 1.04, cursor: 'grabbing' }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="fixed bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-50 cursor-grab select-none pointer-events-auto max-w-xl px-3 group"
+        className={`fixed ${
+          isHookMode
+            ? 'bottom-16 sm:bottom-20 md:bottom-24'
+            : 'bottom-20 sm:bottom-24'
+        } left-1/2 -translate-x-1/2 z-50 cursor-grab select-none pointer-events-auto max-w-2xl px-3 group`}
         title="Arrastra para mover a cualquier espacio en blanco de la pantalla"
       >
         <div className="relative flex flex-col items-center justify-center">
           {/* Top Floating Mini-Toolbar on Hover */}
-          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 bg-black/80 px-2.5 py-0.5 rounded-full border border-white/15 text-[11px] text-white/80 backdrop-blur-md shadow-lg">
+          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 bg-black/85 px-3 py-0.5 rounded-full border border-white/20 text-[11px] text-white/80 backdrop-blur-md shadow-lg">
             <div className="flex items-center gap-1 text-brand-cyan">
               <GripHorizontal size={12} />
               <span className="font-mono text-[10px]">Arrastrar</span>
@@ -264,7 +270,9 @@ export default function DynamicSubtitles({
 
           {/* Kinetic 3-Word Display Box with Zero Vibration */}
           <div
-            className={`px-5 py-2.5 sm:px-6 sm:py-3 rounded-2xl ${styleConfig.containerClass} text-center min-w-[200px] max-w-lg transition-all duration-200`}
+            className={`px-6 py-3 sm:px-8 sm:py-3.5 rounded-3xl ${styleConfig.containerClass} text-center min-w-[220px] max-w-xl transition-all duration-200 ${
+              isHookMode ? 'shadow-[0_15px_60px_rgba(0,0,0,0.9)] ring-1 ring-white/15' : ''
+            }`}
           >
             <p
               className={`${styleConfig.textClass} leading-tight flex flex-wrap items-center justify-center gap-x-3 gap-y-0`}

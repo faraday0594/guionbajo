@@ -8,6 +8,7 @@ import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 import MicButton from '@/app/components/TutorPanel/MicButton';
 import ScoreDisplay from '@/app/components/TutorPanel/ScoreDisplay';
 import GrammarStructureCard from '@/app/components/GrammarStructureCard';
+import ExplanationBoard from '@/app/components/ExplanationBoard';
 import DynamicSubtitles from '@/app/components/DynamicSubtitles';
 import MicroPhoneticCard from '@/app/components/MicroPhoneticCard';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
@@ -2874,7 +2875,7 @@ export default function LessonPage() {
                           )}
                         </AnimatePresence>
 
-                        {/* Whiteboard Rules & Karaoke (6 cols) */}
+                        {/* Whiteboard Rules & Dynamic Semantic Sections (6 cols) */}
                         <AnimatePresence>
                           {(isFullBoardRevealed || isStepRevealed('concepts')) && (
                             <motion.div
@@ -2889,69 +2890,17 @@ export default function LessonPage() {
                                   : ''
                               }`}
                             >
-                              <div className="bg-black/35 p-4 sm:p-5 rounded-2xl border border-white/10 space-y-1.5 backdrop-blur-sm shadow-inner flex-1 flex flex-col justify-center">
-                                <span className="text-xs font-bold uppercase tracking-wider text-brand-cyan/80 block pb-2 border-b border-white/8 flex items-center justify-between mb-1">
-                                  <span>✏️ Conceptos y Reglas de la Fase:</span>
-                                  {isStepActive('concepts') && (
-                                    <span className="text-[10px] text-emerald-300 font-mono flex items-center gap-1">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                                      Explicando ahora
-                                    </span>
-                                  )}
-                                </span>
-                                {(() => {
-                                  const lines = cleanBoardLines.length > 0
-                                    ? cleanBoardLines
-                                    : [`📌 ${topicParam}`, typeof phase.tutor_says === 'string' ? phase.tutor_says : 'Revisa los conceptos clave de la lección.'];
-                                  const totalLines = lines.length;
-                                  return lines.map((line: string, idx: number) => {
-                                    const isHeader = line.startsWith('📌') || line.startsWith('🎯') || line.startsWith('#') || line.startsWith('⚡');
-                                    const timing = boardLinesTiming[idx] || {
-                                      startRatio: (idx / Math.max(totalLines, 1)) * 0.60,
-                                      endRatio: ((idx + 1) / Math.max(totalLines, 1)) * 0.60,
-                                    };
-                                    const currentRatio = audioProgress / 100;
-                                    const isRevealed = isFullBoardRevealed || audioFinishedNaturallyRef.current || currentRatio >= timing.startRatio || idx === 0;
-                                    
-                                    const isActiveLine = tutorState === 'speaking' && !isFullBoardRevealed && currentRatio >= timing.startRatio && currentRatio <= timing.endRatio;
-
-                                    return (
-                                      <motion.div
-                                        key={`bl-${idx}`}
-                                        id={`board-line-${idx}`}
-                                        initial={isRevealed ? false : { opacity: 0, y: 12 }}
-                                        animate={{
-                                          opacity: isRevealed ? (isActiveLine ? 1 : 0.80) : 0.15,
-                                          y: isRevealed ? 0 : 8,
-                                          scale: isActiveLine ? 1.015 : 1,
-                                        }}
-                                        transition={{ duration: 0.35, ease: 'easeOut' }}
-                                        className={`flex items-start gap-2.5 rounded-xl px-3 py-1.5 transition-all duration-300 ${
-                                          isActiveLine
-                                            ? 'border-l-[3px] border-emerald-400 bg-emerald-400/12 shadow-[0_0_25px_rgba(52,211,153,0.3)]'
-                                            : 'border-l-[3px] border-transparent'
-                                        }`}
-                                      >
-                                        <span className={`flex-1 leading-relaxed ${
-                                          isHeader
-                                            ? 'font-bold text-white text-base'
-                                            : isActiveLine
-                                            ? 'text-sm sm:text-base text-white font-chalk font-semibold'
-                                            : 'text-sm sm:text-base text-white/80 font-chalk'
-                                        }`}>
-                                          {line}
-                                        </span>
-                                        {isActiveLine && (
-                                          <span className="text-[10px] text-emerald-300 font-mono flex items-center gap-1 font-semibold flex-shrink-0 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-400/30">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                                            Explicando
-                                          </span>
-                                        )}
-                                      </motion.div>
-                                    );
-                                  });
-                                })()}
-                              </div>
+                              <ExplanationBoard
+                                boardContent={phase?.board_content}
+                                tutorSays={typeof phase?.tutor_says === 'string' ? phase.tutor_says : phase?.tutor_says?.text}
+                                phaseTimeline={phaseTimeline}
+                                audioProgress={audioProgress}
+                                isPlaying={tutorState === 'speaking'}
+                                tutorState={tutorState}
+                                isFullBoardRevealed={isFullBoardRevealed}
+                                onPlayAudio={handlePlayIndividualAudio}
+                                theme={phase?.board_theme?.includes('chalkboard') ? 'chalk' : 'studio'}
+                              />
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -3531,9 +3480,17 @@ export default function LessonPage() {
                       </div>
 
                     <div className="md:col-span-7 space-y-3">
-                      <div className="text-sm sm:text-base text-white leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/10 font-mono text-emerald-200 shadow-inner whitespace-pre-line">
-                        {renderTextContent(phase.board_content) || `📌 ${topicParam}`}
-                      </div>
+                      <ExplanationBoard
+                        boardContent={phase.board_content}
+                        tutorSays={typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text}
+                        phaseTimeline={phaseTimeline}
+                        audioProgress={100}
+                        isPlaying={false}
+                        tutorState="idle"
+                        isFullBoardRevealed={true}
+                        onPlayAudio={handlePlayIndividualAudio}
+                        theme="chalk"
+                      />
                       {/* ⚡ Visual Structured Grammar Formula Card */}
                       {(phase.grammar_structure || phase.key_structure) && (
                         <GrammarStructureCard

@@ -577,5 +577,42 @@ input:focus, textarea:focus, select:focus {
   background: linear-gradient(180deg, rgba(239, 68, 68, 0.75) 0%, rgba(185, 28, 28, 0.95) 100%);
 }
 
+/* ─── EXPLANATION BOARD: CINEMATIC CARDS & GLOWS ─────────────── */
+@keyframes activeGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(52, 211, 153, 0.35), inset 0 0 15px rgba(52, 211, 153, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 45px rgba(52, 211, 153, 0.65), inset 0 0 25px rgba(52, 211, 153, 0.25);
+  }
+}
 
+.explanation-card-active {
+  animation: activeGlowPulse 2.5s ease-in-out infinite;
+}
 
+.glow-emerald {
+  box-shadow: 0 0 20px rgba(52, 211, 153, 0.4), 0 0 50px rgba(52, 211, 153, 0.15);
+}
+
+.glow-rose {
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.4), 0 0 50px rgba(244, 63, 94, 0.15);
+}
+
+.glow-amber {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), 0 0 50px rgba(251, 191, 36, 0.15);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(192, 132, 252, 0.4), 0 0 50px rgba(192, 132, 252, 0.15);
+}
+
+@keyframes popInBounce {
+  0% { transform: scale(0.85); opacity: 0; }
+  70% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.anim-pop-in {
+  animation: popInBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}

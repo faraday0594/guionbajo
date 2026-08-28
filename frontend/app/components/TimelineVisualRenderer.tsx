@@ -16,6 +16,7 @@ import {
   ArrowRight,
   BookOpen,
   Activity,
+  RotateCcw,
   X,
 } from 'lucide-react';
 import ScoreDisplay from './TutorPanel/ScoreDisplay';
@@ -151,6 +152,7 @@ interface TimelineVisualRendererProps {
   isRecording?: boolean;
   isProcessing?: boolean;
   evaluation?: any;
+  onResetEvaluation?: () => void;
 }
 
 // ── Color styling helper for grammar tokens ──
@@ -233,6 +235,7 @@ export default function TimelineVisualRenderer({
   isRecording = false,
   isProcessing = false,
   evaluation = null,
+  onResetEvaluation,
 }: TimelineVisualRendererProps) {
   // Lightbox Zoom States for Diagram and Concept Scale
   const [isDiagramZoomed, setIsDiagramZoomed] = useState(false);
@@ -1076,20 +1079,53 @@ export default function TimelineVisualRenderer({
                                   )}
                                 </div>
                               ) : (
-                                <div className="p-3.5 rounded-xl border border-white/10 bg-black/50 text-xs space-y-2">
-                                  <div className="flex justify-between font-bold">
+                                <div className="p-3.5 rounded-xl border border-white/10 bg-black/50 text-xs space-y-3">
+                                  <div className="flex items-center justify-between font-bold flex-wrap gap-2">
                                     <span>Resultado de Evaluación</span>
-                                    <span
-                                      className={`px-2.5 py-0.5 rounded-full text-xs ${
-                                        evaluation.is_correct
-                                          ? 'bg-brand-success/20 text-brand-success border border-brand-success/30'
-                                          : 'bg-brand-error/20 text-brand-error border border-brand-error/30'
-                                      }`}
-                                    >
-                                      {evaluation.is_correct ? 'Correcto ✅' : 'Reintentar ❌'}
-                                    </span>
+                                    {onResetEvaluation ? (
+                                      <button
+                                        type="button"
+                                        onClick={onResetEvaluation}
+                                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm hover:scale-105 cursor-pointer ${
+                                          evaluation.is_correct
+                                            ? 'bg-brand-success/20 hover:bg-brand-success/30 text-brand-success border border-brand-success/40'
+                                            : 'bg-brand-error/25 hover:bg-brand-error/40 text-brand-error border border-brand-error/50 shadow-[0_0_12px_rgba(239,68,68,0.4)] animate-pulse'
+                                        }`}
+                                        title="Hacer clic para reintentar el ejercicio"
+                                      >
+                                        <RotateCcw size={12} />
+                                        <span>{evaluation.is_correct ? 'Practicar de nuevo' : 'Reintentar ❌'}</span>
+                                      </button>
+                                    ) : (
+                                      <span
+                                        className={`px-2.5 py-0.5 rounded-full text-xs ${
+                                          evaluation.is_correct
+                                            ? 'bg-brand-success/20 text-brand-success border border-brand-success/30'
+                                            : 'bg-brand-error/20 text-brand-error border border-brand-error/30'
+                                        }`}
+                                      >
+                                        {evaluation.is_correct ? 'Correcto ✅' : 'Reintentar ❌'}
+                                      </span>
+                                    )}
                                   </div>
                                   <ScoreDisplay scores={evaluation.scores} feedback={evaluation.feedback} />
+                                  
+                                  {onResetEvaluation && (
+                                    <div className="pt-2 flex justify-end">
+                                      <button
+                                        type="button"
+                                        onClick={onResetEvaluation}
+                                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all hover:scale-[1.02] cursor-pointer ${
+                                          evaluation.is_correct
+                                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500'
+                                            : 'bg-gradient-to-r from-rose-600 via-pink-600 to-brand-accent hover:from-rose-500 hover:to-purple-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
+                                        }`}
+                                      >
+                                        <RotateCcw size={14} />
+                                        <span>{evaluation.is_correct ? 'Intentar otra respuesta' : 'Reintentar Ejercicio (Micrófono o Texto)'}</span>
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>

@@ -431,7 +431,67 @@ class TutorAgent:
 
         combined_text = f"{topic} {p.get('phase_name', '')} {p.get('board_content', '')}".lower()
 
-        # 0. Narrative Tenses 3-Layer Timeline (Past Perfect vs Past Continuous vs Past Simple)
+        # 0. Places & There is / There are / Prepositions of Place (Existential & Spatial Relations)
+        if any(w in combined_text for w in ["there is", "there are", "places & there is", "preposition", "preposicion", "next to", "in front of", "between", "opposite", "existencia"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgThere" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowThere" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgThere)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MAPA CONCEPTUAL: THERE IS vs THERE ARE &amp; PREPOSITIONS</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Concordancia gramatical de existencia y ubicación en el espacio</text>
+
+  <!-- Left Card: THERE IS (Singular) -->
+  <g transform="translate(45, 75)">
+    <rect x="0" y="0" width="295" height="150" rx="12" fill="rgba(192,132,252,0.12)" stroke="#c084fc" stroke-width="1.5"/>
+    <rect x="15" y="15" width="265" height="28" rx="6" fill="#7e22ce"/>
+    <text x="147" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">THERE IS + SINGULAR / 1 OBJETO</text>
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">✓ Con 'a / an' o incontables:</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"There is <tspan fill="#38bdf8" font-weight="bold">a bank</tspan> near the park"</text>
+    <text x="30" y="110" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"There is <tspan fill="#38bdf8" font-weight="bold">some water</tspan> on the table"</text>
+    <text x="20" y="132" font-family="system-ui, sans-serif" font-size="10" fill="#a855f7">Pronunciación: /ðeər ɪz/ ("ther-iz")</text>
+  </g>
+
+  <!-- Right Card: THERE ARE (Plural) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="295" height="150" rx="12" fill="rgba(56,189,248,0.12)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="265" height="28" rx="6" fill="#0284c7"/>
+    <text x="147" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">THERE ARE + PLURAL / 2+ OBJETOS</text>
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">✓ Con números (two, three...) o 'many/some':</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"There are <tspan fill="#34d399" font-weight="bold">two banks</tspan> on this street"</text>
+    <text x="30" y="110" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"There are <tspan fill="#34d399" font-weight="bold">many parks</tspan> in this city"</text>
+    <text x="20" y="132" font-family="system-ui, sans-serif" font-size="10" fill="#38bdf8">Pronunciación: /ðeər ɑːr/ ("ther-ar")</text>
+  </g>
+
+  <!-- Bottom Spatial Prepositions Box -->
+  <g transform="translate(45, 240)">
+    <rect x="0" y="0" width="610" height="120" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="20" y="24" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#fbbf24">📍 PREPOSICIONES DE UBICACIÓN (SPATIAL RELATIONS):</text>
+    
+    <rect x="20" y="35" width="135" height="70" rx="8" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.3)"/>
+    <text x="87" y="55" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#34d399">NEXT TO</text>
+    <text x="87" y="72" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">Al lado de</text>
+    <text x="87" y="90" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle" fill="#cbd5e1">[ A ] [ B ]</text>
+
+    <rect x="165" y="35" width="135" height="70" rx="8" fill="rgba(56,189,248,0.1)" stroke="rgba(56,189,248,0.3)"/>
+    <text x="232" y="55" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#38bdf8">IN FRONT OF</text>
+    <text x="232" y="72" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">Delante de</text>
+    <text x="232" y="90" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle" fill="#cbd5e1">[ A ] ➔ [ B ]</text>
+
+    <rect x="310" y="35" width="135" height="70" rx="8" fill="rgba(245,158,11,0.1)" stroke="rgba(245,158,11,0.3)"/>
+    <text x="377" y="55" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#fbbf24">BETWEEN</text>
+    <text x="377" y="72" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">Entre dos cosas</text>
+    <text x="377" y="90" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle" fill="#cbd5e1">[A] [YOU] [B]</text>
+
+    <rect x="455" y="35" width="135" height="70" rx="8" fill="rgba(239,68,68,0.1)" stroke="rgba(239,68,68,0.3)"/>
+    <text x="522" y="55" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#f87171">OPPOSITE</text>
+    <text x="522" y="72" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">Enfrente (cruzando)</text>
+    <text x="522" y="90" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle" fill="#cbd5e1">[A] 🛣️ [B]</text>
+  </g>
+</svg>"""
+
+        # 0.1. Narrative Tenses 3-Layer Timeline (Past Perfect vs Past Continuous vs Past Simple)
         if any(w in combined_text for w in ["narrative tenses", "narrative", "storytelling", "past perfect"]):
             return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
   <defs>

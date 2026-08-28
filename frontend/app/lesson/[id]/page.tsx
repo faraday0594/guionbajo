@@ -2125,6 +2125,63 @@ export default function LessonPage() {
     }
   };
 
+  // 3b. Main Task Voice Recording (Challenge / Exercise Microphone)
+  const mainRecognitionRef = useRef<any>(null);
+
+  const startVoiceRecording = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Tu navegador no soporta reconocimiento de voz.');
+      setIsRecording(false);
+      return;
+    }
+
+    if (mainRecognitionRef.current) {
+      try { mainRecognitionRef.current.stop(); } catch (_) {}
+    }
+
+    const rec = new SpeechRecognition();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+    mainRecognitionRef.current = rec;
+
+    setIsRecording(true);
+    let finalTranscript = '';
+
+    rec.onresult = (event: any) => {
+      let t = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        t += event.results[i][0].transcript;
+      }
+      const normalized = normalizeNumberWords(t);
+      finalTranscript = normalized;
+      setTextInput(normalized);
+    };
+
+    rec.onend = () => {
+      setIsRecording(false);
+      if (finalTranscript.trim()) {
+        const clean = normalizeNumberWords(finalTranscript.trim());
+        submitAnswer(clean);
+      }
+    };
+
+    rec.onerror = (e: any) => {
+      console.warn('Main voice recording error:', e);
+      setIsRecording(false);
+    };
+
+    rec.start();
+  };
+
+  const stopVoiceRecording = () => {
+    if (mainRecognitionRef.current) {
+      try { mainRecognitionRef.current.stop(); } catch (_) {}
+    }
+    setIsRecording(false);
+  };
+
   // 4. Universal Per-Item Pronunciation Recording (Used across Studio Board & Timeline)
   const startItemRecognition = (key: string, targetSentence: string) => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -3319,6 +3376,8 @@ export default function LessonPage() {
                     textInput={textInput}
                     onTextInputChange={(val) => setTextInput(val)}
                     onSubmitAnswer={handleTextSubmit}
+                    onStartVoiceRecording={startVoiceRecording}
+                    onStopVoiceRecording={stopVoiceRecording}
                     isRecording={isRecording}
                     isProcessing={isProcessing}
                     evaluation={evaluation}

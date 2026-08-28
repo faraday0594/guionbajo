@@ -963,135 +963,139 @@ export default function TimelineVisualRenderer({
                       </div>
 
                       {/* Interactive Exercise Item */}
-                      {exercises.length > 0 ? (
-                        <div className="space-y-4">
-                          {/* Tabs if multiple exercises */}
-                          {exercises.length > 1 && onSelectExercise && (
-                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                              {exercises.map((ex, exIdx) => (
-                                <button
-                                  key={ex.id || exIdx}
-                                  type="button"
-                                  onClick={() => onSelectExercise(exIdx)}
-                                  className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all ${
-                                    currentExerciseIdx === exIdx
-                                      ? 'bg-brand-gold text-black shadow-md scale-105'
-                                      : 'bg-white/10 text-white/70 hover:bg-white/20'
-                                  }`}
-                                >
-                                  Ejercicio {exIdx + 1}
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                      {(() => {
+                        const activeList = exercises && exercises.length > 0
+                          ? exercises
+                          : [{
+                              sentence: p.student_task || 'Completa la consigna que el tutor acaba de explicar.',
+                              question: p.student_task,
+                              options: p.exercises?.[0]?.options || [],
+                              spanish_translation: p.expected_answer ? `Respuesta esperada: ${p.expected_answer}` : undefined,
+                            }];
 
-                          {(() => {
-                            const ex = exercises[currentExerciseIdx] || exercises[0];
-                            return (
-                              <div className="space-y-3">
-                                <div className="p-3.5 rounded-xl bg-black/50 border border-white/15">
-                                  <div className="text-sm sm:text-base font-bold font-mono text-white leading-relaxed">
-                                    {ex.sentence || ex.question || p.student_task}
-                                  </div>
-                                  {ex.spanish_translation && (
-                                    <div className="text-xs text-brand-text-secondary italic mt-1">
-                                      💡 {ex.spanish_translation}
-                                    </div>
-                                  )}
+                        const ex = activeList[currentExerciseIdx] || activeList[0];
+
+                        return (
+                          <div className="space-y-4">
+                            {/* Tabs if multiple exercises */}
+                            {activeList.length > 1 && onSelectExercise && (
+                              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                                {activeList.map((item, exIdx) => (
+                                  <button
+                                    key={item.id || exIdx}
+                                    type="button"
+                                    onClick={() => onSelectExercise(exIdx)}
+                                    className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all ${
+                                      currentExerciseIdx === exIdx
+                                        ? 'bg-brand-gold text-black shadow-md scale-105'
+                                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                                    }`}
+                                  >
+                                    Ejercicio {exIdx + 1}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="space-y-3">
+                              <div className="p-3.5 rounded-xl bg-black/50 border border-white/15">
+                                <div className="text-sm sm:text-base font-bold font-mono text-white leading-relaxed">
+                                  {ex.sentence || ex.question || p.student_task}
                                 </div>
-
-                                {/* Options if available */}
-                                {ex.options && ex.options.length > 0 && onSelectOption && (
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {ex.options.map((opt: string, optIdx: number) => (
-                                      <button
-                                        key={optIdx}
-                                        type="button"
-                                        onClick={() => onSelectOption(opt)}
-                                        disabled={isProcessing}
-                                        className={`p-3 rounded-xl border text-xs sm:text-sm font-mono font-semibold transition-all text-left flex items-center justify-between ${
-                                          selectedOption === opt
-                                            ? 'bg-brand-gold/25 border-brand-gold text-white ring-2 ring-brand-gold shadow-md'
-                                            : 'bg-white/5 border-white/10 text-white/90 hover:bg-white/10 hover:border-brand-gold/40'
-                                        }`}
-                                      >
-                                        <span>{opt}</span>
-                                        {selectedOption === opt && (
-                                          <CheckCircle2 size={15} className="text-brand-gold flex-shrink-0" />
-                                        )}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {/* Mic and input response bar */}
-                                {!evaluation ? (
-                                  <div className="flex items-center gap-2 pt-2">
-                                    {onStartVoiceRecording && onStopVoiceRecording && (
-                                      <button
-                                        type="button"
-                                        onClick={isRecording ? onStopVoiceRecording : onStartVoiceRecording}
-                                        disabled={isProcessing}
-                                        className={`p-3 rounded-2xl flex items-center justify-center transition-all ${
-                                          isRecording
-                                            ? 'bg-red-500 text-white animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.7)]'
-                                            : 'bg-brand-accent/20 hover:bg-brand-accent/40 text-brand-cyan border border-brand-cyan/40 hover:scale-105 shadow-md'
-                                        }`}
-                                        title={isRecording ? 'Detener grabación' : 'Hablar con micrófono'}
-                                      >
-                                        <Mic size={18} />
-                                      </button>
-                                    )}
-
-                                    {onTextInputChange && onSubmitAnswer && (
-                                      <div className="flex-1 flex items-center gap-2">
-                                        <input
-                                          type="text"
-                                          value={textInput}
-                                          onChange={(e) => onTextInputChange(e.target.value)}
-                                          onKeyDown={(e) => e.key === 'Enter' && onSubmitAnswer()}
-                                          placeholder="Escribe o di tu respuesta en inglés..."
-                                          disabled={isProcessing}
-                                          className="flex-1 bg-black/50 border border-white/20 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-white/40 focus:outline-none focus:border-brand-accent transition-colors disabled:opacity-50"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={onSubmitAnswer}
-                                          disabled={!textInput.trim() || isProcessing}
-                                          className="px-4 py-2.5 bg-brand-accent hover:bg-brand-accent/90 rounded-xl text-white disabled:opacity-40 transition-colors flex items-center justify-center shadow-md font-semibold text-xs gap-1.5"
-                                        >
-                                          <Send size={13} />
-                                          <span className="hidden sm:inline">Enviar</span>
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="p-3.5 rounded-xl border border-white/10 bg-black/50 text-xs space-y-2">
-                                    <div className="flex justify-between font-bold">
-                                      <span>Resultado de Evaluación</span>
-                                      <span
-                                        className={`px-2.5 py-0.5 rounded-full text-xs ${
-                                          evaluation.is_correct
-                                            ? 'bg-brand-success/20 text-brand-success border border-brand-success/30'
-                                            : 'bg-brand-error/20 text-brand-error border border-brand-error/30'
-                                        }`}
-                                      >
-                                        {evaluation.is_correct ? 'Correcto ✅' : 'Reintentar ❌'}
-                                      </span>
-                                    </div>
-                                    <ScoreDisplay scores={evaluation.scores} feedback={evaluation.feedback} />
+                                {ex.spanish_translation && (
+                                  <div className="text-xs text-brand-text-secondary italic mt-1">
+                                    💡 {ex.spanish_translation}
                                   </div>
                                 )}
                               </div>
-                            );
-                          })()}
-                        </div>
-                      ) : (
-                        <div className="text-xs font-mono text-brand-gold bg-brand-gold/10 p-3 rounded-xl border border-brand-gold/30">
-                          {p.student_task || 'Completa la consigna que el tutor acaba de explicar.'}
-                        </div>
-                      )}
+
+                              {/* Options if available */}
+                              {ex.options && ex.options.length > 0 && onSelectOption && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {ex.options.map((opt: string, optIdx: number) => (
+                                    <button
+                                      key={optIdx}
+                                      type="button"
+                                      onClick={() => onSelectOption(opt)}
+                                      disabled={isProcessing}
+                                      className={`p-3 rounded-xl border text-xs sm:text-sm font-mono font-semibold transition-all text-left flex items-center justify-between ${
+                                        selectedOption === opt
+                                          ? 'bg-brand-gold/25 border-brand-gold text-white ring-2 ring-brand-gold shadow-md'
+                                          : 'bg-white/5 border-white/10 text-white/90 hover:bg-white/10 hover:border-brand-gold/40'
+                                      }`}
+                                    >
+                                      <span>{opt}</span>
+                                      {selectedOption === opt && (
+                                        <CheckCircle2 size={15} className="text-brand-gold flex-shrink-0" />
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Mic and input response bar */}
+                              {!evaluation ? (
+                                <div className="flex items-center gap-2 pt-2">
+                                  {onStartVoiceRecording && onStopVoiceRecording && (
+                                    <button
+                                      type="button"
+                                      onClick={isRecording ? onStopVoiceRecording : onStartVoiceRecording}
+                                      disabled={isProcessing}
+                                      className={`p-3 rounded-2xl flex items-center justify-center transition-all ${
+                                        isRecording
+                                          ? 'bg-red-500 text-white animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.7)]'
+                                          : 'bg-brand-accent/20 hover:bg-brand-accent/40 text-brand-cyan border border-brand-cyan/40 hover:scale-105 shadow-md'
+                                      }`}
+                                      title={isRecording ? 'Detener grabación' : 'Hablar con micrófono'}
+                                    >
+                                      <Mic size={18} />
+                                    </button>
+                                  )}
+
+                                  {onTextInputChange && onSubmitAnswer && (
+                                    <div className="flex-1 flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={textInput}
+                                        onChange={(e) => onTextInputChange(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && onSubmitAnswer()}
+                                        placeholder="Escribe o di tu respuesta en inglés..."
+                                        disabled={isProcessing}
+                                        className="flex-1 bg-black/50 border border-white/20 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-white/40 focus:outline-none focus:border-brand-accent transition-colors disabled:opacity-50"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={onSubmitAnswer}
+                                        disabled={!textInput.trim() || isProcessing}
+                                        className="px-4 py-2.5 bg-brand-accent hover:bg-brand-accent/90 rounded-xl text-white disabled:opacity-40 transition-colors flex items-center justify-center shadow-md font-semibold text-xs gap-1.5"
+                                      >
+                                        <Send size={13} />
+                                        <span className="hidden sm:inline">Enviar</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="p-3.5 rounded-xl border border-white/10 bg-black/50 text-xs space-y-2">
+                                  <div className="flex justify-between font-bold">
+                                    <span>Resultado de Evaluación</span>
+                                    <span
+                                      className={`px-2.5 py-0.5 rounded-full text-xs ${
+                                        evaluation.is_correct
+                                          ? 'bg-brand-success/20 text-brand-success border border-brand-success/30'
+                                          : 'bg-brand-error/20 text-brand-error border border-brand-error/30'
+                                      }`}
+                                    >
+                                      {evaluation.is_correct ? 'Correcto ✅' : 'Reintentar ❌'}
+                                    </span>
+                                  </div>
+                                  <ScoreDisplay scores={evaluation.scores} feedback={evaluation.feedback} />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 

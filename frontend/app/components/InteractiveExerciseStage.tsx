@@ -1,10 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Volume2, Sparkles, HelpCircle, CheckCircle2, XCircle, Mic, Image as ImageIcon, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
-import { playEnglishAudio } from '@/lib/api';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Volume2,
+  Sparkles,
+  HelpCircle,
+  CheckCircle2,
+  XCircle,
+  Mic,
+  Image as ImageIcon,
+  Loader2,
+  ChevronRight,
+  ChevronLeft,
+  Send,
+  Square
+} from 'lucide-react';
+import { playEnglishAudio, api } from '@/lib/api';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export interface ExerciseItemData {
   id: string;
@@ -23,6 +36,7 @@ interface InteractiveExerciseStageProps {
   tutorSays?: string;
   phaseIdx: number;
   topicParam: string;
+  lessonId?: string;
   minimaxImageMap: Record<string, string>;
   generatingImages: Record<string, boolean>;
   onFetchExerciseImage: (prompt: string, promptKey: string) => Promise<string>;
@@ -35,18 +49,23 @@ export default function InteractiveExerciseStage({
   phaseName,
   phaseIdx,
   topicParam,
+  lessonId,
   minimaxImageMap,
   generatingImages,
   onFetchExerciseImage,
   onNextSlide,
-  nextSlideLabel = "Siguiente Slide"
+  nextSlideLabel = "Pasar a la Práctica de Lectura 📖"
 }: InteractiveExerciseStageProps) {
   const [currentExIdx, setCurrentExIdx] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [textInputs, setTextInputs] = useState<Record<string, string>>({});
   const [evaluatedItems, setEvaluatedItems] = useState<Record<string, { isCorrect: boolean; feedback: string }>>({});
   const [isRecording, setIsRecording] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [isEvaluatingSpeech, setIsEvaluatingSpeech] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+
+  const recognitionRef = useRef<any>(null);
 
   // Trigger image generation for all exercises on mount
   useEffect(() => {
@@ -58,6 +77,17 @@ export default function InteractiveExerciseStage({
     });
   }, [exercises, phaseIdx, onFetchExerciseImage, minimaxImageMap]);
 
+  // Clean up speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (_) {}
+      }
+    };
+  }, []);
+
   if (!exercises || exercises.length === 0) {
     return null;
   }
@@ -65,7 +95,6 @@ export default function InteractiveExerciseStage({
   const currentEx = exercises[currentExIdx] || exercises[0];
   const promptKey = `ex-${phaseIdx}-${currentEx.id || currentExIdx}`;
   const exerciseImageUrl = minimaxImageMap[promptKey] || currentEx.image_url;
-
   const currentEval = evaluatedItems[currentEx.id];
 
   const handlePlayAudio = async (text: string) => {
@@ -79,20 +108,52 @@ export default function InteractiveExerciseStage({
     }
   };
 
-  const handleSelectOption = (option: string) => {
-    setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: option }));
-    setTextInputs(prev => ({ ...prev, [currentEx.id]: option }));
-    validateAnswer(option);
-  };
+  const validateAnswer = async (answerText: string) => {
+    if (!answerText || !answerText.trim()) {
+      toast('Por favor di o escribe tu respuesta primero ✍️', { icon: '💡' });
+      return;
+    }
 
-  const validateAnswer = (answerText: string) => {
-    const cleanAnswer = answerText.trim().toLowerCase();
-    const expected = (currentEx.expected_answer || '').trim().toLowerCase();
+    const cleanAnswer = answerText.trim().toLowerCase().replace(/[.,!?;:"'()_-]/g, '').trim();
+    const expected = (currentEx.expected_answer || '').trim().toLowerCase().replace(/[.,!?;:"'()_-]/g, '').trim();
+    const fullSentence = (fullSentenceSpoken || '').toLowerCase().replace(/[.,!?;:"'()_-]/g, '').trim();
     
-    const isCorrect: boolean = Boolean(cleanAnswer === expected || (expected.length > 0 && cleanAnswer.includes(expected)));
-    const feedback: string = isCorrect
+    // Direct matching
+    const isDirectMatch = Boolean(
+      (expected.length > 0 && cleanAnswer.includes(expected)) ||
+      (cleanAnswer.length > 0 && expected.includes(cleanAnswer)) ||
+      (fullSentence.length > 0 && (cleanAnswer.includes(fullSentence) || fullSentence.includes(cleanAnswer)))
+    );
+
+    let isCorrect = isDirectMatch;
+    let feedback = isCorrect
       ? `¡Excelente! Has completado la oración correctamente aplicando la regla de ${topicParam}.`
-      : `Buen intento. La respuesta correcta es "${currentEx.expected_answer}". ${currentEx.hint || ''}`;
+      : `Buen intento con "${answerText}". La respuesta esperada es "${currentEx.expected_answer}". ${currentEx.hint || ''}`;
+
+    // Backend AI evaluation if lessonId is present
+    if (lessonId && answerText.length > 1) {
+      try {
+        setIsEvaluatingSpeech(true);
+        const formData = new FormData();
+        formData.append('phase', String(phaseIdx + 1));
+        formData.append('answer', answerText);
+        formData.append('question', currentEx.sentence || `Exercise ${currentExIdx + 1} for ${topicParam}`);
+        formData.append('expected_answer', currentEx.expected_answer || '');
+        const res = await api.evaluateLesson(lessonId, formData);
+        if (res) {
+          if (typeof res.is_correct === 'boolean') {
+            isCorrect = isCorrect || res.is_correct;
+          }
+          if (res.feedback) {
+            feedback = res.feedback;
+          }
+        }
+      } catch (e) {
+        console.warn('Backend evaluation fallback:', e);
+      } finally {
+        setIsEvaluatingSpeech(false);
+      }
+    }
 
     setEvaluatedItems(prev => ({
       ...prev,
@@ -102,22 +163,88 @@ export default function InteractiveExerciseStage({
     if (isCorrect) {
       toast.success('¡Correcto! 🎉', { id: `ex-eval-${currentEx.id}` });
     } else {
-      toast.error('Revisa la respuesta 💡', { id: `ex-eval-${currentEx.id}` });
+      toast('Revisa la respuesta 💡', { id: `ex-eval-${currentEx.id}`, icon: '💡' });
     }
   };
 
-  const handleSpeechRecord = () => {
-    setIsRecording(true);
-    toast('Di la oración completa en inglés...', { icon: '🎙️' });
+  const handleSelectOption = (option: string) => {
+    setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: option }));
+    setTextInputs(prev => ({ ...prev, [currentEx.id]: option }));
+    validateAnswer(option);
+  };
 
-    setTimeout(() => {
+  // Real Speech Recognition with Web Speech API
+  const startVoiceRecording = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Tu navegador no soporta reconocimiento de voz. Puedes seleccionar una opción o escribir tu respuesta.');
+      return;
+    }
+
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (_) {}
+    }
+
+    const rec = new SpeechRecognition();
+    rec.lang = 'en-US';
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+
+    setLiveTranscript('');
+    setIsRecording(true);
+    toast('Te escuchamos... Di la frase en inglés 🎙️', { icon: '🎙️' });
+
+    let latestSpoken = '';
+
+    rec.onresult = (event: any) => {
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const trans = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final += trans;
+        } else {
+          interim += trans;
+        }
+      }
+      latestSpoken = (final || interim).trim();
+      if (latestSpoken) {
+        setLiveTranscript(latestSpoken);
+        setTextInputs(prev => ({ ...prev, [currentEx.id]: latestSpoken }));
+      }
+    };
+
+    rec.onerror = (event: any) => {
+      console.warn('SpeechRecognition error in exercise:', event.error);
       setIsRecording(false);
-      const expected = currentEx.expected_answer || (currentEx.options && currentEx.options[0]) || '';
-      setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: expected }));
-      setTextInputs(prev => ({ ...prev, [currentEx.id]: expected }));
-      validateAnswer(expected);
-      toast.success('¡Voz capturada y validada con éxito!');
-    }, 2800);
+      if (event.error === 'no-speech') {
+        toast('No se detectó voz. Presiona el micrófono y pronuncia la oración 🎤', { icon: '💡' });
+      } else if (event.error !== 'aborted') {
+        toast.error('Error de micrófono. Intenta de nuevo o escribe la respuesta.');
+      }
+    };
+
+    rec.onend = () => {
+      setIsRecording(false);
+      if (latestSpoken && latestSpoken.length > 1) {
+        setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: latestSpoken }));
+        validateAnswer(latestSpoken);
+      }
+    };
+
+    recognitionRef.current = rec;
+    rec.start();
+  };
+
+  const stopVoiceRecording = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (_) {}
+    }
+    setIsRecording(false);
   };
 
   const completedCount = Object.keys(evaluatedItems).filter(k => evaluatedItems[k]?.isCorrect).length;
@@ -147,7 +274,7 @@ export default function InteractiveExerciseStage({
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-gold uppercase tracking-wider bg-brand-gold/15 px-2.5 py-0.5 rounded-full border border-brand-gold/30">
               <Sparkles size={13} className="animate-pulse" />
-              <span>Desafío Interactivo con Ilustraciones</span>
+              <span>Desafíos Interáctivos ({exercises.length} Ejercicios)</span>
             </div>
             <h3 className="text-lg sm:text-xl font-extrabold text-white mt-1">
               {phaseName || `Práctica de ${topicParam}`}
@@ -156,7 +283,7 @@ export default function InteractiveExerciseStage({
         </div>
 
         {/* Exercise Switcher Navigation Tabs */}
-        <div className="flex items-center gap-2 self-start sm:self-auto bg-black/50 p-1.5 rounded-2xl border border-white/10">
+        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-black/50 p-1.5 rounded-2xl border border-white/10 overflow-x-auto max-w-full">
           {exercises.map((ex, idx) => {
             const isEvaluated = evaluatedItems[ex.id]?.isCorrect;
             const isSelected = idx === currentExIdx;
@@ -164,10 +291,13 @@ export default function InteractiveExerciseStage({
               <button
                 key={idx}
                 type="button"
-                onClick={() => setCurrentExIdx(idx)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                onClick={() => {
+                  if (isRecording) stopVoiceRecording();
+                  setCurrentExIdx(idx);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 ${
                   isSelected
-                    ? 'bg-brand-cyan text-black shadow-md shadow-brand-cyan/30'
+                    ? 'bg-brand-cyan text-black shadow-md shadow-brand-cyan/30 scale-105'
                     : isEvaluated
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                     : 'text-zinc-400 hover:text-white hover:bg-white/5'
@@ -263,7 +393,7 @@ export default function InteractiveExerciseStage({
                   {currentEx.options.map((opt, oIdx) => {
                     const isSelected = (selectedAnswers[currentEx.id] || textInputs[currentEx.id]) === opt;
                     const isEvaluated = Boolean(currentEval);
-                    const isCorrectOption = opt === currentEx.expected_answer;
+                    const isCorrectOption = opt.trim().toLowerCase() === (currentEx.expected_answer || '').trim().toLowerCase();
 
                     return (
                       <button
@@ -289,6 +419,24 @@ export default function InteractiveExerciseStage({
                 </div>
               </div>
             )}
+
+            {/* Real-time Voice Transcript Live Indicator */}
+            <AnimatePresence>
+              {isRecording && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="p-3.5 rounded-2xl bg-rose-950/40 border border-rose-500/50 flex items-center gap-3 text-xs text-rose-200"
+                >
+                  <div className="w-3 h-3 rounded-full bg-rose-500 animate-ping flex-shrink-0" />
+                  <div className="flex-1 truncate">
+                    <span className="font-bold text-rose-300">Escuchando: </span>
+                    <span className="italic">{liveTranscript || 'Pronuncia tu respuesta en inglés...'}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Smart Evaluation Feedback Box */}
             {currentEval && (
@@ -316,43 +464,77 @@ export default function InteractiveExerciseStage({
             )}
           </div>
 
-          {/* Voice Input & Action Buttons */}
-          <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/10 flex-wrap">
-            <motion.button
-              type="button"
-              disabled={isRecording}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSpeechRecord}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 shadow-lg ${
-                isRecording
-                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse'
-                  : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20'
-              }`}
-            >
-              <Mic size={14} />
-              <span>{isRecording ? 'Escuchando tu voz...' : 'Responder por Voz 🎤'}</span>
-            </motion.button>
-
+          {/* Voice Input, Typing & Action Buttons */}
+          <div className="space-y-3 pt-3 border-t border-white/10">
+            {/* Direct Text Input for typing response */}
             <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Escribe tu respuesta o presiona el micrófono..."
+                value={textInputs[currentEx.id] || ''}
+                onChange={(e) => setTextInputs(prev => ({ ...prev, [currentEx.id]: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    validateAnswer(textInputs[currentEx.id] || '');
+                  }
+                }}
+                className="flex-1 bg-black/70 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-brand-cyan"
+              />
               <button
                 type="button"
-                disabled={currentExIdx === 0}
-                onClick={() => setCurrentExIdx(prev => Math.max(0, prev - 1))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 transition-all"
-                title="Ejercicio anterior"
+                disabled={isEvaluatingSpeech || !(textInputs[currentEx.id] || '').trim()}
+                onClick={() => validateAnswer(textInputs[currentEx.id] || '')}
+                className="px-3.5 py-2 rounded-xl bg-brand-cyan hover:bg-cyan-400 text-black font-bold text-xs disabled:opacity-40 transition-all flex items-center gap-1.5 shadow-md shadow-brand-cyan/20"
+                title="Validar respuesta escrita"
               >
-                <ChevronLeft size={16} />
+                {isEvaluatingSpeech ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                <span>Validar</span>
               </button>
+            </div>
 
-              <button
+            {/* Voice Recording Control */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <motion.button
                 type="button"
-                disabled={currentExIdx === exercises.length - 1}
-                onClick={() => setCurrentExIdx(prev => Math.min(exercises.length - 1, prev + 1))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 transition-all"
-                title="Siguiente ejercicio"
+                whileTap={{ scale: 0.95 }}
+                onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 shadow-lg ${
+                  isRecording
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/40 animate-pulse'
+                    : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20'
+                }`}
               >
-                <ChevronRight size={16} />
-              </button>
+                {isRecording ? <Square size={14} className="fill-current" /> : <Mic size={14} />}
+                <span>{isRecording ? 'Detener y Calificar ⏹️' : 'Responder por Voz 🎤'}</span>
+              </motion.button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={currentExIdx === 0}
+                  onClick={() => {
+                    if (isRecording) stopVoiceRecording();
+                    setCurrentExIdx(prev => Math.max(0, prev - 1));
+                  }}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 transition-all"
+                  title="Ejercicio anterior"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  disabled={currentExIdx === exercises.length - 1}
+                  onClick={() => {
+                    if (isRecording) stopVoiceRecording();
+                    setCurrentExIdx(prev => Math.min(exercises.length - 1, prev + 1));
+                  }}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 transition-all"
+                  title="Siguiente ejercicio"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>

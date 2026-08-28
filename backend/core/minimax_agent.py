@@ -888,16 +888,16 @@ class TutorAgent:
             f"   - PROHIBIDO colocar ejercicios interactivos o quizzes en estas pizarras explicativas (deben ser limpias y profundas).\n"
             f"• Slide N-1: SLIDE DEDICADA DE DESAFÍO INTERACTIVO CON ORACIONES COMPLETAS.\n"
             f"   - 'is_practice_slide': true, 'interaction_type': 'quiz'.\n"
-            f"   - Contiene un arreglo de 'exercises' (de 2 a 4 ejercicios).\n"
-            f"   - CADA EJERCICIO ES UNA ORACIÓN COMPLETA en inglés basada en situaciones reales (no palabras sueltas).\n"
+            f"   - Contiene un arreglo de 'exercises' (MÍNIMO 8 ejercicios interactivos completos, de 8 a 10 ejercicios).\n"
+            f"   - CADA EJERCICIO ES UNA ORACIÓN COMPLETA en inglés basada en situaciones reales (PROHIBIDO consignas abstractas o pedir al alumno inventar oraciones).\n"
             f"   - CADA EJERCICIO DEBE INCLUIR:\n"
-            f"       - 'id': 'ex-1', 'ex-2'...\n"
-            f"       - 'sentence': Oración completa en inglés con '___' o reto.\n"
-            f"       - 'options': Lista de 2 a 4 opciones claras (ej: ['drinks', 'drink', 'drinking']).\n"
-            f"       - 'expected_answer': Respuesta correcta.\n"
-            f"       - 'spanish_translation': Traducción/contexto en español.\n"
-            f"       - 'image_prompt': Descripción vívida en inglés de la situación/escena exacta de esa oración para generar su ilustración, clean 2D vector art, no text.\n"
-            f"       - 'hint': Pista gramatical.\n"
+            f"       - 'id': 'ex-1' ... 'ex-8'.\n"
+            f"       - 'sentence': Oración completa en inglés con '_____' para rellenar.\n"
+            f"       - 'options': Lista de 3 opciones gramaticales (ej: ['was cooking', 'cooked', 'cook']).\n"
+            f"       - 'expected_answer': La opción correcta exacta.\n"
+            f"       - 'spanish_translation': Traducción contextual en español.\n"
+            f"       - 'image_prompt': Descripción vívida en inglés de la situación/escena de la oración para ilustrarla con IA (2D vector art, no text).\n"
+            f"       - 'hint': Pista gramatical específica.\n"
             f"• Slide N (si aplica): BONUS DE PRONUNCIACIÓN (Anatomía bucal exterior/interior en español).\n\n"
             f"REGLAS PEDAGÓGICAS Y ESTRUCTURALES OBLIGATORIAS:\n"
             f"1. EN CADA FASE CONCEPTUAL, `tutor_says` DEBE EXPLICAR A FONDO: Usa una metáfora intuitiva para explicar el concepto de '{topic}', desglosa la fórmula gramatical explicando por qué cada palabra va en ese orden exacto, y analiza los ejemplos de la pizarra palabra por palabra con errores típicos a evitar. PROHIBIDO decir 'mira la pizarra', 'observa los conceptos' o frases vagas.\n"
@@ -1005,9 +1005,88 @@ class TutorAgent:
             return self._audit_and_sanitize_lesson_content(fallback, topic, sublevel, adaptive_plan)
 
     def _generate_default_exercises(self, topic: str, sublevel: str, grammar_target: str = "") -> list:
-        """Constructs authentic complete-sentence exercises with vivid situational image prompts."""
-        t_low = topic.lower()
-        if "past" in t_low or "irregular" in t_low or "was" in t_low:
+        """Constructs authentic complete-sentence exercises (minimum 8) with vivid situational image prompts."""
+        t_low = f"{topic} {grammar_target}".lower()
+
+        # 1. Past Continuous & Interrupted Actions
+        if any(k in t_low for k in ["past continuous", "interrupted", "was/were", "while", "when"]):
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "I was _____ [cooking / cooked / cook] dinner in the kitchen when the lights suddenly went out.",
+                    "options": ["cooking", "cooked", "cook"],
+                    "expected_answer": "cooking",
+                    "spanish_translation": "Estaba cocinando la cena en la cocina cuando de repente se fue la luz.",
+                    "image_prompt": "A person holding a wooden spoon in a cozy kitchen looking surprised as the lights go off, 2D flat vector art, no text",
+                    "hint": "Para la acción continua en el pasado usamos 'was + verbo con -ing'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "While we were _____ [walking / walked / walk] through the city park, it began to rain heavily.",
+                    "options": ["walking", "walked", "walk"],
+                    "expected_answer": "walking",
+                    "spanish_translation": "Mientras estábamos caminando por el parque de la ciudad, empezó a llover fuerte.",
+                    "image_prompt": "Two friends walking on a tree-lined park path looking up as rain droplets start falling, 2D vector art, no text",
+                    "hint": "Con 'While we were...' la acción de fondo va en gerundio (-ing)."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "David was _____ [driving / drove / drive] home from work when his phone rang.",
+                    "options": ["driving", "drove", "drive"],
+                    "expected_answer": "driving",
+                    "spanish_translation": "David estaba conduciendo a casa del trabajo cuando sonó su teléfono.",
+                    "image_prompt": "A driver focused on a sunset city highway road while a phone on the dashboard lights up, 2D vector art, no text",
+                    "hint": "Sujeto singular 'David' + 'was' + verbo con '-ing'."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "What were you _____ [doing / did / do] at eight o'clock yesterday evening?",
+                    "options": ["doing", "did", "do"],
+                    "expected_answer": "doing",
+                    "spanish_translation": "¿Qué estabas haciendo a las ocho en punto ayer por la noche?",
+                    "image_prompt": "A young detective with a notebook asking a witness questions in a bright living room, 2D vector art, no text",
+                    "hint": "En preguntas en pasado continuo: 'What were you + doing?'"
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "They were _____ [playing / played / play] soccer in the stadium when the coach arrived.",
+                    "options": ["playing", "played", "play"],
+                    "expected_answer": "playing",
+                    "spanish_translation": "Ellos estaban jugando fútbol en el estadio cuando llegó el entrenador.",
+                    "image_prompt": "Teenagers kicking a soccer ball on a green stadium grass field under sunny skies, 2D vector art, no text",
+                    "hint": "Sujeto plural 'They' + 'were' + verbo con '-ing'."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "Elena was _____ [studying / studied / study] for her final biology exam while her brother was sleeping.",
+                    "options": ["studying", "studied", "study"],
+                    "expected_answer": "studying",
+                    "spanish_translation": "Elena estaba estudiando para su examen final de biología mientras su hermano dormía.",
+                    "image_prompt": "A dedicated female student studying with books and a desk lamp in a cozy nighttime room, 2D vector art, no text",
+                    "hint": "Dos acciones continuas paralelas en el pasado usan 'was/were + -ing'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "I _____ [dropped / was dropping / drop] my silver keys while I was running for the morning bus.",
+                    "options": ["dropped", "was dropping", "drop"],
+                    "expected_answer": "dropped",
+                    "spanish_translation": "Se me cayeron las llaves plateadas mientras estaba corriendo tras el autobús matutino.",
+                    "image_prompt": "A commuter rushing toward a city bus as shiny keys slip from a pocket onto the sidewalk, 2D vector art, no text",
+                    "hint": "La acción puntual que interrumpe o ocurre en el momento va en Past Simple ('dropped')."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "She was _____ [reading / read / reads] a fascinating mystery novel when the doorbell rang loudly.",
+                    "options": ["reading", "read", "reads"],
+                    "expected_answer": "reading",
+                    "spanish_translation": "Ella estaba leyendo una fascinante novela de misterio cuando el timbre sonó fuerte.",
+                    "image_prompt": "A woman sitting in a warm armchair holding a book looking toward the front door, 2D vector art, no text",
+                    "hint": "Acción en progreso 'was reading' interrumpida por el timbre 'rang'."
+                }
+            ]
+
+        # 2. Past Simple & Irregular Verbs
+        elif any(k in t_low for k in ["past simple", "past tense", "irregular", "did", "yesterday"]):
             return [
                 {
                     "id": "ex-1",
@@ -1015,7 +1094,7 @@ class TutorAgent:
                     "options": ["went", "go", "goes"],
                     "expected_answer": "went",
                     "spanish_translation": "Ayer por la mañana, Liam fue a la biblioteca central a estudiar.",
-                    "image_prompt": "A young male student walking into a warm sunlit modern library carrying a backpack, colorful 2D flat vector art, no text, no letters",
+                    "image_prompt": "A young male student walking into a warm sunlit modern library carrying a backpack, 2D vector art, no text",
                     "hint": "En pasado afirmativo de 'go', usamos la forma irregular 'went'."
                 },
                 {
@@ -1024,7 +1103,7 @@ class TutorAgent:
                     "options": ["see", "saw", "seen"],
                     "expected_answer": "see",
                     "spanish_translation": "¿Viste el hermoso atardecer en la playa anoche?",
-                    "image_prompt": "Two friends sitting on sand dunes watching a magnificent golden sunset over ocean waves, vibrant 2D vector illustration, no text",
+                    "image_prompt": "Two friends sitting on sand dunes watching a magnificent golden sunset over ocean waves, 2D vector illustration, no text",
                     "hint": "Tras el auxiliar 'Did', el verbo principal regresa a su forma base pura (see)."
                 },
                 {
@@ -1033,11 +1112,135 @@ class TutorAgent:
                     "options": ["didn't buy", "didn't bought", "not buy"],
                     "expected_answer": "didn't buy",
                     "spanish_translation": "No compramos los boletos caros porque no teníamos efectivo.",
-                    "image_prompt": "A cheerful young couple checking their wallets in front of a cinema ticket counter, colorful vector illustration, no text",
-                    "hint": "Con 'didn't', el verbo se mantiene en forma base (buy) sin duplicar el pasado."
+                    "image_prompt": "A cheerful young couple checking their wallets in front of a cinema ticket counter, 2D vector art, no text",
+                    "hint": "Con 'didn't', el verbo se mantiene en forma base (buy)."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "Lucas _____ [ate / eat / eats] delicious homemade tacos with his family last weekend.",
+                    "options": ["ate", "eat", "eats"],
+                    "expected_answer": "ate",
+                    "spanish_translation": "Lucas comió deliciosos tacos caseros con su familia el fin de semana pasado.",
+                    "image_prompt": "A smiling family gathered around a dining table enjoying Mexican tacos, 2D vector art, no text",
+                    "hint": "El pasado simple de 'eat' es 'ate'."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "Where did you _____ [travel / traveled / travels] during your summer vacation?",
+                    "options": ["travel", "traveled", "travels"],
+                    "expected_answer": "travel",
+                    "spanish_translation": "¿A dónde viajaste durante tus vacaciones de verano?",
+                    "image_prompt": "A traveler with a backpack looking at departure flight boards in a modern airport, 2D vector art, no text",
+                    "hint": "En preguntas con 'Where did you...', el verbo va en forma base ('travel')."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "She _____ [wrote / write / writes] a warm handwritten letter to her grandmother in Spain.",
+                    "options": ["wrote", "write", "writes"],
+                    "expected_answer": "wrote",
+                    "spanish_translation": "Ella le escribió una cálida carta a mano a su abuela en España.",
+                    "image_prompt": "A person writing with a fountain pen on vintage paper at a wooden desk with flowers, 2D vector art, no text",
+                    "hint": "El pasado simple irregular de 'write' es 'wrote'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "They _____ [bought / buy / buyed] a new red bicycle for their daughter's birthday.",
+                    "options": ["bought", "buy", "buyed"],
+                    "expected_answer": "bought",
+                    "spanish_translation": "Compraron una nueva bicicleta roja para el cumpleaños de su hija.",
+                    "image_prompt": "Parents surprising a happy little girl with a shiny red bicycle in front of a garden, 2D vector art, no text",
+                    "hint": "El pasado irregular de 'buy' es 'bought'."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "I _____ [lost / lose / loses] my office badge yesterday, but I found it this morning.",
+                    "options": ["lost", "lose", "loses"],
+                    "expected_answer": "lost",
+                    "spanish_translation": "Perdí mi credencial de la oficina ayer, pero la encontré esta mañana.",
+                    "image_prompt": "An office worker looking with relief at an ID card badge on a desk, 2D vector art, no text",
+                    "hint": "El pasado simple de 'lose' es 'lost'."
                 }
             ]
-        elif "future" in t_low or "going to" in t_low or "will" in t_low:
+
+        # 3. Present Simple & Daily Routines
+        elif any(k in t_low for k in ["present simple", "routine", "rutina", "habit", "third person", "frequency", "adverb"]):
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "Every weekday, Mateo _____ [wakes up / wake up / waking up] at six in the morning.",
+                    "options": ["wakes up", "wake up", "waking up"],
+                    "expected_answer": "wakes up",
+                    "spanish_translation": "Cada día entre semana, Mateo se despierta a las seis de la mañana.",
+                    "image_prompt": "A cheerful person turning off an alarm clock with sunrise light coming into the bedroom, 2D vector art, no text",
+                    "hint": "Para 'He/She/It' en Present Simple agregamos la 's': 'wakes up'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "She always _____ [has / have / haves] a healthy breakfast before going to the gym.",
+                    "options": ["has", "have", "haves"],
+                    "expected_answer": "has",
+                    "spanish_translation": "Ella siempre desayuna saludable antes de ir al gimnasio.",
+                    "image_prompt": "A woman enjoying orange juice and toast at a bright breakfast table, 2D vector art, no text",
+                    "hint": "Con 'She', la tercera persona de 'have' es la forma irregular 'has'."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "We usually _____ [drink / drinks / drinking] hot coffee together at the office.",
+                    "options": ["drink", "drinks", "drinking"],
+                    "expected_answer": "drink",
+                    "spanish_translation": "Nosotros normalmente tomamos café caliente juntos en la oficina.",
+                    "image_prompt": "Coworkers smiling and holding ceramic mugs in a modern office breakroom, 2D vector art, no text",
+                    "hint": "Con 'We', el verbo va en su forma base pura 'drink'."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "Carlos _____ [goes / go / gos] to work by subway every morning.",
+                    "options": ["goes", "go", "gos"],
+                    "expected_answer": "goes",
+                    "spanish_translation": "Carlos va a trabajar en metro todas las mañanas.",
+                    "image_prompt": "A commuter with headphones waiting on a clean modern subway train platform, 2D vector art, no text",
+                    "hint": "Los verbos terminados en 'o' como 'go' agregan '-es': 'goes'."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "Elena _____ [watches / watch / watchs] educational documentaries on Friday evenings.",
+                    "options": ["watches", "watch", "watchs"],
+                    "expected_answer": "watches",
+                    "spanish_translation": "Elena mira documentales educativos los viernes por la noche.",
+                    "image_prompt": "A woman relaxing on a sofa watching a nature documentary on TV, 2D vector art, no text",
+                    "hint": "Los verbos terminados en 'ch' agregan '-es' con sonido /ɪz/: 'watches'."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "They _____ [don't work / doesn't work / not work] on Sunday mornings.",
+                    "options": ["don't work", "doesn't work", "not work"],
+                    "expected_answer": "don't work",
+                    "spanish_translation": "Ellos no trabajan los domingos por la mañana.",
+                    "image_prompt": "Two people enjoying a peaceful morning stroll in a sunny park with flowers, 2D vector art, no text",
+                    "hint": "Para 'They' en presente negativo usamos 'don't + verbo base'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "Does your brother _____ [exercise / exercises / exercising] at the sports club?",
+                    "options": ["exercise", "exercises", "exercising"],
+                    "expected_answer": "exercise",
+                    "spanish_translation": "¿Tu hermano hace ejercicio en el club deportivo?",
+                    "image_prompt": "A young athlete lifting dumbbells in a bright modern fitness center, 2D vector art, no text",
+                    "hint": "Tras el auxiliar 'Does', el verbo principal va en forma base ('exercise')."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "I sometimes _____ [sleep / sleeps / sleeping] eight full hours on weekends.",
+                    "options": ["sleep", "sleeps", "sleeping"],
+                    "expected_answer": "sleep",
+                    "spanish_translation": "A veces duermo ocho horas completas los fines de semana.",
+                    "image_prompt": "A person sleeping peacefully in a comfortable bed with soft morning sunlight, 2D vector art, no text",
+                    "hint": "Con el sujeto 'I', el verbo no lleva 's': 'sleep'."
+                }
+            ]
+
+        # 4. Future Tense & Plans
+        elif any(k in t_low for k in ["future", "going to", "will", "plans", "prediction"]):
             return [
                 {
                     "id": "ex-1",
@@ -1045,7 +1248,7 @@ class TutorAgent:
                     "options": ["going to travel", "go to travel", "will traveling"],
                     "expected_answer": "going to travel",
                     "spanish_translation": "El próximo verano, María va a viajar a Japón.",
-                    "image_prompt": "A happy young woman with a travel suitcase looking at a colorful map of Tokyo Japan, vibrant 2D vector art, no text",
+                    "image_prompt": "A happy young woman with a travel suitcase looking at a colorful map of Tokyo, 2D vector art, no text",
                     "hint": "Para planes futuros usamos 'is going to + verbo base'."
                 },
                 {
@@ -1054,70 +1257,160 @@ class TutorAgent:
                     "options": ["going to rain", "rain", "rained"],
                     "expected_answer": "going to rain",
                     "spanish_translation": "¡Mira esas nubes oscuras! Va a llover en unos minutos.",
-                    "image_prompt": "Dark dramatic rain clouds over a cozy city street as people open colorful umbrellas, 2D vector art, no text",
+                    "image_prompt": "Dark dramatic rain clouds over a city street as people open umbrellas, 2D vector art, no text",
                     "hint": "Usamos 'going to' para predicciones basadas en evidencia visual presente."
-                }
-            ]
-        elif "present continuous" in t_low or "progressive" in t_low:
-            return [
-                {
-                    "id": "ex-1",
-                    "sentence": "Right now, Carlos is _____ [cooking / cook / cooked] delicious pasta in the kitchen.",
-                    "options": ["cooking", "cook", "cooked"],
-                    "expected_answer": "cooking",
-                    "spanish_translation": "Ahora mismo, Carlos está cocinando deliciosa pasta en la cocina.",
-                    "image_prompt": "A young chef smiling while stirring steaming fresh pasta in a bright modern kitchen, 2D flat vector art, no text",
-                    "hint": "Para acciones en este momento usamos 'be + verbo con -ing'."
                 },
                 {
-                    "id": "ex-2",
-                    "sentence": "Listen! The birds are _____ [singing / sing / sang] in the garden outside.",
-                    "options": ["singing", "sing", "sang"],
-                    "expected_answer": "singing",
-                    "spanish_translation": "¡Escucha! Los pájaros están cantando en el jardín afuera.",
-                    "image_prompt": "Colorful little birds perching on blooming spring tree branches in a sunny garden, 2D vector illustration, no text",
-                    "hint": "Sujeto plural 'The birds' + 'are' + verbo con '-ing'."
+                    "id": "ex-3",
+                    "sentence": "Don't worry, I _____ [will help / will helping / help will] you with your luggage.",
+                    "options": ["will help", "will helping", "help will"],
+                    "expected_answer": "will help",
+                    "spanish_translation": "No te preocupes, te ayudaré con tu equipaje.",
+                    "image_prompt": "A friendly hotel staff member offering to carry suitcases for a guest, 2D vector art, no text",
+                    "hint": "Para decisiones espontáneas y ofrecimientos usamos 'will + verbo base'."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "We are _____ [going to buy / go to buy / will buyed] a new apartment next month.",
+                    "options": ["going to buy", "go to buy", "will buyed"],
+                    "expected_answer": "going to buy",
+                    "spanish_translation": "Vamos a comprar un nuevo apartamento el próximo mes.",
+                    "image_prompt": "A smiling couple holding keys outside a modern sunny apartment building, 2D vector art, no text",
+                    "hint": "Con 'We are' usamos 'going to buy'."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "What are you _____ [going to do / go to do / will doing] this weekend?",
+                    "options": ["going to do", "go to do", "will doing"],
+                    "expected_answer": "going to do",
+                    "spanish_translation": "¿Qué vas a hacer este fin de semana?",
+                    "image_prompt": "Friends chatting and reviewing a calendar of weekend activities, 2D vector art, no text",
+                    "hint": "Pregunta de planes: 'What are you going to do?'"
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "I think artificial intelligence _____ [will transform / will transforming / transforms will] education.",
+                    "options": ["will transform", "will transforming", "transforms will"],
+                    "expected_answer": "will transform",
+                    "spanish_translation": "Creo que la inteligencia artificial transformará la educación.",
+                    "image_prompt": "A student interacting with futuristic glowing digital learning modules, 2D vector art, no text",
+                    "hint": "Para predicciones u opiniones personales ('I think') usamos 'will + verbo base'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "They are _____ [going to start / go to start / will starting] their new English course on Monday.",
+                    "options": ["going to start", "go to start", "will starting"],
+                    "expected_answer": "going to start",
+                    "spanish_translation": "Van a comenzar su nuevo curso de inglés el lunes.",
+                    "image_prompt": "Students in a bright modern language academy smiling with textbooks, 2D vector art, no text",
+                    "hint": "Con 'They are' usamos 'going to start'."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "I promise I _____ [will call / will calling / call will] you as soon as I arrive.",
+                    "options": ["will call", "will calling", "call will"],
+                    "expected_answer": "will call",
+                    "spanish_translation": "Prometo que te llamaré tan pronto como llegue.",
+                    "image_prompt": "A traveler waving goodbye at an airport gate while holding a smartphone, 2D vector art, no text",
+                    "hint": "Para promesas ('I promise') usamos 'will + verbo base'."
                 }
             ]
+
+        # 5. General / Contextual default for any topic (8 exercises)
         else:
             return [
                 {
                     "id": "ex-1",
-                    "sentence": f"Every morning, Sophia _____ [practices / practice / practiced] English conversation before work.",
-                    "options": ["practices", "practice", "practiced"],
-                    "expected_answer": "practices",
-                    "spanish_translation": f"Cada mañana, Sophia practica conversación en inglés antes del trabajo.",
-                    "image_prompt": f"A smiling young professional woman practicing with headphones and coffee in a sunny morning room, 2D flat vector art, no text",
-                    "hint": f"Aplica la estructura principal aprendida de {topic}."
+                    "sentence": f"When practicing daily, you should _____ [apply / applying / applied] the structure of {topic} clearly.",
+                    "options": ["apply", "applying", "applied"],
+                    "expected_answer": "apply",
+                    "spanish_translation": f"Al practicar a diario, debes aplicar la estructura de {topic} con claridad.",
+                    "image_prompt": f"A smiling student studying with headphones and a tablet in a bright room, 2D flat vector art, no text",
+                    "hint": f"Usa el verbo base después de modales: 'should apply'."
                 },
                 {
                     "id": "ex-2",
-                    "sentence": f"When you speak with friends, you should _____ [express / expressing / expressed] your ideas with confidence.",
-                    "options": ["express", "expressing", "expressed"],
+                    "sentence": f"Every morning, Sophia _____ [practices / practice / practiced] English conversation before work.",
+                    "options": ["practices", "practice", "practiced"],
+                    "expected_answer": "practices",
+                    "spanish_translation": "Cada mañana, Sophia practica conversación en inglés antes del trabajo.",
+                    "image_prompt": "A young professional woman practicing speaking with headphones in a sunny room, 2D flat vector art, no text",
+                    "hint": "Tercera persona singular en presente afirmativo lleva '-s'."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": f"Can you _____ [express / expresses / expressing] this idea using the correct grammar form?",
+                    "options": ["express", "expresses", "expressing"],
                     "expected_answer": "express",
-                    "spanish_translation": "Cuando hablas con amigos, debes expresar tus ideas con confianza.",
-                    "image_prompt": f"Two friends smiling and chatting over coffee in a bright modern café, 2D flat vector illustration, no text",
-                    "hint": f"Usa el verbo en su forma adecuada según las reglas de {topic}."
+                    "spanish_translation": "¿Puedes expresar esta idea usando la forma gramatical correcta?",
+                    "image_prompt": "Two friends chatting enthusiastically in a cozy coffee shop, 2D vector art, no text",
+                    "hint": "Tras el verbo modal 'Can', usamos la forma base 'express'."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": f"We _____ [learned / learn / learns] important communication patterns in today's lesson.",
+                    "options": ["learned", "learn", "learns"],
+                    "expected_answer": "learned",
+                    "spanish_translation": "Aprendimos patrones de comunicación importantes en la lección de hoy.",
+                    "image_prompt": "A diverse group of students celebrating in a modern classroom, 2D vector art, no text",
+                    "hint": "Forma correcta del verbo para describir lo aprendido."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": f"She always _____ [speaks / speak / speaking] with confidence during presentations.",
+                    "options": ["speaks", "speak", "speaking"],
+                    "expected_answer": "speaks",
+                    "spanish_translation": "Ella siempre habla con seguridad durante las presentaciones.",
+                    "image_prompt": "A confident speaker giving a presentation in front of a supportive audience, 2D vector art, no text",
+                    "hint": "Sujeto 'She' + adverbio de frecuencia + verbo con '-s'."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": f"They are _____ [improving / improve / improved] their English fluency step by step.",
+                    "options": ["improving", "improve", "improved"],
+                    "expected_answer": "improving",
+                    "spanish_translation": "Ellos están mejorando su fluidez en inglés paso a paso.",
+                    "image_prompt": "Two students looking at an upward progress chart smiling, 2D vector art, no text",
+                    "hint": "Con 'They are' usamos el verbo con '-ing'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": f"If you practice regularly, you _____ [will achieve / achieve will / achieving] your language goals.",
+                    "options": ["will achieve", "achieve will", "achieving"],
+                    "expected_answer": "will achieve",
+                    "spanish_translation": "Si practicas regularmente, alcanzarás tus metas lingüísticas.",
+                    "image_prompt": "A student standing at the summit of a mountain looking at the sunrise, 2D vector art, no text",
+                    "hint": "Resultado futuro en condicional: 'will + verbo base'."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": f"It is essential to _____ [review / reviews / reviewed] key vocabulary every week.",
+                    "options": ["review", "reviews", "reviewed"],
+                    "expected_answer": "review",
+                    "spanish_translation": "Es esencial repasar el vocabulario clave cada semana.",
+                    "image_prompt": "A student organizing colorful flashcards on a wooden study table, 2D vector art, no text",
+                    "hint": "Infinitivo con 'to + verbo base': 'to review'."
                 }
             ]
 
     def _build_practice_slide(self, raw_exercises: list, topic: str, sublevel: str, phase_number: int = 5) -> dict:
         """
         Constructs a dedicated interactive practice slide with complete situational English sentences,
-        contextual image prompts, options, translations, and oral drill support.
+        contextual image prompts, options, translations, and oral drill support (minimum 8 exercises).
         """
         clean_exercises = []
         target_audios = []
 
+        default_bank = self._generate_default_exercises(topic, sublevel)
         if not raw_exercises:
-            raw_exercises = self._generate_default_exercises(topic, sublevel)
+            raw_exercises = default_bank
 
         for idx, ex in enumerate(raw_exercises):
             if not isinstance(ex, dict):
                 continue
             ex_id = ex.get("id") or f"ex-{idx+1}"
             raw_sent = str(ex.get("sentence") or ex.get("question") or ex.get("cleanSentence") or "").strip()
-            if not raw_sent:
+            if not raw_sent or "Crea una oración propia" in raw_sent or len(raw_sent) < 5:
                 continue
 
             opts = ex.get("options") or []
@@ -1166,6 +1459,22 @@ class TutorAgent:
                 "translation": spanish_tr,
                 "label": f"Ejercicio {idx+1}"
             })
+
+        # Ensure at least 8 rich exercises by filling from default bank
+        if len(clean_exercises) < 8:
+            for def_ex in default_bank:
+                if len(clean_exercises) >= 8:
+                    break
+                if not any(c.get("sentence") == def_ex.get("sentence") for c in clean_exercises):
+                    def_copy = dict(def_ex)
+                    def_copy["id"] = f"ex-{len(clean_exercises)+1}"
+                    clean_exercises.append(def_copy)
+                    full_spk = def_copy["sentence"].replace("_____", def_copy.get("expected_answer", ""))
+                    target_audios.append({
+                        "english": full_spk,
+                        "translation": def_copy.get("spanish_translation", ""),
+                        "label": f"Ejercicio {len(clean_exercises)}"
+                    })
 
         board_lines = [f"🎯 DESAFÍO DE ORACIONES COMPLETAS: {topic.upper()}\n"]
         for i, ex in enumerate(clean_exercises):

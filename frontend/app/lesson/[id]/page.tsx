@@ -1865,18 +1865,112 @@ export default function LessonPage() {
             cleanExplanationPhases.push(p);
           });
 
-          // Ensure default exercises if none collected
-          if (collectedExercises.length === 0) {
-            collectedExercises.push(
-              {
-                id: 'ex-def-1',
-                sentence: `I practice ${topicParam} every day`,
-                question: `Complete the sentence about ${topicParam}`,
-                expected_answer: `I practice ${topicParam} every day`,
-                spanish_translation: `Práctica interactiva sobre ${topicParam}`,
-                image_prompt: `2D flat vector educational illustration of a student practicing ${topicParam}, clean design, no text`
-              }
-            );
+          // Ensure at least 8 authentic exercises
+          const defaultExercises = [
+            {
+              id: 'ex-1',
+              sentence: topicParam.toLowerCase().includes('past')
+                ? 'I was _____ [cooking / cooked / cook] dinner when the lights went out.'
+                : `When practicing, you should _____ [apply / applying / applied] the rules of ${topicParam}.`,
+              options: topicParam.toLowerCase().includes('past') ? ['cooking', 'cooked', 'cook'] : ['apply', 'applying', 'applied'],
+              expected_answer: topicParam.toLowerCase().includes('past') ? 'cooking' : 'apply',
+              spanish_translation: `Práctica contextual de ${topicParam}.`,
+              image_prompt: `2D flat vector educational illustration depicting ${topicParam}, clean design, no text`,
+              hint: `Aplica la estructura gramatical aprendida de ${topicParam}.`
+            },
+            {
+              id: 'ex-2',
+              sentence: topicParam.toLowerCase().includes('past')
+                ? 'While we were _____ [walking / walked / walk] in the park, it started to rain.'
+                : 'Every morning, Sophia _____ [practices / practice / practiced] English before work.',
+              options: topicParam.toLowerCase().includes('past') ? ['walking', 'walked', 'walk'] : ['practices', 'practice', 'practiced'],
+              expected_answer: topicParam.toLowerCase().includes('past') ? 'walking' : 'practices',
+              spanish_translation: `Ejercicio de consolidación para ${topicParam}.`,
+              image_prompt: `2D flat vector educational illustration of a student in a bright room, clean design, no text`,
+              hint: 'Verifica la concordancia y tiempo verbal.'
+            },
+            {
+              id: 'ex-3',
+              sentence: topicParam.toLowerCase().includes('past')
+                ? 'David was _____ [driving / drove / drive] home when his phone rang.'
+                : 'Can you _____ [express / expresses / expressing] this idea with confidence?',
+              options: topicParam.toLowerCase().includes('past') ? ['driving', 'drove', 'drive'] : ['express', 'expresses', 'expressing'],
+              expected_answer: topicParam.toLowerCase().includes('past') ? 'driving' : 'express',
+              spanish_translation: `Situación cotidiana para ${topicParam}.`,
+              image_prompt: `2D flat vector educational illustration of daily communication, clean design, no text`,
+              hint: 'Identifica la forma base o continua requerida.'
+            },
+            {
+              id: 'ex-4',
+              sentence: topicParam.toLowerCase().includes('past')
+                ? 'What were you _____ [doing / did / do] at 8 PM yesterday?'
+                : 'We _____ [learned / learn / learns] important patterns in today\'s lesson.',
+              options: topicParam.toLowerCase().includes('past') ? ['doing', 'did', 'do'] : ['learned', 'learn', 'learns'],
+              expected_answer: topicParam.toLowerCase().includes('past') ? 'doing' : 'learned',
+              spanish_translation: `Pregunta y respuesta para ${topicParam}.`,
+              image_prompt: `2D flat vector educational illustration of conversation, clean design, no text`,
+              hint: 'Estructura interrogativa y respuesta natural.'
+            },
+            {
+              id: 'ex-5',
+              sentence: topicParam.toLowerCase().includes('past')
+                ? 'They were _____ [playing / played / play] soccer when the coach arrived.'
+                : 'She always _____ [speaks / speak / speaking] clearly in meetings.',
+              options: topicParam.toLowerCase().includes('past') ? ['playing', 'played', 'play'] : ['speaks', 'speak', 'speaking'],
+              expected_answer: topicParam.toLowerCase().includes('past') ? 'playing' : 'speaks',
+              spanish_translation: `Desafío oral para ${topicParam}.`,
+              image_prompt: `2D flat vector educational illustration of teamwork, clean design, no text`,
+              hint: 'Revisa el sujeto y la conjugación adecuada.'
+            },
+            {
+              id: 'ex-6',
+              sentence: topicParam.toLowerCase().includes('past')
+                ? 'Elena was _____ [studying / studied / study] while her brother was sleeping.'
+                : 'They are _____ [improving / improve / improved] their fluency step by step.',
+              options: topicParam.toLowerCase().includes('past') ? ['studying', 'studied', 'study'] : ['improving', 'improve', 'improved'],
+              expected_answer: topicParam.toLowerCase().includes('past') ? 'studying' : 'improving',
+              spanish_translation: `Acción continua y simultánea en ${topicParam}.`,
+              image_prompt: `2D flat vector educational illustration of study habits, clean design, no text`,
+              hint: 'Uso de formas continuas en paralelo.'
+            },
+            {
+              id: 'ex-7',
+              sentence: topicParam.toLowerCase().includes('past')
+                ? 'I _____ [dropped / was dropping / drop] my keys while running for the bus.'
+                : 'If you practice every day, you _____ [will achieve / achieve will / achieving] your goals.',
+              options: topicParam.toLowerCase().includes('past') ? ['dropped', 'was dropping', 'drop'] : ['will achieve', 'achieve will', 'achieving'],
+              expected_answer: topicParam.toLowerCase().includes('past') ? 'dropped' : 'will achieve',
+              spanish_translation: `Acción puntual de interrupción para ${topicParam}.`,
+              image_prompt: `2D flat vector educational illustration of daily life, clean design, no text`,
+              hint: 'Distingue entre evento puntual y fondo continuo.'
+            },
+            {
+              id: 'ex-8',
+              sentence: topicParam.toLowerCase().includes('past')
+                ? 'She was _____ [reading / read / reads] a book when the bell rang.'
+                : 'It is important to _____ [review / reviews / reviewed] key vocabulary regularly.',
+              options: topicParam.toLowerCase().includes('past') ? ['reading', 'read', 'reads'] : ['review', 'reviews', 'reviewed'],
+              expected_answer: topicParam.toLowerCase().includes('past') ? 'reading' : 'review',
+              spanish_translation: `Cierre del desafío práctico para ${topicParam}.`,
+              image_prompt: `2D flat vector educational illustration of success in language learning, clean design, no text`,
+              hint: 'Aplica la regla final de consolidación.'
+            }
+          ];
+
+          // Filter out invalid placeholder tasks like 'Crea una oración propia...'
+          const filteredCollected = collectedExercises.filter(ex => 
+            ex.sentence &&
+            !ex.sentence.includes('Crea una oración propia') &&
+            !ex.sentence.includes('Di la frase final') &&
+            ex.sentence.length > 5
+          );
+
+          while (filteredCollected.length < 8) {
+            const nextDef = defaultExercises[filteredCollected.length % defaultExercises.length];
+            filteredCollected.push({
+              ...nextDef,
+              id: `ex-${filteredCollected.length + 1}`
+            });
           }
 
           // Build dedicated practice slide strictly AFTER all explanation phases
@@ -1886,10 +1980,10 @@ export default function LessonPage() {
             is_practice_slide: true,
             is_hook: false,
             interaction_type: 'quiz',
-            tutor_says: `¡Momento de poner en práctica lo aprendido! Completa los siguientes ejercicios interactivos para consolidar ${topicParam}.`,
-            exercises: collectedExercises,
-            student_task: collectedExercises[0]?.sentence || `Completa los ejercicios de ${topicParam}.`,
-            expected_answer: collectedExercises[0]?.expected_answer || '',
+            tutor_says: `¡Momento de poner en práctica lo aprendido! Completa los siguientes 8 ejercicios interactivos para consolidar ${topicParam}.`,
+            exercises: filteredCollected,
+            student_task: filteredCollected[0]?.sentence || `Completa los ejercicios de ${topicParam}.`,
+            expected_answer: filteredCollected[0]?.expected_answer || '',
           };
           cleanExplanationPhases.push(practiceSlideObj);
 
@@ -3308,6 +3402,7 @@ export default function LessonPage() {
                     tutorSays={typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || ''}
                     phaseIdx={currentPhaseIdx}
                     topicParam={topicParam}
+                    lessonId={lesson?.id || lessonId}
                     minimaxImageMap={minimaxImageMap}
                     generatingImages={generatingImages}
                     onFetchExerciseImage={fetchExerciseImage}

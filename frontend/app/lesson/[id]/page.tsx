@@ -23,6 +23,8 @@ import {
   BookOpen,
   HelpCircle,
   RotateCcw,
+  Play,
+  Pause,
   ChevronRight,
   ChevronLeft,
   Image as ImageIcon,
@@ -2874,12 +2876,15 @@ export default function LessonPage() {
         setTutorState('idle');
       }
     } else {
-      playVoiceChunk(currentChunkIdx, true);
+      const chunks = getPhaseVoiceChunks(phase, topicParam);
+      const targetIdx = (currentChunkIdx >= chunks.length || audioFinishedNaturallyRef.current) ? 0 : currentChunkIdx;
+      playVoiceChunk(targetIdx, true);
     }
   };
 
   const handleReplayCurrentStep = () => {
-    playVoiceChunk(currentChunkIdx, false);
+    stopCurrentAudio();
+    playVoiceChunk(0, true);
   };
 
   const handleRevealAll = () => {
@@ -3599,96 +3604,60 @@ export default function LessonPage() {
               ) : (
                 <div className={`${getBoardThemeClass(phase.board_theme)} p-5 sm:p-7 space-y-5 relative`}>
                 
-                {/* Board Header Bar */}
-                <div id="storyboard-target-title" className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-white/10 z-10">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-2xl bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan">
-                      <BookOpen size={20} />
+                {/* Board Header Bar - Ultra-compact & clean */}
+                <div id="storyboard-target-title" className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-white/10 z-10">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-2 rounded-xl bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan flex-shrink-0">
+                      <BookOpen size={18} />
                     </div>
-                    <div>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-brand-cyan block">Pizarra de Estudio</span>
-                      <h2 className="text-base sm:text-lg font-bold font-chalk text-white">
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-cyan block">Pizarra de Estudio</span>
+                      <h2 className="text-sm sm:text-base md:text-lg font-bold font-chalk text-white truncate">
                         {renderTextContent(phase.phase_name)}
                       </h2>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Botón Principal: Escuchar / Pausar */}
                     <button
                       type="button"
-                      onClick={() => speakText(typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '', true)}
-                      className="text-xs px-3 py-1.5 rounded-xl glass hover:bg-brand-surface border border-brand-border text-brand-cyan hover:text-white flex items-center gap-1.5 transition-all font-semibold"
-                      title="Escuchar la explicación del tutor en voz alta"
-                    >
-                      <Volume2 size={13} className="text-brand-cyan" />
-                      <span>Escuchar Todo</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowDynamicSubtitles(!showDynamicSubtitles)}
-                      className={`text-xs px-2.5 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 ${
-                        showDynamicSubtitles
-                          ? 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/40 shadow-sm'
-                          : 'glass border-brand-border text-brand-text-muted hover:text-white'
+                      onClick={handleTogglePlay}
+                      className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shadow-md ${
+                        tutorState === 'speaking'
+                          ? 'bg-brand-accent text-white border-brand-accent shadow-[0_0_15px_rgba(108,99,255,0.4)]'
+                          : 'glass hover:bg-brand-surface border-brand-border text-brand-cyan hover:text-white'
                       }`}
-                      title={showDynamicSubtitles ? 'Ocultar subtítulos' : 'Mostrar subtítulos dinámicos'}
+                      title={tutorState === 'speaking' ? 'Pausar locución' : 'Escuchar explicación'}
                     >
-                      <Subtitles size={12} className={showDynamicSubtitles && tutorState === 'speaking' ? 'text-brand-cyan animate-pulse' : ''} />
-                      <span>{showDynamicSubtitles ? 'Subtítulos ON' : 'Subtítulos'}</span>
+                      {tutorState === 'speaking' ? (
+                        <>
+                          <Pause size={13} />
+                          <span>Pausar</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play size={13} className="fill-current" />
+                          <span>Escuchar</span>
+                        </>
+                      )}
                     </button>
 
+                    {/* Botón: Repetir Explicación */}
                     <button
                       type="button"
-                      onClick={() => setShowPhoneticModal(true)}
-                      className="text-xs px-2.5 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/30 hover:bg-emerald-900/40 text-emerald-300 hover:text-white flex items-center gap-1.5 transition-all font-semibold"
-                      title="Consultar los 44 fonemas con audio"
+                      onClick={handleReplayCurrentStep}
+                      className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl glass hover:bg-brand-surface border border-brand-border text-brand-text-muted hover:text-white text-xs font-semibold flex items-center gap-1 transition-all"
+                      title="Repetir explicación"
                     >
-                      <Mic size={12} className="text-emerald-400" />
-                      <span>Fonemas</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowTranscript(!showTranscript)}
-                      className="text-xs px-2.5 py-1.5 rounded-xl glass hover:bg-brand-surface border border-brand-border text-brand-text-muted hover:text-brand-cyan transition-all flex items-center gap-1.5"
-                      title={showTranscript ? 'Ocultar transcripción' : 'Ver transcripción en texto'}
-                    >
-                      {showTranscript ? <EyeOff size={12} /> : <Eye size={12} />}
-                      <span>Transcripción</span>
+                      <RotateCcw size={13} />
+                      <span className="hidden sm:inline">Repetir</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Collapsible Transcript */}
-                {showTranscript && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="text-xs text-brand-text-secondary bg-black/40 p-3.5 rounded-2xl border border-white/10 font-mono leading-relaxed z-10"
-                  >
-                    <strong className="text-brand-cyan block mb-1">Transcripción del Tutor:</strong>
-                    &quot;{renderTextContent(phase.tutor_says)}&quot;
-                  </motion.div>
-                )}
-
                 {/* 🎬 Chronological Video-Like Timeline Visual Stage */}
-                <div className="flex flex-col gap-5 z-10 w-full">
-                  {/* 🎬 Live Storyboard Progressive Controller */}
-                  <LiveStoryboardController
-                    steps={phaseStoryboardSteps}
-                    activeStepIdx={activeStepIdx}
-                    revealedCount={revealedStepCount}
-                    audioProgress={audioProgress}
-                    isPlaying={tutorState === 'speaking'}
-                    isFullBoardRevealed={isFullBoardRevealed}
-                    onStepClick={handleStepClick}
-                    onTogglePlay={handleTogglePlay}
-                    onReplayStep={handleReplayCurrentStep}
-                    onRevealAll={handleRevealAll}
-                    onResetReveal={handleResetReveal}
-                  />
-
+                <div className="flex flex-col gap-4 z-10 w-full">
                   {/* 🎬 Sequential Video-Like Timeline Stage: Reveals ONLY what tutor explains step-by-step */}
                   <TimelineVisualRenderer
                     timeline={phaseStoryboardTimeline}

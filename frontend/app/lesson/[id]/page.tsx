@@ -1838,19 +1838,25 @@ export default function LessonPage() {
               return;
             }
 
-            // Extract exercises from any phase
-            if (p.exercises && Array.isArray(p.exercises) && p.exercises.length > 0) {
-              collectedExercises.push(...p.exercises);
-            }
-            if (p.student_task && typeof p.student_task === 'string' && p.student_task.trim().length > 3) {
-              collectedExercises.push({
-                id: `ex-task-${pIdx}`,
-                sentence: p.student_task,
-                question: p.student_task,
-                expected_answer: p.expected_answer || 'Complete the sentence',
-                options: p.options || [],
-                spanish_translation: `Completa la oración en el contexto de ${topicParam}.`,
-                image_prompt: `2D flat vector educational illustration depicting ${topicParam}, clean design, no text`
+            // Helper to check if an item is a valid English practice sentence (not a Spanish prompt)
+            const isValidEnglishExercise = (ex: any) => {
+              if (!ex) return false;
+              const sent = (ex.sentence || ex.question || '').trim();
+              if (!sent || sent.length < 6) return false;
+              if (/[áéíóúÁÉÍÓÚñÑ¿¡]/.test(sent)) return false;
+              const s = sent.toLowerCase();
+              if (s.includes('selecciona') || s.includes('pronuncia') || s.includes('completa') || s.includes('crea una') || s.includes('di la frase') || s.includes('oración')) {
+                return false;
+              }
+              return Boolean(sent.includes('___') || (ex.options && ex.options.length >= 2) || (ex.expected_answer && ex.expected_answer.length > 1));
+            };
+
+            // Extract ONLY structured English exercises from phases
+            if (p.exercises && Array.isArray(p.exercises)) {
+              p.exercises.forEach((ex: any) => {
+                if (isValidEnglishExercise(ex)) {
+                  collectedExercises.push(ex);
+                }
               });
             }
 
@@ -1865,112 +1871,249 @@ export default function LessonPage() {
             cleanExplanationPhases.push(p);
           });
 
-          // Ensure at least 8 authentic exercises
-          const defaultExercises = [
+          // Topic-specific authentic 8-exercise bank
+          const isPastTopic = topicParam.toLowerCase().includes('past') || topicParam.toLowerCase().includes('was');
+          const isPresentTopic = topicParam.toLowerCase().includes('present') || topicParam.toLowerCase().includes('routine') || topicParam.toLowerCase().includes('habit');
+          const isFutureTopic = topicParam.toLowerCase().includes('future') || topicParam.toLowerCase().includes('going to') || topicParam.toLowerCase().includes('will');
+
+          const defaultExercises = isPastTopic ? [
             {
               id: 'ex-1',
-              sentence: topicParam.toLowerCase().includes('past')
-                ? 'I was _____ [cooking / cooked / cook] dinner when the lights went out.'
-                : `When practicing, you should _____ [apply / applying / applied] the rules of ${topicParam}.`,
-              options: topicParam.toLowerCase().includes('past') ? ['cooking', 'cooked', 'cook'] : ['apply', 'applying', 'applied'],
-              expected_answer: topicParam.toLowerCase().includes('past') ? 'cooking' : 'apply',
-              spanish_translation: `Práctica contextual de ${topicParam}.`,
-              image_prompt: `2D flat vector educational illustration depicting ${topicParam}, clean design, no text`,
-              hint: `Aplica la estructura gramatical aprendida de ${topicParam}.`
+              sentence: 'I was _____ [cooking / cooked / cook] dinner in the kitchen when the lights suddenly went out.',
+              options: ['cooking', 'cooked', 'cook'],
+              expected_answer: 'cooking',
+              spanish_translation: 'Estaba cocinando la cena en la cocina cuando de repente se fue la luz.',
+              image_prompt: 'A person holding a wooden spoon in a cozy kitchen looking surprised as lights go off, 2D vector art, no text',
+              hint: 'Para la acción continua en el pasado usamos was + verbo con -ing.'
             },
             {
               id: 'ex-2',
-              sentence: topicParam.toLowerCase().includes('past')
-                ? 'While we were _____ [walking / walked / walk] in the park, it started to rain.'
-                : 'Every morning, Sophia _____ [practices / practice / practiced] English before work.',
-              options: topicParam.toLowerCase().includes('past') ? ['walking', 'walked', 'walk'] : ['practices', 'practice', 'practiced'],
-              expected_answer: topicParam.toLowerCase().includes('past') ? 'walking' : 'practices',
-              spanish_translation: `Ejercicio de consolidación para ${topicParam}.`,
-              image_prompt: `2D flat vector educational illustration of a student in a bright room, clean design, no text`,
-              hint: 'Verifica la concordancia y tiempo verbal.'
+              sentence: 'While we were _____ [walking / walked / walk] through the city park, it began to rain heavily.',
+              options: ['walking', 'walked', 'walk'],
+              expected_answer: 'walking',
+              spanish_translation: 'Mientras estábamos caminando por el parque de la ciudad, empezó a llover fuerte.',
+              image_prompt: 'Two friends walking on a tree-lined park path looking up as rain starts, 2D vector art, no text',
+              hint: 'Con While we were... usamos verbo con -ing.'
             },
             {
               id: 'ex-3',
-              sentence: topicParam.toLowerCase().includes('past')
-                ? 'David was _____ [driving / drove / drive] home when his phone rang.'
-                : 'Can you _____ [express / expresses / expressing] this idea with confidence?',
-              options: topicParam.toLowerCase().includes('past') ? ['driving', 'drove', 'drive'] : ['express', 'expresses', 'expressing'],
-              expected_answer: topicParam.toLowerCase().includes('past') ? 'driving' : 'express',
-              spanish_translation: `Situación cotidiana para ${topicParam}.`,
-              image_prompt: `2D flat vector educational illustration of daily communication, clean design, no text`,
-              hint: 'Identifica la forma base o continua requerida.'
+              sentence: 'David was _____ [driving / drove / drive] home from work when his phone rang.',
+              options: ['driving', 'drove', 'drive'],
+              expected_answer: 'driving',
+              spanish_translation: 'David estaba conduciendo a casa del trabajo cuando sonó su teléfono.',
+              image_prompt: 'A driver focused on a sunset highway while a phone lights up, 2D vector art, no text',
+              hint: 'Sujeto singular David + was + driving.'
             },
             {
               id: 'ex-4',
-              sentence: topicParam.toLowerCase().includes('past')
-                ? 'What were you _____ [doing / did / do] at 8 PM yesterday?'
-                : 'We _____ [learned / learn / learns] important patterns in today\'s lesson.',
-              options: topicParam.toLowerCase().includes('past') ? ['doing', 'did', 'do'] : ['learned', 'learn', 'learns'],
-              expected_answer: topicParam.toLowerCase().includes('past') ? 'doing' : 'learned',
-              spanish_translation: `Pregunta y respuesta para ${topicParam}.`,
-              image_prompt: `2D flat vector educational illustration of conversation, clean design, no text`,
-              hint: 'Estructura interrogativa y respuesta natural.'
+              sentence: 'What were you _____ [doing / did / do] at eight o\'clock yesterday evening?',
+              options: ['doing', 'did', 'do'],
+              expected_answer: 'doing',
+              spanish_translation: '¿Qué estabas haciendo a las ocho en punto ayer por la noche?',
+              image_prompt: 'A young detective asking questions in a bright living room, 2D vector art, no text',
+              hint: 'En preguntas: What were you + doing?'
             },
             {
               id: 'ex-5',
-              sentence: topicParam.toLowerCase().includes('past')
-                ? 'They were _____ [playing / played / play] soccer when the coach arrived.'
-                : 'She always _____ [speaks / speak / speaking] clearly in meetings.',
-              options: topicParam.toLowerCase().includes('past') ? ['playing', 'played', 'play'] : ['speaks', 'speak', 'speaking'],
-              expected_answer: topicParam.toLowerCase().includes('past') ? 'playing' : 'speaks',
-              spanish_translation: `Desafío oral para ${topicParam}.`,
-              image_prompt: `2D flat vector educational illustration of teamwork, clean design, no text`,
-              hint: 'Revisa el sujeto y la conjugación adecuada.'
+              sentence: 'They were _____ [playing / played / play] soccer in the stadium when the coach arrived.',
+              options: ['playing', 'played', 'play'],
+              expected_answer: 'playing',
+              spanish_translation: 'Ellos estaban jugando fútbol en el estadio cuando llegó el entrenador.',
+              image_prompt: 'Teenagers playing soccer on a green stadium grass field, 2D vector art, no text',
+              hint: 'Sujeto plural They + were + playing.'
             },
             {
               id: 'ex-6',
-              sentence: topicParam.toLowerCase().includes('past')
-                ? 'Elena was _____ [studying / studied / study] while her brother was sleeping.'
-                : 'They are _____ [improving / improve / improved] their fluency step by step.',
-              options: topicParam.toLowerCase().includes('past') ? ['studying', 'studied', 'study'] : ['improving', 'improve', 'improved'],
-              expected_answer: topicParam.toLowerCase().includes('past') ? 'studying' : 'improving',
-              spanish_translation: `Acción continua y simultánea en ${topicParam}.`,
-              image_prompt: `2D flat vector educational illustration of study habits, clean design, no text`,
-              hint: 'Uso de formas continuas en paralelo.'
+              sentence: 'Elena was _____ [studying / studied / study] for her final exam while her brother was sleeping.',
+              options: ['studying', 'studied', 'study'],
+              expected_answer: 'studying',
+              spanish_translation: 'Elena estaba estudiando para su examen final mientras su hermano dormía.',
+              image_prompt: 'A student studying with books and a desk lamp at night, 2D vector art, no text',
+              hint: 'Dos acciones continuas paralelas usan was/were + -ing.'
             },
             {
               id: 'ex-7',
-              sentence: topicParam.toLowerCase().includes('past')
-                ? 'I _____ [dropped / was dropping / drop] my keys while running for the bus.'
-                : 'If you practice every day, you _____ [will achieve / achieve will / achieving] your goals.',
-              options: topicParam.toLowerCase().includes('past') ? ['dropped', 'was dropping', 'drop'] : ['will achieve', 'achieve will', 'achieving'],
-              expected_answer: topicParam.toLowerCase().includes('past') ? 'dropped' : 'will achieve',
-              spanish_translation: `Acción puntual de interrupción para ${topicParam}.`,
-              image_prompt: `2D flat vector educational illustration of daily life, clean design, no text`,
-              hint: 'Distingue entre evento puntual y fondo continuo.'
+              sentence: 'I _____ [dropped / was dropping / drop] my silver keys while I was running for the morning bus.',
+              options: ['dropped', 'was dropping', 'drop'],
+              expected_answer: 'dropped',
+              spanish_translation: 'Se me cayeron las llaves plateadas mientras estaba corriendo tras el autobús matutino.',
+              image_prompt: 'A commuter rushing toward a city bus as keys slip onto the sidewalk, 2D vector art, no text',
+              hint: 'La acción puntual que interrumpe va en Past Simple (dropped).'
             },
             {
               id: 'ex-8',
-              sentence: topicParam.toLowerCase().includes('past')
-                ? 'She was _____ [reading / read / reads] a book when the bell rang.'
-                : 'It is important to _____ [review / reviews / reviewed] key vocabulary regularly.',
-              options: topicParam.toLowerCase().includes('past') ? ['reading', 'read', 'reads'] : ['review', 'reviews', 'reviewed'],
-              expected_answer: topicParam.toLowerCase().includes('past') ? 'reading' : 'review',
-              spanish_translation: `Cierre del desafío práctico para ${topicParam}.`,
-              image_prompt: `2D flat vector educational illustration of success in language learning, clean design, no text`,
-              hint: 'Aplica la regla final de consolidación.'
+              sentence: 'She was _____ [reading / read / reads] a fascinating mystery novel when the doorbell rang loudly.',
+              options: ['reading', 'read', 'reads'],
+              expected_answer: 'reading',
+              spanish_translation: 'Ella estaba leyendo una fascinante novela de misterio cuando el timbre sonó fuerte.',
+              image_prompt: 'A woman sitting in an armchair holding a book looking toward the front door, 2D vector art, no text',
+              hint: 'Acción en progreso was reading interrumpida por el timbre.'
+            }
+          ] : isPresentTopic ? [
+            {
+              id: 'ex-1',
+              sentence: 'Every weekday, Mateo _____ [wakes up / wake up / waking up] at six in the morning.',
+              options: ['wakes up', 'wake up', 'waking up'],
+              expected_answer: 'wakes up',
+              spanish_translation: 'Cada día entre semana, Mateo se despierta a las seis de la mañana.',
+              image_prompt: 'A person waking up cheerfully with morning sunrise light, 2D vector art, no text',
+              hint: 'Tercera persona singular en Present Simple agrega -s.'
+            },
+            {
+              id: 'ex-2',
+              sentence: 'She always _____ [has / have / haves] a healthy breakfast before going to the gym.',
+              options: ['has', 'have', 'haves'],
+              expected_answer: 'has',
+              spanish_translation: 'Ella siempre desayuna saludable antes de ir al gimnasio.',
+              image_prompt: 'A person enjoying a healthy fruit breakfast, 2D vector art, no text',
+              hint: 'Forma irregular de tercera persona para have es has.'
+            },
+            {
+              id: 'ex-3',
+              sentence: 'We usually _____ [drink / drinks / drinking] hot coffee together at the office.',
+              options: ['drink', 'drinks', 'drinking'],
+              expected_answer: 'drink',
+              spanish_translation: 'Nosotros normalmente tomamos café caliente juntos en la oficina.',
+              image_prompt: 'Coworkers smiling with coffee mugs in an office, 2D vector art, no text',
+              hint: 'Con We usamos la forma base drink.'
+            },
+            {
+              id: 'ex-4',
+              sentence: 'Carlos _____ [goes / go / gos] to work by subway every morning.',
+              options: ['goes', 'go', 'gos'],
+              expected_answer: 'goes',
+              spanish_translation: 'Carlos va a trabajar en metro todas las mañanas.',
+              image_prompt: 'A person waiting on a modern subway platform, 2D vector art, no text',
+              hint: 'Verbos terminados en -o agregan -es.'
+            },
+            {
+              id: 'ex-5',
+              sentence: 'Elena _____ [watches / watch / watchs] educational documentaries on Friday evenings.',
+              options: ['watches', 'watch', 'watchs'],
+              expected_answer: 'watches',
+              spanish_translation: 'Elena mira documentales educativos los viernes por la noche.',
+              image_prompt: 'A person watching documentary on TV, 2D vector art, no text',
+              hint: 'Verbos terminados en -ch agregan -es.'
+            },
+            {
+              id: 'ex-6',
+              sentence: 'They _____ [don\'t work / doesn\'t work / not work] on Sunday mornings.',
+              options: ['don\'t work', 'doesn\'t work', 'not work'],
+              expected_answer: 'don\'t work',
+              spanish_translation: 'Ellos no trabajan los domingos por la mañana.',
+              image_prompt: 'People walking relaxing in a sunny garden, 2D vector art, no text',
+              hint: 'Presente negativo para They usa don\'t + verbo base.'
+            },
+            {
+              id: 'ex-7',
+              sentence: 'Does your brother _____ [exercise / exercises / exercising] at the sports club?',
+              options: ['exercise', 'exercises', 'exercising'],
+              expected_answer: 'exercise',
+              spanish_translation: '¿Tu hermano hace ejercicio en el club deportivo?',
+              image_prompt: 'A person exercising with weights in a gym, 2D vector art, no text',
+              hint: 'Tras Does el verbo principal va en forma base.'
+            },
+            {
+              id: 'ex-8',
+              sentence: 'I sometimes _____ [sleep / sleeps / sleeping] eight full hours on weekends.',
+              options: ['sleep', 'sleeps', 'sleeping'],
+              expected_answer: 'sleep',
+              spanish_translation: 'A veces duermo ocho horas completas los fines de semana.',
+              image_prompt: 'A person sleeping in a comfortable bed, 2D vector art, no text',
+              hint: 'Con el sujeto I el verbo no lleva -s.'
+            }
+          ] : [
+            {
+              id: 'ex-1',
+              sentence: `When practicing daily, you should _____ [apply / applying / applied] the structure of ${topicParam} clearly.`,
+              options: ['apply', 'applying', 'applied'],
+              expected_answer: 'apply',
+              spanish_translation: `Al practicar a diario, debes aplicar la estructura de ${topicParam} con claridad.`,
+              image_prompt: `A smiling student studying with headphones and a tablet in a bright room, 2D vector art, no text`,
+              hint: 'Usa el verbo base después de modales: should apply.'
+            },
+            {
+              id: 'ex-2',
+              sentence: `Every morning, Sophia _____ [practices / practice / practiced] English conversation before work.`,
+              options: ['practices', 'practice', 'practiced'],
+              expected_answer: 'practices',
+              spanish_translation: `Cada mañana, Sophia practica conversación en inglés antes del trabajo.`,
+              image_prompt: `A young professional woman practicing speaking with headphones, 2D vector art, no text`,
+              hint: 'Tercera persona singular en presente afirmativo lleva -s.'
+            },
+            {
+              id: 'ex-3',
+              sentence: `Can you _____ [express / expresses / expressing] this idea using the correct grammar form?`,
+              options: ['express', 'expresses', 'expressing'],
+              expected_answer: 'express',
+              spanish_translation: `¿Puedes expresar esta idea usando la forma gramatical correcta?`,
+              image_prompt: `Two friends chatting enthusiastically in a cozy coffee shop, 2D vector art, no text`,
+              hint: 'Tras el verbo modal Can, usamos la forma base express.'
+            },
+            {
+              id: 'ex-4',
+              sentence: `We _____ [learned / learn / learns] important communication patterns in today's lesson.`,
+              options: ['learned', 'learn', 'learns'],
+              expected_answer: 'learned',
+              spanish_translation: `Aprendimos patrones de comunicación importantes en la lección de hoy.`,
+              image_prompt: `A diverse group of students celebrating in a modern classroom, 2D vector art, no text`,
+              hint: 'Forma correcta del verbo para describir lo aprendido.'
+            },
+            {
+              id: 'ex-5',
+              sentence: `She always _____ [speaks / speak / speaking] with confidence during presentations.`,
+              options: ['speaks', 'speak', 'speaking'],
+              expected_answer: 'speaks',
+              spanish_translation: `Ella siempre habla con seguridad durante las presentaciones.`,
+              image_prompt: `A confident speaker giving a presentation in front of an audience, 2D vector art, no text`,
+              hint: 'Sujeto She + adverbio de frecuencia + verbo con -s.'
+            },
+            {
+              id: 'ex-6',
+              sentence: `They are _____ [improving / improve / improved] their English fluency step by step.`,
+              options: ['improving', 'improve', 'improved'],
+              expected_answer: 'improving',
+              spanish_translation: `Ellos están mejorando su fluidez en inglés paso a paso.`,
+              image_prompt: `Two students looking at an upward progress chart smiling, 2D vector art, no text`,
+              hint: 'Con They are usamos el verbo con -ing.'
+            },
+            {
+              id: 'ex-7',
+              sentence: `If you practice regularly, you _____ [will achieve / achieve will / achieving] your language goals.`,
+              options: ['will achieve', 'achieve will', 'achieving'],
+              expected_answer: 'will achieve',
+              spanish_translation: `Si practicas regularmente, alcanzarás tus metas lingüísticas.`,
+              image_prompt: `A student standing at the summit of a mountain looking at sunrise, 2D vector art, no text`,
+              hint: 'Resultado futuro en condicional: will + verbo base.'
+            },
+            {
+              id: 'ex-8',
+              sentence: `It is essential to _____ [review / reviews / reviewed] key vocabulary every week.`,
+              options: ['review', 'reviews', 'reviewed'],
+              expected_answer: 'review',
+              spanish_translation: `Es esencial repasar el vocabulario clave cada semana.`,
+              image_prompt: `A student organizing colorful flashcards on a study table, 2D vector art, no text`,
+              hint: 'Infinitivo con to + verbo base: to review.'
             }
           ];
 
-          // Filter out invalid placeholder tasks like 'Crea una oración propia...'
-          const filteredCollected = collectedExercises.filter(ex => 
-            ex.sentence &&
-            !ex.sentence.includes('Crea una oración propia') &&
-            !ex.sentence.includes('Di la frase final') &&
-            ex.sentence.length > 5
-          );
+          // Filter strictly valid exercises
+          const filteredCollected: any[] = [];
+          collectedExercises.forEach(ex => {
+            if (ex && ex.sentence && !filteredCollected.some(f => f.sentence === ex.sentence)) {
+              filteredCollected.push(ex);
+            }
+          });
 
-          while (filteredCollected.length < 8) {
-            const nextDef = defaultExercises[filteredCollected.length % defaultExercises.length];
-            filteredCollected.push({
-              ...nextDef,
-              id: `ex-${filteredCollected.length + 1}`
-            });
+          // Supplement up to 8 exercises from topic default bank
+          for (const defEx of defaultExercises) {
+            if (filteredCollected.length >= 8) break;
+            if (!filteredCollected.some(f => f.sentence === defEx.sentence)) {
+              filteredCollected.push({
+                ...defEx,
+                id: `ex-${filteredCollected.length + 1}`
+              });
+            }
           }
 
           // Build dedicated practice slide strictly AFTER all explanation phases

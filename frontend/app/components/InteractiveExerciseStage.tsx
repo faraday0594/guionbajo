@@ -108,27 +108,46 @@ export default function InteractiveExerciseStage({
     }
   };
 
+  const silenceTimeoutRef = useRef<any>(null);
+  const latestSpokenRef = useRef<string>('');
+
   const validateAnswer = async (answerText: string) => {
     if (!answerText || !answerText.trim()) {
       toast('Por favor di o escribe tu respuesta primero ✍️', { icon: '💡' });
       return;
     }
 
-    const cleanAnswer = answerText.trim().toLowerCase().replace(/[.,!?;:"'()_-]/g, '').trim();
-    const expected = (currentEx.expected_answer || '').trim().toLowerCase().replace(/[.,!?;:"'()_-]/g, '').trim();
-    const fullSentence = (fullSentenceSpoken || '').toLowerCase().replace(/[.,!?;:"'()_-]/g, '').trim();
+    const cleanAnswer = answerText.trim().toLowerCase().replace(/[.,!?;:"'()_-]/g, ' ').replace(/\s+/g, ' ').trim();
+    const expected = (currentEx.expected_answer || '').trim().toLowerCase().replace(/[.,!?;:"'()_-]/g, ' ').replace(/\s+/g, ' ').trim();
+    const fullSentence = (fullSentenceSpoken || '').toLowerCase().replace(/[.,!?;:"'()_-]/g, ' ').replace(/\s+/g, ' ').trim();
     
-    // Direct matching
-    const isDirectMatch = Boolean(
-      (expected.length > 0 && cleanAnswer.includes(expected)) ||
-      (cleanAnswer.length > 0 && expected.includes(cleanAnswer)) ||
-      (fullSentence.length > 0 && (cleanAnswer.includes(fullSentence) || fullSentence.includes(cleanAnswer)))
-    );
+    // Strict, genuine evaluation:
+    const answerWords = cleanAnswer.split(' ').filter(Boolean);
+    const expectedWords = expected.split(' ').filter(Boolean);
+    const fullSentenceWords = fullSentence.split(' ').filter(Boolean);
+
+    let isDirectMatch = false;
+
+    if (cleanAnswer === expected) {
+      isDirectMatch = true;
+    } else if (expectedWords.length === 1 && answerWords.includes(expectedWords[0])) {
+      isDirectMatch = true;
+    } else if (expectedWords.length > 1 && cleanAnswer.includes(expected)) {
+      isDirectMatch = true;
+    } else if (fullSentenceWords.length > 3) {
+      // Check if student spoke the whole sentence (matches at least 65% of sentence words AND contains the expected target verb)
+      const matchingCount = fullSentenceWords.filter(w => answerWords.includes(w)).length;
+      const sentenceRatio = matchingCount / fullSentenceWords.length;
+      const containsExpected = expectedWords.every(w => answerWords.includes(w));
+      if (sentenceRatio >= 0.65 && containsExpected) {
+        isDirectMatch = true;
+      }
+    }
 
     let isCorrect = isDirectMatch;
     let feedback = isCorrect
-      ? `¡Excelente! Has completado la oración correctamente aplicando la regla de ${topicParam}.`
-      : `Buen intento con "${answerText}". La respuesta esperada es "${currentEx.expected_answer}". ${currentEx.hint || ''}`;
+      ? `¡Excelente! Has respondido correctamente aplicando la regla de ${topicParam}.`
+      : `Respuesta incorrecta: Tu respuesta fue "${answerText}". La forma correcta esperada es "${currentEx.expected_answer}". ${currentEx.hint || ''}`;
 
     // Backend AI evaluation if lessonId is present
     if (lessonId && answerText.length > 1) {
@@ -142,7 +161,7 @@ export default function InteractiveExerciseStage({
         const res = await api.evaluateLesson(lessonId, formData);
         if (res) {
           if (typeof res.is_correct === 'boolean') {
-            isCorrect = isCorrect || res.is_correct;
+            isCorrect = res.is_correct;
           }
           if (res.feedback) {
             feedback = res.feedback;
@@ -163,7 +182,7 @@ export default function InteractiveExerciseStage({
     if (isCorrect) {
       toast.success('¡Correcto! 🎉', { id: `ex-eval-${currentEx.id}` });
     } else {
-      toast('Revisa la respuesta 💡', { id: `ex-eval-${currentEx.id}`, icon: '💡' });
+      toast.error('Respuesta incorrecta 💡', { id: `ex-eval-${currentEx.id}` });
     }
   };
 
@@ -173,7 +192,7 @@ export default function InteractiveExerciseStage({
     validateAnswer(option);
   };
 
-  // Real Speech Recognition with Web Speech API
+  // Real Speech Recognition with Continuous mode and comfortable pacing
   const startVoiceRecording = () => {
     if (typeof window === 'undefined') return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -185,18 +204,21 @@ export default function InteractiveExerciseStage({
     if (recognitionRef.current) {
       try { recognitionRef.current.abort(); } catch (_) {}
     }
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
 
     const rec = new SpeechRecognition();
     rec.lang = 'en-US';
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = true;
     rec.maxAlternatives = 1;
 
     setLiveTranscript('');
+    latestSpokenRef.current = '';
     setIsRecording(true);
-    toast('Te escuchamos... Di la frase en inglés 🎙️', { icon: '🎙️' });
-
-    let latestSpoken = '';
+    toast('Micrófono activo 🎙️ Pronuncia la oración con calma a tu ritmo.', { icon: '🎙️', duration: 4000 });
 
     rec.onresult = (event: any) => {
       let interim = '';
@@ -209,28 +231,37 @@ export default function InteractiveExerciseStage({
           interim += trans;
         }
       }
-      latestSpoken = (final || interim).trim();
-      if (latestSpoken) {
-        setLiveTranscript(latestSpoken);
-        setTextInputs(prev => ({ ...prev, [currentEx.id]: latestSpoken }));
+      const currentSpoken = (final || interim).trim();
+      if (currentSpoken) {
+        latestSpokenRef.current = currentSpoken;
+        setLiveTranscript(currentSpoken);
+        setTextInputs(prev => ({ ...prev, [currentEx.id]: currentSpoken }));
+
+        // Generous 4.5-second silence timeout after speech before auto-evaluating
+        if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+        silenceTimeoutRef.current = setTimeout(() => {
+          stopVoiceRecording();
+        }, 4500);
       }
     };
 
     rec.onerror = (event: any) => {
-      console.warn('SpeechRecognition error in exercise:', event.error);
-      setIsRecording(false);
+      console.warn('SpeechRecognition event in exercise:', event.error);
       if (event.error === 'no-speech') {
-        toast('No se detectó voz. Presiona el micrófono y pronuncia la oración 🎤', { icon: '💡' });
-      } else if (event.error !== 'aborted') {
+        return; // Keep microphone listening comfortably
+      }
+      setIsRecording(false);
+      if (event.error !== 'aborted') {
         toast.error('Error de micrófono. Intenta de nuevo o escribe la respuesta.');
       }
     };
 
     rec.onend = () => {
       setIsRecording(false);
-      if (latestSpoken && latestSpoken.length > 1) {
-        setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: latestSpoken }));
-        validateAnswer(latestSpoken);
+      const textToValidate = latestSpokenRef.current.trim();
+      if (textToValidate && textToValidate.length > 1) {
+        setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: textToValidate }));
+        validateAnswer(textToValidate);
       }
     };
 
@@ -239,6 +270,10 @@ export default function InteractiveExerciseStage({
   };
 
   const stopVoiceRecording = () => {
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();

@@ -1818,74 +1818,88 @@ export default function LessonPage() {
           };
         }
 
-        // 🛡️ Ensure any lesson loaded from Cloud/Supabase ALWAYS has a dedicated practice slide
-        if (data?.phases && Array.isArray(data.phases)) {
-          const hasPracticeSlide = data.phases.some((p: any) => p.is_practice_slide || p.interaction_type === 'quiz' || (p.exercises && p.exercises.length > 0));
-          if (!hasPracticeSlide && data.phases.length > 1) {
-            const collectedExercises: any[] = [];
-            data.phases.forEach((p: any, pIdx: number) => {
-              if (p.exercises && Array.isArray(p.exercises)) {
-                collectedExercises.push(...p.exercises);
-              }
-              if (p.student_task && p.student_task.trim().length > 3) {
-                collectedExercises.push({
-                  id: `ex-task-${pIdx}`,
-                  sentence: p.student_task,
-                  question: p.student_task,
-                  expected_answer: p.expected_answer || 'Complete the sentence',
-                  options: p.options || [],
-                  spanish_translation: `Completa la oración en el contexto de ${topicParam}.`,
-                  image_prompt: `2D flat vector educational illustration depicting ${topicParam}, clean design, no text`
-                });
-              }
-              if (p.target_audio_items && Array.isArray(p.target_audio_items)) {
-                p.target_audio_items.slice(0, 2).forEach((item: any, iIdx: number) => {
-                  if (item.english && item.english.split(' ').length >= 3) {
-                    collectedExercises.push({
-                      id: `ex-target-${pIdx}-${iIdx}`,
-                      sentence: item.english,
-                      question: item.english,
-                      expected_answer: item.english,
-                      spanish_translation: item.translation || item.spanish || `Práctica de ${topicParam}`,
-                      image_prompt: `2D flat vector educational illustration depicting ${item.english}, clean design, no text`
-                    });
-                  }
-                });
-              }
-            });
+        // 🛡️ Ensure any lesson loaded from Cloud/Supabase ALWAYS has clean explanation phases and practice slide strictly at the end
+        if (data?.phases && Array.isArray(data.phases) && data.phases.length > 1) {
+          const allPhases = [...data.phases];
+          const cleanExplanationPhases: any[] = [];
+          const collectedExercises: any[] = [];
+          let existingBonusPhase: any = null;
 
-            if (collectedExercises.length === 0) {
-              collectedExercises.push(
-                {
-                  id: 'ex-def-1',
-                  sentence: `I practice ${topicParam} every day`,
-                  question: `Complete the sentence about ${topicParam}`,
-                  expected_answer: `I practice ${topicParam} every day`,
-                  spanish_translation: `Práctica interactiva sobre ${topicParam}`,
-                  image_prompt: `2D flat vector educational illustration of a student practicing ${topicParam}, clean design, no text`
-                }
-              );
+          allPhases.forEach((p: any, pIdx: number) => {
+            // Check for phonetic bonus phase
+            const isPh = Boolean(
+              p.is_phonetic_bonus ||
+              p.phonetic_focus ||
+              p.phase_name?.toLowerCase().includes('fonét') ||
+              p.phase_name?.toLowerCase().includes('bonus de pronunciación')
+            );
+            if (isPh) {
+              existingBonusPhase = p;
+              return;
             }
 
-            const phoneticIdx = data.phases.findIndex((p: any) => p.is_phonetic_bonus || p.phonetic_focus || p.phase_name?.toLowerCase().includes('fonét'));
-            const practiceSlideObj = {
-              phase_number: data.phases.length + 1,
-              phase_name: `Desafío Práctico: ${topicParam}`,
-              is_practice_slide: true,
-              is_hook: false,
-              interaction_type: 'quiz',
-              tutor_says: `¡Momento de poner en práctica lo aprendido! Completa los siguientes ejercicios interactivos para consolidar ${topicParam}.`,
-              exercises: collectedExercises,
-              student_task: collectedExercises[0]?.sentence || `Completa los ejercicios de ${topicParam}.`,
-              expected_answer: collectedExercises[0]?.expected_answer || '',
-            };
-
-            if (phoneticIdx !== -1) {
-              data.phases.splice(phoneticIdx, 0, practiceSlideObj);
-            } else {
-              data.phases.push(practiceSlideObj);
+            // Extract exercises from any phase
+            if (p.exercises && Array.isArray(p.exercises) && p.exercises.length > 0) {
+              collectedExercises.push(...p.exercises);
             }
+            if (p.student_task && typeof p.student_task === 'string' && p.student_task.trim().length > 3) {
+              collectedExercises.push({
+                id: `ex-task-${pIdx}`,
+                sentence: p.student_task,
+                question: p.student_task,
+                expected_answer: p.expected_answer || 'Complete the sentence',
+                options: p.options || [],
+                spanish_translation: `Completa la oración en el contexto de ${topicParam}.`,
+                image_prompt: `2D flat vector educational illustration depicting ${topicParam}, clean design, no text`
+              });
+            }
+
+            // If it was already a dedicated practice slide, don't duplicate it in explanation phases
+            if (p.is_practice_slide || (p.interaction_type === 'quiz' && pIdx >= allPhases.length - 2)) {
+              return;
+            }
+
+            // Clean conceptual explanation phase
+            p.is_practice_slide = false;
+            p.exercises = [];
+            cleanExplanationPhases.push(p);
+          });
+
+          // Ensure default exercises if none collected
+          if (collectedExercises.length === 0) {
+            collectedExercises.push(
+              {
+                id: 'ex-def-1',
+                sentence: `I practice ${topicParam} every day`,
+                question: `Complete the sentence about ${topicParam}`,
+                expected_answer: `I practice ${topicParam} every day`,
+                spanish_translation: `Práctica interactiva sobre ${topicParam}`,
+                image_prompt: `2D flat vector educational illustration of a student practicing ${topicParam}, clean design, no text`
+              }
+            );
           }
+
+          // Build dedicated practice slide strictly AFTER all explanation phases
+          const practiceSlideObj = {
+            phase_number: cleanExplanationPhases.length + 1,
+            phase_name: `Desafío Práctico: ${topicParam}`,
+            is_practice_slide: true,
+            is_hook: false,
+            interaction_type: 'quiz',
+            tutor_says: `¡Momento de poner en práctica lo aprendido! Completa los siguientes ejercicios interactivos para consolidar ${topicParam}.`,
+            exercises: collectedExercises,
+            student_task: collectedExercises[0]?.sentence || `Completa los ejercicios de ${topicParam}.`,
+            expected_answer: collectedExercises[0]?.expected_answer || '',
+          };
+          cleanExplanationPhases.push(practiceSlideObj);
+
+          // If phonetic bonus exists, append at the very end
+          if (existingBonusPhase) {
+            existingBonusPhase.phase_number = cleanExplanationPhases.length + 1;
+            cleanExplanationPhases.push(existingBonusPhase);
+          }
+
+          data.phases = cleanExplanationPhases;
         }
 
         setLesson(data);
@@ -2664,11 +2678,10 @@ export default function LessonPage() {
     (phase.phase_name?.toLowerCase().includes('fonét') && currentPhaseIdx === (lesson?.phases?.length ? lesson.phases.length - 1 : currentPhaseIdx))
   );
 
-  // 🎯 Dedicated Practice Slide Resolution
+  // 🎯 Dedicated Practice Slide Resolution (strictly after all explanation slides)
   const isPracticeSlide = !isHook && !isPhoneticBonus && Boolean(
-    phase.is_practice_slide ||
-    (phase.interaction_type === 'quiz' && ((phase.exercises && phase.exercises.length > 0) || parsedExercisesData.exercises.length > 0)) ||
-    (phase.exercises && phase.exercises.length > 0)
+    phase.is_practice_slide === true ||
+    (phase.interaction_type === 'quiz' && currentPhaseIdx >= (lesson?.phases?.length ? lesson.phases.length - 2 : 1) && phase.exercises && phase.exercises.length > 0)
   );
 
   // ─── Image Generation & Hook Visuals ───────────────────────────────────────

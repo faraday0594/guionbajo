@@ -1818,6 +1818,76 @@ export default function LessonPage() {
           };
         }
 
+        // 🛡️ Ensure any lesson loaded from Cloud/Supabase ALWAYS has a dedicated practice slide
+        if (data?.phases && Array.isArray(data.phases)) {
+          const hasPracticeSlide = data.phases.some((p: any) => p.is_practice_slide || p.interaction_type === 'quiz' || (p.exercises && p.exercises.length > 0));
+          if (!hasPracticeSlide && data.phases.length > 1) {
+            const collectedExercises: any[] = [];
+            data.phases.forEach((p: any, pIdx: number) => {
+              if (p.exercises && Array.isArray(p.exercises)) {
+                collectedExercises.push(...p.exercises);
+              }
+              if (p.student_task && p.student_task.trim().length > 3) {
+                collectedExercises.push({
+                  id: `ex-task-${pIdx}`,
+                  sentence: p.student_task,
+                  question: p.student_task,
+                  expected_answer: p.expected_answer || 'Complete the sentence',
+                  options: p.options || [],
+                  spanish_translation: `Completa la oración en el contexto de ${topicParam}.`,
+                  image_prompt: `2D flat vector educational illustration depicting ${topicParam}, clean design, no text`
+                });
+              }
+              if (p.target_audio_items && Array.isArray(p.target_audio_items)) {
+                p.target_audio_items.slice(0, 2).forEach((item: any, iIdx: number) => {
+                  if (item.english && item.english.split(' ').length >= 3) {
+                    collectedExercises.push({
+                      id: `ex-target-${pIdx}-${iIdx}`,
+                      sentence: item.english,
+                      question: item.english,
+                      expected_answer: item.english,
+                      spanish_translation: item.translation || item.spanish || `Práctica de ${topicParam}`,
+                      image_prompt: `2D flat vector educational illustration depicting ${item.english}, clean design, no text`
+                    });
+                  }
+                });
+              }
+            });
+
+            if (collectedExercises.length === 0) {
+              collectedExercises.push(
+                {
+                  id: 'ex-def-1',
+                  sentence: `I practice ${topicParam} every day`,
+                  question: `Complete the sentence about ${topicParam}`,
+                  expected_answer: `I practice ${topicParam} every day`,
+                  spanish_translation: `Práctica interactiva sobre ${topicParam}`,
+                  image_prompt: `2D flat vector educational illustration of a student practicing ${topicParam}, clean design, no text`
+                }
+              );
+            }
+
+            const phoneticIdx = data.phases.findIndex((p: any) => p.is_phonetic_bonus || p.phonetic_focus || p.phase_name?.toLowerCase().includes('fonét'));
+            const practiceSlideObj = {
+              phase_number: data.phases.length + 1,
+              phase_name: `Desafío Práctico: ${topicParam}`,
+              is_practice_slide: true,
+              is_hook: false,
+              interaction_type: 'quiz',
+              tutor_says: `¡Momento de poner en práctica lo aprendido! Completa los siguientes ejercicios interactivos para consolidar ${topicParam}.`,
+              exercises: collectedExercises,
+              student_task: collectedExercises[0]?.sentence || `Completa los ejercicios de ${topicParam}.`,
+              expected_answer: collectedExercises[0]?.expected_answer || '',
+            };
+
+            if (phoneticIdx !== -1) {
+              data.phases.splice(phoneticIdx, 0, practiceSlideObj);
+            } else {
+              data.phases.push(practiceSlideObj);
+            }
+          }
+        }
+
         setLesson(data);
 
         // 🎨 Pre-generate & preload Phase 0's image with MiniMax image-01 so the lesson NEVER starts without it
@@ -2861,19 +2931,46 @@ export default function LessonPage() {
 
         {/* Header Controls: Clean 2-Mode Segmented Selector + Tutor Avatar */}
         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-          {/* Segmented View Switcher: Pizarra Interactiva vs Flujo Didáctico */}
-          <div className="flex items-center p-1 rounded-2xl bg-brand-surface/90 border border-brand-border text-xs gap-1 shadow-inner">
+          {/* Segmented View Switcher: Pizarra Interactiva vs Ejercicios vs Flujo vs Lectura vs Juegos */}
+          <div className="flex items-center p-1 rounded-2xl bg-brand-surface/90 border border-brand-border text-xs gap-1 shadow-inner overflow-x-auto max-w-full">
             <button
-              onClick={() => setViewMode('board')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all font-semibold ${
-                viewMode === 'board'
+              onClick={() => {
+                stopCurrentAudio();
+                setViewMode('board');
+                // If currently on practice slide and user clicks Pizarra, go to slide 1
+                if (isPracticeSlide) {
+                  setCurrentPhaseIdx(0);
+                }
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
+                viewMode === 'board' && !isPracticeSlide
                   ? 'bg-gradient-to-r from-brand-accent to-indigo-600 text-white shadow-md shadow-brand-accent/25'
                   : 'text-brand-text-muted hover:text-white'
               }`}
               title="Pizarra Interactiva"
             >
-              <BookOpen size={13} className={viewMode === 'board' ? 'text-brand-cyan animate-pulse' : ''} />
-              <span>Pizarra Interactiva</span>
+              <BookOpen size={13} className={viewMode === 'board' && !isPracticeSlide ? 'text-brand-cyan animate-pulse' : ''} />
+              <span>Pizarra</span>
+            </button>
+
+            <button
+              onClick={() => {
+                stopCurrentAudio();
+                setViewMode('board');
+                const practiceIdx = lesson?.phases?.findIndex((p: any) => p.is_practice_slide || p.interaction_type === 'quiz' || (p.exercises && p.exercises.length > 0));
+                if (practiceIdx !== -1 && practiceIdx !== undefined) {
+                  setCurrentPhaseIdx(practiceIdx);
+                }
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
+                viewMode === 'board' && isPracticeSlide
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-black font-extrabold shadow-md shadow-amber-500/25'
+                  : 'text-brand-text-muted hover:text-amber-400'
+              }`}
+              title="Sección de Ejercicios y Desafío Práctico"
+            >
+              <Sparkles size={13} className={viewMode === 'board' && isPracticeSlide ? 'text-black animate-spin' : 'text-amber-400'} />
+              <span>Ejercicios 🎯</span>
             </button>
 
             <button
@@ -2881,7 +2978,7 @@ export default function LessonPage() {
                 stopCurrentAudio();
                 setViewMode('timeline');
               }}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all font-semibold ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
                 viewMode === 'timeline'
                   ? 'bg-gradient-to-r from-brand-cyan to-blue-600 text-white shadow-md shadow-brand-cyan/25'
                   : 'text-brand-text-muted hover:text-white'
@@ -2889,7 +2986,7 @@ export default function LessonPage() {
               title="Flujo Didáctico"
             >
               <Sparkles size={13} className={viewMode === 'timeline' ? 'text-yellow-300 animate-pulse' : ''} />
-              <span>Flujo Didáctico</span>
+              <span>Flujo</span>
             </button>
 
             <button
@@ -2897,7 +2994,7 @@ export default function LessonPage() {
                 stopCurrentAudio();
                 setViewMode('reading');
               }}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all font-semibold ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
                 viewMode === 'reading'
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25'
                   : 'text-brand-text-muted hover:text-white'
@@ -2913,7 +3010,7 @@ export default function LessonPage() {
                 stopCurrentAudio();
                 setViewMode('games');
               }}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all font-semibold ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
                 viewMode === 'games'
                   ? 'bg-gradient-to-r from-brand-accent to-brand-cyan text-white shadow-md shadow-brand-accent/25'
                   : 'text-brand-text-muted hover:text-white'

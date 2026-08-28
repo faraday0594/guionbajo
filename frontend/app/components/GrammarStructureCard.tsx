@@ -38,6 +38,7 @@ interface GrammarStructureCardProps {
   activeTokenRole?: string | null;
   activeTokenPattern?: string | null;
   activeTokenIndex?: number | null;
+  showExamples?: boolean;
 }
 
 // ─── Color Helper for Tokens ─────────────────────────────────────────────────
@@ -101,6 +102,7 @@ export default function GrammarStructureCard({
   activeTokenRole,
   activeTokenPattern,
   activeTokenIndex,
+  showExamples = true,
 }: GrammarStructureCardProps) {
   if (!structure) return null;
 
@@ -282,9 +284,14 @@ export default function GrammarStructureCard({
         </div>
       )}
 
-      {/* 🔍 EXAMPLE SENTENCE BREAKDOWN: Clean 2-Column Responsive Grid */}
-      {data.example_breakdowns && data.example_breakdowns.length > 0 && (
-        <div className="space-y-2 mt-3 pt-3 border-t border-white/10">
+      {/* 🔍 EXAMPLE SENTENCE BREAKDOWN: Clean 2-Column Responsive Grid (Only revealed in Examples chunk or full reveal) */}
+      {data.example_breakdowns && data.example_breakdowns.length > 0 && showExamples && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="space-y-2 mt-3 pt-3 border-t border-white/10"
+        >
           <span className="text-[11px] font-bold uppercase tracking-wider text-brand-gold flex items-center gap-1.5">
             <CheckCircle2 size={13} className="text-brand-gold" />
             <span>Ejemplos Desglosados en Acción:</span>
@@ -341,18 +348,23 @@ export default function GrammarStructureCard({
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* 📌 TIP / PEDAGOGICAL ADVICE */}
-      {data.tips && (
-        <div className="mt-3 p-2.5 rounded-xl bg-brand-gold/10 border border-brand-gold/25 text-xs text-amber-200 flex items-start gap-2">
+      {data.tips && showExamples && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="mt-3 p-2.5 rounded-xl bg-brand-gold/10 border border-brand-gold/25 text-xs text-amber-200 flex items-start gap-2"
+        >
           <HelpCircle size={14} className="text-brand-gold flex-shrink-0 mt-0.5" />
           <div className="leading-snug">
             <strong className="text-brand-gold font-bold">Consejo Clave: </strong>
             <span>{data.tips}</span>
           </div>
-        </div>
+        </motion.div>
       )}
     </motion.div>
   );

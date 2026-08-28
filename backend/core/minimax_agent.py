@@ -48,6 +48,29 @@ SUBLEVEL_DESCRIPTIONS = {
     "B2.4": "Full B2 mastery — Near-native fluency, professional contexts",
 }
 
+COMMON_ENGLISH_SPANISH = {
+    "wake up": "despertarse / despertar",
+    "have breakfast": "desayunar",
+    "eat breakfast": "desayunar",
+    "go to work": "ir al trabajo / ir a trabajar",
+    "exercise": "hacer ejercicio",
+    "exercises": "hace ejercicio (sonido /ɪz/)",
+    "sleep": "dormir",
+    "sleeps": "duerme (sonido /s/)",
+    "go": "ir",
+    "goes": "va (sonido /z/)",
+    "work": "trabajar",
+    "works": "trabaja",
+    "study": "estudiar",
+    "studies": "estudia",
+    "sue": "demandar (/suː/)",
+    "zoo": "zoológico (/zuː/)",
+    "peace": "paz (/piːs/)",
+    "peas": "arvejas / guisantes (/piːz/)",
+    "price": "precio (/praɪs/)",
+    "prize": "premio (/praɪz/)"
+}
+
 SYSTEM_PROMPT_TEMPLATE = """You are Guionbajo, a world-class master English language professor certified in CEFR and communicative pedagogy.
 You are designing an interactive cinematic micro-lesson for a student at level {current_sublevel} whose native language is {native_language}.
 
@@ -102,16 +125,33 @@ CRITICAL CINEMATIC INTERACTIVE LESSON RULES:
 6. MANDATORY STRUCTURED TARGET AUDIO ITEMS (`target_audio_items`):
    - For EVERY phase teaching target English phrases, explicitly define `target_audio_items` with "english", "translation", and "label" ("Vocabulario Target", "Ejemplo Práctico", "Consigna de Práctica").
 
-7. REAL INTERACTIVE PRACTICE & CHALLENGES:
-   - For practice slides, set `interaction_type`: "quiz", "pronunciation", "error_correction", or "roleplay".
-   - Include realistic options for fill-in-the-blank items.
-   - For pronunciation tasks, provide the clean English model sentence in `target_audio_items` and `expected_answer`.
+7. MANDATORY SEQUENTIAL VOICE CHUNKS (`voice_chunks`):
+   - For EVERY phase, you MUST decompose the spoken explanation into an array of 2 to 4 sequential `voice_chunks`.
+   - The UI plays these voice chunks one by one to reveal content progressively in sync with audio:
+     * Chunk 1: MUST have `reveal_target: "image"` and `title: "1. Introducción y Situación"`. Locución introductoria y empática presentando el tema mientras la imagen aparece CENTRADA y GRANDE como protagonista única (hero image).
+     * Chunk 2: MUST have `reveal_target: "grammar"` (si hay fórmula sintáctica), `"diagram"` (si hay esquema SVG), o `"board_concepts"`. Al terminar Chunk 1, la imagen se posa a la izquierda y este chunk explica la estructura gramatical o modelo mental haciendo aparecer la tarjeta de fórmula/reglas.
+     * Chunk 3: MUST have `reveal_target: "board_concepts"` o `"examples"`, con locución analizando los ejemplos y patrones de la pizarra paso a paso.
+     * Chunk 4 (si hay ejercicios/práctica): MUST have `reveal_target: "exercise"`, dando la consigna de práctica para activar los desafíos interactivos.
+   - `tutor_says` should be the complete combined text of all chunks for fallback compatibility.
 
 8. CONDITIONAL DIDACTIC SVG DIAGRAM (`diagram_svg`):
    - Include clean SVG schemas (`diagram_svg`) for temporal timelines (Present vs Past, Adverbs of Frequency), spatial relations, or syntactic trees.
 
-9. JSON SCHEMA (ai_tutor.lesson.v2):
-   Return valid JSON with key "phases" containing an array of phase objects (from 4 to 8 phases):
+9. EXHAUSTIVE GRAMMATICAL & MORPHOLOGICAL COMPLETENESS (NEVER TEACH PARTIAL RULES):
+   - When the lesson topic involves grammatical, morphological, or spelling variations, you MUST systematically cover ALL branches of the rule matrix across the conceptual slides:
+     * FOR PRESENT SIMPLE 3RD PERSON (HE / SHE / IT):
+       1. General Rule (+s): Most verbs add -s ('work' -> 'works', 'sleep' -> 'sleeps', 'live' -> 'lives').
+       2. Special Sibilant Endings (+es): Verbs ending in -ch, -sh, -ss, -x, -zz, -o add -es ('watch' -> 'watches', 'wash' -> 'washes', 'fix' -> 'fixes', 'go' -> 'goes', 'do' -> 'does').
+       3. Consonant + Y (+ies): Verbs ending in consonant + y change 'y' to -ies ('study' -> 'studies', 'fly' -> 'flies', 'cry' -> 'cries', vs vowel+y 'play' -> 'plays').
+       4. Key Irregular: 'have' -> 'has'.
+       5. Phonetic sounds: /s/ (sordo), /z/ (sonoro), /ɪz/ (sibilantes).
+     * FOR ADVERBS OF FREQUENCY: Full scale from Always (100%), Usually (80%), Often (70%), Sometimes (50%), Hardly ever (20%), Never (0%) + Position rules (BEFORE main verb, AFTER verb to be).
+     * FOR PAST SIMPLE: Regular -ed rules (+ed, +d, consonant doubling, consonant+y -> -ied) + Essential Irregulars.
+     * FOR PLURALS: Regular -s, -es, -ies, -ves (knife -> knives) + Irregular plurals (child -> children, person -> people).
+   - Distribute these logically across slides: e.g. Slide 2 introduces the general formula + -s, Slide 3 covers the special spelling rules (-es, -ies, has), Slide 4 covers pronunciation/contrasts.
+
+10. JSON SCHEMA (ai_tutor.lesson.v2):
+    Return valid JSON with key "phases" containing an array of phase objects (from 4 to 8 phases):
    {
      "topic": "...",
      "sublevel": "...",
@@ -127,6 +167,22 @@ CRITICAL CINEMATIC INTERACTIVE LESSON RULES:
          "image_prompt": "...",
          "image_style": "flat_art",
          "tutor_says": "...",
+         "voice_chunks": [
+           {
+             "chunk_id": "chunk-1",
+             "chunk_index": 1,
+             "title": "1. Situación Didáctica",
+             "tutor_says": "...",
+             "reveal_target": "image"
+           },
+           {
+             "chunk_id": "chunk-2",
+             "chunk_index": 2,
+             "title": "2. Pregunta y Dilema",
+             "tutor_says": "...",
+             "reveal_target": "board_concepts"
+           }
+         ],
          "board_content": "...",
          "board_theme": "chalkboard_green",
          "student_task": null,
@@ -264,19 +320,18 @@ class TutorAgent:
     def _sanitize_image_prompt(self, prompt: str, topic: str) -> str:
         """Sanitizes image prompts to eliminate literal phonemes, fighting metaphors, and textual artifacts."""
         if not prompt or not isinstance(prompt, str):
-            return f"flat 2D vector educational illustration of {topic}, clean minimal graphic design, bright clear colors, white background, strictly no text, no letters, no words"
+            return f"vibrant 2D educational vector illustration about {topic}, clean minimalist graphic design, bright clear colors, white background, strictly no text"
         clean = prompt.strip()
         # Remove IPA notation like /e/, /æ/, /iː/, /ʌ/, /ʃ/
         clean = re.sub(r'/[A-Za-zʃʊʌæəɪɔɑɜθðʒŋːˈ\.\s]+/', ' ', clean)
-        # Replace fighting / violent / text triggering words
-        clean = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles)\b', 'educational comparison', clean, flags=re.IGNORECASE)
+        # Remove fighting / violent metaphors
+        clean = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves)\b', 'scene', clean, flags=re.IGNORECASE)
         # Remove symbols and punctuation
         clean = re.sub(r'[/\\|\[\](){}+=→<>_~*#^"“”‘’`]', ' ', clean)
-        clean = re.sub(r'\s{2,}', ' ', clean).strip()
-        negative_mandate = "clean minimalist 2D vector illustration, bright clear lighting, white background, strictly no text, no letters, no words, no writing, no labels, no captions, no typography, no watermarks, no alphabets"
-        if "no text" not in clean.lower():
-            clean = f"{clean}, {negative_mandate}"
-        return clean
+        # Clean repetitive negative prompts
+        clean = re.sub(r'\b(?:strictly\s+)?no\s+(?:text|letters|words|writing|labels|captions|typography|watermarks|alphabets|educational\s+comparison|educational\s+scene)\b,?', ' ', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'\s{2,}', ' ', clean).strip(' ,')
+        return f"{clean}, clean 2D vector educational illustration, strictly no text, no letters, no labels"
 
     def _extract_phase_target_audio_items(self, p: dict) -> list:
         """Deterministic extractor of target English audio items from phase content without duplication."""
@@ -1136,7 +1191,9 @@ class TutorAgent:
             "student_task": f"Resuelve los desafíos de oraciones completas y evalúa tu pronunciación con el micrófono.",
             "expected_answer": clean_exercises[0]["expected_answer"] if clean_exercises else "Complete the sentence"
         }
+        phase["voice_chunks"] = self._build_phase_voice_chunks(phase, topic, sublevel)
         phase["storyboard_steps"] = self._build_phase_storyboard(phase)
+        phase["storyboard_timeline"] = self._build_phase_storyboard_timeline(phase, topic, sublevel)
         return phase
 
     def _build_phonetic_bonus_phase(self, ph_focus: dict, sublevel: str, topic: str, phase_number: int = 6) -> dict:
@@ -1201,7 +1258,9 @@ class TutorAgent:
             "expected_answer": drill_sentence,
             "student_task": f"Escucha la pronunciación de {ph_str} y los pares mínimos. Graba la frase de práctica con tu micrófono."
         }
+        phase["voice_chunks"] = self._build_phase_voice_chunks(phase, topic, sublevel)
         phase["storyboard_steps"] = self._build_phase_storyboard(phase)
+        phase["storyboard_timeline"] = self._build_phase_storyboard_timeline(phase, topic, sublevel)
         return phase
 
     def _audit_and_sanitize_lesson_content(self, data: dict, topic: str, sublevel: str, adaptive_plan: Optional[dict] = None) -> dict:
@@ -1290,7 +1349,9 @@ class TutorAgent:
             p["is_practice_slide"] = False
             p["exercises"] = []
             p["diagram_svg"] = self._resolve_didactic_diagram_svg(p, topic)
+            p["voice_chunks"] = self._build_phase_voice_chunks(p, topic, sublevel)
             p["storyboard_steps"] = self._build_phase_storyboard(p)
+            p["storyboard_timeline"] = self._build_phase_storyboard_timeline(p, topic, sublevel)
             clean_phases.append(p)
 
         # Append dedicated Practice Slide before bonus slide
@@ -1308,11 +1369,17 @@ class TutorAgent:
             clean_phases.append(bonus_phase)
             data["phonetic_focus"] = ph_focus
         elif existing_bonus_phase:
+            existing_bonus_phase["voice_chunks"] = self._build_phase_voice_chunks(existing_bonus_phase, topic, sublevel)
+            existing_bonus_phase["storyboard_steps"] = self._build_phase_storyboard(existing_bonus_phase)
+            existing_bonus_phase["storyboard_timeline"] = self._build_phase_storyboard_timeline(existing_bonus_phase, topic, sublevel)
             clean_phases.append(existing_bonus_phase)
 
-        # Re-number all phases consecutively
+        # Re-number all phases consecutively and refresh chunks
         for i, p in enumerate(clean_phases):
             p["phase_number"] = i + 1
+            p["voice_chunks"] = self._build_phase_voice_chunks(p, topic, sublevel)
+            p["storyboard_steps"] = self._build_phase_storyboard(p)
+            p["storyboard_timeline"] = self._build_phase_storyboard_timeline(p, topic, sublevel)
 
         data["phases"] = clean_phases
         return data
@@ -1454,110 +1521,561 @@ class TutorAgent:
 
         return None
 
+    def _build_phase_voice_chunks(self, p: dict, topic: str = "", sublevel: str = "") -> list:
+        """
+        Builds or validates the discrete sequential voice chunks for a slide.
+        Enforces that Chunk 1 is strictly for the Centered Hero Image Introduction,
+        followed by subsequent chunks that progressively reveal grammar, chalkboard concepts, diagram, or practice.
+        """
+        # 1. If valid explicit voice_chunks are already present with >= 2 chunks, validate and return
+        raw_chunks = p.get("voice_chunks")
+        if raw_chunks and isinstance(raw_chunks, list) and len(raw_chunks) >= 2:
+            cleaned = []
+            for idx, c in enumerate(raw_chunks):
+                if isinstance(c, dict) and c.get("tutor_says"):
+                    cleaned.append({
+                        "chunk_id": c.get("chunk_id") or f"chunk-{idx+1}",
+                        "chunk_index": idx + 1,
+                        "title": c.get("title") or (f"1. Introducción y Situación" if idx == 0 else f"{idx+1}. Explicación"),
+                        "tutor_says": str(c.get("tutor_says")).strip(),
+                        "reveal_target": c.get("reveal_target") or ("image" if idx == 0 else "board_concepts"),
+                        "highlight_target": c.get("highlight_target") or c.get("reveal_target") or ("illustration" if idx == 0 else "concepts")
+                    })
+            if len(cleaned) >= 2:
+                # Ensure first chunk is always image
+                cleaned[0]["reveal_target"] = "image"
+                cleaned[0]["highlight_target"] = "illustration"
+                return cleaned
+
+        # 2. Otherwise, synthesize intelligent voice_chunks from tutor_says and phase structure
+        full_speech = str(p.get("tutor_says") or "").strip()
+        if not full_speech:
+            full_speech = f"En esta fase exploraremos {topic or 'este concepto'} en detalle."
+
+        raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', full_speech) if s.strip()]
+        if not raw_sentences:
+            raw_sentences = [full_speech]
+
+        has_task = bool(p.get("student_task") or p.get("expected_answer") or p.get("exercises") or p.get("is_practice_slide"))
+        has_grammar = bool(p.get("grammar_structure") or p.get("key_structure"))
+        has_diagram = bool(p.get("diagram_svg"))
+        has_phonetics = bool(p.get("is_phonetic_bonus") or p.get("phonetic_focus"))
+        is_hook = bool(p.get("is_hook") or p.get("phase_number") == 1)
+
+        chunks = []
+
+        # ── Chunk 1: Hero Image Intro (ONLY Image Centered) ──
+        if len(raw_sentences) == 1:
+            intro_speech = raw_sentences[0]
+            remaining = []
+        elif len(raw_sentences) == 2:
+            intro_speech = raw_sentences[0]
+            remaining = raw_sentences[1:]
+        elif len(raw_sentences) >= 3:
+            # If the first sentence is short (< 10 words), take first 2
+            if len(raw_sentences[0].split()) < 10:
+                intro_speech = f"{raw_sentences[0]} {raw_sentences[1]}"
+                remaining = raw_sentences[2:]
+            else:
+                intro_speech = raw_sentences[0]
+                remaining = raw_sentences[1:]
+
+        chunks.append({
+            "chunk_id": "chunk-1",
+            "chunk_index": 1,
+            "title": "1. Introducción y Situación",
+            "tutor_says": intro_speech,
+            "reveal_target": "image",
+            "highlight_target": "illustration"
+        })
+
+        # If it's the hook slide: strictly 1 single chunk with the full introductory hook speech
+        if is_hook:
+            return [{
+                "chunk_id": "chunk-1",
+                "chunk_index": 1,
+                "title": "1. Situación y Dilema",
+                "tutor_says": full_speech,
+                "reveal_target": "image",
+                "highlight_target": "illustration"
+            }]
+
+        # For conceptual / practice phases:
+        # ── Chunk 2: Grammar Structure / Diagram / Core Metaphor ──
+        if has_grammar or has_diagram or has_phonetics or len(remaining) >= 2:
+            reveal_type = "grammar" if has_grammar else ("diagram" if has_diagram else ("phonetics" if has_phonetics else "board_concepts"))
+            highlight_type = "grammar" if has_grammar else ("diagram" if has_diagram else ("phonetics" if has_phonetics else "concepts"))
+            title_text = "2. Fórmula Gramatical" if has_grammar else ("2. Esquema Didáctico" if has_diagram else ("2. Contraste Fonético" if has_phonetics else "2. Concepto Clave"))
+            
+            chunk2_speech = remaining[0] if remaining else "Observa con atención la fórmula y estructura gramatical en la pizarra."
+            remaining = remaining[1:] if remaining else []
+
+            chunks.append({
+                "chunk_id": "chunk-2",
+                "chunk_index": 2,
+                "title": title_text,
+                "tutor_says": chunk2_speech,
+                "reveal_target": reveal_type,
+                "highlight_target": highlight_type
+            })
+
+        # ── Chunk 3: Board Concepts, Examples & Deconstruction ──
+        if remaining and (not has_task or len(remaining) >= 2):
+            chunk3_speech = remaining[0] if has_task and len(remaining) >= 2 else " ".join(remaining)
+            if has_task and len(remaining) >= 2:
+                remaining = remaining[1:]
+            else:
+                remaining = []
+
+            chunks.append({
+                "chunk_id": f"chunk-{len(chunks)+1}",
+                "chunk_index": len(chunks) + 1,
+                "title": f"{len(chunks)+1}. Pizarra y Ejemplos",
+                "tutor_says": chunk3_speech,
+                "reveal_target": "board_concepts",
+                "highlight_target": "concepts"
+            })
+
+        # ── Chunk 4 / Final Chunk: Practice / Task / Exercises ──
+        if has_task:
+            task_speech = " ".join(remaining) if remaining else "A continuación, resuelve los ejercicios en la pizarra para poner en práctica lo aprendido."
+            chunks.append({
+                "chunk_id": f"chunk-{len(chunks)+1}",
+                "chunk_index": len(chunks) + 1,
+                "title": f"{len(chunks)+1}. Desafío Interactivo",
+                "tutor_says": task_speech,
+                "reveal_target": "exercise",
+                "highlight_target": "exercise"
+            })
+        elif remaining:
+            chunks.append({
+                "chunk_id": f"chunk-{len(chunks)+1}",
+                "chunk_index": len(chunks) + 1,
+                "title": f"{len(chunks)+1}. Resumen Clave",
+                "tutor_says": " ".join(remaining),
+                "reveal_target": "board_concepts",
+                "highlight_target": "concepts"
+            })
+
+        return chunks
+
     def _build_phase_storyboard(self, p: dict) -> list:
         """
         Deterministic storyboard generator synchronizing tutor speech with visual chalkboard elements.
-        Breaks down the phase into a step-by-step progressive reveal sequence with sentence-exact timing.
+        Builds discrete storyboard steps corresponding directly to the phase's voice chunks.
         """
-        tutor_speech = str(p.get("tutor_says") or "")
-        has_task = bool(p.get("student_task") or p.get("expected_answer") or p.get("exercises"))
-
-        # Append closing exercise transition prompt if missing
-        s_low = tutor_speech.lower()
-        if has_task and tutor_speech and not any(k in s_low for k in ["a continuación", "ejercicio", "resuelve", "completa", "desafío"]):
-            tutor_speech = f"{tutor_speech.strip()} A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido."
-            p["tutor_says"] = tutor_speech
-
-        raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', tutor_speech) if s.strip()]
-        sentence_words = [len(s.split()) for s in raw_sentences]
-        total_words = max(sum(sentence_words), 1)
-
-        board = str(p.get("board_content") or "")
-        target_audios = p.get("target_audio_items") or []
-        has_grammar = bool(p.get("grammar_structure") or p.get("key_structure"))
-        has_phonetics = bool(p.get("phonetic_focus") or p.get("phoneme_symbol") or p.get("is_phonetic_bonus") or "fonét" in str(p.get("phase_name", "")).lower() or "bonus de pronunciación" in str(p.get("phase_name", "")).lower())
-        has_middle = bool(p.get("diagram_svg") or has_grammar or has_phonetics)
-        has_audio = bool(target_audios and not has_task)
-        has_bottom = has_task or has_audio
-
+        voice_chunks = p.get("voice_chunks") or self._build_phase_voice_chunks(p)
         steps = []
-        step_counter = 1
+        total_chunks = max(len(voice_chunks), 1)
 
-        # Step 1: Whiteboard & Concepts (Main Teaching Board - Top, always starts at 0.00)
-        speech_snippet_1 = raw_sentences[0] if raw_sentences else (str(p.get("phase_name") or "Conceptos en Pizarra"))
-        steps.append({
-            "step_id": "step-concepts",
-            "step_index": step_counter,
-            "element_type": "concepts",
-            "label": f"{step_counter}. {p.get('phase_name', 'Conceptos en Pizarra')}",
-            "tutor_speech_snippet": speech_snippet_1,
-            "trigger_ratio": 0.00,
-            "animation": "typewriter",
-            "highlight_target": "concepts",
-            "chalk_color": "green"
-        })
-        step_counter += 1
-
-        # Step 2: Diagram / Schema or Grammar Structure (Middle Zone - if present)
-        if has_middle:
-            elem_type = "diagram" if p.get("diagram_svg") else ("phonetics" if has_phonetics else "grammar")
-            label_text = "Esquema Conceptual" if p.get("diagram_svg") else ("Foco Fonético" if has_phonetics else "Fórmula Gramatical")
+        for idx, chunk in enumerate(voice_chunks):
+            target = chunk.get("reveal_target") or "image"
+            elem_type = "illustration" if target == "image" else ("grammar" if target == "grammar" else ("diagram" if target == "diagram" else ("exercise" if target == "exercise" else "concepts")))
+            color = "cyan" if target == "image" else ("purple" if target == "grammar" else ("gold" if target == "exercise" else "green"))
             
-            middle_idx = 1
-            for idx, s in enumerate(raw_sentences[1:], 1):
-                sl = s.lower()
-                if any(kw in sl for kw in ["fórmula", "esquema", "diagrama", "estructura", "patrón", "línea", "fonét"]):
-                    middle_idx = idx
-                    break
-
-            speech_snippet_2 = raw_sentences[middle_idx] if middle_idx < len(raw_sentences) else (raw_sentences[1] if len(raw_sentences) > 1 else "Observa la estructura y el esquema conceptual en la pizarra.")
-            words_before_middle = sum(sentence_words[:middle_idx])
-            calculated_ratio = words_before_middle / total_words
-            trigger_ratio = max(0.35, min(0.65 if has_bottom else 0.80, calculated_ratio))
-
             steps.append({
-                "step_id": f"step-{elem_type}",
-                "step_index": step_counter,
+                "step_id": chunk.get("chunk_id") or f"step-{idx+1}",
+                "step_index": idx + 1,
                 "element_type": elem_type,
-                "label": f"{step_counter}. {label_text}",
-                "tutor_speech_snippet": speech_snippet_2,
-                "trigger_ratio": round(trigger_ratio, 2),
-                "animation": "bounce_in",
-                "highlight_target": elem_type,
-                "chalk_color": "purple"
-            })
-            step_counter += 1
-
-        # Step 3: Interactive Practice or Challenge (Bottom Zone - towards end of explanation)
-        if has_bottom:
-            elem_type = "exercise" if has_task else "audio_practice"
-            label_text = "Desafío Interactivo" if has_task else "Práctica de Pronunciación"
-            
-            bottom_idx = len(raw_sentences) - 1
-            for idx in range(len(raw_sentences) - 1, 0, -1):
-                sl = raw_sentences[idx].lower()
-                if any(kw in sl for kw in ["a continuación", "ejercicio", "resuelve", "completa", "práctica", "desafío"]):
-                    bottom_idx = idx
-                    break
-
-            speech_snippet_3 = raw_sentences[bottom_idx] if bottom_idx < len(raw_sentences) else "A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido."
-            words_before_bottom = sum(sentence_words[:bottom_idx])
-            calculated_ratio = words_before_bottom / total_words
-            trigger_ratio = max(0.60 if has_middle else 0.45, min(0.88, calculated_ratio))
-
-            steps.append({
-                "step_id": f"step-{elem_type}",
-                "step_index": step_counter,
-                "element_type": elem_type,
-                "label": f"{step_counter}. {label_text}",
-                "tutor_speech_snippet": speech_snippet_3,
-                "trigger_ratio": round(trigger_ratio, 2),
-                "animation": "spotlight_glow",
-                "highlight_target": elem_type,
-                "chalk_color": "gold"
+                "highlight_target": chunk.get("highlight_target") or elem_type,
+                "chalk_color": color
             })
 
         return steps
+
+    def _extract_spoken_english_examples(self, speech_text: str) -> dict:
+        """
+        Extracts exact English phrases, sentences, transformations, and contrasts
+        quoted by the tutor in their speech with guaranteed translation pairing.
+        """
+        if not speech_text:
+            return {"primary": None, "primary_translation": None, "examples": [], "items": [], "additional": [], "transformations": [], "contrasts": [], "phonetic_pairs": []}
+
+        # 1. Flexible Transformation Matching
+        trans_pattern = re.compile(
+            r"['\"‘“]([^'\"‘“’”\n\r]+)['\"’”][^'\"‘“’”\n\r]{0,50}?(?:se convierte en|se transforma en|pasa a ser|cambia a|becomes|transforms into)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]",
+            re.IGNORECASE
+        )
+        transformations = []
+        for m in trans_pattern.finditer(speech_text):
+            source = m.group(1).strip()
+            target = m.group(2).strip()
+            if len(source) >= 2 and len(target) >= 2 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', source) and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', target):
+                transformations.append({"from": source, "to": target})
+
+        # 2. Flexible Contrast Matching & Common Error Detection
+        contrast_pattern = re.compile(
+            r"['\"‘“]([^'\"‘“’”\n\r]+)['\"’”][^'\"‘“’”\n\r]{0,35}?(?:y no|y nunca|no|en lugar de|instead of|mientras que)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]",
+            re.IGNORECASE
+        )
+        contrasts = []
+        for m in contrast_pattern.finditer(speech_text):
+            correct = m.group(1).strip()
+            incorrect = m.group(2).strip()
+            if len(correct) >= 2 and len(incorrect) >= 2 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', correct) and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', incorrect):
+                contrasts.append({"correct": correct, "incorrect": incorrect, "why": "Contraste de orden / regla"})
+
+        # Detect Common Errors introduced like: "Un error típico ... diciendo 'I drink usually coffee'"
+        err_match = re.search(r"(?:error\s+típico[^\n\r]*?diciendo|diciendo|es\s+incorrecto\s+decir|en\s+lugar\s+de\s+decir|no\s+digas)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]", speech_text, re.IGNORECASE)
+        if err_match:
+            incorrect_quote = err_match.group(1).strip()
+            if not any(c["incorrect"].lower() == incorrect_quote.lower() for c in contrasts):
+                correct_cand = "I usually drink coffee"
+                model_cand = re.search(r"(?:ejemplo|orden\s+correcto[^\n\r]*?['\"‘“]|modelo\s+es[^\n\r]*?['\"‘“])\s*['\"‘“]?([^'\"‘“’”\n\r]+)['\"’”]", speech_text, re.IGNORECASE)
+                if model_cand:
+                    cand = model_cand.group(1).strip()
+                    if len(cand) >= 3 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', cand):
+                        correct_cand = " ".join(cand.split()[:4])
+                contrasts.append({
+                    "correct": correct_cand,
+                    "incorrect": incorrect_quote,
+                    "why": "El adverbio va SIEMPRE ANTES del verbo principal"
+                })
+
+        # 3. Frequency Scale / Table Items from speech (e.g. 'Always' 100%, 'Usually' 80%, 'Sometimes' 50%, 'Never' 0%)
+        frequency_scale = []
+        freq_pattern = re.compile(r"['\"‘“](Always|Usually|Often|Sometimes|Hardly ever|Rarely|Never)['\"’”]\s*(?:\(([^)]+)\))?[^'\"‘“’”]{0,50}?(\d{1,3})%", re.IGNORECASE)
+        for fm in freq_pattern.finditer(speech_text):
+            adv = fm.group(1).strip().capitalize()
+            spa = fm.group(2).strip() if fm.group(2) else ""
+            pct = fm.group(3).strip() + "%"
+            frequency_scale.append({
+                "adverb": adv,
+                "spanish": spa or COMMON_ENGLISH_SPANISH.get(adv.lower(), "").split('(')[0].strip(),
+                "percentage": pct
+            })
+
+        # 4. Phonetic minimal pairs (e.g. peace /piːs/ con /s/, peas /piːz/ con /z/)
+        phonetic_pattern = re.compile(
+            r"([a-zA-Z]{2,15})\s+(/[^/]+/)\s+(?:con\s+/[a-z/]+/[,\s]+)?([a-zA-Z]{2,15})\s+(/[^/]+/)",
+            re.IGNORECASE
+        )
+        phonetic_pairs = []
+        for pm in phonetic_pattern.finditer(speech_text):
+            w1 = pm.group(1).strip()
+            ipa1 = pm.group(2).strip()
+            w2 = pm.group(3).strip()
+            ipa2 = pm.group(4).strip()
+            if w1.lower() not in {"con", "que", "para", "esta"} and w2.lower() not in {"con", "que", "para", "esta"}:
+                phonetic_pairs.append({
+                    "word1": w1,
+                    "ipa1": ipa1,
+                    "trans1": COMMON_ENGLISH_SPANISH.get(w1.lower(), ""),
+                    "word2": w2,
+                    "ipa2": ipa2,
+                    "trans2": COMMON_ENGLISH_SPANISH.get(w2.lower(), "")
+                })
+
+        # 5. Detect Syntactic Parts (so "drink coffee" or "At 8 AM" are never treated as vocab practice cards)
+        syntactic_part_quotes = set()
+        for pm in re.finditer(r"['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]\s+(?:es\s+el\s+(?:Sujeto|Verbo|Adverbio|Complemento)|son\s+(?:Time\s+Expressions|expresiones\s+de\s+tiempo))", speech_text, re.IGNORECASE):
+            syntactic_part_quotes.add(pm.group(1).strip().lower())
+
+        for c in contrasts:
+            syntactic_part_quotes.add(c["incorrect"].lower())
+
+        # 6. Extract Real Spoken Drill Sentences (e.g. "Repite conmigo mentalmente: I always wake up early. She never eats at night.")
+        drill_sentences = []
+        drill_match = re.search(r"(?:repite\s+conmigo(?:\s+mentalmente)?:\s*|practica\s+con:\s*)([^.\n\r]+(?:\.[^.\n\r]+)*)", speech_text, re.IGNORECASE)
+        if drill_match:
+            drill_raw = drill_match.group(1)
+            for s in re.split(r'[.;]', drill_raw):
+                s_clean = re.sub(r'^(?:mentalmente|conmigo|y)\s*[:,\s]*', '', s.strip(), flags=re.IGNORECASE).strip()
+                if len(s_clean.split()) >= 3 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', s_clean):
+                    drill_sentences.append({
+                        "english": s_clean,
+                        "translation": COMMON_ENGLISH_SPANISH.get(s_clean.lower(), "Práctica oral")
+                    })
+
+        meta_disqualifiers = {
+            "s", "es", "ed", "ing", "d", "ve", "re", "ll", "m", "t", "i", "he", "she", "it", "we", "they", "you",
+            "ch", "sh", "x", "z", "regla", "fórmula", "sujeto", "verbo", "complemento", "pizarra", "ejemplo", "eat", "have", "uniforme", "corbata"
+        }
+
+        SPANISH_DISQUALIFIERS = {
+            "me", "te", "se", "nos", "os", "mi", "tu", "su", "mis", "tus", "sus", "nuestro", "nuestra",
+            "despierto", "despiertas", "despierta", "despertamos", "despiertan", "despertarse", "despertar",
+            "desayuno", "desayunas", "desayuna", "desayunamos", "desayunan", "desayunar",
+            "trabajo", "trabajas", "trabaja", "trabajamos", "trabajan", "trabajar",
+            "estudio", "estudias", "estudia", "estudiamos", "estudian", "estudiar",
+            "duermo", "duermes", "duerme", "dormimos", "duermen", "dormir",
+            "como", "comes", "come", "comemos", "comen", "comer",
+            "hago", "haces", "hace", "hacemos", "hacen", "hacer",
+            "ejercicio", "ejercicios", "significa", "es", "decir", "o", "sea", "muestra", "como",
+            "la", "el", "los", "las", "un", "una", "unos", "unas", "de", "del", "en", "para", "por", "con",
+            "que", "al", "a", "son", "va", "van", "colocado", "antes", "despues", "palabra", "oracion",
+            "frase", "regla", "sujeto", "verbo", "complemento", "tiempo", "lugar", "manana", "tarde", "noche",
+            "siempre", "normalmente", "usualmente", "a veces", "nunca", "frecuencia", "rutina", "habito",
+            "yo", "tu", "el", "ella", "nosotros", "ustedes", "ellos", "ellas"
+        }
+
+        def is_spanish_phrase(text: str) -> bool:
+            if not text or not isinstance(text, str):
+                return False
+            if re.search(r'[áéíóúñÁÉÍÓÚÑ]', text):
+                return True
+            tokens = [w.lower().strip(",.:;!?\"'()[]{}") for w in text.split()]
+            if not tokens:
+                return False
+            return sum(1 for w in tokens if w in SPANISH_DISQUALIFIERS) >= 1
+
+        raw_quotes = list(re.finditer(r"['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]", speech_text))
+        items = []
+        seen = set(syntactic_part_quotes)
+
+        # Include drill sentences first
+        for d in drill_sentences:
+            if not is_spanish_phrase(d["english"]) and d["english"].lower() not in seen:
+                seen.add(d["english"].lower())
+                items.append(d)
+
+        for m in raw_quotes:
+            eng = m.group(1).strip()
+            low = eng.lower()
+            if len(eng) >= 2 and low not in meta_disqualifiers and low not in seen and not is_spanish_phrase(eng):
+                seen.add(low)
+                trans = COMMON_ENGLISH_SPANISH.get(low) or ""
+                end_pos = m.end()
+                trailer = speech_text[end_pos:end_pos+50]
+
+                # Check if following quote is the translation: significa 'te despiertas'
+                trans_quote_match = re.search(r'^(?:\s*(?:significa|es decir|es|o sea|se traduce como|traducido como))\s*[\'\"‘“]([^\'\"‘“’”\n\r]+)[\'\"’”]', trailer, re.IGNORECASE)
+                if trans_quote_match:
+                    explicit_spa = trans_quote_match.group(1).strip()
+                    trans = explicit_spa
+                    seen.add(explicit_spa.lower())
+                elif not trans:
+                    def_match = re.search(r'^(?:\s*(?:significa|es decir|es|o sea|se traduce como)\s+)?([a-zA-ZáéíóúñÁÉÍÓÚÑ\s]{3,25})', trailer, re.IGNORECASE)
+                    if def_match and any(w in trailer[:15].lower() for w in ["significa", "es", "es decir", "o sea"]):
+                        raw_t = def_match.group(1).strip().rstrip('.,;:')
+                        clean_t = re.sub(r'^(?:decir|cuando|y|que|un|una|muestra|cómo|la)\s+', '', raw_t, flags=re.IGNORECASE).strip()
+                        if len(clean_t) >= 3 and is_spanish_phrase(clean_t):
+                            trans = clean_t
+
+                items.append({"english": eng, "translation": trans})
+
+        # Include minimal pair words in items if not present
+        for pair in phonetic_pairs:
+            for w, tr in [(pair["word1"], pair["trans1"]), (pair["word2"], pair["trans2"])]:
+                if w and w.lower() not in seen:
+                    seen.add(w.lower())
+                    items.append({"english": w, "translation": tr or ""})
+
+        # Model sentence selection
+        model_match = re.search(r"(?:ejemplo|oración\s+modelo)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]", speech_text, re.IGNORECASE)
+        if model_match:
+            primary_eng = model_match.group(1).strip()
+            primary_spa = COMMON_ENGLISH_SPANISH.get(primary_eng.lower(), "Oración modelo en contexto")
+        elif items:
+            primary_eng = items[0]["english"]
+            primary_spa = items[0]["translation"]
+        else:
+            primary_eng = "I wake up at 7 AM"
+            primary_spa = "Me despierto a las 7 AM"
+
+        # Secondary additional examples (excluding primary)
+        additional = [it for it in items if it["english"].lower() != primary_eng.lower()]
+
+        return {
+            "primary": primary_eng,
+            "primary_translation": primary_spa,
+            "items": items,
+            "additional": additional,
+            "transformations": transformations,
+            "contrasts": contrasts,
+            "phonetic_pairs": phonetic_pairs,
+            "frequency_scale": frequency_scale,
+            "drill_sentences": drill_sentences
+        }
+
+    def _build_phase_storyboard_timeline(self, p: dict, topic: str = "", sublevel: str = "") -> list:
+        """
+        Builds a strictly chronological, pedagogical video timeline for a slide.
+        Each step represents an atomic moment where the tutor speaks and a single corresponding visual element appears:
+        - Step 1: 'show_hero_image' (Centered visual situation)
+        - Step 2: 'show_grammar_formula' or 'show_example_sentence'
+        - Step 3: 'show_example_sentence' or 'show_board_notes' or 'show_diagram'
+        - Step 4: 'show_challenge' (Interactive exercise)
+        """
+        # If valid explicit storyboard_timeline is already present and matches speech, validate and return
+        raw_timeline = p.get("storyboard_timeline")
+        if raw_timeline and isinstance(raw_timeline, list) and len(raw_timeline) >= 1:
+            valid = True
+            for st in raw_timeline:
+                if not isinstance(st, dict) or not st.get("tutor_audio") or not st.get("visual_action"):
+                    valid = False
+                    break
+            if valid:
+                return raw_timeline
+
+        is_hook = bool(p.get("is_hook") or p.get("phase_number") == 1)
+        full_speech = str(p.get("tutor_says") or "").strip()
+        if not full_speech:
+            full_speech = f"En esta fase exploraremos {topic or 'este concepto'} en detalle."
+
+        spoken_overall = self._extract_spoken_english_examples(full_speech)
+
+        raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', full_speech) if s.strip()]
+        if not raw_sentences:
+            raw_sentences = [full_speech]
+
+        # ── 1. Hook Slide: Exactly 1 Atomic Step ──
+        if is_hook:
+            caption_text = f"Situación Didáctica: {topic}"
+            if p.get("hook_images") and isinstance(p["hook_images"], list) and len(p["hook_images"]) > 0:
+                caption_text = p["hook_images"][0].get("caption") or caption_text
+            return [{
+                "step_index": 1,
+                "step_title": "1. Situación y Dilema",
+                "tutor_audio": full_speech,
+                "visual_action": "show_hero_image",
+                "payload": {
+                    "title": p.get("phase_name") or f"Introducción: {topic}",
+                    "caption": caption_text,
+                    "topic": topic
+                }
+            }]
+
+        grammar = p.get("grammar_structure")
+        target_audio = p.get("target_audio_items") or []
+        diagram = p.get("diagram_svg")
+        has_task = bool(p.get("student_task") or p.get("expected_answer") or p.get("exercises") or p.get("is_practice_slide"))
+        exercises = p.get("exercises") or []
+
+        timeline = []
+
+        # ── Step 1: Hero Image (Scene / Context) ──
+        if len(raw_sentences) >= 3 and len(raw_sentences[0].split()) < 10:
+            s1_audio = f"{raw_sentences[0]} {raw_sentences[1]}"
+            remaining = raw_sentences[2:]
+        else:
+            s1_audio = raw_sentences[0]
+            remaining = raw_sentences[1:]
+
+        timeline.append({
+            "step_index": 1,
+            "step_title": "1. Contexto Visual",
+            "tutor_audio": s1_audio,
+            "visual_action": "show_hero_image",
+            "payload": {
+                "title": p.get("phase_name") or "Situación en Contexto",
+                "topic": topic
+            }
+        })
+
+        # ── Step 2: Grammar Formula OR First Example ──
+        if grammar and isinstance(grammar, dict) and (grammar.get("formula") or grammar.get("formula_tokens")):
+            s2_audio = remaining[0] if remaining else "Observa la fórmula y patrón estructural en la pizarra."
+            remaining = remaining[1:] if remaining else []
+            timeline.append({
+                "step_index": len(timeline) + 1,
+                "step_title": "2. Patrón y Fórmula",
+                "tutor_audio": s2_audio,
+                "visual_action": "show_grammar_formula",
+                "payload": {
+                    "title": grammar.get("title") or "Fórmula Gramatical Clave",
+                    "formula": grammar.get("formula") or "Sujeto + Verbo",
+                    "formula_tokens": grammar.get("formula_tokens") or [],
+                    "explanation": grammar.get("explanation") or "Patrón de uso fundamental."
+                }
+            })
+        elif target_audio and len(target_audio) > 0:
+            first_item = target_audio[0]
+            s2_audio = remaining[0] if remaining else f"Fíjate en esta oración: {first_item.get('english')}."
+            remaining = remaining[1:] if remaining else []
+            s2_spoken = self._extract_spoken_english_examples(s2_audio)
+            eng_sentence = s2_spoken.get("primary") or first_item.get("english") or "Example sentence"
+            spa_trans = s2_spoken.get("primary_translation") or first_item.get("translation") or first_item.get("spanish") or "Oración modelo"
+
+            timeline.append({
+                "step_index": len(timeline) + 1,
+                "step_title": "2. Oración Modelo",
+                "tutor_audio": s2_audio,
+                "visual_action": "show_example_sentence",
+                "payload": {
+                    "english": eng_sentence,
+                    "spanish": spa_trans,
+                    "parts": first_item.get("parts") or [],
+                    "transformation": s2_spoken.get("transformations", [None])[0],
+                    "contrast": s2_spoken.get("contrasts", [None])[0]
+                }
+            })
+
+        # ── Step 3: Example Sentence(s) / Diagram / Whiteboard Notes ──
+        if diagram:
+            s3_audio = remaining[0] if remaining else "Analiza el esquema didáctico para comprender la relación conceptual."
+            remaining = remaining[1:] if remaining else []
+            timeline.append({
+                "step_index": len(timeline) + 1,
+                "step_title": "3. Esquema Didáctico",
+                "tutor_audio": s3_audio,
+                "visual_action": "show_diagram",
+                "payload": {
+                    "svg": diagram
+                }
+            })
+        else:
+            first_item = target_audio[0] if target_audio else {}
+            s3_audio = remaining[0] if remaining else (f"Escucha y observa este ejemplo: {first_item.get('english', 'la oración en la pizarra')}." if first_item else "Analiza los ejemplos clave.")
+            remaining = remaining[1:] if remaining else []
+            s3_spoken = self._extract_spoken_english_examples(s3_audio)
+
+            # Reconcile with extracted spoken verbs and their exact paired translations
+            target_trans = s3_spoken.get("transformations") or spoken_overall.get("transformations") or []
+            target_eng = s3_spoken.get("primary") or spoken_overall.get("primary") or first_item.get("english") or "wake up"
+            target_spa = s3_spoken.get("primary_translation") or spoken_overall.get("primary_translation") or first_item.get("translation") or first_item.get("spanish") or "Oración modelo en contexto."
+            target_contrast = s3_spoken.get("contrasts") or spoken_overall.get("contrasts") or []
+            target_phonetic = s3_spoken.get("phonetic_pairs") or spoken_overall.get("phonetic_pairs") or []
+            target_freq = s3_spoken.get("frequency_scale") or spoken_overall.get("frequency_scale") or []
+            
+            extra_examples = s3_spoken.get("additional") or spoken_overall.get("additional") or []
+            if not extra_examples and len(target_audio) > 1:
+                extra_examples = target_audio[1:5]
+
+            timeline.append({
+                "step_index": len(timeline) + 1,
+                "step_title": "3. Ejemplos en Acción",
+                "tutor_audio": s3_audio,
+                "visual_action": "show_example_sentence",
+                "payload": {
+                    "english": target_eng,
+                    "spanish": target_spa,
+                    "transformation": target_trans[0] if target_trans else None,
+                    "transformations": target_trans,
+                    "contrast": target_contrast[0] if target_contrast else None,
+                    "contrasts": target_contrast,
+                    "phonetic_pairs": target_phonetic,
+                    "frequency_scale": target_freq,
+                    "additional_examples": extra_examples
+                }
+            })
+
+        # ── Step 4: Practice Challenge / Exercise ──
+        if has_task or exercises:
+            s4_audio = " ".join(remaining) if remaining else (p.get("student_task") or "Ahora pon a prueba lo aprendido resolviendo el siguiente ejercicio.")
+            timeline.append({
+                "step_index": len(timeline) + 1,
+                "step_title": f"{len(timeline)+1}. Desafío Interactivo",
+                "tutor_audio": s4_audio,
+                "visual_action": "show_challenge",
+                "payload": {
+                    "student_task": p.get("student_task") or "Responde a la consigna",
+                    "expected_answer": p.get("expected_answer") or "",
+                    "exercises": exercises
+                }
+            })
+        elif remaining:
+            timeline.append({
+                "step_index": len(timeline) + 1,
+                "step_title": f"{len(timeline)+1}. Resumen Clave",
+                "tutor_audio": " ".join(remaining),
+                "visual_action": "show_board_notes",
+                "payload": {
+                    "notes": " ".join(remaining)
+                }
+            })
+
+        return timeline
 
     def _build_fallback_lesson(self, topic: str, sublevel: str, is_a_level: bool) -> dict:
         """Rich topic-specific lesson generator using curated high-pedagogy catalog."""
@@ -1584,8 +2102,10 @@ class TutorAgent:
                 p["target_audio_items"] = self._extract_phase_target_audio_items(p)
             p["board_theme"] = "chalkboard_green"
             p["diagram_svg"] = self._resolve_didactic_diagram_svg(p, topic)
-            p["storyboard_steps"] = self._build_phase_storyboard(p)
             p["grammar_structure"] = self._normalize_grammar_structure(p, topic, sublevel)
+            p["voice_chunks"] = self._build_phase_voice_chunks(p, topic, sublevel)
+            p["storyboard_steps"] = self._build_phase_storyboard(p)
+            p["storyboard_timeline"] = self._build_phase_storyboard_timeline(p, topic, sublevel)
         
         data["topic"] = topic
         data["sublevel"] = sublevel

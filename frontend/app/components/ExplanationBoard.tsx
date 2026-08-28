@@ -93,6 +93,7 @@ interface ExplanationBoardProps {
   onPlayAudio?: (text: string) => void;
   theme?: 'chalk' | 'studio' | 'neon';
   className?: string;
+  hasGrammarCard?: boolean;
 }
 
 // ─── HELPER: SEARCH PHRASE TIMING ─────────────────────────────────────────────
@@ -590,13 +591,18 @@ export default function ExplanationBoard({
   onPlayAudio,
   theme = 'chalk',
   className = '',
+  hasGrammarCard = false,
 }: ExplanationBoardProps) {
   const isChalk = theme === 'chalk';
 
   // Parse sections
   const sections = useMemo(() => {
-    return parseBoardContentToSections(boardContent || '', phaseTimeline);
-  }, [boardContent, phaseTimeline]);
+    const raw = parseBoardContentToSections(boardContent || '', phaseTimeline);
+    if (hasGrammarCard) {
+      return raw.filter(s => s.type !== 'formula');
+    }
+    return raw;
+  }, [boardContent, phaseTimeline, hasGrammarCard]);
 
   if (!boardContent || sections.length === 0) {
     return (
@@ -636,37 +642,25 @@ export default function ExplanationBoard({
       {/* Dynamic Sections Feed */}
       <div className="space-y-3.5">
         {sections.map((section, sIdx) => {
-          // Visibility & Active Calculations
-          const isRevealed =
-            isFullBoardRevealed ||
-            currentRatio >= section.timing.startRatio ||
-            sIdx === 0; // First section is always revealed
-
           const isActive =
             tutorState === 'speaking' &&
             !isFullBoardRevealed &&
             currentRatio >= section.timing.startRatio &&
             currentRatio <= section.timing.endRatio;
 
-          // If not revealed, we can hide or render a subtle skeleton
-          if (!isRevealed) {
-            return null;
-          }
-
           return (
             <motion.div
-              key={section.id}
-              initial={{ opacity: 0, y: 18, scale: 0.96, filter: 'blur(6px)' }}
+              key={section.id || sIdx}
+              initial={{ opacity: 0, y: 14, scale: 0.98 }}
               animate={{
-                opacity: isRevealed ? (isActive ? 1 : 0.92) : 0.2,
-                y: isRevealed ? 0 : 12,
+                opacity: 1,
+                y: 0,
                 scale: isActive ? 1.015 : 1,
-                filter: 'blur(0px)',
               }}
               transition={{
-                duration: 0.45,
+                duration: 0.4,
                 ease: [0.22, 1, 0.36, 1],
-                delay: sIdx * 0.05,
+                delay: sIdx * 0.06,
               }}
               className={`rounded-2xl p-4 sm:p-5 border transition-all duration-300 relative overflow-hidden ${
                 isActive

@@ -13,6 +13,7 @@ import DynamicSubtitles from '@/app/components/DynamicSubtitles';
 import MicroPhoneticCard from '@/app/components/MicroPhoneticCard';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
 import LiveStoryboardController, { StoryboardStep } from '@/app/components/LiveStoryboardController';
+import TimelineVisualRenderer, { TimelineStep } from '@/app/components/TimelineVisualRenderer';
 import InteractiveExerciseStage from '@/app/components/InteractiveExerciseStage';
 import {
   ArrowLeft,
@@ -800,134 +801,482 @@ export function findPhraseTimingInTimeline(
   return { startRatio: fallbackStartRatio, endRatio: Math.min(fallbackStartRatio + 0.15, 1.0), found: false };
 }
 
-// ─── HELPER: Generate or Normalize Phase Storyboard Steps ───────────────────
-function getPhaseStoryboardSteps(phase: any, topic: string): StoryboardStep[] {
-  const diagSvg = getPhaseDiagramSvg(phase, topic);
+// ─── TYPES: Voice Chunks for Progressive Playback ───────────────────────────
+export interface VoiceChunk {
+  chunk_id: string;
+  chunk_index: number;
+  title: string;
+  tutor_says: string;
+  reveal_target: 'image' | 'grammar' | 'board_concepts' | 'examples' | 'diagram' | 'exercise' | 'all';
+  highlight_target?: string;
+}
+
+// ─── HELPER: Extract or Synthesize Discrete Voice Chunks ─────────────────────
+export function getPhaseVoiceChunks(phase: any, topic: string): VoiceChunk[] {
+  if (phase?.voice_chunks && Array.isArray(phase.voice_chunks) && phase.voice_chunks.length >= 2) {
+    return phase.voice_chunks.map((c: any, idx: number) => ({
+      chunk_id: c.chunk_id || `chunk-${idx + 1}`,
+      chunk_index: idx + 1,
+      title: c.title || (idx === 0 ? '1. Introducción y Situación' : `${idx + 1}. Explicación`),
+      tutor_says: typeof c.tutor_says === 'string' ? c.tutor_says.trim() : String(c.tutor_says || '').trim(),
+      reveal_target: c.reveal_target || (idx === 0 ? 'image' : 'board_concepts'),
+      highlight_target: c.highlight_target || (idx === 0 ? 'illustration' : 'concepts'),
+    }));
+  }
+
+  // Client-side fallback decomposition for legacy lessons
   let tutorSpeech = typeof phase?.tutor_says === 'string'
     ? phase.tutor_says
     : phase?.tutor_says?.text || '';
 
+  if (!tutorSpeech.trim()) {
+    tutorSpeech = `En esta fase exploraremos ${topic || 'este concepto'} en detalle.`;
+  }
+
+  const rawSentences = tutorSpeech.split(/(?<=[.?!])\s+/).map((s: string) => s.trim()).filter(Boolean);
+  const isHook = phase?.phase_number === 1 || Boolean(phase?.is_hook);
   const hasExercises = Boolean(
     phase?.phase_number !== 1 && (phase?.student_task || phase?.expected_answer || phase?.exercises)
   );
+  const hasGrammar = Boolean(phase?.grammar_structure || phase?.key_structure);
+  const hasDiagram = Boolean(phase?.diagram_svg);
+  const hasPhonetics = Boolean(phase?.phonetic_focus || phase?.is_phonetic_bonus);
 
-  // If this phase has interactive exercises, make sure tutor speech ends with a clear transition prompt if missing
-  const lowerSpeech = tutorSpeech.toLowerCase();
-  if (
-    hasExercises &&
-    tutorSpeech &&
-    !lowerSpeech.includes('a continuación') &&
-    !lowerSpeech.includes('ejercicio') &&
-    !lowerSpeech.includes('resuelve') &&
-    !lowerSpeech.includes('completa') &&
-    !lowerSpeech.includes('desafío')
-  ) {
-    tutorSpeech = `${tutorSpeech.trim()} A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido.`;
+  const chunks: VoiceChunk[] = [];
+
+  // Chunk 1: Hero Image Intro (ONLY Image Centered)
+  let introSpeech = rawSentences[0] || tutorSpeech;
+  let remaining = rawSentences.slice(1);
+  if (rawSentences.length >= 3 && rawSentences[0].split(/\s+/).length < 10) {
+    introSpeech = `${rawSentences[0]} ${rawSentences[1]}`;
+    remaining = rawSentences.slice(2);
   }
 
-  // Clean sentences spoken by the tutor
-  const rawSentences = tutorSpeech.split(/(?<=[.?!])\s+/).filter((s: string) => s.trim().length > 0);
-  const sentenceWordCounts = rawSentences.map((s: string) => s.split(/\s+/).filter(Boolean).length);
-  const totalWords = Math.max(sentenceWordCounts.reduce((a: number, b: number) => a + b, 0), 1);
-
-  const hasGrammar = Boolean(phase?.grammar_structure || phase?.key_structure);
-  const hasPhonetics = Boolean(
-    phase?.phonetic_focus ||
-    (phase?.phase_name?.toLowerCase().includes('fonét') && phase?.phase_number === 4)
-  );
-  const hasMiddle = Boolean(diagSvg || hasGrammar || hasPhonetics);
-
-  const hasAudioPractice = Boolean(
-    phase?.target_audio_items && phase.target_audio_items.length > 0 && !hasExercises
-  );
-  const hasBottom = hasExercises || hasAudioPractice;
-
-  const steps: StoryboardStep[] = [];
-  let stepCounter = 1;
-
-  // Step 1: Whiteboard & Concepts (Main Teaching Board - Top, starts at 0.00)
-  const introSnippet = rawSentences[0] || (typeof phase?.phase_name === 'string' ? phase.phase_name : 'Explicación');
-  steps.push({
-    step_id: 'step-concepts',
-    step_index: stepCounter++,
-    element_type: 'concepts',
-    label: `${phase?.phase_name || '1. Conceptos en Pizarra'}`,
-    tutor_speech_snippet: introSnippet,
-    trigger_ratio: 0.00,
-    animation: 'typewriter',
-    highlight_target: 'concepts',
-    chalk_color: 'green',
+  chunks.push({
+    chunk_id: 'chunk-1',
+    chunk_index: 1,
+    title: '1. Introducción y Situación',
+    tutor_says: introSpeech,
+    reveal_target: 'image',
+    highlight_target: 'illustration',
   });
 
-  // Calculate real cumulative word ratios
-  if (hasMiddle) {
-    const elemType = diagSvg ? 'diagram' : (hasPhonetics ? 'phonetics' : 'grammar');
-    const label = diagSvg ? 'Esquema Conceptual' : (hasPhonetics ? 'Foco Fonético' : 'Fórmula Gramatical');
-
-    // Find sentence that mentions grammar/diagram/structure if any
-    let middleSentenceIdx = 1;
-    for (let i = 1; i < rawSentences.length; i++) {
-      const sLow = rawSentences[i].toLowerCase();
-      if (sLow.includes('fórmula') || sLow.includes('esquema') || sLow.includes('diagrama') || sLow.includes('estructura') || sLow.includes('patrón') || sLow.includes('línea') || sLow.includes('fonét')) {
-        middleSentenceIdx = i;
-        break;
+  if (isHook) {
+    return [
+      {
+        chunk_id: 'chunk-1',
+        chunk_index: 1,
+        title: '1. Situación y Dilema',
+        tutor_says: tutorSpeech,
+        reveal_target: 'image',
+        highlight_target: 'illustration',
       }
-    }
-    if (middleSentenceIdx >= rawSentences.length && rawSentences.length > 1) {
-      middleSentenceIdx = hasBottom && rawSentences.length > 2 ? 1 : rawSentences.length - 1;
-    }
+    ];
+  }
 
-    const middleSnippet = rawSentences[middleSentenceIdx] || rawSentences[1] || 'Observa la estructura sintáctica y el esquema conceptual.';
-    const wordsBeforeMiddle = sentenceWordCounts.slice(0, middleSentenceIdx).reduce((a: number, b: number) => a + b, 0);
-    const calculatedMiddleRatio = wordsBeforeMiddle / totalWords;
-    const triggerRatio = Math.max(0.35, Math.min(hasBottom ? 0.65 : 0.80, calculatedMiddleRatio));
+  // Chunk 2: Grammar / Diagram / Concept Formula
+  if (hasGrammar || hasDiagram || hasPhonetics || remaining.length >= 2) {
+    const revealType = hasGrammar ? 'grammar' : (hasDiagram ? 'diagram' : 'board_concepts');
+    const titleText = hasGrammar ? '2. Fórmula Gramatical' : (hasDiagram ? '2. Esquema Didáctico' : (hasPhonetics ? '2. Contraste Fonético' : '2. Concepto Clave'));
+    const chunk2Speech = remaining[0] || 'Observa con atención la fórmula y estructura gramatical en la pizarra.';
+    remaining = remaining.slice(1);
 
-    steps.push({
-      step_id: `step-${elemType}`,
-      step_index: stepCounter++,
-      element_type: elemType,
-      label: `${stepCounter - 1}. ${label}`,
-      tutor_speech_snippet: middleSnippet,
-      trigger_ratio: Math.round(triggerRatio * 100) / 100,
-      animation: 'bounce_in',
-      highlight_target: elemType,
-      chalk_color: 'purple',
+    chunks.push({
+      chunk_id: 'chunk-2',
+      chunk_index: 2,
+      title: titleText,
+      tutor_says: chunk2Speech,
+      reveal_target: revealType,
+      highlight_target: revealType === 'grammar' ? 'grammar' : (revealType === 'diagram' ? 'diagram' : 'concepts'),
     });
   }
 
-  // Step 3: Interactive Practice or Challenge (if present)
-  if (hasBottom) {
-    const elemType = hasExercises ? 'exercise' : 'audio_practice';
-    const label = hasExercises ? 'Desafío Interactivo' : 'Práctica de Pronunciación';
+  // Chunk 3: Board Concepts / Examples
+  if (remaining.length > 0 && (!hasExercises || remaining.length >= 2)) {
+    const chunk3Speech = hasExercises && remaining.length >= 2 ? remaining[0] : remaining.join(' ');
+    remaining = hasExercises && remaining.length >= 2 ? remaining.slice(1) : [];
 
-    let bottomSentenceIdx = rawSentences.length - 1;
-    for (let i = rawSentences.length - 1; i >= 1; i--) {
-      const sLow = rawSentences[i].toLowerCase();
-      if (sLow.includes('ejercicio') || sLow.includes('a continuación') || sLow.includes('completa') || sLow.includes('resuelve') || sLow.includes('práctica') || sLow.includes('desafío') || sLow.includes('micrófono')) {
-        bottomSentenceIdx = i;
-        break;
-      }
-    }
-
-    const bottomSnippet = rawSentences[bottomSentenceIdx] || 'A continuación, verás unos ejercicios en la pizarra para poner en práctica lo aprendido.';
-    const wordsBeforeBottom = sentenceWordCounts.slice(0, bottomSentenceIdx).reduce((a: number, b: number) => a + b, 0);
-    const calculatedBottomRatio = wordsBeforeBottom / totalWords;
-    const triggerRatio = Math.max(hasMiddle ? 0.60 : 0.45, Math.min(0.88, calculatedBottomRatio));
-
-    steps.push({
-      step_id: `step-${elemType}`,
-      step_index: stepCounter++,
-      element_type: elemType,
-      label: `${stepCounter - 1}. ${label}`,
-      tutor_speech_snippet: bottomSnippet,
-      trigger_ratio: Math.round(triggerRatio * 100) / 100,
-      animation: 'spotlight_glow',
-      highlight_target: elemType,
-      chalk_color: 'gold',
+    chunks.push({
+      chunk_id: `chunk-${chunks.length + 1}`,
+      chunk_index: chunks.length + 1,
+      title: `${chunks.length + 1}. Pizarra y Ejemplos`,
+      tutor_says: chunk3Speech,
+      reveal_target: 'board_concepts',
+      highlight_target: 'concepts',
     });
   }
 
-  return steps;
+  // Chunk 4: Practice Challenge
+  if (hasExercises) {
+    const taskSpeech = remaining.length > 0 ? remaining.join(' ') : 'A continuación, resuelve los ejercicios en la pizarra para poner en práctica lo aprendido.';
+    chunks.push({
+      chunk_id: `chunk-${chunks.length + 1}`,
+      chunk_index: chunks.length + 1,
+      title: `${chunks.length + 1}. Desafío Interactivo`,
+      tutor_says: taskSpeech,
+      reveal_target: 'exercise',
+      highlight_target: 'exercise',
+    });
+  } else if (remaining.length > 0) {
+    chunks.push({
+      chunk_id: `chunk-${chunks.length + 1}`,
+      chunk_index: chunks.length + 1,
+      title: `${chunks.length + 1}. Resumen Clave`,
+      tutor_says: remaining.join(' '),
+      reveal_target: 'board_concepts',
+      highlight_target: 'concepts',
+    });
+  }
+
+  return chunks;
+}
+
+// ─── HELPER: Generate or Normalize Phase Storyboard Steps from Chunks ────────
+function getPhaseStoryboardSteps(phase: any, topic: string): StoryboardStep[] {
+  const chunks = getPhaseVoiceChunks(phase, topic);
+  const totalChunks = Math.max(chunks.length, 1);
+
+  return chunks.map((c, idx) => {
+    const elemType = c.reveal_target === 'image' ? 'illustration' : (c.reveal_target === 'grammar' ? 'grammar' : (c.reveal_target === 'diagram' ? 'diagram' : (c.reveal_target === 'exercise' ? 'exercise' : 'concepts')));
+    const color = c.reveal_target === 'image' ? 'cyan' : (c.reveal_target === 'grammar' ? 'purple' : (c.reveal_target === 'exercise' ? 'gold' : 'green'));
+
+    return {
+      step_id: c.chunk_id || `step-${idx + 1}`,
+      step_index: idx + 1,
+      element_type: elemType,
+      label: c.title || `${idx + 1}. Paso`,
+      tutor_speech_snippet: c.tutor_says,
+      trigger_ratio: Math.round((idx / totalChunks) * 100) / 100,
+      animation: c.reveal_target === 'exercise' ? 'spotlight_glow' : (c.reveal_target === 'grammar' ? 'bounce_in' : 'typewriter'),
+      highlight_target: c.highlight_target || elemType,
+      chalk_color: color,
+    };
+  });
+}
+
+const COMMON_ENGLISH_SPANISH: Record<string, string> = {
+  'wake up': 'despertarse / despertar',
+  'have breakfast': 'desayunar',
+  'eat breakfast': 'desayunar',
+  'go to work': 'ir al trabajo / ir a trabajar',
+  'exercise': 'hacer ejercicio',
+  'exercises': 'hace ejercicio (sonido /ɪz/)',
+  'sleep': 'dormir',
+  'sleeps': 'duerme (sonido /s/)',
+  'go': 'ir',
+  'goes': 'va (sonido /z/)',
+  'work': 'trabajar',
+  'works': 'trabaja',
+  'study': 'estudiar',
+  'studies': 'estudia',
+  'sue': 'demandar (/suː/)',
+  'zoo': 'zoológico (/zuː/)',
+  'peace': 'paz (/piːs/)',
+  'peas': 'arvejas / guisantes (/piːz/)',
+  'price': 'precio (/praɪs/)',
+  'prize': 'premio (/praɪz/)',
+  'always': 'siempre (100%)',
+  'usually': 'normalmente / usualmente (80%)',
+  'often': 'a menudo / frecuentemente (70%)',
+  'sometimes': 'a veces (50%)',
+  'hardly ever': 'casi nunca (20%)',
+  'rarely': 'raramente (10%)',
+  'never': 'nunca (0%)',
+  'i always wake up early': 'Yo siempre me despierto temprano',
+  'she never eats at night': 'Ella nunca come de noche',
+  'they usually study at night': 'Ellos normalmente estudian de noche',
+  'i usually drink coffee at 8 am in the morning': 'Normalmente tomo café a las 8 AM por la mañana',
+  'i usually drink coffee': 'Normalmente tomo café (orden correcto)',
+  'i drink usually coffee': 'Orden incorrecto del adverbio',
+};
+
+// ─── HELPER: Extract Spoken English Quotes & Transformations from Tutor Speech
+function extractSpokenEnglishQuotes(speechText: string) {
+  if (!speechText) return { primary: null, primary_translation: null, items: [], additional: [], transformations: [], contrasts: [], phonetic_pairs: [], frequency_scale: [], drill_sentences: [] };
+
+  const transMatches = Array.from(
+    speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,50}?(?:se convierte en|se transforma en|pasa a ser|cambia a|becomes|transforms into)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+  );
+  const transformations = transMatches
+    .map(m => ({ from: m[1].trim(), to: m[2].trim() }))
+    .filter(t => t.from.length >= 2 && t.to.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(t.from) && !/[áéíóúñÁÉÍÓÚÑ]/.test(t.to));
+
+  const contMatches = Array.from(
+    speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:y no|y nunca|no|en lugar de|instead of|mientras que)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+  );
+  const contrasts = contMatches
+    .map(m => ({ correct: m[1].trim(), incorrect: m[2].trim(), why: 'Contraste fonético / gramatical' }))
+    .filter(c => c.correct.length >= 2 && c.incorrect.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(c.correct) && !/[áéíóúñÁÉÍÓÚÑ]/.test(c.incorrect));
+
+  // Detect Common Errors introduced like: "Un error típico ... diciendo 'I drink usually coffee'"
+  const errMatch = speechText.match(/(?:error\s+típico[^\n\r]*?diciendo|diciendo|es\s+incorrecto\s+decir|en\s+lugar\s+de\s+decir|no\s+digas)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
+  if (errMatch) {
+    const incorrectQuote = errMatch[1].trim();
+    if (!contrasts.some(c => c.incorrect.toLowerCase() === incorrectQuote.toLowerCase())) {
+      let correctCand = 'I usually drink coffee';
+      const modelCand = speechText.match(/(?:ejemplo|orden\s+correcto[^\n\r]*?['"‘“]|modelo\s+es[^\n\r]*?['"‘“])\s*['"‘“]?([^'"‘“’”\n\r]+)['"’”]/i);
+      if (modelCand) {
+        const cand = modelCand[1].trim();
+        if (cand.length >= 3 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cand)) {
+          correctCand = cand.split(/\s+/).slice(0, 4).join(' ');
+        }
+      }
+      contrasts.push({
+        correct: correctCand,
+        incorrect: incorrectQuote,
+        why: 'El adverbio va SIEMPRE ANTES del verbo principal',
+      });
+    }
+  }
+
+  // 3. Frequency Scale / Table Items from speech (e.g. 'Always' 100%, 'Usually' 80%, 'Sometimes' 50%, 'Never' 0%)
+  const freqPattern = /['"‘“](Always|Usually|Often|Sometimes|Hardly ever|Rarely|Never)['"’”]\s*(?:\(([^)]+)\))?[^'"‘“’”]{0,50}?(\d{1,3})%/gi;
+  const frequencyScale: Array<{ adverb: string; spanish: string; percentage: string }> = [];
+  for (const fm of Array.from(speechText.matchAll(freqPattern))) {
+    const adv = fm[1].trim();
+    const spa = fm[2]?.trim() || '';
+    const pct = `${fm[3].trim()}%`;
+    frequencyScale.push({
+      adverb: adv.charAt(0).toUpperCase() + adv.slice(1).toLowerCase(),
+      spanish: spa || (COMMON_ENGLISH_SPANISH[adv.toLowerCase()] || '').split('(')[0].trim(),
+      percentage: pct,
+    });
+  }
+
+  // Phonetic minimal pairs (e.g. peace /piːs/ con /s/, peas /piːz/ con /z/)
+  const phoneticPattern = /([a-zA-Z]{2,15})\s+(\/[^\/]+\/)\s+(?:con\s+\/[a-z\/]+\/[,\s]+)?([a-zA-Z]{2,15})\s+(\/[^\/]+\/)/gi;
+  const phoneticPairs: Array<{ word1: string; ipa1: string; trans1?: string; word2: string; ipa2: string; trans2?: string }> = [];
+  for (const pm of Array.from(speechText.matchAll(phoneticPattern))) {
+    const w1 = pm[1].trim();
+    const ipa1 = pm[2].trim();
+    const w2 = pm[3].trim();
+    const ipa2 = pm[4].trim();
+    if (!['con', 'que', 'para', 'esta'].includes(w1.toLowerCase()) && !['con', 'que', 'para', 'esta'].includes(w2.toLowerCase())) {
+      phoneticPairs.push({
+        word1: w1,
+        ipa1,
+        trans1: COMMON_ENGLISH_SPANISH[w1.toLowerCase()] || '',
+        word2: w2,
+        ipa2,
+        trans2: COMMON_ENGLISH_SPANISH[w2.toLowerCase()] || '',
+      });
+    }
+  }
+
+  // Detect Syntactic Parts (so "drink coffee" or "At 8 AM" are not treated as vocab cards)
+  const syntacticPartQuotes = new Set<string>();
+  for (const pm of Array.from(speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”]\s+(?:es\s+el\s+(?:Sujeto|Verbo|Adverbio|Complemento)|son\s+(?:Time\s+Expressions|expresiones\s+de\s+tiempo))/gi))) {
+    syntacticPartQuotes.add(pm[1].trim().toLowerCase());
+  }
+  for (const c of contrasts) {
+    syntacticPartQuotes.add(c.incorrect.toLowerCase());
+  }
+
+  // Extract Real Spoken Drill Sentences (e.g. "Repite conmigo mentalmente: I always wake up early. She never eats at night.")
+  const drillSentences: Array<{ english: string; translation: string }> = [];
+  const drillMatch = speechText.match(/(?:repite\s+conmigo(?:\s+mentalmente)?:\s*|practica\s+con:\s*)([^.\n\r]+(?:\.[^.\n\r]+)*)/i);
+  if (drillMatch) {
+    const drillRaw = drillMatch[1];
+    for (const s of drillRaw.split(/[.;]/)) {
+      const sClean = s.replace(/^(?:mentalmente|conmigo|y)\s*[:,\s]*/i, '').trim();
+      if (sClean.split(/\s+/).length >= 3 && !/[áéíóúñÁÉÍÓÚÑ]/.test(sClean)) {
+        drillSentences.push({
+          english: sClean,
+          translation: COMMON_ENGLISH_SPANISH[sClean.toLowerCase()] || 'Práctica oral',
+        });
+      }
+    }
+  }
+
+  const SPANISH_DISQUALIFIERS = new Set([
+    'me', 'te', 'se', 'nos', 'os', 'mi', 'tu', 'su', 'mis', 'tus', 'sus', 'nuestro', 'nuestra',
+    'despierto', 'despiertas', 'despierta', 'despertamos', 'despiertan', 'despertarse', 'despertar',
+    'desayuno', 'desayunas', 'desayuna', 'desayunamos', 'desayunan', 'desayunar',
+    'trabajo', 'trabajas', 'trabaja', 'trabajamos', 'trabajan', 'trabajar',
+    'estudio', 'estudias', 'estudia', 'estudiamos', 'estudian', 'estudiar',
+    'duermo', 'duermes', 'duerme', 'dormimos', 'duermen', 'dormir',
+    'como', 'comes', 'come', 'comemos', 'comen', 'comer',
+    'hago', 'haces', 'hace', 'hacemos', 'hacen', 'hacer',
+    'ejercicio', 'ejercicios', 'significa', 'es', 'decir', 'o', 'sea', 'muestra', 'como',
+    'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas', 'de', 'del', 'en', 'para', 'por', 'con',
+    'que', 'al', 'a', 'son', 'va', 'van', 'colocado', 'antes', 'despues', 'palabra', 'oracion',
+    'frase', 'regla', 'sujeto', 'verbo', 'complemento', 'tiempo', 'lugar', 'manana', 'tarde', 'noche',
+    'siempre', 'normalmente', 'usualmente', 'a veces', 'nunca', 'frecuencia', 'rutina', 'habito',
+    'yo', 'tu', 'el', 'ella', 'nosotros', 'ustedes', 'ellos', 'ellas'
+  ]);
+
+  const isSpanishPhrase = (text: string): boolean => {
+    if (!text || typeof text !== 'string') return false;
+    if (/[áéíóúñÁÉÍÓÚÑ]/.test(text)) return true;
+    const tokens = text.split(/\s+/).map(w => w.toLowerCase().replace(/[,.:;!?"'()[\]{}]/g, ''));
+    if (tokens.length === 0) return false;
+    return tokens.some(w => SPANISH_DISQUALIFIERS.has(w));
+  };
+
+  const metaDisqualifiers = new Set([
+    's', 'es', 'ed', 'ing', 'd', 've', 're', 'll', 'm', 't', 'i', 'he', 'she', 'it', 'we', 'they', 'you',
+    'ch', 'sh', 'x', 'z', 'regla', 'fórmula', 'sujeto', 'verbo', 'complemento', 'pizarra', 'ejemplo', 'eat', 'have', 'uniforme', 'corbata'
+  ]);
+
+  const items: Array<{ english: string; translation: string }> = [];
+  const seen = new Set<string>(syntacticPartQuotes);
+
+  // Include drill sentences first
+  for (const d of drillSentences) {
+    if (!isSpanishPhrase(d.english) && !seen.has(d.english.toLowerCase())) {
+      seen.add(d.english.toLowerCase());
+      items.push(d);
+    }
+  }
+
+  const rawQuotes = Array.from(speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”]/g));
+  for (const m of rawQuotes) {
+    const eng = m[1].trim();
+    const low = eng.toLowerCase();
+    if (eng.length >= 2 && !metaDisqualifiers.has(low) && !seen.has(low) && !isSpanishPhrase(eng)) {
+      seen.add(low);
+      let trans = COMMON_ENGLISH_SPANISH[low] || '';
+      if (m.index !== undefined) {
+        const endPos = m.index + m[0].length;
+        const trailer = speechText.slice(endPos, endPos + 50);
+
+        // Check if following quote is the translation: significa 'te despiertas'
+        const transQuoteMatch = trailer.match(/^(?:\s*(?:significa|es decir|es|o sea|se traduce como|traducido como))\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
+        if (transQuoteMatch) {
+          const explicitSpa = transQuoteMatch[1].trim();
+          trans = explicitSpa;
+          seen.add(explicitSpa.toLowerCase());
+        } else if (!trans) {
+          const defMatch = trailer.match(/^(?:\s*(?:significa|es decir|es|o sea|se traduce como)\s+)?([a-zA-ZáéíóúñÁÉÍÓÚÑ\s]{3,25})/i);
+          if (defMatch && /significa|es|es decir|o sea/i.test(trailer.slice(0, 15))) {
+            const rawT = defMatch[1].trim().replace(/[.,;:]+$/, '');
+            const cleanT = rawT.replace(/^(?:decir|cuando|y|que|un|una|muestra|cómo|la)\s+/i, '').trim();
+            if (cleanT.length >= 3 && isSpanishPhrase(cleanT)) {
+              trans = cleanT;
+            }
+          }
+        }
+      }
+      items.push({ english: eng, translation: trans });
+    }
+  }
+
+  // Also include minimal pair words in items if not already added
+  for (const pair of phoneticPairs) {
+    for (const [w, tr] of [[pair.word1, pair.trans1], [pair.word2, pair.trans2]] as const) {
+      if (w && !seen.has(w.toLowerCase())) {
+        seen.add(w.toLowerCase());
+        items.push({ english: w, translation: tr || '' });
+      }
+    }
+  }
+
+  // Model sentence selection
+  let primaryEng = 'I wake up at 7 AM';
+  let primarySpa = 'Me despierto a las 7 AM';
+  const modelMatch = speechText.match(/(?:ejemplo|oración\s+modelo)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
+  if (modelMatch) {
+    primaryEng = modelMatch[1].trim();
+    primarySpa = COMMON_ENGLISH_SPANISH[primaryEng.toLowerCase()] || 'Oración modelo en contexto';
+  } else if (items.length > 0) {
+    primaryEng = items[0].english;
+    primarySpa = items[0].translation;
+  }
+
+  const additional = items.filter(it => it.english.toLowerCase() !== primaryEng.toLowerCase());
+
+  return {
+    primary: primaryEng,
+    primary_translation: primarySpa,
+    items,
+    additional,
+    transformations,
+    contrasts,
+    phonetic_pairs: phoneticPairs,
+    frequency_scale: frequencyScale,
+    drill_sentences: drillSentences,
+  };
+}
+
+// ─── HELPER: Generate or Normalize Chronological Timeline Steps for Slide ────
+function getPhaseStoryboardTimeline(phase: any, topic: string): TimelineStep[] {
+  if (phase?.storyboard_timeline && Array.isArray(phase.storyboard_timeline) && phase.storyboard_timeline.length > 0) {
+    return phase.storyboard_timeline;
+  }
+
+  const fullSpeech = typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '');
+  const spokenOverall = extractSpokenEnglishQuotes(fullSpeech);
+
+  // Synthesize from voice chunks / grammar / target audio items
+  const chunks = getPhaseVoiceChunks(phase, topic);
+  const grammar = phase?.grammar_structure || phase?.key_structure;
+  const targetAudio = phase?.target_audio_items || [];
+  const diagram = phase?.diagram_svg;
+  const exercises = phase?.exercises || [];
+  const task = phase?.student_task;
+
+  return chunks.map((c, idx) => {
+    let action: TimelineStep['visual_action'] = 'show_hero_image';
+    let payload: any = {};
+
+    const stepSpeech = c.tutor_says || '';
+    const stepSpoken = extractSpokenEnglishQuotes(stepSpeech);
+
+    if (idx === 0 || c.reveal_target === 'image') {
+      action = 'show_hero_image';
+      payload = {
+        title: phase?.phase_name || 'Situación Visual',
+        topic,
+        frequency_scale: spokenOverall.frequency_scale,
+      };
+    } else if (c.reveal_target === 'grammar' && grammar) {
+      action = 'show_grammar_formula';
+      payload = {
+        title: grammar.title || 'Fórmula Gramatical',
+        formula: grammar.formula,
+        formula_tokens: grammar.formula_tokens,
+        explanation: grammar.explanation,
+        frequency_scale: spokenOverall.frequency_scale,
+      };
+    } else if (c.reveal_target === 'diagram' && diagram) {
+      action = 'show_diagram';
+      payload = { svg: diagram };
+    } else if (c.reveal_target === 'exercise') {
+      action = 'show_challenge';
+      payload = { student_task: task, expected_answer: phase?.expected_answer, exercises };
+    } else {
+      const firstTarget = targetAudio[0] || {};
+      const chosenPrimary = stepSpoken.primary || spokenOverall.primary || firstTarget.english || 'wake up';
+      const chosenSpa = stepSpoken.primary_translation || spokenOverall.primary_translation || firstTarget.translation || firstTarget.spanish || 'Oración modelo en contexto.';
+      const chosenTrans = stepSpoken.transformations.length > 0 ? stepSpoken.transformations : (spokenOverall.transformations.length > 0 ? spokenOverall.transformations : []);
+      const chosenContrast = stepSpoken.contrasts.length > 0 ? stepSpoken.contrasts : (spokenOverall.contrasts.length > 0 ? spokenOverall.contrasts : []);
+      const chosenPhonetic = stepSpoken.phonetic_pairs.length > 0 ? stepSpoken.phonetic_pairs : (spokenOverall.phonetic_pairs.length > 0 ? spokenOverall.phonetic_pairs : []);
+      const chosenFreq = stepSpoken.frequency_scale.length > 0 ? stepSpoken.frequency_scale : (spokenOverall.frequency_scale.length > 0 ? spokenOverall.frequency_scale : []);
+      
+      const extraItems = stepSpoken.additional.length > 0 ? stepSpoken.additional : (spokenOverall.additional.length > 0 ? spokenOverall.additional : targetAudio.slice(1, 5));
+
+      action = 'show_example_sentence';
+      payload = {
+        english: chosenPrimary,
+        spanish: chosenSpa,
+        transformation: chosenTrans[0] || null,
+        transformations: chosenTrans,
+        contrast: chosenContrast[0] || null,
+        contrasts: chosenContrast,
+        phonetic_pairs: chosenPhonetic,
+        frequency_scale: chosenFreq,
+        additional_examples: extraItems,
+      };
+    }
+
+    return {
+      step_index: idx + 1,
+      step_title: c.title,
+      tutor_audio: c.tutor_says,
+      visual_action: action,
+      payload,
+    };
+  });
 }
 
 export default function LessonPage() {
@@ -955,6 +1304,10 @@ export default function LessonPage() {
   const [showPhoneticModal, setShowPhoneticModal] = useState(false);
   const [currentSpeakingText, setCurrentSpeakingText] = useState<string>('');
   const [exerciseInputs, setExerciseInputs] = useState<Record<string, string>>({});
+  const [currentChunkIdx, setCurrentChunkIdx] = useState<number>(0);
+  const [revealedTargets, setRevealedTargets] = useState<Set<string>>(new Set(['image']));
+  const [selectedExerciseIdx, setSelectedExerciseIdx] = useState<number>(0);
+  const [selectedChallengeOption, setSelectedChallengeOption] = useState<string | null>(null);
 
   // 🎨 Consolidated View Modes: 'board' (Pizarra Interactiva), 'timeline' (Flujo Didáctico), 'reading' (Práctica de Lectura), or 'games' (Game Arena)
   const [viewMode, setViewMode] = useState<'board' | 'timeline' | 'reading' | 'games'>('board');
@@ -1095,6 +1448,10 @@ export default function LessonPage() {
 
   const phaseStoryboardSteps = useMemo(() => {
     return getPhaseStoryboardSteps(phase, topicParam);
+  }, [phase, topicParam]);
+
+  const phaseStoryboardTimeline = useMemo(() => {
+    return getPhaseStoryboardTimeline(phase, topicParam);
   }, [phase, topicParam]);
 
   const currentDiagramSvg = useMemo(() => {
@@ -1512,15 +1869,147 @@ export default function LessonPage() {
     setRevealedLineCount(0);
     setAudioProgress(0);
     setActiveStepIdx(0);
+    setCurrentChunkIdx(0);
     setRevealedStepCount(1);
+    setRevealedTargets(new Set(['image']));
     setIsFullBoardRevealed(false);
     const newPhase = lesson?.phases?.[currentPhaseIdx];
     if (newPhase) {
-      setCurrentSpeakingText(typeof newPhase.tutor_says === 'string' ? newPhase.tutor_says : newPhase.tutor_says?.text || '');
+      const chunks = getPhaseVoiceChunks(newPhase, topicParam);
+      setCurrentSpeakingText(chunks[0]?.tutor_says || (typeof newPhase.tutor_says === 'string' ? newPhase.tutor_says : ''));
     }
   }, [currentPhaseIdx]);
 
-  // 2. Auto Speak Tutor's Line ONCE per Phase Change
+  // Helper to check if a specific target element is revealed
+  const isTargetRevealed = useCallback((target: string) => {
+    if (isFullBoardRevealed || audioFinishedNaturallyRef.current) return true;
+    return revealedTargets.has(target);
+  }, [isFullBoardRevealed, revealedTargets]);
+
+  // Is the slide currently in Hero Mode (Chunk 1 active: ONLY centered large image)?
+  const isHeroImageMode = useMemo(() => {
+    if (isFullBoardRevealed || audioFinishedNaturallyRef.current) return false;
+    const currentPhaseObj = lesson?.phases?.[currentPhaseIdx];
+    if (!currentPhaseObj) return false;
+    const chunks = getPhaseVoiceChunks(currentPhaseObj, topicParam);
+    return currentChunkIdx === 0 && chunks.length > 1;
+  }, [isFullBoardRevealed, lesson, currentPhaseIdx, topicParam, currentChunkIdx]);
+
+  // 2. Play Voice Chunk with Sequential Auto-Advance & Progressive Element Reveal
+  const playVoiceChunk = useCallback(async (chunkIndex: number, autoAdvance = true) => {
+    const currentPhaseObj = lesson?.phases?.[currentPhaseIdx];
+    if (!currentPhaseObj) return;
+
+    const chunks = getPhaseVoiceChunks(currentPhaseObj, topicParam);
+    if (chunkIndex < 0 || chunkIndex >= chunks.length) return;
+
+    const chunk = chunks[chunkIndex];
+    if (!chunk || !chunk.tutor_says) return;
+
+    setCurrentChunkIdx(chunkIndex);
+    setActiveStepIdx(chunkIndex);
+    setRevealedStepCount(prev => Math.max(prev, chunkIndex + 1));
+    setRevealedTargets(prev => {
+      const next = new Set(prev);
+      next.add(chunk.reveal_target);
+      if (chunk.reveal_target === 'grammar') next.add('board_concepts');
+      if (chunkIndex > 0) next.add('board_concepts');
+      return next;
+    });
+
+    setCurrentSpeakingText(chunk.tutor_says);
+    stopCurrentAudio();
+    const thisSessionId = audioSessionIdRef.current;
+    setAudioProgress(0);
+
+    setTutorState('thinking');
+    try {
+      const audio = await playTTS(chunk.tutor_says);
+      if (audioSessionIdRef.current !== thisSessionId) {
+        audio.pause();
+        return;
+      }
+
+      currentAudioRef.current = audio;
+      setTutorState('speaking');
+
+      if (audioTimerRef.current) clearInterval(audioTimerRef.current);
+      audioTimerRef.current = setInterval(() => {
+        const aud = currentAudioRef.current;
+        if (!aud || audioSessionIdRef.current !== thisSessionId || aud.paused || aud.ended) {
+          if (audioTimerRef.current) {
+            clearInterval(audioTimerRef.current);
+            audioTimerRef.current = null;
+          }
+          return;
+        }
+
+        if (aud.duration && aud.duration > 0 && !isNaN(aud.duration)) {
+          const prog = (aud.currentTime / aud.duration) * 100;
+          setAudioProgress(Math.min(Math.max(prog, 0), 100));
+        }
+      }, 50);
+
+      audio.ontimeupdate = () => {
+        if (audio.duration && audio.duration > 0 && !isNaN(audio.duration)) {
+          const prog = (audio.currentTime / audio.duration) * 100;
+          setAudioProgress(Math.min(Math.max(prog, 0), 100));
+        }
+      };
+
+      audio.onended = () => {
+        if (audioTimerRef.current) {
+          clearInterval(audioTimerRef.current);
+          audioTimerRef.current = null;
+        }
+        if (audioSessionIdRef.current === thisSessionId) {
+          setAudioProgress(100);
+
+          if (autoAdvance && chunkIndex + 1 < chunks.length) {
+            // Natural pause between chunks (450ms) before transitioning and playing next chunk
+            setTimeout(() => {
+              if (audioSessionIdRef.current === thisSessionId) {
+                playVoiceChunk(chunkIndex + 1, true);
+              }
+            }, 450);
+          } else {
+            setTutorState('idle');
+            setIsFullBoardRevealed(true);
+            setActiveStepIdx(chunks.length - 1);
+            setRevealedStepCount(chunks.length);
+            setRevealedTargets(new Set(['image', 'grammar', 'board_concepts', 'examples', 'diagram', 'exercise']));
+            audioFinishedNaturallyRef.current = true;
+          }
+        }
+      };
+
+      audio.onerror = () => {
+        if (audioTimerRef.current) {
+          clearInterval(audioTimerRef.current);
+          audioTimerRef.current = null;
+        }
+        if (audioSessionIdRef.current === thisSessionId) {
+          setTutorState('idle');
+          if (autoAdvance && chunkIndex + 1 < chunks.length) {
+            setTimeout(() => {
+              if (audioSessionIdRef.current === thisSessionId) {
+                playVoiceChunk(chunkIndex + 1, true);
+              }
+            }, 450);
+          } else {
+            setIsFullBoardRevealed(true);
+          }
+        }
+      };
+    } catch (err) {
+      console.warn('TTS Chunk error:', err);
+      if (audioSessionIdRef.current === thisSessionId) {
+        setTutorState('idle');
+      }
+    }
+  }, [lesson, currentPhaseIdx, topicParam]);
+
+  // 3. Auto Play Chunk 1 on Phase Change
   useEffect(() => {
     if (loadingLesson) return;
     if (viewMode === 'games' || viewMode === 'reading') return;
@@ -1532,166 +2021,46 @@ export default function LessonPage() {
       lastSpokenPhaseRef.current !== currentPhaseIdx
     ) {
       lastSpokenPhaseRef.current = currentPhaseIdx;
-      const phase = lesson.phases[currentPhaseIdx];
-      const textToSpeak =
-        typeof phase.tutor_says === 'string'
-          ? phase.tutor_says
-          : phase.tutor_says?.text || 'Escucha la explicación';
-      if (textToSpeak) {
-        speakText(textToSpeak, true);
-      }
+      audioFinishedNaturallyRef.current = false;
+      playVoiceChunk(0, true);
     }
-  }, [lesson, currentPhaseIdx, evaluation, viewMode, loadingLesson]);
-
-  const updateStoryboardProgress = (progressPercent: number, stepsList: StoryboardStep[]) => {
-    if (!stepsList || stepsList.length === 0) return;
-    const progressRatio = progressPercent / 100;
-
-    let currentActive = 0;
-    let revealed = 1;
-    for (let i = 0; i < stepsList.length; i++) {
-      const step = stepsList[i];
-      if (progressRatio >= step.trigger_ratio) {
-        currentActive = i;
-        revealed = Math.max(revealed, i + 1);
-      }
-    }
-    setActiveStepIdx(currentActive);
-    setRevealedStepCount(prev => Math.max(prev, revealed));
-  };
+  }, [lesson, currentPhaseIdx, evaluation, viewMode, loadingLesson, playVoiceChunk]);
 
   const speakText = async (text: string, isMainLecture = false) => {
     if (!text || !text.trim()) return;
+    if (isMainLecture) {
+      playVoiceChunk(0, true);
+      return;
+    }
 
+    // Auxiliary speech for task instruction or evaluation feedback
     setCurrentSpeakingText(text);
     stopCurrentAudio();
     const thisSessionId = audioSessionIdRef.current;
-
-    const currentPhaseObj = lesson?.phases?.[currentPhaseIdx];
-    const stepsList = getPhaseStoryboardSteps(currentPhaseObj, topicParam);
-
-    if (isMainLecture) {
-      setIsFullBoardRevealed(false);
-      audioFinishedNaturallyRef.current = false;
-      setActiveStepIdx(0);
-      setRevealedStepCount(1);
-      setAudioProgress(0);
-      const boardContent = currentPhaseObj?.board_content;
-      const boardLines: string[] = typeof boardContent === 'string'
-        ? boardContent.split('\n').filter((l: string) => l.trim().length > 0)
-        : [];
-
-      if (boardLines.length > 0) {
-        setRevealedLineCount(0);
-        const wordsInSpeech = text.split(/\s+/).filter(Boolean).length;
-        const estimatedDurationMs = Math.max(wordsInSpeech * 175, 1800);
-        const lineInterval = estimatedDurationMs / Math.max(boardLines.length, 1);
-        let revealed = 0;
-        if (lineRevealTimerRef.current) clearInterval(lineRevealTimerRef.current);
-        lineRevealTimerRef.current = setInterval(() => {
-          revealed++;
-          setRevealedLineCount(revealed);
-          if (revealed >= boardLines.length) {
-            if (lineRevealTimerRef.current) clearInterval(lineRevealTimerRef.current);
-            lineRevealTimerRef.current = null;
-          }
-        }, lineInterval);
-      } else {
-        setRevealedLineCount(999);
-      }
-    }
-
     setTutorState('thinking');
+
     try {
       const audio = await playTTS(text);
-
       if (audioSessionIdRef.current !== thisSessionId) {
         audio.pause();
         return;
       }
-
       currentAudioRef.current = audio;
       setTutorState('speaking');
-
-      if (isMainLecture) {
-        // Smooth ~20Hz progress interval to keep subtitles & storyboard in sync without DOM thrashing
-        if (audioTimerRef.current) clearInterval(audioTimerRef.current);
-        audioTimerRef.current = setInterval(() => {
-          const aud = currentAudioRef.current;
-          if (!aud || audioSessionIdRef.current !== thisSessionId || aud.paused || aud.ended) {
-            if (audioTimerRef.current) {
-              clearInterval(audioTimerRef.current);
-              audioTimerRef.current = null;
-            }
-            return;
-          }
-
-          if (aud.duration && aud.duration > 0 && !isNaN(aud.duration)) {
-            const prog = (aud.currentTime / aud.duration) * 100;
-            const clamped = Math.min(Math.max(prog, 0), 100);
-            setAudioProgress(clamped);
-            updateStoryboardProgress(clamped, stepsList);
-          }
-        }, 50);
-
-        audio.ontimeupdate = () => {
-          if (audio.duration && audio.duration > 0 && !isNaN(audio.duration)) {
-            const prog = (audio.currentTime / audio.duration) * 100;
-            const clamped = Math.min(Math.max(prog, 0), 100);
-            setAudioProgress(clamped);
-            updateStoryboardProgress(clamped, stepsList);
-          }
-        };
-
-        audio.onended = () => {
-          if (audioTimerRef.current) {
-            clearInterval(audioTimerRef.current);
-            audioTimerRef.current = null;
-          }
-          if (audioSessionIdRef.current === thisSessionId) {
-            setTutorState('idle');
-            setAudioProgress(100);
-            setRevealedLineCount(999);
-            setActiveStepIdx(stepsList.length - 1);
-            setRevealedStepCount(stepsList.length);
-            setIsFullBoardRevealed(true);
-            audioFinishedNaturallyRef.current = true;
-          }
-        };
-      } else {
-        // Auxiliary / Feedback speech: simply play speech and return to idle without resetting storyboard or viewport
-        audio.onended = () => {
-          if (audioTimerRef.current) {
-            clearInterval(audioTimerRef.current);
-            audioTimerRef.current = null;
-          }
-          if (audioSessionIdRef.current === thisSessionId) {
-            setTutorState('idle');
-          }
-        };
-      }
-
-      audio.onerror = () => {
-        if (audioTimerRef.current) {
-          clearInterval(audioTimerRef.current);
-          audioTimerRef.current = null;
-        }
+      audio.onended = () => {
         if (audioSessionIdRef.current === thisSessionId) {
           setTutorState('idle');
-          if (isMainLecture) {
-            setRevealedLineCount(999);
-            setIsFullBoardRevealed(true);
-          }
+        }
+      };
+      audio.onerror = () => {
+        if (audioSessionIdRef.current === thisSessionId) {
+          setTutorState('idle');
         }
       };
     } catch (err) {
-      console.warn('TTS Error:', err);
+      console.warn('TTS Auxiliary error:', err);
       if (audioSessionIdRef.current === thisSessionId) {
         setTutorState('idle');
-        if (isMainLecture) {
-          setRevealedLineCount(999);
-          setIsFullBoardRevealed(true);
-        }
       }
     }
   };
@@ -2102,10 +2471,9 @@ export default function LessonPage() {
   };
 
   const handleStepClick = (stepIndex: number) => {
+    playVoiceChunk(stepIndex, false);
     const step = phaseStoryboardSteps[stepIndex];
     if (!step) return;
-    setActiveStepIdx(stepIndex);
-    setRevealedStepCount(prev => Math.max(prev, stepIndex + 1));
 
     const candidateIds = [
       step.element_type ? `storyboard-target-${step.element_type}` : '',
@@ -2119,12 +2487,6 @@ export default function LessonPage() {
         break;
       }
     }
-
-    if (currentAudioRef.current && currentAudioRef.current.duration && !currentAudioRef.current.paused) {
-      currentAudioRef.current.currentTime = step.trigger_ratio * currentAudioRef.current.duration;
-    } else if (step.tutor_speech_snippet) {
-      speakText(step.tutor_speech_snippet);
-    }
   };
 
   const handleTogglePlay = () => {
@@ -2134,37 +2496,33 @@ export default function LessonPage() {
         setTutorState('idle');
       }
     } else {
-      const textToSpeak = typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '';
-      if (textToSpeak) {
-        speakText(textToSpeak, true);
-      }
+      playVoiceChunk(currentChunkIdx, true);
     }
   };
 
   const handleReplayCurrentStep = () => {
-    const step = phaseStoryboardSteps[activeStepIdx];
-    if (step && step.tutor_speech_snippet) {
-      speakText(step.tutor_speech_snippet, false);
-    } else {
-      const textToSpeak = typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '';
-      speakText(textToSpeak, true);
-    }
+    playVoiceChunk(currentChunkIdx, false);
   };
 
   const handleRevealAll = () => {
+    stopCurrentAudio();
     setIsFullBoardRevealed(true);
-    setRevealedStepCount(phaseStoryboardSteps.length);
+    const chunks = getPhaseVoiceChunks(phase, topicParam);
+    setActiveStepIdx(chunks.length - 1);
+    setRevealedStepCount(chunks.length);
+    setRevealedTargets(new Set(['image', 'grammar', 'board_concepts', 'examples', 'diagram', 'exercise']));
     setRevealedLineCount(999);
+    setTutorState('idle');
   };
 
   const handleResetReveal = () => {
+    stopCurrentAudio();
     setIsFullBoardRevealed(false);
     setActiveStepIdx(0);
+    setCurrentChunkIdx(0);
     setRevealedStepCount(1);
-    const textToSpeak = typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '';
-    if (textToSpeak) {
-      speakText(textToSpeak, true);
-    }
+    setRevealedTargets(new Set(['image']));
+    playVoiceChunk(0, true);
   };
 
   // 🎬 Hook & Multi-Image Resolution
@@ -2634,7 +2992,7 @@ export default function LessonPage() {
                   key={`hook-hero-stage-${currentPhaseIdx}`}
                   initial={{ opacity: 0, scale: 0.96, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.94, y: -20, filter: 'blur(10px)' }}
+                  exit={{ opacity: 0, scale: 0.94, y: -20 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   className="w-full flex-1 flex flex-col justify-between p-4 sm:p-7 md:p-8 rounded-3xl bg-gradient-to-b from-[#0a0f1d]/95 via-[#070a14]/98 to-[#04060b]/99 border border-brand-cyan/25 shadow-2xl relative overflow-hidden min-h-[560px]"
                 >
@@ -2762,7 +3120,7 @@ export default function LessonPage() {
                   key={`practice-hero-stage-${currentPhaseIdx}`}
                   initial={{ opacity: 0, scale: 0.96, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.94, y: -20, filter: 'blur(10px)' }}
+                  exit={{ opacity: 0, scale: 0.94, y: -20 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   className="w-full flex-1 flex flex-col justify-between"
                 >
@@ -2803,7 +3161,7 @@ export default function LessonPage() {
                   key={`phonetic-bonus-hero-stage-${currentPhaseIdx}`}
                   initial={{ opacity: 0, scale: 0.96, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.94, y: -20, filter: 'blur(10px)' }}
+                  exit={{ opacity: 0, scale: 0.94, y: -20 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   className="w-full flex-1 flex flex-col justify-between space-y-4"
                 >
@@ -2909,610 +3267,64 @@ export default function LessonPage() {
                   </motion.div>
                 )}
 
-                {/* Set of target audio phrases to prevent duplicate audio buttons on the whiteboard */}
-                {(() => {
-                  const targetAudioPhrases = new Set(targetAudioItems.map((it: any) => it.english.toLowerCase().trim()));
+                {/* 🎬 Chronological Video-Like Timeline Visual Stage */}
+                <div className="flex flex-col gap-5 z-10 w-full">
+                  {/* 🎬 Live Storyboard Progressive Controller */}
+                  <LiveStoryboardController
+                    steps={phaseStoryboardSteps}
+                    activeStepIdx={activeStepIdx}
+                    revealedCount={revealedStepCount}
+                    audioProgress={audioProgress}
+                    isPlaying={tutorState === 'speaking'}
+                    isFullBoardRevealed={isFullBoardRevealed}
+                    onStepClick={handleStepClick}
+                    onTogglePlay={handleTogglePlay}
+                    onReplayStep={handleReplayCurrentStep}
+                    onRevealAll={handleRevealAll}
+                    onResetReveal={handleResetReveal}
+                  />
 
-                  return (
-                    <div className="flex flex-col gap-5 z-10 w-full">
-                      {/* 🎬 Live Storyboard Progressive Controller */}
-                      <LiveStoryboardController
-                        steps={phaseStoryboardSteps}
-                        activeStepIdx={activeStepIdx}
-                        revealedCount={revealedStepCount}
-                        audioProgress={audioProgress}
-                        isPlaying={tutorState === 'speaking'}
-                        isFullBoardRevealed={isFullBoardRevealed}
-                        onStepClick={handleStepClick}
-                        onTogglePlay={handleTogglePlay}
-                        onReplayStep={handleReplayCurrentStep}
-                        onRevealAll={handleRevealAll}
-                        onResetReveal={handleResetReveal}
-                      />
-
-                      {/* 🌟 ROW 1: Visual Illustration (6 cols) + Whiteboard Concepts & Rules (6 cols) */}
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                        
-                        {/* Visual Illustration Card */}
-                        <AnimatePresence>
-                          {(isFullBoardRevealed || isStepRevealed('illustration')) && (
-                            <motion.div
-                              id="storyboard-target-illustration"
-                              initial={{ opacity: 0, scale: 0.88, y: 20, filter: 'blur(8px)' }}
-                              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                              exit={{ opacity: 0, scale: 0.88, filter: 'blur(8px)' }}
-                              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                              className={`lg:col-span-6 flex flex-col rounded-2xl transition-all duration-500 ${
-                                isStepActive('illustration')
-                                  ? 'ring-2 ring-brand-cyan ring-offset-4 ring-offset-black/80 shadow-[0_0_50px_rgba(0,212,255,0.5)]'
-                                  : 'shadow-2xl'
-                              }`}
-                            >
-                              {minimaxGeneratedUrl ? (
-                                <motion.div
-                                  className="rounded-2xl border border-white/15 overflow-hidden relative shadow-2xl bg-black/40 flex flex-col items-center justify-center group transition-all h-full"
-                                  whileHover={{ scale: 1.01 }}
-                                  transition={{ duration: 0.25 }}
-                                >
-                                  <div
-                                    onClick={() => setIsImageZoomed(true)}
-                                    className="relative w-full overflow-hidden rounded-xl cursor-pointer group/img flex items-center justify-center bg-black/20 border border-white/5 min-h-[220px] sm:min-h-[280px]"
-                                  >
-                                    <img
-                                      src={minimaxGeneratedUrl}
-                                      alt="Ilustración didáctica principal"
-                                      className="w-full max-h-72 sm:max-h-80 object-cover rounded-xl transition-transform duration-500 group-hover/img:scale-105"
-                                    />
-                                    {/* Gradient overlay for text readability */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-xl" />
-                                    {/* Zoom hover overlay */}
-                                    <div className="absolute inset-0 bg-brand-dark/50 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 backdrop-blur-[2px]">
-                                      <span className="px-4 py-2 rounded-xl bg-brand-accent text-white text-sm font-bold flex items-center gap-2 shadow-2xl">
-                                        <ZoomIn size={16} /> Ampliar Imagen
-                                      </span>
-                                    </div>
-                                    {/* Badge bottom-left */}
-                                    <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/70 backdrop-blur-sm border border-white/10 text-[10px] text-brand-cyan font-mono font-semibold">
-                                      <Sparkles size={10} className="text-brand-cyan" /> MiniMax image-01
-                                    </div>
-                                    {/* Expand button bottom-right */}
-                                    <button
-                                      type="button"
-                                      onClick={(e) => { e.stopPropagation(); setIsImageZoomed(true); }}
-                                      className="absolute bottom-3 right-3 p-1.5 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10 text-white/60 hover:text-white transition-colors"
-                                    >
-                                      <Maximize2 size={13} />
-                                    </button>
-                                  </div>
-                                </motion.div>
-                              ) : (
-                                <div className="rounded-2xl border border-brand-cyan/30 overflow-hidden relative shadow-lg bg-gradient-to-br from-brand-accent/15 via-black/60 to-brand-cyan/10 flex flex-col items-center justify-center p-6 text-center group transition-all h-full min-h-[280px]">
-                                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-cyan/15 via-transparent to-transparent opacity-80 pointer-events-none" />
-                                  <div className="relative mb-3">
-                                    <div className="w-14 h-14 rounded-2xl bg-brand-cyan/20 border border-brand-cyan/40 flex items-center justify-center shadow-[0_0_30px_rgba(0,212,255,0.4)]">
-                                      <Sparkles className="w-7 h-7 text-brand-cyan animate-pulse" />
-                                    </div>
-                                  </div>
-                                  <h4 className="text-sm font-bold text-white tracking-wide font-chalk">
-                                    Generando ilustración con MiniMax IA...
-                                  </h4>
-                                  <p className="text-xs text-brand-text-muted mt-1.5 max-w-xs leading-relaxed">
-                                    El modelo <strong className="text-brand-cyan font-mono">image-01</strong> está creando la escena visual didáctica para esta fase.
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-4 px-3 py-1.5 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan text-xs font-semibold">
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    <span>Esperando imagen neuronal...</span>
-                                  </div>
-                                </div>
-                              )}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        {/* Whiteboard Rules & Dynamic Semantic Sections (6 cols) */}
-                        <AnimatePresence>
-                          {(isFullBoardRevealed || isStepRevealed('concepts')) && (
-                            <motion.div
-                              id="storyboard-target-concepts"
-                              initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
-                              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                              exit={{ opacity: 0, filter: 'blur(4px)' }}
-                              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                              className={`lg:col-span-6 flex flex-col rounded-2xl transition-all duration-300 ${
-                                isStepActive('concepts')
-                                  ? 'ring-2 ring-emerald-400 ring-offset-4 ring-offset-black/80 shadow-[0_0_45px_rgba(52,211,153,0.4)]'
-                                  : ''
-                              }`}
-                            >
-                              <ExplanationBoard
-                                boardContent={phase?.board_content}
-                                tutorSays={typeof phase?.tutor_says === 'string' ? phase.tutor_says : phase?.tutor_says?.text}
-                                phaseTimeline={phaseTimeline}
-                                audioProgress={audioProgress}
-                                isPlaying={tutorState === 'speaking'}
-                                tutorState={tutorState}
-                                isFullBoardRevealed={isFullBoardRevealed}
-                                onPlayAudio={handlePlayIndividualAudio}
-                                theme={phase?.board_theme?.includes('chalkboard') ? 'chalk' : 'studio'}
-                              />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-
-                      {/* 📊 ROW 1.5: Conditional Visual Pedagogical Diagram (SVG Timeline / Diagram) */}
-                      <AnimatePresence>
-                        {currentDiagramSvg && (isFullBoardRevealed || isStepRevealed('diagram')) && (
-                          <motion.div
-                            id="storyboard-target-diagram"
-                            initial={{ opacity: 0, scale: 0.82, y: 30, filter: 'blur(10px)' }}
-                            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                            exit={{ opacity: 0, scale: 0.9, filter: 'blur(6px)' }}
-                            transition={{ type: 'spring', stiffness: 180, damping: 22, mass: 0.8 }}
-                            className={`w-full rounded-2xl transition-all duration-500 ${
-                              isStepActive('diagram')
-                                ? 'ring-2 ring-brand-cyan ring-offset-4 ring-offset-black/80 shadow-[0_0_50px_rgba(0,212,255,0.5)]'
-                                : 'shadow-2xl'
-                            }`}
-                          >
-                            <div className="rounded-2xl border border-white/15 bg-black/50 p-4 sm:p-5 backdrop-blur-sm shadow-2xl space-y-3">
-                              <div className="flex items-center justify-between border-b border-white/8 pb-2">
-                                <span className="text-xs font-bold uppercase tracking-wider text-brand-cyan flex items-center gap-1.5">
-                                  <Sparkles size={14} className="text-brand-cyan animate-pulse" />
-                                  <span>Gráfico Didáctico & Línea Conceptual</span>
-                                </span>
-                                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-brand-cyan/15 border border-brand-cyan/30 text-brand-cyan font-mono font-semibold">
-                                  Esquema Vectorial Didáctico
-                                </span>
-                              </div>
-                              <div
-                                className="w-full flex items-center justify-center overflow-hidden rounded-xl [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-h-[380px]"
-                                dangerouslySetInnerHTML={{ __html: currentDiagramSvg }}
-                              />
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {/* ⚡ ROW 2: Structured Visual Grammar Formula Card */}
-                      <AnimatePresence>
-                        {(normalizedGrammarStructure || phase.grammar_structure || phase.key_structure) && (isFullBoardRevealed || isStepRevealed('grammar')) && (
-                          <motion.div
-                            id="storyboard-target-grammar"
-                            initial={{ opacity: 0, scale: 0.72, y: 35, filter: 'blur(12px)' }}
-                            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                            exit={{ opacity: 0, scale: 0.85, filter: 'blur(8px)' }}
-                            transition={{ type: 'spring', stiffness: 220, damping: 20, mass: 0.7 }}
-                            className={`w-full rounded-2xl transition-all duration-500 ${
-                              isStepActive('grammar')
-                                ? 'ring-2 ring-purple-400 ring-offset-4 ring-offset-black/80 shadow-[0_0_50px_rgba(192,132,252,0.5)]'
-                                : 'shadow-2xl'
-                            }`}
-                          >
-                            <GrammarStructureCard
-                              structure={normalizedGrammarStructure || phase.grammar_structure || phase.key_structure}
-                              onPlayAudio={handlePlayIndividualAudio}
-                              theme={phase.board_theme?.includes('chalkboard') ? 'chalk' : 'studio'}
-                              activeTokenRole={activeGrammarToken?.role}
-                              activeTokenPattern={activeGrammarToken?.pattern}
-                              activeTokenIndex={activeGrammarToken?.tokenIndex}
-                            />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {/* 🎯 ROW 3: Interactive Exercises or Challenge Task */}
-                      <AnimatePresence>
-                        {(isFullBoardRevealed || isStepRevealed('exercise')) && (
-                          <motion.div
-                            id="storyboard-target-exercise"
-                            initial={{ opacity: 0, y: 25 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.45, ease: 'easeOut' }}
-                            className={`w-full rounded-2xl transition-all duration-300 ${
-                              isStepActive('exercise')
-                                ? 'ring-2 ring-brand-gold ring-offset-2 ring-offset-black/70 shadow-[0_0_30px_rgba(251,191,36,0.35)]'
-                                : ''
-                            }`}
-                          >
-                            {exercises.length > 0 ? (
-                              <div className="p-4 sm:p-5 rounded-2xl bg-black/40 border border-white/10 shadow-lg space-y-4">
-                                <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-white/10">
-                                  <div className="flex items-center gap-2">
-                                    <HelpCircle size={16} className="text-brand-gold" />
-                                    <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-gold">
-                                      {instructionHeader || `Desafío Interactivo (${exercises.length} ${exercises.length === 1 ? 'ejercicio' : 'ejercicios'})`}
-                                    </h3>
-                                  </div>
-                                  {phase.student_task && (
-                                    <button
-                                      type="button"
-                                      onClick={() => speakText(typeof phase.student_task === 'string' ? phase.student_task : '')}
-                                      className="px-2.5 py-1 rounded-xl bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 border border-brand-cyan/30 text-xs flex items-center gap-1.5 transition-all font-semibold"
-                                    >
-                                      <Volume2 size={13} className="text-brand-cyan animate-pulse" />
-                                      <span>Escuchar Instrucción</span>
-                                    </button>
-                                  )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                                  {exercises.map((ex) => {
-                                    const exKey = `exercise-item-${ex.id}`;
-                                    const isThisRecording = itemRecordingKey === exKey;
-                                    const isThisProcessing = itemProcessingKey === exKey;
-                                    const exResult = itemEvals[exKey];
-                                    const currentVal = exerciseInputs[ex.id] || '';
-                                    const parts = ex.cleanSentence.split(/(_{2,})/);
-
-                                    return (
-                                      <motion.div
-                                        key={exKey}
-                                        initial={{ opacity: 0, x: 30, scale: 0.96 }}
-                                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                                        transition={{ duration: 0.4, delay: exercises.indexOf(ex) * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                                        className={`p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden space-y-3 flex flex-col justify-between ${
-                                          exResult
-                                            ? exResult.is_correct
-                                              ? 'bg-brand-success/10 border-brand-success/40 shadow-[0_0_30px_rgba(0,230,118,0.2)]'
-                                              : 'bg-brand-error/10 border-brand-error/40 shadow-[0_0_25px_rgba(255,82,82,0.15)]'
-                                            : isThisRecording
-                                            ? 'bg-brand-error/15 border-brand-error shadow-[0_0_40px_rgba(255,82,82,0.5)] scale-[1.02]'
-                                            : 'bg-black/50 border-white/10 hover:border-brand-accent/50 hover:shadow-[0_0_20px_rgba(108,99,255,0.15)] shadow-md'
-                                        }`}
-                                      >
-                                        <div className="space-y-2.5">
-                                          {/* Header row with individual audio playback */}
-                                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-brand-gold/20 text-brand-gold border border-brand-gold/30">
-                                                Ejercicio #{ex.index}
-                                              </span>
-                                              <button
-                                                type="button"
-                                                onClick={() => handlePlayIndividualAudio(ex.cleanSentence)}
-                                                className="px-2 py-0.5 rounded-lg bg-brand-cyan/20 hover:bg-brand-cyan/30 text-brand-cyan text-[11px] font-semibold flex items-center gap-1 border border-brand-cyan/30 transition-all hover:scale-105"
-                                                title="Escuchar pronunciación de este ejercicio"
-                                              >
-                                                <Volume2 size={11} className="text-brand-cyan" />
-                                                <span>Escuchar</span>
-                                              </button>
-                                            </div>
-                                            {exResult && (
-                                              <motion.span
-                                                initial={{ scale: 0.7, opacity: 0 }}
-                                                animate={{ scale: 1, opacity: 1 }}
-                                                transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-                                                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1 ${
-                                                  exResult.is_correct ? 'text-brand-success bg-brand-success/20 border border-brand-success/30' : 'text-brand-error bg-brand-error/20 border border-brand-error/30'
-                                                }`}
-                                              >
-                                                {exResult.is_correct ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                                                {exResult.is_correct ? '¡Correcto!' : 'Reintentar'} ({exResult.overall_score}%)
-                                              </motion.span>
-                                            )}
-                                          </div>
-
-                                          {/* Question Sentence with Stylized Blank */}
-                                          <div className="text-sm sm:text-base font-bold text-white leading-snug flex flex-wrap items-center gap-1.5 font-outfit">
-                                            {parts.map((p, pIdx) => {
-                                              if (/^_{2,}$/.test(p)) {
-                                                return (
-                                                  <motion.span
-                                                    key={pIdx}
-                                                    animate={currentVal ? { borderColor: 'rgba(108,99,255,0.8)', backgroundColor: 'rgba(108,99,255,0.2)' } : {}}
-                                                    className="inline-flex items-center justify-center min-w-[80px] px-2.5 py-0.5 rounded-lg bg-brand-accent/20 border border-brand-accent/50 text-brand-cyan font-mono text-xs shadow-inner"
-                                                  >
-                                                    {currentVal || '________'}
-                                                  </motion.span>
-                                                );
-                                              }
-                                              return <span key={pIdx}>{p}</span>;
-                                            })}
-                                          </div>
-
-                                          {/* Clickable Option Buttons with Audio Preview */}
-                                          {ex.options && ex.options.length > 0 && !exResult && (
-                                            <div className="flex items-center gap-2 flex-wrap pt-1">
-                                              <span className="text-[10px] font-semibold text-white/50">Opciones:</span>
-                                              {ex.options.map((opt, optIdx) => (
-                                                <div key={optIdx} className="inline-flex items-center rounded-xl bg-white/10 border border-white/20 overflow-hidden hover:border-brand-accent transition-all shadow-sm">
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                      setExerciseInputs(prev => ({ ...prev, [ex.id]: opt }));
-                                                      handleExerciseSubmit(exKey, ex.cleanSentence, opt, ex.options);
-                                                    }}
-                                                    disabled={isThisProcessing || isThisRecording}
-                                                    className="px-3 py-1 text-xs font-bold text-brand-cyan hover:bg-brand-accent hover:text-white transition-all disabled:opacity-50"
-                                                    title={`Seleccionar "${opt}" como respuesta`}
-                                                  >
-                                                    {opt}
-                                                  </button>
-                                                  <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handlePlayIndividualAudio(opt);
-                                                    }}
-                                                    className="px-2 py-1 text-white/60 hover:text-brand-cyan hover:bg-white/10 border-l border-white/10 transition-colors"
-                                                    title={`Escuchar pronunciación de "${opt}"`}
-                                                  >
-                                                    <Volume2 size={11} />
-                                                  </button>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        {/* Bottom Actions: Hero Mic + Input or Feedback */}
-                                        {!exResult ? (
-                                          <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                                            {/* Hero Mic Button */}
-                                            <motion.button
-                                              type="button"
-                                              whileTap={{ scale: 0.92 }}
-                                              whileHover={!isThisProcessing && !isThisRecording ? { scale: 1.08 } : {}}
-                                              onClick={() => {
-                                                if (isThisRecording) {
-                                                  setItemRecordingKey(null);
-                                                } else {
-                                                  startExerciseRecognition(exKey, ex.cleanSentence, ex.options);
-                                                }
-                                              }}
-                                              disabled={isThisProcessing || (itemRecordingKey !== null && !isThisRecording)}
-                                              className={`relative flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-lg disabled:opacity-40 ${
-                                                isThisProcessing
-                                                  ? 'bg-brand-surface border-2 border-brand-accent text-brand-cyan animate-pulse'
-                                                  : isThisRecording
-                                                  ? 'bg-brand-error text-white border-2 border-red-300 shadow-[0_0_30px_rgba(255,82,82,0.7)]'
-                                                  : 'bg-brand-accent text-white border-2 border-brand-accent/60 hover:shadow-[0_0_25px_rgba(108,99,255,0.6)]'
-                                              }`}
-                                              title="Pronunciar tu respuesta con el micrófono"
-                                            >
-                                              {isThisRecording && (
-                                                <span className="absolute inset-0 rounded-full border-2 border-brand-error animate-ping opacity-60" />
-                                              )}
-                                              {isThisProcessing ? (
-                                                <Loader2 size={18} className="animate-spin" />
-                                              ) : isThisRecording ? (
-                                                <Square size={16} className="fill-white" />
-                                              ) : (
-                                                <Mic size={18} />
-                                              )}
-                                            </motion.button>
-
-                                            <input
-                                              type="text"
-                                              value={currentVal}
-                                              onChange={(e) => {
-                                                const val = e.target.value;
-                                                setExerciseInputs(prev => ({ ...prev, [ex.id]: val }));
-                                              }}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && currentVal.trim()) {
-                                                  handleExerciseSubmit(exKey, ex.cleanSentence, currentVal, ex.options);
-                                                }
-                                              }}
-                                              placeholder="Escribe tu respuesta..."
-                                              disabled={isThisProcessing}
-                                              className="flex-1 bg-black/60 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-brand-accent transition-colors disabled:opacity-50 min-w-0"
-                                            />
-
-                                            <button
-                                              type="button"
-                                              onClick={() => handleExerciseSubmit(exKey, ex.cleanSentence, currentVal, ex.options)}
-                                              disabled={!currentVal.trim() || isThisProcessing}
-                                              className="px-3 py-1.5 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40 flex items-center gap-1 shadow-md flex-shrink-0"
-                                            >
-                                              <Send size={11} />
-                                              <span>Enviar</span>
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
-                                            <div className="text-xs text-white/90 leading-relaxed flex-1 min-w-0">
-                                              <span className="text-yellow-300 font-bold block mb-0.5">💡 Feedback del Tutor:</span>
-                                              <p className="text-[11px]">{exResult.feedback}</p>
-                                              {exResult.corrected_answer && (
-                                                <p className="mt-1 font-mono text-emerald-300 text-[11px]">
-                                                  Respuesta: {exResult.corrected_answer}
-                                                </p>
-                                              )}
-                                            </div>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setItemEvals(prev => {
-                                                  const n = { ...prev };
-                                                  delete n[exKey];
-                                                  return n;
-                                                });
-                                                setExerciseInputs(prev => ({ ...prev, [ex.id]: '' }));
-                                              }}
-                                              className="px-2.5 py-1.5 rounded-xl bg-brand-surface hover:bg-brand-border border border-brand-border text-brand-text-muted hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all flex-shrink-0"
-                                              title="Reintentar este ejercicio"
-                                            >
-                                              <RotateCcw size={11} />
-                                              <span>Reintentar</span>
-                                            </button>
-                                          </div>
-                                        )}
-
-                                        {/* Live audio transcript when recording */}
-                                        {isThisRecording && (
-                                          <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            className="pt-2 border-t border-brand-error/30 flex items-center gap-2 text-xs text-white bg-black/30 p-2 rounded-xl"
-                                          >
-                                            <div className="w-2 h-2 rounded-full bg-brand-error animate-ping flex-shrink-0" />
-                                            <span className="text-brand-error font-bold text-[11px]">Escuchando:</span>
-                                            <span className="font-mono text-[11px] truncate">{itemLiveTranscript || 'Habla ahora en inglés...'}</span>
-                                          </motion.div>
-                                        )}
-                                      </motion.div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            ) : phase.student_task && (targetAudioItems.length === 0 || ['roleplay', 'qa', 'error_correction', 'writing'].includes(phase.interaction_type || '')) ? (
-                              <div className="p-4 sm:p-5 rounded-2xl bg-black/40 border border-white/10 shadow-lg space-y-3">
-                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                  <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-gold flex items-center gap-2">
-                                    <HelpCircle size={16} className="text-brand-gold" />
-                                    <span>Desafío de la Lección ({phase.interaction_type || 'Ejercicio Interactivo'})</span>
-                                  </h3>
-                                  <button
-                                    type="button"
-                                    onClick={() => speakText(typeof phase.student_task === 'string' ? phase.student_task : '')}
-                                    className="px-2.5 py-1 rounded-xl bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 border border-brand-cyan/30 text-xs flex items-center gap-1.5 transition-all font-semibold"
-                                  >
-                                    <Volume2 size={13} className="text-brand-cyan animate-pulse" />
-                                    <span>Escuchar Instrucción</span>
-                                  </button>
-                                </div>
-
-                                <div className="text-sm sm:text-base text-white/95 leading-relaxed font-chalk bg-black/30 p-3.5 rounded-xl border border-white/10">
-                                  {renderTextContent(phase.student_task, handlePlayIndividualAudio)}
-                                </div>
-
-                                {phase.expected_answer && evaluation && (
-                                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-brand-gold/10 border border-brand-gold/20 text-xs">
-                                    <div>
-                                      <span className="font-bold text-brand-gold block">Respuesta Esperada:</span>
-                                      <div className="text-white font-mono">{renderTextContent(phase.expected_answer, handlePlayIndividualAudio)}</div>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => handlePlayIndividualAudio(typeof phase.expected_answer === 'string' ? phase.expected_answer : '')}
-                                      className="px-2.5 py-1 rounded-lg bg-brand-gold/20 text-brand-gold hover:bg-brand-gold/40 border border-brand-gold/30 text-xs flex items-center gap-1 flex-shrink-0"
-                                    >
-                                      <Volume2 size={12} /> Escuchar
-                                    </button>
-                                  </div>
-                                )}
-
-                                {/* Interactive Mic / Input controls */}
-                                {!evaluation ? (
-                                  <div className="flex items-center gap-2 pt-1">
-                                    <MicButton
-                                      isRecording={isRecording}
-                                      isProcessing={isProcessing}
-                                      onStart={() => setIsRecording(true)}
-                                      onStop={() => setIsRecording(false)}
-                                      onTranscriptReady={(transcript) => setTextInput(transcript)}
-                                    />
-
-                                    <div className="flex-1 flex gap-2">
-                                      <input
-                                        type="text"
-                                        value={textInput}
-                                        onChange={(e) => setTextInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
-                                        placeholder={
-                                          isALevel
-                                            ? 'Escribe o di tu respuesta en inglés...'
-                                            : 'Type or speak your answer in English...'
-                                        }
-                                        disabled={isProcessing}
-                                        className="flex-1 bg-black/50 border border-white/20 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white placeholder-white/40 focus:outline-none focus:border-brand-accent transition-colors disabled:opacity-50"
-                                        autoComplete="off"
-                                      />
-                                      <button
-                                        onClick={handleTextSubmit}
-                                        disabled={!textInput.trim() || isProcessing}
-                                        className="px-4 bg-brand-accent hover:bg-brand-accent/90 rounded-xl text-white disabled:opacity-40 transition-colors flex items-center justify-center shadow-md font-semibold text-xs gap-1.5"
-                                      >
-                                        <Send size={13} />
-                                        <span className="hidden sm:inline">Enviar</span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="p-3.5 rounded-xl border border-white/10 bg-black/50 text-xs space-y-2"
-                                  >
-                                    <div className="flex justify-between font-bold">
-                                      <span>Resultado de Evaluación</span>
-                                      <span
-                                        className={`px-2.5 py-0.5 rounded-full text-xs ${
-                                          evaluation.is_correct
-                                            ? 'bg-brand-success/20 text-brand-success border border-brand-success/30'
-                                            : 'bg-brand-error/20 text-brand-error border border-brand-error/30'
-                                        }`}
-                                      >
-                                        {evaluation.is_correct ? 'Correcto ✅' : 'Reintentar ❌'}
-                                      </span>
-                                    </div>
-                                    <ScoreDisplay scores={evaluation.scores} feedback={evaluation.feedback} />
-                                  </motion.div>
-                                )}
-                              </div>
-                            ) : null}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {/* 🎙️ ROW 4: Interactive Pronunciation Practice (Expansive 2-Column Grid) */}
-                      <AnimatePresence>
-                        {targetAudioItems && targetAudioItems.length > 0 && exercises.length === 0 && (isFullBoardRevealed || isStepRevealed('audio_practice')) && (
-                          <motion.div
-                            id="storyboard-target-audio_practice"
-                            initial={{ opacity: 0, y: 25 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.45, ease: 'easeOut' }}
-                            className={`space-y-3 pt-2 rounded-2xl transition-all duration-300 ${
-                              isStepActive('audio_practice')
-                                ? 'ring-2 ring-pink-400 ring-offset-2 ring-offset-black/70 shadow-[0_0_30px_rgba(244,114,182,0.35)] p-2'
-                                : ''
-                            }`}
-                          >
-                            <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                              <div className="flex items-center gap-2">
-                                <Sparkles size={16} className="text-brand-cyan animate-pulse" />
-                                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-cyan">
-                                  Práctica de Pronunciación Interactiva ({targetAudioItems.length} {targetAudioItems.length === 1 ? 'frase' : 'frases'})
-                                </h3>
-                              </div>
-                              <span className="text-[11px] text-brand-text-muted hidden sm:inline">
-                                Haz clic en <strong>Practicar 🎤</strong> para grabar y evaluar tu voz
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto custom-scrollbar pr-1">
-                              {targetAudioItems.map((item, idx) => {
-                                const itemKey = `board-item-${idx}-${item.english}`;
-                                const timing = targetAudioItemsTiming[idx] || {
-                                  startRatio: 0.35 + (idx / Math.max(targetAudioItems.length, 1)) * 0.50,
-                                  endRatio: 0.35 + ((idx + 1) / Math.max(targetAudioItems.length, 1)) * 0.50,
-                                };
-                                const currentRatio = audioProgress / 100;
-                                const isRevealed = isFullBoardRevealed || audioFinishedNaturallyRef.current || currentRatio >= timing.startRatio;
-                                const isActiveSpoken = tutorState === 'speaking' && !isFullBoardRevealed && currentRatio >= timing.startRatio && currentRatio <= timing.endRatio;
-
-                                return renderPronunciationCard(
-                                  item,
-                                  itemKey,
-                                  idx,
-                                  phase.board_theme?.includes('chalkboard') ? 'chalk' : 'studio',
-                                  isRevealed,
-                                  isActiveSpoken
-                                );
-                              })}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })()}
+                  {/* 🎬 Sequential Video-Like Timeline Stage: Reveals ONLY what tutor explains step-by-step */}
+                  <TimelineVisualRenderer
+                    timeline={phaseStoryboardTimeline}
+                    activeStepIdx={activeStepIdx}
+                    revealedStepCount={revealedStepCount}
+                    isFullBoardRevealed={isFullBoardRevealed}
+                    audioProgress={audioProgress}
+                    isPlaying={tutorState === 'speaking'}
+                    tutorState={tutorState}
+                    theme={phase.board_theme?.includes('chalkboard') ? 'chalk' : 'studio'}
+                    onPlayAudio={handlePlayIndividualAudio}
+                    imageUrl={minimaxGeneratedUrl || null}
+                    imagePrompt={cleanImagePrompt}
+                    imageLoading={isImageGenerating}
+                    onRegenerateImage={() => fetchPhaseImage(currentPhaseIdx, topicParam, phase, 0, rawImagePrompt)}
+                    onOpenImageModal={() => setIsImageZoomed(true)}
+                    diagramSvg={phase.diagram_svg || null}
+                    pedagogicalTip={phase.tips || phase.grammar_structure?.tips || (phase.grammar_structure?.explanation ? `💡 ${phase.grammar_structure.explanation}` : undefined) || 'Presta atención a cómo la pronunciación y la estructura transforman el significado natural en inglés.'}
+                    onStartItemRecording={startItemRecognition}
+                    onStopItemRecording={() => setItemRecordingKey(null)}
+                    itemRecordingKey={itemRecordingKey}
+                    itemProcessingKey={itemProcessingKey}
+                    itemLiveTranscript={itemLiveTranscript}
+                    itemEvaluations={itemEvals}
+                    exercises={exercises}
+                    currentExerciseIdx={selectedExerciseIdx}
+                    onSelectExercise={(idx) => setSelectedExerciseIdx(idx)}
+                    onSelectOption={(opt) => {
+                      setSelectedChallengeOption(opt);
+                      setTextInput(opt);
+                    }}
+                    selectedOption={selectedChallengeOption}
+                    textInput={textInput}
+                    onTextInputChange={(val) => setTextInput(val)}
+                    onSubmitAnswer={handleTextSubmit}
+                    isRecording={isRecording}
+                    isProcessing={isProcessing}
+                    evaluation={evaluation}
+                  />
                 </div>
+              </div>
               )
             ) : (
               /* ═══════════════════════════════════════════════════════════════════════

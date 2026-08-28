@@ -416,8 +416,8 @@ export default function TimelineVisualRenderer({
           </div>
         )}
 
-        {/* 📊 DIDACTIC SVG DIAGRAM (Enlarged + Zoom Button) */}
-        {!isHookOnly && activeDiagramSvg && (
+        {/* 📊 DIDACTIC SVG DIAGRAM (Enlarged + Zoom Button - Only if no Frequency Scale) */}
+        {!isHookOnly && (!activeFrequencyScale || activeFrequencyScale.length === 0) && activeDiagramSvg && (
           <div className="p-4 rounded-2xl bg-black/70 border border-cyan-500/30 shadow-2xl backdrop-blur-md space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
@@ -880,9 +880,9 @@ export default function TimelineVisualRenderer({
                   )}
 
                   {/* ──────────────────────────────────────────────────────────
-                      C. DIDACTIC SVG DIAGRAM
+                      C. DIDACTIC SVG DIAGRAM (Only if not already visible on left dock)
                       ────────────────────────────────────────────────────────── */}
-                  {step.visual_action === 'show_diagram' && p.svg && (
+                  {step.visual_action === 'show_diagram' && p.svg && !activeDiagramSvg && !activeFrequencyScale && (
                     <div className="p-4 sm:p-5 rounded-2xl bg-black/60 border border-cyan-500/30 text-white shadow-xl backdrop-blur-md space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-white/10">
                         <div className="flex items-center gap-2">

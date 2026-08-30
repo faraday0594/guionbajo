@@ -362,7 +362,7 @@ export default function POVQuestGame({
     setEvalResult(null);
     setLiveTranscript('');
     setTextFallback('');
-    startRecording();
+    stopRecording();
   };
 
   const currentImageUrl = imageCache[currentNode.node_id] || currentNode.image_url;

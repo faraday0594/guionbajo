@@ -270,8 +270,8 @@ class QuestGenerator:
         lvl_key = self._get_level_key(sublevel)
         system_prompt = (
             "You are a master ESL game designer creating an Interactive First-Person (POV) Anime Visual Novel Quest.\n"
-            "The player is a student learning English. Each scene is from their first-person perspective.\n"
-            "ART STYLE IS STRICTLY: Clean 2D Anime Visual Novel illustration, Makoto Shinkai vibrant aesthetic, bright high-key lighting, cheerful atmosphere.\n"
+            "The player is an English student experiencing the story from their first-person eyes.\n"
+            "ART STYLE: Clean 2D Anime Visual Novel illustration, Makoto Shinkai vibrant aesthetic, high-key daylight, cheerful atmosphere.\n"
             "Output strictly valid JSON matching the specified schema."
         )
 
@@ -279,18 +279,22 @@ class QuestGenerator:
 Topic / Grammar Target: {topic}
 CEFR Level: {sublevel} ({lvl_key})
 
-STRICT SCENARIO & NODE RULES:
-1. Companion Character:
-   - Name the companion (e.g. Emma, Sarah, Lucas, Alex).
-   - Define "companion_gender": "female" or "male".
-   - Set "companion_voice": "en-US-JennyNeural" (for female) or "en-US-RogerNeural" (for male).
-   - Set "companion_avatar": "👩‍🦱" (for female) or "🧑‍🦱" (for male).
+STRICT NARRATIVE & VISUAL CONTINUITY RULES:
+1. Narrative Setting & Spatial Flow:
+   - Choose one logical setting type:
+     a) "static_location" (e.g. Job interview in an office, sitting at a cafe table, doctor consultation). All 3 scenes take place in the EXACT SAME room/furniture, with the character across from the viewer.
+     b) "journey_walk" (e.g. Meeting in a campus courtyard -> walking to the bus -> arriving at the pool; or airport check-in -> baggage belt -> exit). The scenery progresses logically step-by-step.
+     c) "time_jump" (Only if the grammar topic explicitly demands past vs present or 'used to'). Explicitly state age/clothing change.
 
-2. Image Prompts (MANDATORY ANIME VISUAL NOVEL STYLE):
-   - Every "pov_image_prompt" MUST start with: "First-person perspective POV shot in clean 2D anime visual novel style, looking directly at [companion name and physical description] who is in center making friendly eye contact with the viewer, [scene action/expression], [bright colorful environment], Makoto Shinkai vibrant aesthetic, high-key bright lighting, colorful anime digital illustration, 16:9, no text, no words"
-   - CRITICAL: DO NOT use realistic photography or dark horror lighting. Always use bright, friendly, clean 2D anime visual novel art style where the companion character is looking straight at the player.
+2. Character Visual DNA (Facial & Outfit Consistency):
+   - Define exact physical traits: hair style/color, eye color, age, facial features, and signature outfit (e.g. "Emma, a 20-year-old female student with wavy chestnut hair, hazel eyes, wearing a pastel blue collared shirt under a denim jacket").
+   - FACIAL & CLOTHING CONTINUITY: Unless years have passed in a flashback, the companion's face, age, hair, and clothing MUST REMAIN 100% IDENTICAL across all 3 scenes. Only their facial expression (curious -> engaged -> happy/relieved) and gesture change.
 
-3. Nodes: Generate exactly 3 sequential nodes ('nodes' array).
+3. Scenography & Image Prompts:
+   - Every "pov_image_prompt" MUST start with: "First-person perspective POV shot in clean 2D anime visual novel style, looking directly at [companion name, hair, clothes] who is in center making friendly eye contact with the viewer, [pose and emotion], [scenery description matching the setting flow], Makoto Shinkai vibrant aesthetic, high-key bright daylight, colorful anime digital illustration, 16:9, no text, no words"
+   - CRITICAL: NO realistic photography, NO dark horror lighting, NO creepy silhouettes.
+
+4. Nodes: Generate exactly 3 sequential nodes ('nodes' array):
    - "companion_dialogue": Natural spoken English line by the companion (1-2 sentences) prompting the student to use the target grammar.
    - "pedagogical_goal": Clear target in Spanish (e.g. "Acepta la invitación usando 'will'").
    - "hint": Helpful grammar clue in Spanish.
@@ -306,14 +310,16 @@ JSON SCHEMA:
   "title": "Story Title in Spanish",
   "grammar_topic": "{topic}",
   "difficulty_level": "{lvl_key}",
+  "setting_type": "static_location",
   "companion_name": "Emma",
   "companion_gender": "female",
   "companion_voice": "en-US-JennyNeural",
   "companion_avatar": "👩‍🦱",
+  "character_dna": "20-year-old female student with wavy chestnut hair, warm hazel eyes, wearing a denim jacket over a pastel shirt",
   "nodes": [
     {{
       "node_id": "step_1_invitation",
-      "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, looking directly at a friendly female student named Emma with curly brown hair in a cute denim jacket smiling at the viewer, sunny university campus with cherry blossoms, Makoto Shinkai vibrant aesthetic, bright daylight, clean 2D anime digital illustration, 16:9, no text, no words",
+      "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, looking directly at Emma (20-year-old female student with wavy chestnut hair, warm hazel eyes, wearing a denim jacket over a pastel shirt) smiling warmly and making an inviting hand gesture towards the viewer, sitting across a clean wooden cafe table with coffee cups, sunny window with warm sunlight, Makoto Shinkai vibrant aesthetic, clean 2D anime digital illustration, 16:9, no text, no words",
       "companion_dialogue": "...",
       "pedagogical_goal": "...",
       "hint": "...",
@@ -355,17 +361,19 @@ JSON SCHEMA:
             if not data.get("companion_avatar"):
                 data["companion_avatar"] = "👨‍🦱" if comp_gender == "male" else "👩‍🦱"
 
+            dna = data.get("character_dna") or f"{data.get('companion_name', 'companion')}, friendly anime character"
+
             # Ensure all nodes have clean anime prompts and necessary fields
             for idx, node in enumerate(data["nodes"]):
                 if not node.get("node_id"):
                     node["node_id"] = f"step_{idx+1}"
                 
-                # Sanitize image prompt to enforce anime visual novel style
+                # Sanitize image prompt to enforce anime visual novel style and character DNA
                 prompt_str = str(node.get("pov_image_prompt", ""))
                 if "anime" not in prompt_str.lower() or "photography" in prompt_str.lower():
                     clean_p = re.sub(r'realistic photography|photorealistic|photorealism|photo', 'clean 2D anime visual novel illustration, Makoto Shinkai vibrant aesthetic, bright daylight', prompt_str, flags=re.IGNORECASE)
                     if not clean_p.lower().startswith("first-person"):
-                        clean_p = f"First-person perspective POV shot in clean 2D anime visual novel style, looking directly at {data.get('companion_name', 'companion')}, {clean_p}"
+                        clean_p = f"First-person perspective POV shot in clean 2D anime visual novel style, looking directly at {dna}, {clean_p}"
                     node["pov_image_prompt"] = clean_p
 
                 if not node.get("validation_rules"):

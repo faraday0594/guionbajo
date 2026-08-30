@@ -53,25 +53,33 @@ async def generate_image(
         }
 
     import re
-    # Clean and stylize prompt for MiniMax image-01 API
     raw = req.prompt.strip()
     
-    # If prompt is for POV / Visual Novel or conversational scene, enforce bright anime visual novel style and eliminate dark photo artifacts
-    if any(k in raw.lower() for k in ("first-person", "pov", "classmate", "companion", "barista", "officer", "interviewer", "talking to", "sitting across")):
-        enhanced = re.sub(r'realistic photography|photorealistic|photorealism|realistic photo|photo', 'clean 2D anime visual novel illustration, Makoto Shinkai vibrant aesthetic, bright daylight', raw, flags=re.IGNORECASE)
-        if "anime" not in enhanced.lower():
-            enhanced = f"Clean vibrant 2D anime visual novel digital art style, Makoto Shinkai aesthetic, high-key bright daylight, {enhanced}"
-        if "no dark" not in enhanced.lower():
-            enhanced = f"{enhanced}, bright cheerful lighting, colorful, no dark horror lighting, no realistic photo"
+    # Detect if prompt is for conversational POV / Visual Novel or companion scene
+    is_pov = any(k in raw.lower() for k in ("first-person", "pov", "classmate", "companion", "barista", "officer", "interviewer", "talking to", "sitting across", "visual novel", "emma", "lucas"))
+    
+    if is_pov:
+        # Determine companion gender for solo character tag
+        is_female = any(f in raw.lower() for f in ("female", "girl", "woman", "emma", "carter", "sarah", "anna", "she", "her"))
+        char_tag = "solo, 1girl, single female character only" if is_female else "solo, 1boy, single male character only"
+        
+        # Remove mentions of player's hands that confuse the diffusion model into generating couples holding hands
+        sanitized = re.sub(r"player's (own )?hands (and arms )?(visible in (the )?bottom foreground )?(holding|resting|reaching|gesturing)?", "wooden table edge in foreground", raw, flags=re.IGNORECASE)
+        sanitized = re.sub(r'realistic photography|photorealistic|photorealism|realistic photo|photo|realism|hyperrealistic', '2D anime game CG art', sanitized, flags=re.IGNORECASE)
+        
+        # Construct strong Anime Visual Novel prompt with upfront style tokens and strict negative guidance
+        clean_prompt = (
+            f"Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai vibrant aesthetic, Kyoto Animation style, "
+            f"{char_tag}, facing camera directly with friendly eye contact, centered waist-up portrait, "
+            f"{sanitized}, bright cheerful daylight, colorful anime digital illustration, "
+            f"strictly 2D anime drawing, flat vibrant coloring, clean anime line art, "
+            f"single person only, no second person, no couple, no romance, no holding hands, no kissing, no photorealism, not a photo, no 3D render, no live action, no text, no words"
+        )
     else:
-        enhanced = raw
+        # Standard educational concept prompt
+        clean_prompt = f"Clean flat 2D vector educational illustration, vibrant colors, {raw}, no text, no letters, no words, no writing, no labels"
 
-    if not enhanced.lower().endswith("no text"):
-        clean_prompt = f"{enhanced}, no text, no letters, no words, no writing, no labels"
-    else:
-        clean_prompt = enhanced
-
-    cache_key = f"{clean_prompt[:300]}_{req.aspect_ratio or '16:9'}"
+    cache_key = f"{clean_prompt[:400]}_{req.aspect_ratio or '16:9'}"
     if cache_key in _IMAGE_CACHE:
         cached_url = _IMAGE_CACHE[cache_key]
         logger.info(f"Returning cached MiniMax image: {cached_url[:60]}...")
@@ -93,7 +101,7 @@ async def generate_image(
 
     payload = {
         "model": "image-01",
-        "prompt": clean_prompt[:500],
+        "prompt": clean_prompt[:1200],
         "aspect_ratio": req.aspect_ratio or "16:9",
         "response_format": "url",
         "prompt_optimizer": False

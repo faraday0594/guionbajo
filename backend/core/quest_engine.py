@@ -32,7 +32,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "nodes": [
                 {
                     "node_id": "step_1_invitation",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's own hands visible in the bottom foreground holding a notebook while sitting on a sunny wooden campus bench, looking directly at Emma (20-year-old female student with wavy chestnut brown hair, warm hazel eyes, wearing a denim jacket over a white t-shirt) sitting across and smiling warmly making an inviting gesture, sunny university campus with cherry blossom trees in background, Makoto Shinkai vibrant aesthetic, bright daylight, clean 2D anime visual novel digital art, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai vibrant aesthetic, solo, 1girl, single female character only, Emma (20-year-old female student with wavy chestnut brown hair, warm hazel eyes, wearing a denim jacket over a white t-shirt) sitting across a wooden bench facing camera with direct friendly eye contact, smiling warmly and making an inviting hand gesture, sunny university campus with cherry blossom trees in background, bright daylight, clean 2D anime digital illustration, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Hey! A group of us are heading to the campus pool tomorrow afternoon. Do you want to join us?",
                     "pedagogical_goal": "Acepta la invitación explícitamente usando 'will' o 'I'll' (ej. 'Sure, I will go' o 'I will join you').",
                     "hint": "Usa 'will' o la contracción 'I'll' + verbo: 'Yes, I will go with you' o 'I'll join you tomorrow'.",
@@ -45,7 +45,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_2_items_to_bring",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hands visible in bottom foreground resting on a backpack on lap, sitting inside a bright sunny modern campus shuttle bus next to Emma (20-year-old female student with wavy chestnut brown hair, hazel eyes, wearing the exact same denim jacket over white t-shirt) looking at the player with an enthusiastic smile, sunny city street outside bus window, Makoto Shinkai aesthetic, clean 2D anime visual novel illustration, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai vibrant aesthetic, solo, 1girl, single female character only, Emma (wearing the exact same denim jacket over white t-shirt) sitting in a sunny campus bus seat facing camera with direct eye contact, smiling enthusiastically, sunny city street outside bus window, clean 2D anime visual novel illustration, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Awesome! I'm so glad you're coming. What will you bring with you tomorrow?",
                     "pedagogical_goal": "Menciona al menos un objeto que llevarás usando 'I will bring...' o 'I'll bring...'",
                     "hint": "Di qué llevarás usando 'I will bring [objeto]' (ej. 'I will bring a towel' o 'I will bring sunscreen').",
@@ -58,7 +58,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_3_meeting_time",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hand visible in bottom foreground waving back, arriving outside the bright modern campus outdoor swimming pool gate, Emma (20-year-old female student with wavy chestnut brown hair, hazel eyes, wearing the exact same denim jacket over white t-shirt) waving happily near the entrance, clear blue summer sky, sunny daylight, clean 2D anime digital illustration, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai vibrant aesthetic, solo, 1girl, single female character only, Emma (wearing the exact same denim jacket over white t-shirt) standing outside modern swimming pool entrance facing camera with direct eye contact, waving happily, sunny blue summer sky, clean 2D anime digital illustration, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Great! The pool opens at two o'clock. When will you arrive tomorrow?",
                     "pedagogical_goal": "Indica la hora a la que llegarás usando 'I will arrive at...' o 'I'll be there at...'",
                     "hint": "Responde con la hora de llegada usando 'will': 'I will arrive at one thirty' o 'I'll be there at two'.",
@@ -86,7 +86,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "nodes": [
                 {
                     "node_id": "step_1_order_drink",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hands visible in bottom foreground resting on the wooden counter holding a cafe menu, looking directly across at Lucas (friendly 22-year-old male barista with short auburn hair, hazel eyes, wearing a brown canvas apron over a beige sweater) smiling pleasantly and taking the order, inside the exact same cozy cafe by a sunlit arched window with a warm polished wooden table and hanging green plants, warm golden afternoon lighting, clean 2D anime visual novel illustration, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai aesthetic, solo, 1boy, single male character only, Lucas (friendly 22-year-old male barista with short auburn hair, hazel eyes, wearing a brown canvas apron over a beige sweater) standing behind wooden cafe counter facing camera with friendly eye contact, smiling pleasantly, inside the exact same cozy cafe by a sunlit arched window with a warm polished wooden table and hanging green plants, warm golden afternoon lighting, clean 2D anime visual novel illustration, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Welcome to Central Perk! What would you like to drink today?",
                     "pedagogical_goal": "Pide una bebida educadamente usando 'I would like...' o 'I'd like...'",
                     "hint": "Usa la fórmula de cortesía: 'I would like a coffee' o 'I'd like an iced tea, please'.",
@@ -99,7 +99,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_2_table_invitation",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hands visible in bottom foreground holding a warm ceramic coffee mug on the wooden table, sitting across from Lucas (friendly 22-year-old male with short auburn hair, hazel eyes, wearing the exact same beige sweater) who is smiling warmly and pointing to the window seat, inside the exact same cozy cafe by a sunlit arched window with a warm polished wooden table and hanging green plants, warm golden afternoon lighting, clean 2D anime visual novel illustration, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai aesthetic, solo, 1boy, single male character only, Lucas (wearing the exact same beige sweater) sitting across the wooden table facing camera with direct eye contact, smiling warmly holding a coffee cup, inside the exact same cozy cafe by a sunlit arched window with a warm polished wooden table and hanging green plants, warm golden afternoon lighting, clean 2D anime visual novel illustration, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Hey, I found us a cozy table by the window! Where do you want to sit?",
                     "pedagogical_goal": "Acepta el lugar o expresa tu preferencia usando 'I would like to sit...' o 'I'd love to sit here'.",
                     "hint": "Expresa agrado con 'I would like to sit by the window' o 'I'd like to sit next to you'.",
@@ -128,7 +128,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "nodes": [
                 {
                     "node_id": "step_1_report_lost",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hands visible in bottom foreground resting on the white airport information desk holding a boarding pass, looking directly at Officer Davies (35-year-old polite airport staff officer with short dark hair, wearing a crisp navy blue airport uniform with a silver badge) looking attentively and taking notes, bright modern airport terminal with huge glass windows, clean 2D anime visual novel art, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai aesthetic, solo, 1boy, single male character only, Officer Davies (35-year-old polite airport staff officer with short dark hair, wearing a crisp navy blue airport uniform with a silver badge) standing at information desk facing camera with direct eye contact, listening attentively, bright modern airport terminal with huge glass windows, clean 2D anime visual novel art, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Hello traveler. You look concerned. What happened to your luggage?",
                     "pedagogical_goal": "Explica lo ocurrido en pasado simple (ej. 'I lost my backpack' o 'I left my bag on the airplane').",
                     "hint": "Usa un verbo en pasado: 'I lost my suitcase' o 'I forgot my backpack on the flight'.",
@@ -141,7 +141,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_2_describe_actions",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hand visible in bottom foreground gesturing forward, walking beside Officer Davies (wearing the exact same crisp navy blue airport uniform) near a modern baggage conveyor belt under bright terminal lights, clean anime digital illustration, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai aesthetic, solo, 1boy, single male character only, Officer Davies (wearing the exact same crisp navy blue uniform) walking near baggage conveyor belt facing camera with direct eye contact, pointing helpfully, bright airport lighting, clean anime digital illustration, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Don't worry, we will help you find it. Where did you go after you landed?",
                     "pedagogical_goal": "Describe tus acciones en pasado simple usando verbos como 'went', 'walked', 'checked' o 'waited'.",
                     "hint": "Narra en pasado: 'I went to the baggage claim' o 'I waited near gate number five'.",
@@ -154,7 +154,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_3_found_item",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hands visible in bottom foreground reaching out to receive a black backpack, Officer Davies (wearing the exact same navy uniform) smiling happily and handing the bag over in a bright airport office, clean 2D anime visual novel style, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai aesthetic, solo, 1boy, single male character only, Officer Davies (wearing the exact same navy uniform) smiling happily facing camera with direct eye contact, holding out a black backpack in a bright clean office, clean 2D anime visual novel style, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Good news! Another passenger found your bag. How did you feel when you saw it?",
                     "pedagogical_goal": "Expresa tu emoción en pasado simple usando 'I felt...' o 'I was very happy/relieved'.",
                     "hint": "Describe tu sentimiento en pasado: 'I felt so relieved' o 'I was very happy and grateful'.",
@@ -184,7 +184,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "nodes": [
                 {
                     "node_id": "step_1_experience_intro",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hands visible in bottom foreground resting on the polished executive desk next to a resume document, looking directly across the table at Ms. Carter (32-year-old executive with sleek dark brown hair in a low bun, wearing a navy blazer over an ivory blouse) smiling warmly and holding a pen, inside the exact same executive glass conference room across a polished reflective desk, panoramic city skyline view outside large floor-to-ceiling windows, bright sunny daylight, clean 2D anime visual novel digital art, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai aesthetic, solo, 1girl, single female character only, Ms. Carter (32-year-old executive with sleek dark brown hair in a low bun, wearing a navy blazer over an ivory blouse) sitting across executive desk facing camera with direct friendly eye contact, smiling warmly and holding a pen, inside the exact same executive glass conference room across a polished reflective desk, panoramic city skyline view outside large floor-to-ceiling windows, bright sunny daylight, clean 2D anime visual novel digital art, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Welcome to our team interview! To start, have you ever worked in a collaborative team project before?",
                     "pedagogical_goal": "Responde afirmativamente usando el Present Perfect: 'I have worked...' o 'I have collaborated in several projects'.",
                     "hint": "Usa Present Perfect (Have/Has + participio): 'Yes, I have worked in diverse teams for years'.",
@@ -197,7 +197,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_2_duration_skills",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hands visible in bottom foreground resting neatly on the desk, looking across at Ms. Carter (wearing the exact same navy blazer and ivory blouse) nodding approvingly and jotting positive notes in a leather notebook, inside the exact same executive glass conference room across a polished reflective desk, panoramic city skyline view outside large floor-to-ceiling windows, bright sunny daylight, clean 2D anime visual novel digital art, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai aesthetic, solo, 1girl, single female character only, Ms. Carter (wearing the exact same navy blazer and ivory blouse) sitting across the desk facing camera with direct eye contact, nodding approvingly and jotting positive notes in a leather notebook, inside the exact same executive glass conference room across a polished reflective desk, panoramic city skyline view outside large floor-to-ceiling windows, bright sunny daylight, clean 2D anime visual novel digital art, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "That sounds great. How long have you studied English or developed these skills?",
                     "pedagogical_goal": "Indica la duración usando 'I have studied... for [tiempo]' o 'since [año/fecha]'.",
                     "hint": "Usa 'for' (duración) o 'since' (punto de inicio): 'I have studied English for three years' o 'since 2021'.",
@@ -210,7 +210,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_3_closing_goals",
-                    "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hand visible in bottom foreground extending across the desk for a handshake, looking across at Ms. Carter (wearing the exact same navy blazer and ivory blouse) standing slightly and extending her hand with an enthusiastic welcoming smile, inside the exact same executive glass conference room across a polished reflective desk, panoramic city skyline view outside large floor-to-ceiling windows, bright sunny daylight, clean 2D anime visual novel digital art, 16:9, no text, no words",
+                    "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai aesthetic, solo, 1girl, single female character only, Ms. Carter (wearing the exact same navy blazer and ivory blouse) standing slightly across the desk facing camera with direct eye contact, extending her hand towards the camera for a friendly handshake with a welcoming smile, inside the exact same executive glass conference room across a polished reflective desk, panoramic city skyline view outside large floor-to-ceiling windows, bright sunny daylight, clean 2D anime visual novel digital art, strictly 2D anime drawing, single person only, no second person, no couple, not a photo, no photorealism, 16:9, no text, no words",
                     "companion_dialogue": "Excellent answers! If we offer you the position, what will be your first priority?",
                     "pedagogical_goal": "Usa una estructura de primer condicional o futuro ('I will focus on...' / 'If I get the job, I will...').",
                     "hint": "Formula tu objetivo futuro: 'If I join the team, I will contribute immediately' o 'I will focus on learning the systems'.",
@@ -281,7 +281,7 @@ class QuestGenerator:
         system_prompt = (
             "You are a master ESL game designer creating an Interactive First-Person (POV) Anime Visual Novel Quest.\n"
             "The player is an English student experiencing the story directly from their own first-person eyes.\n"
-            "ART STYLE: Clean 2D Anime Visual Novel illustration, Makoto Shinkai vibrant aesthetic, high-key daylight, cheerful atmosphere.\n"
+            "ART STYLE IS STRICTLY: Masterpiece 2D Japanese Anime Visual Novel Game CG, Makoto Shinkai vibrant aesthetic, Kyoto Animation style, clean 2D cel-shaded digital drawing, high-key bright daylight, cheerful atmosphere.\n"
             "Output strictly valid JSON matching the specified schema."
         )
 
@@ -289,18 +289,18 @@ class QuestGenerator:
 Topic / Grammar Target: {topic}
 CEFR Level: {sublevel} ({lvl_key})
 
-MANDATORY RULES FOR IMMERSION & SCENOGRAPHY CONTINUITY:
+MANDATORY RULES FOR 2D ANIME VISUAL NOVEL & SCENOGRAPHY:
 
-1. Setting & Background Scenography Continuity:
+1. SOLO COMPANION ONLY (NO COUPLE / NO ROMANCE / NO TWO PEOPLE):
+   - Exactly ONE companion character on screen facing front, centered in waist-up portrait view, making direct eye contact with the player/camera.
+   - DO NOT describe two people interacting, DO NOT describe holding hands between characters, DO NOT describe a couple or romance. The player is the camera.
+
+2. Setting & Background Scenography Continuity:
    - Choose one logical setting type:
      a) "static_location" (e.g. Seated across a table at a cafe, office desk interview, living room table, classroom desk).
         CRITICAL RULE: If "static_location", define a specific "environment_anchor" (e.g. "inside the exact same cozy cafe booth by a sunny arched window with wooden table and hanging green plants, warm afternoon sunlight"). ALL 3 SCENE PROMPTS MUST REUSE THE EXACT SAME ENVIRONMENT ANCHOR! The background, room, windows, and table MUST NOT CHANGE across nodes.
      b) "journey_walk" (e.g. Walking tour from courtyard -> bus -> destination). Scenery progresses logically step-by-step.
      c) "time_jump" (Only if the grammar topic explicitly demands past vs present or 'used to').
-
-2. Authentic First-Person POV Cues (Player Hands & Foreground):
-   - Every single "pov_image_prompt" MUST include the player's own perspective cues:
-     Start prompt with: "First-person perspective POV shot from player's eyesight, player's own hands visible in the bottom foreground (e.g. resting on the table / holding a coffee mug / holding a notebook / gesturing), looking directly across at [companion_name and exact appearance] who is making eye contact with the player..."
 
 3. Character Visual DNA (Facial & Outfit Consistency):
    - Define exact physical traits: hair style/color, eye color, age, and signature clothing.
@@ -332,7 +332,7 @@ JSON SCHEMA:
   "nodes": [
     {{
       "node_id": "step_1_invitation",
-      "pov_image_prompt": "First-person perspective POV shot from player's eyesight, player's hands visible in bottom foreground resting on the wooden table, looking directly across at Emma (20-year-old female student with wavy chestnut brown hair, warm hazel eyes, wearing a denim jacket over a white shirt) who is smiling and making an inviting gesture, inside the exact same cozy cafe booth by a sunny arched window with a warm wooden table and green plants, bright daylight, Makoto Shinkai vibrant aesthetic, clean 2D anime visual novel digital illustration, 16:9, no text, no words",
+      "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai vibrant aesthetic, solo, 1girl, single female character only, Emma (20-year-old female student with wavy chestnut brown hair, warm hazel eyes, wearing a denim jacket over a white shirt) sitting across the wooden table facing camera with direct friendly eye contact, smiling and making an inviting hand gesture, inside the exact same cozy cafe booth by a sunny arched window with a warm wooden table and green plants, bright daylight, clean 2D anime digital illustration, strictly 2D anime drawing, single person only, no second person, no couple, no photorealism, 16:9, no text, no words",
       "companion_dialogue": "...",
       "pedagogical_goal": "...",
       "hint": "...",
@@ -377,31 +377,29 @@ JSON SCHEMA:
             dna = data.get("character_dna") or f"{data.get('companion_name', 'companion')}, friendly anime character"
             env_anchor = data.get("environment_anchor", "in a bright sunlit environment with warm natural lighting")
             is_static = data.get("setting_type") == "static_location"
+            solo_tag = "solo, 1female, single female character only" if comp_gender == "female" else "solo, 1male, single male character only"
 
-            # Ensure all nodes have clean anime prompts, hands in POV foreground, and scenography continuity
+            # Ensure all nodes have clean anime prompts and scenography continuity
             for idx, node in enumerate(data["nodes"]):
                 if not node.get("node_id"):
                     node["node_id"] = f"step_{idx+1}"
                 
                 prompt_str = str(node.get("pov_image_prompt", ""))
                 
-                # Check for POV hands cue
-                if "player's hands" not in prompt_str.lower() and "hands visible" not in prompt_str.lower():
-                    hands_cue = "player's own hands visible in the bottom foreground resting on the table" if is_static else "player's hands visible in bottom foreground"
-                else:
-                    hands_cue = ""
+                # Remove photography/dark artifacts and hands holding that cause couples
+                clean_p = re.sub(r'realistic photography|photorealistic|photorealism|photo|hyperrealistic|realism', 'clean 2D anime visual novel digital illustration, Makoto Shinkai vibrant aesthetic, bright daylight', prompt_str, flags=re.IGNORECASE)
+                clean_p = re.sub(r"player's (own )?hands (and arms )?(visible in (the )?bottom foreground )?(holding|resting|reaching|gesturing)?", "foreground wooden table edge", clean_p, flags=re.IGNORECASE)
 
-                # Remove photography/dark artifacts
-                clean_p = re.sub(r'realistic photography|photorealistic|photorealism|photo', 'clean 2D anime visual novel digital illustration, Makoto Shinkai vibrant aesthetic, bright daylight', prompt_str, flags=re.IGNORECASE)
-                
-                # Enforce structure
-                if not clean_p.lower().startswith("first-person"):
-                    prefix = f"First-person perspective POV shot from player's eyesight, {hands_cue}, looking directly across at {dna}" if hands_cue else f"First-person perspective POV shot from player's eyesight, looking directly across at {dna}"
-                    clean_p = f"{prefix}, {clean_p}"
+                # Ensure solo anime visual novel prefix
+                if not clean_p.lower().startswith("masterpiece 2d japanese anime"):
+                    clean_p = f"Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai aesthetic, {solo_tag}, looking directly into camera with friendly eye contact, {dna}, {clean_p}"
                 
                 # If static, enforce environment anchor
                 if is_static and env_anchor and env_anchor.lower() not in clean_p.lower():
                     clean_p = f"{clean_p}, {env_anchor}"
+
+                # Append mandatory 2D anime and anti-couple negative tags
+                clean_p = f"{clean_p}, clean 2D anime digital drawing, strictly 2D anime, single person only, no second person, no couple, no romance, no holding hands, not a photo, no photorealism, no 3D, no text, no words"
 
                 node["pov_image_prompt"] = clean_p
 

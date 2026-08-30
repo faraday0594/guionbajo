@@ -1,6 +1,7 @@
 """
 Guionbajo — Interactive POV Conversational Quest Engine (Visual Novel Mode)
 Generates and evaluates turn-based, first-person narrative quests aligned with CEFR grammar goals.
+All visual scenes use bright, colorful 2D Anime Visual Novel art style with clear first-person perspective.
 """
 import random
 import json
@@ -13,7 +14,7 @@ from core.minimax_agent import clean_json_response
 
 logger = logging.getLogger(__name__)
 
-# ─── DETERMINISTIC FALLBACK QUEST BANK ─────────────────────────────────────────
+# ─── DETERMINISTIC FALLBACK QUEST BANK (ANIME VISUAL NOVEL STYLE) ─────────────
 
 FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
     "A1": [
@@ -29,7 +30,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "nodes": [
                 {
                     "node_id": "step_1_invitation",
-                    "pov_image_prompt": "First-person perspective shot sitting on a sunny university campus bench talking to a friendly female classmate with curly brown hair in a denim jacket, making an inviting gesture, warm sunlight, modern university background, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, looking directly at a friendly female classmate named Emma with curly brown hair in a cute denim jacket, smiling and making an inviting hand gesture towards the viewer, sunny university campus courtyard with cherry blossoms and modern glass buildings in background, Makoto Shinkai vibrant aesthetic, bright daylight, colorful, clean 2D anime digital illustration, 16:9, no text, no words",
                     "companion_dialogue": "Hey! A group of us are heading to the campus pool tomorrow afternoon. Do you want to join us?",
                     "pedagogical_goal": "Acepta la invitación explícitamente usando 'will' o 'I'll' (ej. 'Sure, I will go' o 'I will join you').",
                     "hint": "Usa 'will' o la contracción 'I'll' + verbo: 'Yes, I will go with you' o 'I'll join you tomorrow'.",
@@ -42,7 +43,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_2_items_to_bring",
-                    "pov_image_prompt": "First-person perspective sitting inside a modern city bus next to the same smiling female classmate with curly brown hair looking towards you, casual cheerful atmosphere, city view through bus window, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, sitting inside a bright modern city bus next to the smiling female classmate Emma looking towards the viewer, sunny city street through window, cheerful anime visual novel illustration, vibrant colors, 16:9, no text, no words",
                     "companion_dialogue": "Awesome! I'm so glad you're coming. What will you bring with you tomorrow?",
                     "pedagogical_goal": "Menciona al menos un objeto que llevarás usando 'I will bring...' o 'I'll bring...'",
                     "hint": "Di qué llevarás usando 'I will bring [objeto]' (ej. 'I will bring a towel' o 'I will bring sunscreen').",
@@ -55,7 +56,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_3_meeting_time",
-                    "pov_image_prompt": "First-person perspective arriving at the entrance of a bright modern campus swimming pool center, companion waving excitedly next to the entrance gate, sunny summer day, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, arriving at a bright modern outdoor swimming pool entrance, female classmate Emma waving happily at the viewer, clear blue sky, sunny summer day, clean anime digital art, 16:9, no text, no words",
                     "companion_dialogue": "Great! The pool opens at two o'clock. When will you arrive tomorrow?",
                     "pedagogical_goal": "Indica la hora a la que llegarás usando 'I will arrive at...' o 'I'll be there at...'",
                     "hint": "Responde con la hora de llegada usando 'will': 'I will arrive at one thirty' o 'I'll be there at two'.",
@@ -80,7 +81,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "nodes": [
                 {
                     "node_id": "step_1_order_drink",
-                    "pov_image_prompt": "First-person perspective standing in front of a warm wooden coffee shop counter, smiling friendly male barista wearing an apron asking for your order, cozy cafe ambiance, soft lighting, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, looking directly across a clean wooden cafe counter at a friendly young male barista named Lucas wearing a brown apron, smiling and taking your order, bright cozy modern cafe with green plants and warm sunlight, clean anime digital illustration, colorful, 16:9, no text, no words",
                     "companion_dialogue": "Welcome to Central Perk! What would you like to drink today?",
                     "pedagogical_goal": "Pide una bebida educadamente usando 'I would like...' o 'I'd like...'",
                     "hint": "Usa la fórmula de cortesía: 'I would like a coffee' o 'I'd like an iced tea, please'.",
@@ -93,7 +94,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_2_table_invitation",
-                    "pov_image_prompt": "First-person perspective holding a warm coffee cup, looking across a small round wooden table at a friendly friend in a cozy sweater smiling and holding a book, warm sunlight filtering through window, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, sitting across a small round wooden table from friendly anime friend Lucas who is smiling warmly holding a coffee cup, bright sunlight through cafe window, cozy anime aesthetic, 16:9, no text, no words",
                     "companion_dialogue": "Hey, I found us a cozy table by the window! Where do you want to sit?",
                     "pedagogical_goal": "Acepta el lugar o expresa tu preferencia usando 'I would like to sit...' o 'I'd love to sit here'.",
                     "hint": "Expresa agrado con 'I would like to sit by the window' o 'I'd like to sit next to you'.",
@@ -120,7 +121,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "nodes": [
                 {
                     "node_id": "step_1_report_lost",
-                    "pov_image_prompt": "First-person perspective standing at an airport information desk, professional uniformed airport staff officer looking attentively at you with a clipboard, busy modern airport terminal in background, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, standing at an airport customer service counter looking directly at a friendly helpful airport staff officer in a neat blue uniform smiling at the viewer, bright modern airport terminal with big glass windows, colorful anime digital art, 16:9, no text, no words",
                     "companion_dialogue": "Hello traveler. You look concerned. What happened to your luggage?",
                     "pedagogical_goal": "Explica lo ocurrido en pasado simple (ej. 'I lost my backpack' o 'I left my bag on the airplane').",
                     "hint": "Usa un verbo en pasado: 'I lost my suitcase' o 'I forgot my backpack on the flight'.",
@@ -133,7 +134,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_2_describe_actions",
-                    "pov_image_prompt": "First-person perspective at the luggage claim belt area, airport officer pointing towards the conveyor belts, bright airport lighting, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, standing near a modern baggage conveyor belt with the friendly airport officer pointing helpfully, bright clean anime background with soft lighting, 16:9, no text, no words",
                     "companion_dialogue": "Don't worry, we will help you find it. Where did you go after you landed?",
                     "pedagogical_goal": "Describe tus acciones en pasado simple usando verbos como 'went', 'walked', 'checked' o 'waited'.",
                     "hint": "Narra en pasado: 'I went to the baggage claim' o 'I waited near gate number five'.",
@@ -146,7 +147,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_3_found_item",
-                    "pov_image_prompt": "First-person perspective with airport officer handing you your black travel backpack with a relieved smile, bright clean airport office, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, friendly airport officer handing over a travel backpack with a warm happy smile, bright welcoming airport office, clean anime digital art, 16:9, no text, no words",
                     "companion_dialogue": "Good news! Another passenger found your bag. How did you feel when you saw it?",
                     "pedagogical_goal": "Expresa tu emoción en pasado simple usando 'I felt...' o 'I was very happy/relieved'.",
                     "hint": "Describe tu sentimiento en pasado: 'I felt so relieved' o 'I was very happy and grateful'.",
@@ -173,7 +174,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "nodes": [
                 {
                     "node_id": "step_1_experience_intro",
-                    "pov_image_prompt": "First-person perspective sitting across a sleek glass table in a modern corporate office, professional female executive interviewer in a navy blazer smiling pleasantly with your resume, city skyscraper view behind her, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, sitting across a sleek glass table in a modern corporate office, professional anime businesswoman in a navy blazer named Ms. Carter smiling warmly at the viewer, bright sunlit skyscraper office with skyline view, clean 2D anime illustration, 16:9, no text, no words",
                     "companion_dialogue": "Welcome to our team interview! To start, have you ever worked in a collaborative team project before?",
                     "pedagogical_goal": "Responde afirmativamente usando el Present Perfect: 'I have worked...' o 'I have collaborated in several projects'.",
                     "hint": "Usa Present Perfect (Have/Has + participio): 'Yes, I have worked in diverse teams for years'.",
@@ -186,7 +187,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_2_duration_skills",
-                    "pov_image_prompt": "First-person perspective looking at the interviewer taking brief positive notes with a fountain pen in her notebook, modern sunlit tech office, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, looking directly at the professional anime interviewer Ms. Carter taking positive notes with a pen in her notebook and smiling encouragingly, bright sunlit modern office, anime digital art, 16:9, no text, no words",
                     "companion_dialogue": "That sounds great. How long have you studied English or developed these skills?",
                     "pedagogical_goal": "Indica la duración usando 'I have studied... for [tiempo]' o 'since [año/fecha]'.",
                     "hint": "Usa 'for' (duración) o 'since' (punto de inicio): 'I have studied English for three years' o 'since 2021'.",
@@ -199,7 +200,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
                 },
                 {
                     "node_id": "step_3_closing_goals",
-                    "pov_image_prompt": "First-person perspective interviewer extending her hand for a warm handshake with a welcoming smile, modern conference room, golden hour sunlight, realistic photography, 16:9, no text, no words",
+                    "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, professional anime businesswoman Ms. Carter extending her hand towards the viewer for a friendly handshake with a welcoming smile, golden hour sunlight in modern conference room, clean anime visual novel art, 16:9, no text, no words",
                     "companion_dialogue": "Excellent answers! If we offer you the position, what will be your first priority?",
                     "pedagogical_goal": "Usa una estructura de primer condicional o futuro ('I will focus on...' / 'If I get the job, I will...').",
                     "hint": "Formula tu objetivo futuro: 'If I join the team, I will contribute immediately' o 'I will focus on learning the systems'.",
@@ -218,7 +219,7 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
 
 class QuestGenerator:
     """
-    Orchestrates the generation and dynamic customization of POV Narrative Quests.
+    Orchestrates the generation and dynamic customization of POV Narrative Quests in Anime Visual Novel Style.
     """
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.MINIMAX_API_KEY
@@ -261,15 +262,16 @@ class QuestGenerator:
 
     async def generate_quest(self, topic: str, sublevel: str) -> Dict[str, Any]:
         """
-        Generates a 3-node POV Conversational Quest with immersive narrative context.
+        Generates a 3-node POV Conversational Quest in vibrant 2D Anime Visual Novel style.
         """
         if not self.client or not self.api_key:
             return self.get_fallback_quest(topic, sublevel)
 
         lvl_key = self._get_level_key(sublevel)
         system_prompt = (
-            "You are a master ESL game designer creating an Interactive First-Person (POV) Visual Novel Quest.\n"
+            "You are a master ESL game designer creating an Interactive First-Person (POV) Anime Visual Novel Quest.\n"
             "The player is a student learning English. Each scene is from their first-person perspective.\n"
+            "ART STYLE IS STRICTLY: Clean 2D Anime Visual Novel illustration, Makoto Shinkai vibrant aesthetic, bright high-key lighting, cheerful atmosphere.\n"
             "Output strictly valid JSON matching the specified schema."
         )
 
@@ -278,13 +280,17 @@ Topic / Grammar Target: {topic}
 CEFR Level: {sublevel} ({lvl_key})
 
 STRICT SCENARIO & NODE RULES:
-1. Create a continuous narrative story with an AI companion character (give them a name, define their gender as 'female' or 'male', and choose a suitable avatar emoji).
-2. For female companions, use "companion_gender": "female" and "companion_voice": "en-US-JennyNeural".
-3. For male companions, use "companion_gender": "male" and "companion_voice": "en-US-RogerNeural".
-4. Generate exactly 3 sequential nodes ('nodes' array).
-5. For each node:
-   - "node_id": "step_1_xxx", "step_2_xxx", "step_3_xxx"
-   - "pov_image_prompt": Detailed 16:9 prompt starting with "First-person perspective shot..." and ending with "realistic photography, 16:9, no text, no words". Ensure consistent companion character across all 3 prompts.
+1. Companion Character:
+   - Name the companion (e.g. Emma, Sarah, Lucas, Alex).
+   - Define "companion_gender": "female" or "male".
+   - Set "companion_voice": "en-US-JennyNeural" (for female) or "en-US-RogerNeural" (for male).
+   - Set "companion_avatar": "👩‍🦱" (for female) or "🧑‍🦱" (for male).
+
+2. Image Prompts (MANDATORY ANIME VISUAL NOVEL STYLE):
+   - Every "pov_image_prompt" MUST start with: "First-person perspective POV shot in clean 2D anime visual novel style, looking directly at [companion name and physical description] who is in center making friendly eye contact with the viewer, [scene action/expression], [bright colorful environment], Makoto Shinkai vibrant aesthetic, high-key bright lighting, colorful anime digital illustration, 16:9, no text, no words"
+   - CRITICAL: DO NOT use realistic photography or dark horror lighting. Always use bright, friendly, clean 2D anime visual novel art style where the companion character is looking straight at the player.
+
+3. Nodes: Generate exactly 3 sequential nodes ('nodes' array).
    - "companion_dialogue": Natural spoken English line by the companion (1-2 sentences) prompting the student to use the target grammar.
    - "pedagogical_goal": Clear target in Spanish (e.g. "Acepta la invitación usando 'will'").
    - "hint": Helpful grammar clue in Spanish.
@@ -303,11 +309,11 @@ JSON SCHEMA:
   "companion_name": "Emma",
   "companion_gender": "female",
   "companion_voice": "en-US-JennyNeural",
-  "companion_avatar": "👩",
+  "companion_avatar": "👩‍🦱",
   "nodes": [
     {{
       "node_id": "step_1_invitation",
-      "pov_image_prompt": "First-person perspective shot...",
+      "pov_image_prompt": "First-person perspective POV shot in clean 2D anime visual novel style, looking directly at a friendly female student named Emma with curly brown hair in a cute denim jacket smiling at the viewer, sunny university campus with cherry blossoms, Makoto Shinkai vibrant aesthetic, bright daylight, clean 2D anime digital illustration, 16:9, no text, no words",
       "companion_dialogue": "...",
       "pedagogical_goal": "...",
       "hint": "...",
@@ -349,10 +355,19 @@ JSON SCHEMA:
             if not data.get("companion_avatar"):
                 data["companion_avatar"] = "👨‍🦱" if comp_gender == "male" else "👩‍🦱"
 
-            # Ensure all nodes have necessary fields
+            # Ensure all nodes have clean anime prompts and necessary fields
             for idx, node in enumerate(data["nodes"]):
                 if not node.get("node_id"):
                     node["node_id"] = f"step_{idx+1}"
+                
+                # Sanitize image prompt to enforce anime visual novel style
+                prompt_str = str(node.get("pov_image_prompt", ""))
+                if "anime" not in prompt_str.lower() or "photography" in prompt_str.lower():
+                    clean_p = re.sub(r'realistic photography|photorealistic|photorealism|photo', 'clean 2D anime visual novel illustration, Makoto Shinkai vibrant aesthetic, bright daylight', prompt_str, flags=re.IGNORECASE)
+                    if not clean_p.lower().startswith("first-person"):
+                        clean_p = f"First-person perspective POV shot in clean 2D anime visual novel style, looking directly at {data.get('companion_name', 'companion')}, {clean_p}"
+                    node["pov_image_prompt"] = clean_p
+
                 if not node.get("validation_rules"):
                     node["validation_rules"] = {"must_include": [], "intent": "general_response", "min_words": 2}
                 if not node.get("hint"):

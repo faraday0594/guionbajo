@@ -52,12 +52,24 @@ async def generate_image(
             "provider": "minimax"
         }
 
-    # Clean prompt for MiniMax image-01 API
+    import re
+    # Clean and stylize prompt for MiniMax image-01 API
     raw = req.prompt.strip()
-    if not raw.lower().endswith("no text"):
-        clean_prompt = f"{raw}, no text, no letters, no words, no writing, no labels"
+    
+    # If prompt is for POV / Visual Novel or conversational scene, enforce bright anime visual novel style and eliminate dark photo artifacts
+    if any(k in raw.lower() for k in ("first-person", "pov", "classmate", "companion", "barista", "officer", "interviewer", "talking to", "sitting across")):
+        enhanced = re.sub(r'realistic photography|photorealistic|photorealism|realistic photo|photo', 'clean 2D anime visual novel illustration, Makoto Shinkai vibrant aesthetic, bright daylight', raw, flags=re.IGNORECASE)
+        if "anime" not in enhanced.lower():
+            enhanced = f"Clean vibrant 2D anime visual novel digital art style, Makoto Shinkai aesthetic, high-key bright daylight, {enhanced}"
+        if "no dark" not in enhanced.lower():
+            enhanced = f"{enhanced}, bright cheerful lighting, colorful, no dark horror lighting, no realistic photo"
     else:
-        clean_prompt = raw
+        enhanced = raw
+
+    if not enhanced.lower().endswith("no text"):
+        clean_prompt = f"{enhanced}, no text, no letters, no words, no writing, no labels"
+    else:
+        clean_prompt = enhanced
 
     cache_key = f"{clean_prompt[:300]}_{req.aspect_ratio or '16:9'}"
     if cache_key in _IMAGE_CACHE:

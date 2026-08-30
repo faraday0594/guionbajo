@@ -27,6 +27,7 @@ from routers import (
     game_router,
     phonetics_router,
     reading_router,
+    quest_router,
 )
 
 @asynccontextmanager
@@ -131,6 +132,7 @@ app.include_router(image_router)
 app.include_router(game_router)
 app.include_router(phonetics_router)
 app.include_router(reading_router)
+app.include_router(quest_router)
 
 if __name__ == "__main__":
     import uvicorn

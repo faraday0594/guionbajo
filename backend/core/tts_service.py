@@ -284,10 +284,16 @@ async def _fallback_edge_tts(text: str, voice_id: str = "es-MX-DaliaNeural", spe
     """High-quality Microsoft Neural Voice synthesis."""
     try:
         vid = (voice_id or "").lower()
-        if "roger" in vid:
-            voice = "en-US-RogerNeural"
-        elif "jenny" in vid:
+        if "jenny" in vid:
             voice = "en-US-JennyNeural"
+        elif "aria" in vid:
+            voice = "en-US-AriaNeural"
+        elif "sonia" in vid:
+            voice = "en-GB-SoniaNeural"
+        elif "roger" in vid:
+            voice = "en-US-RogerNeural"
+        elif "guy" in vid:
+            voice = "en-US-GuyNeural"
         elif "paloma" in vid:
             voice = "es-US-PalomaNeural"
         elif "alonso" in vid:
@@ -444,7 +450,13 @@ async def synthesize_speech(
     is_eng_content = is_predominantly_english(text)
     if is_eng_content and not any(k in vid for k in ("yujie", "chengshu", "tianmei", "shaonv", "dalia", "jorge", "elvira", "alvaro", "paloma", "alonso")):
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
-        neural_audio = await _fallback_edge_tts(speech_text, voice_id="en-US-RogerNeural", speed=speed)
+        # Check if female English voice requested or default to Jenny
+        is_explicit_male = any(m in vid for m in ("male", "roger", "guy", "christopher"))
+        chosen_en_voice = "en-US-RogerNeural" if is_explicit_male else "en-US-JennyNeural"
+        if vid.startswith("en-"):
+            chosen_en_voice = voice_id
+
+        neural_audio = await _fallback_edge_tts(speech_text, voice_id=chosen_en_voice, speed=speed)
         if neural_audio and len(neural_audio) > 100:
             return neural_audio
         return await _synthesize_google_tts(speech_text, lang="en")

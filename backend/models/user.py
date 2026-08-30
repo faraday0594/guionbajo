@@ -18,6 +18,7 @@ class User(Base):
     settings = relationship("SettingsStore", back_populates="user", cascade="all, delete-orphan")
     lessons = relationship("LessonHistory", back_populates="user", cascade="all, delete-orphan")
     diagnoses = relationship("DiagnosisResult", back_populates="user", cascade="all, delete-orphan")
+    quest_sessions = relationship("StorySession", back_populates="user", cascade="all, delete-orphan")
 
 class StudentProfile(Base):
     __tablename__ = "student_profiles"

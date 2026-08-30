@@ -173,6 +173,48 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  // ─── Interactive POV Conversational Quest (Visual Novel) ─
+  generateQuest: (topic: string, sublevel: string, lesson_id?: string) =>
+    fetchWithAuth('/quests/generate', {
+      method: 'POST',
+      body: JSON.stringify({ topic, sublevel, lesson_id }),
+    }),
+
+  startQuestSession: (quest_id?: string, topic?: string, sublevel?: string) =>
+    fetchWithAuth('/quests/session/start', {
+      method: 'POST',
+      body: JSON.stringify({ quest_id, topic, sublevel }),
+    }),
+
+  evaluateQuestNode: (data: {
+    quest_id?: string;
+    session_id?: string;
+    node_index: number;
+    transcript: string;
+    topic?: string;
+    node_data?: any;
+    all_nodes?: any[];
+  }) =>
+    fetchWithAuth('/quests/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  submitQuestScore: (data: {
+    quest_id?: string;
+    session_id?: string;
+    score: number;
+    attempt_count?: number;
+    nodes_completed?: number;
+    total_nodes?: number;
+    duration_seconds?: number;
+    lesson_id?: string;
+  }) =>
+    fetchWithAuth('/quests/submit', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // ─── Reading Practice (Story with Word-by-Word IPA) ─
   generateReadingStory: (topic: string, sublevel: string, lesson_id?: string) =>
     fetchWithAuth('/reading/generate', {
@@ -624,17 +666,20 @@ export async function testVoicePreview(voiceId: string, previewText?: string): P
   }
 }
 
-// ─── PLAY ENGLISH AUDIO (Roger / Jenny Neural HD / Edge-TTS) ───────────────────
-// High-definition natural English speech for exercise sentences, phonetics, and examples.
-export async function playEnglishAudio(text: string): Promise<HTMLAudioElement | void> {
+// ─── PLAY ENGLISH AUDIO (Jenny / Roger / Aria Neural HD / Edge-TTS) ───────────
+// High-definition natural English speech for exercise sentences, phonetics, POV companions, and examples.
+export async function playEnglishAudio(text: string, preferredVoice = 'en-US-JennyNeural'): Promise<HTMLAudioElement | void> {
   const speechText = cleanTextForTTS(text);
   if (!speechText) return;
 
   stopTutorVoice();
 
-  // 1. Try Backend Studio Edge Neural TTS (en-US-RogerNeural / en-US-JennyNeural)
+  const isFemale = !preferredVoice || preferredVoice.includes('Jenny') || preferredVoice.includes('Aria') || preferredVoice.includes('female');
+  const targetVoice = preferredVoice || (isFemale ? 'en-US-JennyNeural' : 'en-US-RogerNeural');
+
+  // 1. Try Backend Studio Edge Neural TTS
   try {
-    const blob = await api.synthesize(speechText, 'en-US-RogerNeural', 'calm', 0.95);
+    const blob = await api.synthesize(speechText, targetVoice, 'calm', 0.95);
     if (blob && blob.size > 200) {
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
@@ -645,7 +690,7 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
           if (err && err.name !== 'AbortError') {
-            console.warn('Roger Audio play error:', err);
+            console.warn('English Audio play error:', err);
           }
         });
       }
@@ -657,10 +702,10 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
       return audio;
     }
   } catch (e) {
-    console.warn('Backend Roger TTS synthesis fallback to browser:', e);
+    console.warn('Backend English TTS synthesis fallback to browser:', e);
   }
 
-  // 2. Fallback to Browser Web Speech API strictly in English (Roger / Jenny / Google US)
+  // 2. Fallback to Browser Web Speech API strictly in English with matching gender
   if (typeof window !== 'undefined' && window.speechSynthesis) {
     try {
       window.speechSynthesis.cancel();
@@ -668,9 +713,9 @@ export async function playEnglishAudio(text: string): Promise<HTMLAudioElement |
       const utterance = new SpeechSynthesisUtterance(speechText);
       utterance.lang = 'en-US';
       utterance.rate = 0.88;
-      utterance.pitch = 1.0;
+      utterance.pitch = isFemale ? 1.08 : 0.95;
 
-      const enVoice = getBestBrowserVoice('en');
+      const enVoice = getBestBrowserVoice('en', isFemale ? 'Jenny' : 'Roger');
       if (enVoice) {
         utterance.voice = enVoice;
       }

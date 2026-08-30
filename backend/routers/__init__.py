@@ -8,6 +8,7 @@ from .image import router as image_router
 from .game import router as game_router
 from .phonetics import router as phonetics_router
 from .reading import router as reading_router
+from .quest import router as quest_router
 
 __all__ = [
     "auth_router",
@@ -20,4 +21,5 @@ __all__ = [
     "game_router",
     "phonetics_router",
     "reading_router",
+    "quest_router",
 ]

@@ -18,10 +18,11 @@ import {
 import { playTutorVoice, stopTutorVoice } from '@/lib/api';
 import { TwinCardPairData } from './TwinCardsGame';
 import { MysteryWordData } from './MysteryWordGame';
+import { StoryQuestData } from './POVQuestGame';
 
 interface GameReviewModalProps {
   isOpen: boolean;
-  gameType: 'mystery_word' | 'twin_cards';
+  gameType: 'mystery_word' | 'twin_cards' | 'pov_quest';
   score: number;
   maxStreak: number;
   xpEarned: number;
@@ -29,6 +30,7 @@ interface GameReviewModalProps {
   sublevel: string;
   twinPairs?: TwinCardPairData[];
   mysteryWordData?: MysteryWordData;
+  questData?: StoryQuestData;
   onClose: () => void;
   onReplay: () => void;
   onGoToDashboard: () => void;
@@ -44,6 +46,7 @@ export default function GameReviewModal({
   sublevel,
   twinPairs,
   mysteryWordData,
+  questData,
   onClose,
   onReplay,
   onGoToDashboard,
@@ -133,7 +136,11 @@ export default function GameReviewModal({
                 <span className="text-xs text-brand-text-muted font-mono">{sublevel}</span>
               </div>
               <h2 className="text-2xl font-outfit font-extrabold text-white mt-0.5">
-                {gameType === 'mystery_word' ? 'Dominio de Palabra Misteriosa' : 'Tabla de Repaso: Cartas Gemelas'}
+                {gameType === 'pov_quest'
+                  ? 'Misión POV Completada con Éxito'
+                  : gameType === 'mystery_word'
+                  ? 'Dominio de Palabra Misteriosa'
+                  : 'Tabla de Repaso: Cartas Gemelas'}
               </h2>
             </div>
           </div>
@@ -316,6 +323,78 @@ export default function GameReviewModal({
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* POV Quest Review */}
+          {gameType === 'pov_quest' && questData && questData.nodes && (
+            <div className="space-y-3">
+              {questData.nodes.map((node, idx) => {
+                const isPlaying = activeSpeechIdx === idx;
+                const isRecording = spokenTestIndex === idx;
+                const passed = recognitionSuccess[idx];
+                const phraseToPractice = node.example_phrase || node.companion_dialogue;
+
+                return (
+                  <div
+                    key={node.node_id || idx}
+                    className="p-4 rounded-2xl glass border border-brand-border/60 hover:border-brand-gold/40 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group"
+                  >
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-brand-gold/20 text-brand-gold font-bold text-xs flex items-center justify-center">
+                          {idx + 1}
+                        </span>
+                        <span className="text-xs font-bold text-white">{node.pedagogical_goal}</span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-black/50 border border-white/10 space-y-1">
+                        <div className="text-xs font-semibold text-brand-cyan">
+                          {questData.companion_name || 'Emma'}: "{node.companion_dialogue}"
+                        </div>
+                        {node.example_phrase && (
+                          <div className="text-xs text-emerald-300 font-medium italic">
+                            💡 Respuesta modelo: "{node.example_phrase}"
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Audio & Mic Practice Controls */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handlePlayAudio(phraseToPractice, idx)}
+                        className={`p-2.5 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                          isPlaying
+                            ? 'bg-brand-cyan text-slate-900 border-brand-cyan shadow-lg shadow-brand-cyan/40 scale-105'
+                            : 'bg-brand-surface hover:bg-brand-surface/80 text-brand-cyan border-brand-cyan/30'
+                        }`}
+                        title="Escuchar modelo de pronunciación"
+                      >
+                        <Volume2 size={15} className={isPlaying ? 'animate-pulse' : ''} />
+                        <span>Escuchar</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleStartPracticeMic(phraseToPractice, idx)}
+                        className={`p-2.5 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
+                          isRecording
+                            ? 'bg-red-500 text-white border-red-500 animate-pulse'
+                            : passed
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                            : 'bg-brand-surface hover:bg-brand-surface/80 text-brand-gold border-brand-gold/30'
+                        }`}
+                        title="Repite la frase por voz para validar tu pronunciación"
+                      >
+                        {passed ? <CheckCircle2 size={15} className="text-emerald-400" /> : <Mic size={15} />}
+                        <span>{isRecording ? 'Grabando...' : passed ? '¡Excelente!' : 'Practicar'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

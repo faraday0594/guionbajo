@@ -889,10 +889,7 @@ class TutorAgent:
         is_a_level = sublevel.startswith("A1") or sublevel.startswith("A2")
         
         if not self.client or not self.api_key:
-            fallback = self._build_fallback_lesson(topic, sublevel, is_a_level)
-            fallback["archetype"] = adaptive_plan.get("archetype", "practice")
-            fallback["phonetic_focus"] = adaptive_plan.get("phonetic_focus", {})
-            return fallback
+            return self._build_fallback_lesson(topic, sublevel, is_a_level, adaptive_plan)
 
         curr_node = self._find_curriculum_node(topic, sublevel) or {}
         grammar_target = curr_node.get("grammar_core") or ""
@@ -917,18 +914,12 @@ class TutorAgent:
             contrast_pairs = ph_focus.get("contrast_pairs", [])
             pairs_str = ", ".join([f"{p[0]}/{p[1]}" for p in contrast_pairs[:3]]) if contrast_pairs else ""
             phonetics_prompt_line = f"Micro-Foco Fonético Programado: {ph_symbols} (Pares mínimos: {pairs_str})\n"
-            extra_rule = (
-                f"6. Flujo Ininterrumpido: Las Slides 1 a N-1 enseñan '{topic}' de forma continua y comunicativa sin pausas fonéticas intermedias. "
-                f"La pronunciación de los dos fonemas se aborda ÚNICAMENTE al final como última Slide (Slide N: Bonus de Pronunciación: {ph_symbols}), "
-                f"explicando en español la anatomía de la boca (exterior: labios y apertura; interior: lengua y tracto vocal)."
-            )
         else:
-            phonetics_prompt_line = "Tipo de Clase: Clase Regular de Gramática, Vocabulario y Comunicación (SIN módulo de fonética aislado).\n"
-            extra_rule = "6. Esta es una clase regular: todas las slides se enfocan en gramática, vocabulario y práctica comunicativa."
+            phonetics_prompt_line = "Tipo de Clase: Clase Regular de Gramática, Vocabulario y Comunicación.\n"
 
         system = self._build_system_prompt(student_profile)
         user = (
-            f"Diseña una lección pedagógica y cinematográfica en formato JSON ai_tutor.lesson.v2.\n"
+            f"Diseña una lección pedagógica inmersiva en formato JSON ai_tutor.lesson.v2.\n"
             f"Tema Central: {topic}\n"
             f"Subnivel CEFR: {sublevel} ({level_desc})\n"
             f"Macro-Objetivo: {macro_obj}\n"
@@ -936,43 +927,31 @@ class TutorAgent:
             f"Tema de Repaso/Recuperación (Spaced Retrieval): {retrieval}\n"
             f"{target_guidance}"
             f"{phonetics_prompt_line}\n"
-            f"ESTRUCTURA CINEMATOGRÁFICA Y DINÁMICA DE SLIDES (DECIDE ENTRE 4 Y 7 SLIDES):\n"
-            f"• Slide 1: MANDATORY CINEMATIC HOOK (Apertura inmersiva).\n"
-            f"   - Plantea un dilema o pregunta cotidiana sobre '{topic}' para despertar curiosidad.\n"
-            f"   - Incluye 'hook_images' con 1 o 2 descripciones de escenas visuales potentes en inglés.\n"
-            f"   - 'tutor_says': Locución intrigante y empática (2-3 oraciones) planteando el gancho.\n"
-            f"   - 'student_task' y 'expected_answer': null. 'interaction_type': 'explanation'.\n"
-            f"• Slides 2 a N-2: PROFUNDIZACIÓN CONCEPTUAL PURA Y MODELOS MENTALES.\n"
-            f"   - Explica el concepto lingüístico usando modelos mentales vívidos (puentes, reflectores, etc.).\n"
-            f"   - Desglosa la fórmula gramatical sintáctica token por token ({grammar_target or topic}).\n"
-            f"   - PROHIBIDO colocar ejercicios interactivos o quizzes en estas pizarras explicativas (deben ser limpias y profundas).\n"
-            f"• Slide N-1: SLIDE DEDICADA DE DESAFÍO INTERACTIVO CON ORACIONES COMPLETAS.\n"
-            f"   - 'is_practice_slide': true, 'interaction_type': 'quiz'.\n"
-            f"   - Contiene un arreglo de 'exercises' (MÍNIMO 8 ejercicios interactivos completos, de 8 a 10 ejercicios).\n"
-            f"   - CADA EJERCICIO ES UNA ORACIÓN COMPLETA en inglés basada en situaciones reales (PROHIBIDO consignas abstractas o pedir al alumno inventar oraciones).\n"
-            f"   - CADA EJERCICIO DEBE INCLUIR:\n"
-            f"       - 'id': 'ex-1' ... 'ex-8'.\n"
-            f"       - 'sentence': Oración completa en inglés con '_____' para rellenar.\n"
-            f"       - 'options': Lista de 3 opciones gramaticales (ej: ['was cooking', 'cooked', 'cook']).\n"
-            f"       - 'expected_answer': La opción correcta exacta.\n"
-            f"       - 'spanish_translation': Traducción contextual en español.\n"
-            f"       - 'image_prompt': Descripción vívida en inglés de la situación/escena de la oración para ilustrarla con IA (2D vector art, no text).\n"
-            f"       - 'hint': Pista gramatical específica.\n"
-            f"• Slide N (si aplica): BONUS DE PRONUNCIACIÓN (Anatomía bucal exterior/interior en español).\n\n"
-            f"REGLAS PEDAGÓGICAS Y ESTRUCTURALES OBLIGATORIAS:\n"
-            f"1. EN CADA FASE CONCEPTUAL, `tutor_says` DEBE EXPLICAR A FONDO: Usa una metáfora intuitiva para explicar el concepto de '{topic}', desglosa la fórmula gramatical explicando por qué cada palabra va en ese orden exacto, y analiza los ejemplos de la pizarra palabra por palabra con errores típicos a evitar. PROHIBIDO decir 'mira la pizarra', 'observa los conceptos' o frases vagas.\n"
-            f"2. Para cada fase especifica `image_style`: 'flat_art', 'comic_scene' o 'concept_art'.\n"
-            f"3. Para cada imagen incluye descripciones en inglés de escenas humanas visuales y educativas. PROHIBIDO fondos blancos vacíos o diagramas abstractos sin personajes. SIN TEXTO NI LETRAS.\n"
-            f"4. Incluye `target_audio_items` con la lista explícita de palabras/oraciones en inglés a escuchar.\n"
-            f"5. {'Explicaciones (tutor_says), pizarra (board_content) y tareas en español con ejemplos en inglés.' if is_a_level else 'Full English immersion.'}\n"
-            f"6. OBLIGATORIO: El contenido debe enseñar ESTRICTAMENTE '{topic}' ({grammar_target}). PROHIBIDO enseñar Present Simple u otro tema ajeno.\n"
-            f"{extra_rule}"
+            f"ESTRUCTURA DE SLIDES (Genera exactamente 4 fases conceptuales en el JSON):\n"
+            f"• Slide 1: MANDATORY CINEMATIC HOOK ('is_hook': true, 'hook_type': 'dilemma', 'interaction_type': 'explanation').\n"
+            f"   - 'tutor_says': Locución intrigante y empática en español (2-3 oraciones) presentando el dilema real sobre '{topic}'.\n"
+            f"   - 'image_prompt': 2D flat vector educational illustration of a person facing a relatable situation about {topic}, no text.\n"
+            f"• Slide 2: MODELO MENTAL Y FUNDAMENTOS ('is_hook': false, 'interaction_type': 'explanation').\n"
+            f"   - 'tutor_says': Metáfora intuitiva profunda explicando el concepto y la regla general de '{topic}'.\n"
+            f"   - 'board_content': Pizarra con fórmulas claras, tokens y 2 oraciones modelo en inglés con traducción.\n"
+            f"   - 'image_prompt': Ilustración 2D de la escena modelo, no text.\n"
+            f"• Slide 3: DESGLOSE GRAMATICAL Y VARIACIONES SINTÁCTICAS ('is_hook': false, 'interaction_type': 'explanation').\n"
+            f"   - 'tutor_says': Desglose paso a paso explicando por qué las palabras van en ese orden exacto.\n"
+            f"   - 'board_content': Reglas ortográficas/morfológicas y patrones sintácticos desglosados.\n"
+            f"• Slide 4: CONTRASTE, PRONUNCIACIÓN Y TRAMPAS COMUNES ('is_hook': false, 'interaction_type': 'explanation').\n"
+            f"   - 'tutor_says': Explicación de los errores típicos que cometen los hispanohablantes y cómo evitarlos.\n"
+            f"   - 'board_content': Duelo de oraciones: ❌ Incorrecto vs ✅ Correcto.\n\n"
+            f"REGLAS OBLIGATORIAS:\n"
+            f"1. {'Explicaciones (tutor_says), pizarra (board_content) y tareas en español con ejemplos en inglés.' if is_a_level else 'Full English immersion.'}\n"
+            f"2. En cada fase incluye 'target_audio_items' con las oraciones modelo en inglés y su traducción.\n"
+            f"3. Prohibido contenido genérico o de otros temas: debe enseñar ESTRICTAMENTE '{topic}' ({grammar_target}).\n"
+            f"Responde estrictamente con JSON con la clave 'phases'."
         )
         try:
             raw = await self._chat(system, user, thinking="disabled")
             data = clean_json_response(raw)
             if "phases" not in data or not isinstance(data.get("phases"), list) or len(data.get("phases", [])) < 3:
-                data = self._build_fallback_lesson(topic, sublevel, is_a_level)
+                data = self._build_fallback_lesson(topic, sublevel, is_a_level, adaptive_plan)
             else:
                 for idx, p in enumerate(data["phases"]):
                     # Ensure phase_number and phase_name exist
@@ -2365,8 +2344,8 @@ class TutorAgent:
                     "english": eng_sentence,
                     "spanish": spa_trans,
                     "parts": first_item.get("parts") or [],
-                    "transformation": s2_spoken.get("transformations", [None])[0],
-                    "contrast": s2_spoken.get("contrasts", [None])[0]
+                    "transformation": (s2_spoken.get("transformations") or [None])[0],
+                    "contrast": (s2_spoken.get("contrasts") or [None])[0]
                 }
             })
 
@@ -2446,7 +2425,7 @@ class TutorAgent:
 
         return timeline
 
-    def _build_fallback_lesson(self, topic: str, sublevel: str, is_a_level: bool) -> dict:
+    def _build_fallback_lesson(self, topic: str, sublevel: str, is_a_level: bool, adaptive_plan: Optional[dict] = None) -> dict:
         """Rich topic-specific lesson generator using curated high-pedagogy catalog."""
         from core.lesson_fallbacks import build_curated_fallback
         data = build_curated_fallback(topic, sublevel, is_a_level)
@@ -2472,15 +2451,15 @@ class TutorAgent:
             p["board_theme"] = "chalkboard_green"
             p["diagram_svg"] = self._resolve_didactic_diagram_svg(p, topic)
             p["grammar_structure"] = self._normalize_grammar_structure(p, topic, sublevel)
-            p["voice_chunks"] = self._build_phase_voice_chunks(p, topic, sublevel)
-            p["storyboard_steps"] = self._build_phase_storyboard(p)
-            p["storyboard_timeline"] = self._build_phase_storyboard_timeline(p, topic, sublevel)
         
         data["topic"] = topic
         data["sublevel"] = sublevel
         data["level"] = sublevel.split(".")[0]
         data["subject"] = "English"
-        return data
+        if adaptive_plan and adaptive_plan.get("phonetic_focus"):
+            data["phonetic_focus"] = adaptive_plan["phonetic_focus"]
+
+        return self._audit_and_sanitize_lesson_content(data, topic, sublevel, adaptive_plan)
 
     def _normalize_spoken_numbers(self, text: str) -> str:
         """Normalizes digit transcriptions like '10', '1', '2' into written English words like 'ten', 'one', 'two'."""

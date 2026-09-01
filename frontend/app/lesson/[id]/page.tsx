@@ -1421,6 +1421,568 @@ function getPhaseStoryboardTimeline(phase: any, topic: string): TimelineStep[] {
   });
 }
 
+function buildFrontendOfflineLesson(topic: string, sublevel: string, lessonId: string) {
+  const low = (topic || '').toLowerCase();
+  let exercises: any[] = [];
+  let modelSentence1 = '';
+  let modelSentenceTrans1 = '';
+  let modelSentence2 = '';
+  let modelSentenceTrans2 = '';
+  let ruleTitle = '';
+  let formulaText = '';
+  let errorWrong = '';
+  let errorCorrect = '';
+  let errorTip = '';
+
+  if (low.includes('routine') || low.includes('rutina') || low.includes('daily') || low.includes('present simple')) {
+    modelSentence1 = 'Mateo wakes up at six in the morning and drinks hot coffee.';
+    modelSentenceTrans1 = 'Mateo se despierta a las seis de la mañana y toma café caliente.';
+    modelSentence2 = 'She always studies English before going to work.';
+    modelSentenceTrans2 = 'Ella siempre estudia inglés antes de ir a trabajar.';
+    ruleTitle = 'Present Simple & 3rd Person (-s/-es)';
+    formulaText = '[ Sujeto ] + [ Verbo (+s/es) ] + [ Complemento de Tiempo ]';
+    errorWrong = 'He wake up early and study every day.';
+    errorCorrect = 'He wakes up early and studies every day.';
+    errorTip = 'En tercera persona singular (He / She / It), añade -s o -es al verbo.';
+    exercises = [
+      {
+        id: 'ex-1',
+        sentence: 'Every weekday, Mateo _____ [wakes up / wake up / waking up] at six in the morning.',
+        options: ['wakes up', 'wake up', 'waking up'],
+        expected_answer: 'wakes up',
+        spanish_translation: 'Cada día entre semana, Mateo se despierta a las seis de la mañana.',
+        image_prompt: 'A person happily turning off an alarm clock with morning sunlight in bedroom, 2D flat vector art, no text',
+        hint: 'Para He/She/It en Present Simple agregamos -s: wakes up.'
+      },
+      {
+        id: 'ex-2',
+        sentence: 'She always _____ [has / have / haves] a healthy breakfast before going to the gym.',
+        options: ['has', 'have', 'haves'],
+        expected_answer: 'has',
+        spanish_translation: 'Ella siempre desayuna saludable antes de ir al gimnasio.',
+        image_prompt: 'A woman enjoying orange juice and toast at a bright breakfast table, 2D vector art, no text',
+        hint: 'Con She, la tercera persona de have es has.'
+      },
+      {
+        id: 'ex-3',
+        sentence: 'We usually _____ [drink / drinks / drinking] hot coffee together at the office.',
+        options: ['drink', 'drinks', 'drinking'],
+        expected_answer: 'drink',
+        spanish_translation: 'Nosotros usualmente tomamos café caliente juntos en la oficina.',
+        image_prompt: 'Coworkers holding ceramic mugs in a modern office breakroom, 2D vector art, no text',
+        hint: 'Con We el verbo se mantiene en forma base.'
+      },
+      {
+        id: 'ex-4',
+        sentence: 'Lucas _____ [goes / go / gos] to the university by subway every morning.',
+        options: ['goes', 'go', 'gos'],
+        expected_answer: 'goes',
+        spanish_translation: 'Lucas va a la universidad en metro todas las mañanas.',
+        image_prompt: 'A student with backpack waiting on a clean subway platform, 2D vector art, no text',
+        hint: 'Los verbos terminados en -o añaden -es en tercera persona: goes.'
+      },
+      {
+        id: 'ex-5',
+        sentence: 'Do you _____ [work / works / working] on weekends or only on weekdays?',
+        options: ['work', 'works', 'working'],
+        expected_answer: 'work',
+        spanish_translation: '¿Trabajas los fines de semana o solo entre semana?',
+        image_prompt: 'A friendly interviewer asking questions in an office, 2D vector art, no text',
+        hint: 'Con el auxiliar Do el verbo va en forma base: work.'
+      },
+      {
+        id: 'ex-6',
+        sentence: 'He _____ [watches / watch / watchs] the evening news after finishing his dinner.',
+        options: ['watches', 'watch', 'watchs'],
+        expected_answer: 'watches',
+        spanish_translation: 'Él mira las noticias nocturnas después de terminar su cena.',
+        image_prompt: 'A man relaxing on a sofa in front of a modern television, 2D vector art, no text',
+        hint: 'Los verbos terminados en -ch añaden -es: watches.'
+      },
+      {
+        id: 'ex-7',
+        sentence: 'My brother _____ [studies / studys / study] English grammar every afternoon.',
+        options: ['studies', 'studys', 'study'],
+        expected_answer: 'studies',
+        spanish_translation: 'Mi hermano estudia gramática inglesa todas las tardes.',
+        image_prompt: 'A young man writing in a notebook at a study desk, 2D vector art, no text',
+        hint: 'Consonante + y cambia a -ies: studies.'
+      },
+      {
+        id: 'ex-8',
+        sentence: "They _____ [don't wake up / doesn't wake up / not wake up] early on Sundays.",
+        options: ["don't wake up", "doesn't wake up", "not wake up"],
+        expected_answer: "don't wake up",
+        spanish_translation: 'Ellos no se despiertan temprano los domingos.',
+        image_prompt: 'A cozy bedroom with sleeping person under blankets on a peaceful morning, 2D vector art, no text',
+        hint: "Para They usamos el auxiliar negativo don't."
+      }
+    ];
+  } else if (low.includes('past continuous') || low.includes('interrupted') || low.includes('was/were')) {
+    modelSentence1 = 'I was cooking dinner in the kitchen when the lights suddenly went out.';
+    modelSentenceTrans1 = 'Estaba cocinando la cena en la cocina cuando de repente se fue la luz.';
+    modelSentence2 = 'While they were walking in the park, it began to rain heavily.';
+    modelSentenceTrans2 = 'Mientras ellos caminaban por el parque, empezó a llover fuerte.';
+    ruleTitle = 'Past Continuous & Interrupted Actions (When / While)';
+    formulaText = '[ Sujeto ] + [ was/were ] + [ Verbo(-ing) ] + [ when + Past Simple ]';
+    errorWrong = 'I was cook dinner when she was call me.';
+    errorCorrect = 'I was cooking dinner when she called me.';
+    errorTip = 'La acción continua lleva was/were + -ing; la que interrumpe va en Past Simple.';
+    exercises = [
+      {
+        id: 'ex-1',
+        sentence: 'I was _____ [cooking / cooked / cook] dinner in the kitchen when the lights suddenly went out.',
+        options: ['cooking', 'cooked', 'cook'],
+        expected_answer: 'cooking',
+        spanish_translation: 'Estaba cocinando la cena en la cocina cuando de repente se fue la luz.',
+        image_prompt: 'A person holding a wooden spoon in a cozy kitchen looking surprised as the lights go off, 2D flat vector art, no text',
+        hint: 'Para la acción continua en el pasado usamos was + verbo con -ing.'
+      },
+      {
+        id: 'ex-2',
+        sentence: 'While we were _____ [walking / walked / walk] through the city park, it began to rain heavily.',
+        options: ['walking', 'walked', 'walk'],
+        expected_answer: 'walking',
+        spanish_translation: 'Mientras estábamos caminando por el parque de la ciudad, empezó a llover fuerte.',
+        image_prompt: 'Two friends walking on a tree-lined park path looking up as rain droplets start falling, 2D vector art, no text',
+        hint: 'Con While we were... la acción de fondo va en gerundio (-ing).'
+      },
+      {
+        id: 'ex-3',
+        sentence: 'David was _____ [driving / drove / drive] home from work when his phone rang.',
+        options: ['driving', 'drove', 'drive'],
+        expected_answer: 'driving',
+        spanish_translation: 'David estaba conduciendo a casa del trabajo cuando sonó su teléfono.',
+        image_prompt: 'A driver focused on a sunset city highway road while a phone on the dashboard lights up, 2D vector art, no text',
+        hint: 'Sujeto singular David + was + verbo con -ing.'
+      },
+      {
+        id: 'ex-4',
+        sentence: "What were you _____ [doing / did / do] at eight o'clock yesterday evening?",
+        options: ['doing', 'did', 'do'],
+        expected_answer: 'doing',
+        spanish_translation: '¿Qué estabas haciendo a las ocho en punto ayer por la noche?',
+        image_prompt: 'A young detective asking questions in a bright living room, 2D vector art, no text',
+        hint: 'En preguntas en pasado continuo: What were you + doing?'
+      },
+      {
+        id: 'ex-5',
+        sentence: 'They were _____ [playing / played / play] soccer in the stadium when the coach arrived.',
+        options: ['playing', 'played', 'play'],
+        expected_answer: 'playing',
+        spanish_translation: 'Ellos estaban jugando fútbol en el estadio cuando llegó el entrenador.',
+        image_prompt: 'Teenagers kicking a soccer ball on a green stadium grass field, 2D vector art, no text',
+        hint: 'Sujeto plural They + were + verbo con -ing.'
+      },
+      {
+        id: 'ex-6',
+        sentence: 'Elena was _____ [studying / studied / study] for her exam while her brother was sleeping.',
+        options: ['studying', 'studied', 'study'],
+        expected_answer: 'studying',
+        spanish_translation: 'Elena estaba estudiando para su examen mientras su hermano dormía.',
+        image_prompt: 'A student studying with books and a desk lamp in a cozy room, 2D vector art, no text',
+        hint: 'Dos acciones continuas paralelas usan was/were + -ing.'
+      },
+      {
+        id: 'ex-7',
+        sentence: 'I _____ [dropped / was dropping / drop] my keys while I was running for the bus.',
+        options: ['dropped', 'was dropping', 'drop'],
+        expected_answer: 'dropped',
+        spanish_translation: 'Se me cayeron las llaves mientras estaba corriendo tras el autobús.',
+        image_prompt: 'A commuter rushing toward a city bus as keys slip onto the sidewalk, 2D vector art, no text',
+        hint: 'La acción puntual que interrumpe va en Past Simple: dropped.'
+      },
+      {
+        id: 'ex-8',
+        sentence: 'She was _____ [reading / read / reads] a novel when the doorbell rang loudly.',
+        options: ['reading', 'read', 'reads'],
+        expected_answer: 'reading',
+        spanish_translation: 'Ella estaba leyendo una novela cuando el timbre sonó fuerte.',
+        image_prompt: 'A woman in an armchair holding a book looking toward the front door, 2D vector art, no text',
+        hint: 'Acción en progreso was reading interrumpida por rang.'
+      }
+    ];
+  } else if (low.includes('past') || low.includes('irregular') || low.includes('did')) {
+    modelSentence1 = 'Yesterday Liam went to the central library and bought a new book.';
+    modelSentenceTrans1 = 'Ayer Liam fue a la biblioteca central y compró un libro nuevo.';
+    modelSentence2 = 'Did you see the beautiful sunset at the beach last night?';
+    modelSentenceTrans2 = '¿Viste el hermoso atardecer en la playa anoche?';
+    ruleTitle = 'Past Simple & Irregular Verbs';
+    formulaText = '[ Sujeto ] + [ Verbo Irregular V2 ] + [ Complemento ]';
+    errorWrong = 'Did you went to the party yesterday?';
+    errorCorrect = 'Did you go to the party yesterday?';
+    errorTip = "Tras el auxiliar Did o didn't, el verbo principal regresa a su forma base pura.";
+    exercises = [
+      {
+        id: 'ex-1',
+        sentence: 'Yesterday morning, Liam _____ [went / go / goes] to the central library to study.',
+        options: ['went', 'go', 'goes'],
+        expected_answer: 'went',
+        spanish_translation: 'Ayer por la mañana, Liam fue a la biblioteca central a estudiar.',
+        image_prompt: 'A young student walking into a modern library carrying a backpack, 2D vector art, no text',
+        hint: 'En pasado afirmativo de go usamos went.'
+      },
+      {
+        id: 'ex-2',
+        sentence: 'Did you _____ [see / saw / seen] the beautiful sunset at the beach last night?',
+        options: ['see', 'saw', 'seen'],
+        expected_answer: 'see',
+        spanish_translation: '¿Viste el hermoso atardecer en la playa anoche?',
+        image_prompt: 'Two friends watching a golden sunset over ocean waves, 2D vector art, no text',
+        hint: 'Tras el auxiliar Did el verbo va en forma base: see.'
+      },
+      {
+        id: 'ex-3',
+        sentence: "We _____ [didn't buy / didn't bought / not buy] the tickets because we had no cash.",
+        options: ["didn't buy", "didn't bought", 'not buy'],
+        expected_answer: "didn't buy",
+        spanish_translation: 'No compramos los boletos porque no teníamos efectivo.',
+        image_prompt: 'A couple checking wallets in front of a ticket counter, 2D vector art, no text',
+        hint: "Con didn't el verbo va en forma base: buy."
+      },
+      {
+        id: 'ex-4',
+        sentence: 'Lucas _____ [ate / eat / eats] delicious tacos with his family last weekend.',
+        options: ['ate', 'eat', 'eats'],
+        expected_answer: 'ate',
+        spanish_translation: 'Lucas comió deliciosos tacos con su familia el fin de semana pasado.',
+        image_prompt: 'A smiling family gathered around a dining table enjoying tacos, 2D vector art, no text',
+        hint: 'El pasado simple de eat es ate.'
+      },
+      {
+        id: 'ex-5',
+        sentence: 'Where did you _____ [travel / traveled / travels] during your summer vacation?',
+        options: ['travel', 'traveled', 'travels'],
+        expected_answer: 'travel',
+        spanish_translation: '¿A dónde viajaste durante tus vacaciones de verano?',
+        image_prompt: 'A traveler looking at departure flight boards in a modern airport, 2D vector art, no text',
+        hint: 'En preguntas con Where did you... el verbo va en forma base.'
+      },
+      {
+        id: 'ex-6',
+        sentence: 'She _____ [wrote / write / writes] a warm letter to her grandmother in Spain.',
+        options: ['wrote', 'write', 'writes'],
+        expected_answer: 'wrote',
+        spanish_translation: 'Ella le escribió una carta a su abuela en España.',
+        image_prompt: 'A person writing with a pen at a wooden desk with flowers, 2D vector art, no text',
+        hint: 'El pasado simple de write es wrote.'
+      },
+      {
+        id: 'ex-7',
+        sentence: "They _____ [bought / buy / buyed] a new bicycle for their daughter's birthday.",
+        options: ['bought', 'buy', 'buyed'],
+        expected_answer: 'bought',
+        spanish_translation: 'Compraron una nueva bicicleta para el cumpleaños de su hija.',
+        image_prompt: 'Parents surprising a happy girl with a shiny red bicycle, 2D vector art, no text',
+        hint: 'El pasado irregular de buy es bought.'
+      },
+      {
+        id: 'ex-8',
+        sentence: 'I _____ [lost / lose / loses] my office badge yesterday, but I found it today.',
+        options: ['lost', 'lose', 'loses'],
+        expected_answer: 'lost',
+        spanish_translation: 'Perdí mi credencial de la oficina ayer, pero la encontré hoy.',
+        image_prompt: 'An office worker looking with relief at an ID badge on a desk, 2D vector art, no text',
+        hint: 'El pasado simple de lose es lost.'
+      }
+    ];
+  } else if (low.includes('conditional') || low.includes('condicional') || low.includes('if')) {
+    modelSentence1 = 'If you practice speaking every day, your fluency will improve rapidly.';
+    modelSentenceTrans1 = 'Si practicas hablar todos los días, tu fluidez mejorará rápidamente.';
+    modelSentence2 = 'If it rains tomorrow morning, we will stay at home and study.';
+    modelSentenceTrans2 = 'Si llueve mañana por la mañana, nos quedaremos en casa a estudiar.';
+    ruleTitle = 'Conditionals: Real Cause & Effect';
+    formulaText = '[ If + Present Simple ], [ Sujeto + will + Verbo Base ]';
+    errorWrong = 'If you will study hard, you pass the exam.';
+    errorCorrect = 'If you study hard, you will pass the exam.';
+    errorTip = 'En la cláusula con If usamos Present Simple; el will va en el resultado.';
+    exercises = [
+      {
+        id: 'ex-1',
+        sentence: 'If you _____ [study / will study / studied] every day, your English will improve rapidly.',
+        options: ['study', 'will study', 'studied'],
+        expected_answer: 'study',
+        spanish_translation: 'Si estudias todos los días, tu inglés mejorará rápidamente.',
+        image_prompt: 'A dedicated student studying at a bright desk with books, 2D vector art, no text',
+        hint: 'Tras If usamos Present Simple: study.'
+      },
+      {
+        id: 'ex-2',
+        sentence: 'If it rains tomorrow, we _____ [will stay / stay / stayed] at home.',
+        options: ['will stay', 'stay', 'stayed'],
+        expected_answer: 'will stay',
+        spanish_translation: 'Si llueve mañana, nos quedaremos en casa.',
+        image_prompt: 'Raindrops on a cozy window looking at a warm living room, 2D vector art, no text',
+        hint: 'La consecuencia futura lleva will + verbo base.'
+      },
+      {
+        id: 'ex-3',
+        sentence: 'She will pass the exam if she _____ [works / will work / worked] hard.',
+        options: ['works', 'will work', 'worked'],
+        expected_answer: 'works',
+        spanish_translation: 'Ella aprobará el examen si trabaja duro.',
+        image_prompt: 'A happy student holding an exam with top marks, 2D vector art, no text',
+        hint: 'En la cláusula If con She agregamos -s: works.'
+      },
+      {
+        id: 'ex-4',
+        sentence: "If you don't leave now, you _____ [will miss / miss / missed] the morning train.",
+        options: ['will miss', 'miss', 'missed'],
+        expected_answer: 'will miss',
+        spanish_translation: 'Si no sales ahora, perderás el tren de la mañana.',
+        image_prompt: 'A person checking their watch rushing toward a train platform, 2D vector art, no text',
+        hint: 'Consecuencia futura: will miss.'
+      },
+      {
+        id: 'ex-5',
+        sentence: 'What _____ [will you do / do you / you will do] if it is sunny this Saturday?',
+        options: ['will you do', 'do you', 'you will do'],
+        expected_answer: 'will you do',
+        spanish_translation: '¿Qué harás si está soleado este sábado?',
+        image_prompt: 'Friends planning an outdoor picnic under bright blue skies, 2D vector art, no text',
+        hint: 'Pregunta en First Conditional: What will you do if...?'
+      },
+      {
+        id: 'ex-6',
+        sentence: 'If they offer you the job, _____ [will you accept / do you accept / you accept] it?',
+        options: ['will you accept', 'do you accept', 'you accept'],
+        expected_answer: 'will you accept',
+        spanish_translation: 'Si te ofrecen el trabajo, ¿lo aceptarás?',
+        image_prompt: 'A professional shaking hands in a business interview, 2D vector art, no text',
+        hint: 'Pregunta condicional: will you accept.'
+      },
+      {
+        id: 'ex-7',
+        sentence: 'I _____ [will call / call / called] you as soon as I arrive at the airport.',
+        options: ['will call', 'call', 'called'],
+        expected_answer: 'will call',
+        spanish_translation: 'Te llamaré tan pronto como llegue al aeropuerto.',
+        image_prompt: 'A traveler holding a smartphone inside an airport terminal, 2D vector art, no text',
+        hint: 'Acción principal futura: will call.'
+      },
+      {
+        id: 'ex-8',
+        sentence: "If we don't hurry, the store _____ [will close / closes / closed] before we arrive.",
+        options: ['will close', 'closes', 'closed'],
+        expected_answer: 'will close',
+        spanish_translation: 'Si no nos apresuramos, la tienda cerrará antes de que lleguemos.',
+        image_prompt: 'A couple walking fast down a city shopping street at dusk, 2D vector art, no text',
+        hint: 'Consecuencia futura: will close.'
+      }
+    ];
+  } else {
+    modelSentence1 = `We apply ${topic} in daily conversations with precision and confidence.`;
+    modelSentenceTrans1 = `Aplicamos ${topic} en conversaciones diarias con precisión y confianza.`;
+    modelSentence2 = `She practices speaking and applies ${topic} in real situations.`;
+    modelSentenceTrans2 = `Ella practica hablar y aplica ${topic} en situaciones reales.`;
+    ruleTitle = `Estructura Nuclear: ${topic}`;
+    formulaText = `[ Sujeto ] + [ ${topic} Structure ] + [ Complemento ]`;
+    errorWrong = `He use ${topic} without following the correct syntax.`;
+    errorCorrect = `He uses ${topic} following the correct syntax.`;
+    errorTip = `Mantén siempre el orden sintáctico natural y la concordancia de ${topic}.`;
+    exercises = [
+      {
+        id: 'ex-1',
+        sentence: `When speaking about ${topic}, you should always _____ [practice / practicing / practiced] with confidence.`,
+        options: ['practice', 'practicing', 'practiced'],
+        expected_answer: 'practice',
+        spanish_translation: `Al hablar sobre ${topic}, siempre debes practicar con confianza.`,
+        image_prompt: `A student practicing speaking English in a modern study lounge, 2D vector art, no text`,
+        hint: `Tras should usamos el verbo en forma base: practice.`
+      },
+      {
+        id: 'ex-2',
+        sentence: `She _____ [speaks / speak / speaking] clearly when applying ${topic} in her conversations.`,
+        options: ['speaks', 'speak', 'speaking'],
+        expected_answer: 'speaks',
+        spanish_translation: `Ella habla claramente cuando aplica ${topic} en sus conversaciones.`,
+        image_prompt: `A woman speaking in a friendly discussion with colleagues, 2D vector art, no text`,
+        hint: `Tercera persona singular: speaks.`
+      },
+      {
+        id: 'ex-3',
+        sentence: `They _____ [understand / understands / understanding] the core concepts of this topic very well.`,
+        options: ['understand', 'understands', 'understanding'],
+        expected_answer: 'understand',
+        spanish_translation: `Ellos entienden muy bien los conceptos clave de este tema.`,
+        image_prompt: `A team of students smiling while reviewing study cards, 2D vector art, no text`,
+        hint: `Con They usamos la forma base: understand.`
+      },
+      {
+        id: 'ex-4',
+        sentence: `I _____ [learned / learn / learning] how to use ${topic} correctly in my English class.`,
+        options: ['learned', 'learn', 'learning'],
+        expected_answer: 'learned',
+        spanish_translation: `Aprendí cómo usar ${topic} correctamente en mi clase de inglés.`,
+        image_prompt: `A learner taking structured notes in a colorful notebook, 2D vector art, no text`,
+        hint: `Acción completada en pasado: learned.`
+      },
+      {
+        id: 'ex-5',
+        sentence: `Can you _____ [explain / explains / explaining] this structure in your own words?`,
+        options: ['explain', 'explains', 'explaining'],
+        expected_answer: 'explain',
+        spanish_translation: `¿Puedes explicar esta estructura con tus propias palabras?`,
+        image_prompt: `A teacher gesturing encouragingly to a student, 2D vector art, no text`,
+        hint: `Tras el modal Can usamos forma base: explain.`
+      },
+      {
+        id: 'ex-6',
+        sentence: `We always _____ [review / reviews / reviewing] the key grammar rules before the quiz.`,
+        options: ['review', 'reviews', 'reviewing'],
+        expected_answer: 'review',
+        spanish_translation: `Nosotros siempre repasamos las reglas gramaticales clave antes del quiz.`,
+        image_prompt: `Students reviewing a colorful whiteboard with formula cards, 2D vector art, no text`,
+        hint: `Con We usamos review.`
+      },
+      {
+        id: 'ex-7',
+        sentence: `David _____ [writes / write / writing] down all the model examples in his notebook.`,
+        options: ['writes', 'write', 'writing'],
+        expected_answer: 'writes',
+        spanish_translation: `David anota todos los ejemplos modelo en su cuaderno.`,
+        image_prompt: `A student writing neatly with a pen on paper, 2D vector art, no text`,
+        hint: `Tercera persona singular David: writes.`
+      },
+      {
+        id: 'ex-8',
+        sentence: `It is essential to _____ [communicate / communicates / communicating] your ideas clearly.`,
+        options: ['communicate', 'communicates', 'communicating'],
+        expected_answer: 'communicate',
+        spanish_translation: `Es fundamental comunicar tus ideas con claridad.`,
+        image_prompt: `People conversing in an international conference room, 2D vector art, no text`,
+        hint: `Tras to usamos infinitivo base: communicate.`
+      }
+    ];
+  }
+
+  return {
+    id: lessonId || `lesson-${Date.now()}`,
+    title: topic,
+    sublevel: sublevel,
+    phases: [
+      {
+        phase_number: 1,
+        phase_name: `1. Situación y Gancho Didáctico: ${topic}`,
+        is_hook: true,
+        hook_type: 'dilemma',
+        tutor_says: `¡Hola! Bienvenido a tu clase sobre ${topic}. Hoy aprenderemos las fórmulas y expresiones auténticas para que puedas comunicarte con total seguridad y naturalidad. Fíjate en la situación de apertura.`,
+        board_content: `📌 TEMA CENTRAL: ${topic.toUpperCase()}\n\n• Nivel CEFR: ${sublevel}\n• Enfoque: Dominio comunicativo y gramática activa.\n\n👉 Oración Modelo Principal:\n"${modelSentence1}"\n(Traducción: ${modelSentenceTrans1})`,
+        image_style: 'comic_scene',
+        image_prompt: `Clean flat 2D vector educational illustration of a relatable human scene about ${topic}, vibrant colors, warm lighting, strictly no text, no words`,
+        target_audio_items: [
+          { english: modelSentence1, translation: modelSentenceTrans1, label: 'Oración Principal' },
+          { english: modelSentence2, translation: modelSentenceTrans2, label: 'Ejemplo Modelo' }
+        ],
+        student_task: null,
+        expected_answer: null,
+        interaction_type: 'explanation'
+      },
+      {
+        phase_number: 2,
+        phase_name: `2. Modelo Mental y Fundamentos`,
+        is_hook: false,
+        tutor_says: `Comprender la estructura detrás de ${topic} es muy sencillo si piensas en las conexiones entre las palabras. Observa la fórmula y cómo cada término cumple un rol indispensable en la frase.`,
+        board_content: `⚡ ${ruleTitle.toUpperCase()}:\n\n• Fórmula: ${formulaText}\n\n👉 Ejemplo Modelo 1:\n"${modelSentence1}"\n\n👉 Ejemplo Modelo 2:\n"${modelSentence2}"\n\n📌 Regla de oro: ${errorTip}`,
+        image_style: 'flat_art',
+        image_prompt: `Clean 2D vector educational graphic of grammar structure flow with colorful cards and connectors, strictly no text, no words`,
+        target_audio_items: [
+          { english: modelSentence1, translation: modelSentenceTrans1, label: 'Estructura Clave' },
+          { english: modelSentence2, translation: modelSentenceTrans2, label: 'Ejemplo 2' }
+        ],
+        grammar_structure: {
+          title: ruleTitle,
+          formula: formulaText,
+          formula_tokens: [
+            { role: 'Sujeto', pattern: 'I / You / He / She / We / They', color: 'blue' },
+            { role: 'Estructura', pattern: topic, color: 'purple' },
+            { role: 'Complemento', pattern: 'Context / Time / Object', color: 'emerald' }
+          ],
+          explanation: `Aplica la regla de ${topic} respetando siempre la posición sintáctica de cada término.`,
+          example_breakdowns: [
+            {
+              english: modelSentence1,
+              spanish: modelSentenceTrans1,
+              parts: [
+                { role: 'Sujeto', text: modelSentence1.split(' ')[0] || 'I', color: 'blue' },
+                { role: 'Estructura', text: topic.slice(0, 20), color: 'purple' }
+              ]
+            }
+          ],
+          tips: errorTip
+        },
+        student_task: null,
+        expected_answer: null,
+        interaction_type: 'explanation'
+      },
+      {
+        phase_number: 3,
+        phase_name: `3. Reto de Pronunciación y Ritmo de Frase`,
+        is_hook: false,
+        tutor_says: `Es momento de entrenar tu pronunciación y fluidez oral. Escucha atentamente la oración modelo y graba tu voz con el micrófono conectando las palabras con ritmo natural.`,
+        board_content: `🗣️ RETO FONÉTICO:\n\n• "${modelSentence1}"\n(Traducción: ${modelSentenceTrans1})\n\nClave de articulación:\n• Conecta las palabras con ritmo continuo\n• Mantén el acento en las palabras de contenido`,
+        image_style: 'comic_scene',
+        image_prompt: `Clean 2D vector illustration of a student speaking into a studio microphone with headphones on, soundwaves on screen, strictly no text, no words`,
+        target_audio_items: [
+          { english: modelSentence1, translation: modelSentenceTrans1, label: 'Práctica Oral' }
+        ],
+        student_task: `Pronuncia en voz alta: "${modelSentence1}"`,
+        expected_answer: modelSentence1,
+        interaction_type: 'pronunciation'
+      },
+      {
+        phase_number: 4,
+        phase_name: `4. Detección y Corrección de Errores Típicos`,
+        is_hook: false,
+        tutor_says: `Analicemos el error más común que cometen los hispanohablantes al usar ${topic}. Decimos "${errorCorrect}" y nunca "${errorWrong}". Observa el duelo de oraciones en la pizarra y resuelve el desafío.`,
+        board_content: `⚔️ DUELO DE CONCEPTOS: EVITA ESTE ERROR\n\n❌ Incorrecto: "${errorWrong}"\n✅ Correcto: "${errorCorrect}"\n\n📌 Explicación: ${errorTip}`,
+        image_style: 'concept_art',
+        image_prompt: `Clean 2D educational graphic of a chalkboard with green checkmarks and red cross highlights, strictly no text, no words`,
+        target_audio_items: [
+          { english: errorCorrect, translation: 'Oración corregida', label: 'Frase Correcta' }
+        ],
+        student_task: `Corrige la oración: "${errorWrong}"`,
+        expected_answer: errorCorrect,
+        interaction_type: 'error_correction'
+      },
+      {
+        phase_number: 5,
+        phase_name: `5. Desafío Práctico: Aplica ${topic}`,
+        is_hook: false,
+        is_practice_slide: true,
+        interaction_type: 'quiz',
+        exercises: exercises,
+        tutor_says: `¡Excelente progreso! Ahora pondremos a prueba tu dominio con oraciones completas contextualizadas. Observa la imagen de cada situación, completa el espacio con la opción correcta y practica diciendo la frase completa con tu micrófono.`,
+        board_content: exercises.map((ex, i) => `${i + 1}. ${ex.sentence}\n   Opciones: ${(ex.options || []).join(', ')}\n   💡 ${ex.spanish_translation}\n`).join('\n'),
+        image_style: 'flat_art',
+        image_prompt: `Flat 2D vector educational illustration of an engaging study session with flashcards, vibrant colors, strictly no text`,
+        target_audio_items: exercises.slice(0, 3).map((ex, i) => ({
+          english: ex.sentence.replace('_____', ex.expected_answer),
+          translation: ex.spanish_translation,
+          label: `Ejercicio ${i + 1}`
+        })),
+        student_task: `Resuelve los desafíos de oraciones completas y evalúa tu pronunciación con el micrófono.`,
+        expected_answer: exercises[0]?.expected_answer || 'Complete the sentence'
+      },
+      {
+        phase_number: 6,
+        phase_name: `6. Resumen y Dominio: ${topic}`,
+        is_hook: false,
+        tutor_says: `¡Felicitaciones! Has completado tu clase sobre ${topic}. Hoy dominaste las estructuras fundamentales, evitaste los errores comunes y practicaste oraciones reales. ¡Continúa con la práctica de lectura y los juegos!`,
+        board_content: `🎉 LOGRO ALCANZADO: ${topic.toUpperCase()}\n\n✔ Estructura dominada con precisión\n✔ Pronunciación fluida entrenada\n✔ Ejercicios interactivos completados con éxito`,
+        image_style: 'comic_scene',
+        image_prompt: `Clean 2D vector illustration of celebration and progress in English learning with golden stars and trophy, strictly no text, no words`,
+        target_audio_items: [
+          { english: `I can use ${topic} confidently in real English conversations.`, translation: `Puedo usar ${topic} con seguridad en conversaciones reales en inglés.`, label: 'Frase de Cierre' }
+        ],
+        student_task: `Di la frase final: "I can use ${topic} confidently in real English conversations."`,
+        expected_answer: `I can use ${topic} confidently in real English conversations.`,
+        interaction_type: 'pronunciation'
+      }
+    ]
+  };
+}
+
 export default function LessonPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -1867,97 +2429,7 @@ export default function LessonPage() {
         }
 
         if (!data || !data.phases || data.phases.length === 0) {
-          data = {
-            id: lessonId || `fallback-${Date.now()}`,
-            title: topicParam || 'English Practice',
-            sublevel: sublevelParam || 'A1.1',
-            phases: [
-              {
-                phase_number: 1,
-                phase_name: '1. Activación y Warm-up',
-                tutor_says: `¡Hola! Bienvenido a tu clase de inglés sobre ${topicParam}. Hoy aprenderemos las estructuras y expresiones fundamentales para comunicarte con total seguridad.`,
-                board_content: `📌 Tema: ${topicParam}\n\n• Objetivo: Dominar el vocabulario y las estructuras clave.\n• Escucha atentamente las frases y repite conmigo.`,
-                image_style: 'comic_scene',
-                image_prompt: `Clean flat 2D vector educational illustration of a friendly teacher introducing ${topicParam} in a modern classroom, no text, no words.`,
-                target_audio_items: [
-                  { english: `Hello, let's learn about ${topicParam}`, translation: `Hola, aprendamos sobre ${topicParam}`, label: 'Saludo y Objetivo' }
-                ],
-                student_task: null,
-                expected_answer: null,
-                interaction_type: 'explanation',
-              },
-              {
-                phase_number: 2,
-                phase_name: '2. Repaso y Fundamentos',
-                tutor_says: `Antes de profundizar, repasemos las bases que conectan con este tema. Recuerda que la pronunciación clara es la clave de la fluidez.`,
-                board_content: `💡 Fundamento Gramatical:\n\n• Sujeto + Verbo + Complemento\n• Conexión sonora fluida entre palabras.`,
-                image_style: 'flat_art',
-                image_prompt: `Clean 2D vector illustration of connecting puzzle pieces representing language concepts, no text, no words.`,
-                target_audio_items: [
-                  { english: 'I practice English every single day.', translation: 'Practico inglés todos los días.', label: 'Frase de Repaso' }
-                ],
-                student_task: 'Repite la oración en voz alta con buena pronunciación.',
-                expected_answer: 'I practice English every single day.',
-                interaction_type: 'pronunciation',
-              },
-              {
-                phase_number: 3,
-                phase_name: '3. Núcleo Gramatical y Estructura',
-                tutor_says: `Ahora entremos al corazón del tema. Observa cómo se organizan los elementos en la oración.`,
-                board_content: `⚡ Regla Central:\n\n• Presta atención a las fórmulas y contrastes.\n• Conecta las palabras con ritmo natural.`,
-                image_style: 'flat_art',
-                image_prompt: `Clean 2D vector graphic showing structured language flow with colorful tokens, no text, no words.`,
-                target_audio_items: [
-                  { english: 'This is the main rule we follow.', translation: 'Esta es la regla principal que seguimos.', label: 'Estructura Clave' }
-                ],
-                student_task: null,
-                expected_answer: null,
-                interaction_type: 'explanation',
-              },
-              {
-                phase_number: 4,
-                phase_name: '4. Análisis y Desconstrucción',
-                tutor_says: `Analicemos los errores típicos para que nunca caigas en ellos.`,
-                board_content: `🔍 Desglose:\n\n• Error común: traducción literal palabra por palabra.\n• Acierto: pensar en bloques completos.`,
-                image_style: 'comic_scene',
-                image_prompt: `Clean 2D vector educational comic of a student analyzing a chart on a smart board, no text, no words.`,
-                target_audio_items: [
-                  { english: 'Notice how the words connect together.', translation: 'Nota cómo las palabras se conectan juntas.', label: 'Análisis' }
-                ],
-                student_task: null,
-                expected_answer: null,
-                interaction_type: 'explanation',
-              },
-              {
-                phase_number: 5,
-                phase_name: '5. Práctica Guiada',
-                tutor_says: `Es tu turno de practicar. Repite la oración modelo con confianza.`,
-                board_content: `🎯 Práctica Guiada:\n\n• Di la oración en voz alta.\n• Mantén la entonación y el acento correctos.`,
-                image_style: 'flat_art',
-                image_prompt: `Clean 2D vector educational graphic of an interactive microphone and sound waves, no text, no words.`,
-                target_audio_items: [
-                  { english: 'I can speak clearly and confidently.', translation: 'Puedo hablar clara y seguramente.', label: 'Práctica' }
-                ],
-                student_task: 'Pronuncia la oración: "I can speak clearly and confidently."',
-                expected_answer: 'I can speak clearly and confidently.',
-                interaction_type: 'pronunciation',
-              },
-              {
-                phase_number: 6,
-                phase_name: '6. Producción y Cierre',
-                tutor_says: `¡Excelente trabajo hoy! Has completado la lección. Repite la frase final para consolidar tu aprendizaje.`,
-                board_content: `🏆 Cierre y Consolidación:\n\n• ¡Objetivo alcanzado con éxito!\n• Sigue practicando a diario.`,
-                image_style: 'comic_scene',
-                image_prompt: `Clean 2D vector illustration of celebration and progress in English learning with stars, no text, no words.`,
-                target_audio_items: [
-                  { english: 'I am ready to speak English fluently.', translation: 'Estoy listo/a para hablar inglés con fluidez.', label: 'Frase de Cierre' }
-                ],
-                student_task: 'Di la frase final: "I am ready to speak English fluently."',
-                expected_answer: 'I am ready to speak English fluently.',
-                interaction_type: 'pronunciation',
-              }
-            ],
-          };
+          data = buildFrontendOfflineLesson(topicParam || 'English Practice', sublevelParam || 'A1.1', lessonId || `fallback-${Date.now()}`);
         }
 
         // 🛡️ Ensure any lesson loaded from Cloud/Supabase ALWAYS has clean explanation phases and practice slide strictly at the end

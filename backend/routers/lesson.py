@@ -61,7 +61,7 @@ async def generate_adaptive_lesson(
     except Exception as e:
         logger.warning(f"Adaptive lesson generation fallback triggered ({e}) for {topic}")
         is_a_level = sublevel.startswith("A1") or sublevel.startswith("A2")
-        script = agent._build_fallback_lesson(topic, sublevel, is_a_level)
+        script = agent._build_fallback_lesson(topic, sublevel, is_a_level, adaptive_plan)
         script["archetype"] = adaptive_plan.get("archetype", "practice")
         script["phonetic_focus"] = adaptive_plan.get("phonetic_focus", {})
 

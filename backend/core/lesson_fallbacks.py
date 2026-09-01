@@ -1651,6 +1651,142 @@ def _build_a1_2_integration_fallback(sublevel: str) -> dict:
     }
 
 
+def _derive_topic_sentence_models(topic: str, grammar_core: str, vocab_core: str, sublevel: str) -> dict:
+    """Generates authentic, highly contextualized CEFR sentence models and typical errors based on topic."""
+    low = f"{topic} {grammar_core}".lower()
+    
+    if any(k in low for k in ["routine", "rutina", "daily", "present simple", "habit", "third person"]):
+        return {
+            "model_1": "Mateo wakes up at six in the morning and drinks hot coffee.",
+            "model_trans_1": "Mateo se despierta a las seis de la mañana y toma café caliente.",
+            "model_2": "She always studies English before going to work.",
+            "model_trans_2": "Ella siempre estudia inglés antes de ir a trabajar.",
+            "err_wrong": "He wake up early and study every day.",
+            "err_correct": "He wakes up early and studies every day.",
+            "err_tip": "En tercera persona (He / She / It), agregamos -s o -es al verbo en presente simple.",
+            "dialogue_q": "What time do you usually wake up on weekdays?",
+            "dialogue_a": "I usually wake up at seven o'clock and have breakfast.",
+            "formula_pattern": "Sujeto + Verbo(+-s) + Complemento",
+            "formula_role_pattern": "wake up / wakes up / works / studies"
+        }
+    elif any(k in low for k in ["past continuous", "interrupted", "was/were +", "while"]):
+        return {
+            "model_1": "I was cooking dinner in the kitchen when the lights suddenly went out.",
+            "model_trans_1": "Estaba cocinando la cena en la cocina cuando de repente se fue la luz.",
+            "model_2": "While they were walking in the park, it began to rain heavily.",
+            "model_trans_2": "Mientras ellos caminaban por el parque, empezó a llover fuerte.",
+            "err_wrong": "I was cook dinner when she was call me.",
+            "err_correct": "I was cooking dinner when she called me.",
+            "err_tip": "La acción continua lleva 'was/were + -ing', y la acción que interrumpe va en Past Simple.",
+            "dialogue_q": "What were you doing at eight o'clock yesterday evening?",
+            "dialogue_a": "I was watching an interesting movie with my family.",
+            "formula_pattern": "Sujeto + was/were + Verbo(-ing) + when + Past Simple",
+            "formula_role_pattern": "was cooking / were walking / was studying"
+        }
+    elif any(k in low for k in ["present perfect", "experience", "have you ever"]):
+        return {
+            "model_1": "I have visited three different countries in Europe this year.",
+            "model_trans_1": "He visitado tres países diferentes en Europa este año.",
+            "model_2": "She has worked at this international company for five years.",
+            "model_trans_2": "Ella ha trabajado en esta empresa internacional durante cinco años.",
+            "err_wrong": "I have went to London last summer.",
+            "err_correct": "I have been to London / I went to London last summer.",
+            "err_tip": "No uses fechas específicas pasadas (last summer) con Present Perfect; usa Participio V3 (been/worked).",
+            "dialogue_q": "Have you ever traveled to an English-speaking country?",
+            "dialogue_a": "Yes, I have traveled to Canada and it was wonderful.",
+            "formula_pattern": "Sujeto + have/has + Participio (V3) + Complemento",
+            "formula_role_pattern": "have visited / has worked / have seen"
+        }
+    elif any(k in low for k in ["conditional", "condicional", "if +"]):
+        return {
+            "model_1": "If you practice speaking every single day, your fluency will improve rapidly.",
+            "model_trans_1": "Si practicas hablar todos los días, tu fluidez mejorará rápidamente.",
+            "model_2": "If it rains tomorrow morning, we will stay at home and read.",
+            "model_trans_2": "Si llueve mañana por la mañana, nos quedaremos en casa a leer.",
+            "err_wrong": "If you will study hard, you pass the exam.",
+            "err_correct": "If you study hard, you will pass the exam.",
+            "err_tip": "En la cláusula con 'If' usamos Present Simple; el 'will' va en la cláusula de resultado.",
+            "dialogue_q": "What will you do if the weather is sunny this weekend?",
+            "dialogue_a": "If the weather is sunny, I will go cycling in the countryside.",
+            "formula_pattern": "If + Sujeto + Present Simple, Sujeto + will + Verbo Base",
+            "formula_role_pattern": "practice -> will improve / rains -> will stay"
+        }
+    elif any(k in low for k in ["passive", "pasiva"]):
+        return {
+            "model_1": "English is spoken by millions of people across the entire world.",
+            "model_trans_1": "El inglés es hablado por millones de personas en todo el mundo.",
+            "model_2": "The new bridge was built by experienced engineers last year.",
+            "model_trans_2": "El nuevo puente fue construido por ingenieros experimentados el año pasado.",
+            "err_wrong": "The report wrote by the manager yesterday.",
+            "err_correct": "The report was written by the manager yesterday.",
+            "err_tip": "La voz pasiva siempre requiere el verbo 'to be' en el tiempo correcto + Participio Pasado (V3).",
+            "dialogue_q": "How is coffee produced in Latin America?",
+            "dialogue_a": "Coffee beans are harvested by hand and exported worldwide.",
+            "formula_pattern": "Objeto + to be + Participio (V3) + (by Agente)",
+            "formula_role_pattern": "is spoken / was built / are harvested"
+        }
+    elif any(k in low for k in ["phrasal", "particle", "out", "up", "off", "on"]):
+        return {
+            "model_1": "We need to find out what happened before making a final decision.",
+            "model_trans_1": "Necesitamos averiguar qué ocurrió antes de tomar una decisión final.",
+            "model_2": "He turned down the job offer because the salary was too low.",
+            "model_trans_2": "Él rechazó la oferta de trabajo porque el salario era muy bajo.",
+            "err_wrong": "I ran of sugar this morning.",
+            "err_correct": "I ran out of sugar this morning.",
+            "err_tip": "Las partículas espaciales alteran el significado del verbo; 'run out of' significa agotarse.",
+            "dialogue_q": "How do you figure out complex problems at work?",
+            "dialogue_a": "I break them down into small steps and work through them.",
+            "formula_pattern": "Sujeto + Verbo + Partícula + Complemento",
+            "formula_role_pattern": "find out / turn down / run out of / figure out"
+        }
+    elif any(k in low for k in ["modal", "advice", "obligation", "should", "must", "have to"]):
+        return {
+            "model_1": "You should drink plenty of water and rest when you feel tired.",
+            "model_trans_1": "Deberías beber abundante agua y descansar cuando te sientas cansado.",
+            "model_2": "Students must turn off their mobile phones during the official exam.",
+            "model_trans_2": "Los estudiantes deben apagar sus teléfonos móviles durante el examen oficial.",
+            "err_wrong": "You should to see a doctor immediately.",
+            "err_correct": "You should see a doctor immediately.",
+            "err_tip": "Los verbos modales (should, must, can) van seguidos directamente por el verbo base sin 'to'.",
+            "dialogue_q": "What should I do to improve my English listening skills?",
+            "dialogue_a": "You should listen to English podcasts and audiobooks every day.",
+            "formula_pattern": "Sujeto + Modal (should/must) + Verbo Base (V1) + Complemento",
+            "formula_role_pattern": "should drink / must turn off / have to practice"
+        }
+    elif any(k in low for k in ["future", "going to", "will"]):
+        return {
+            "model_1": "I am going to visit my grandparents in the countryside this weekend.",
+            "model_trans_1": "Voy a visitar a mis abuelos en el campo este fin de semana.",
+            "model_2": "I think artificial intelligence will transform education in the future.",
+            "model_trans_2": "Creo que la inteligencia artificial transformará la educación en el futuro.",
+            "err_wrong": "I going to travel to London next month.",
+            "err_correct": "I am going to travel to London next month.",
+            "err_tip": "Con 'be going to' es obligatorio incluir la forma de 'to be' (am/is/are).",
+            "dialogue_q": "What are you going to do after this English class?",
+            "dialogue_a": "I am going to practice my pronunciation and review the notes.",
+            "formula_pattern": "Sujeto + be (am/is/are) + going to + Verbo Base",
+            "formula_role_pattern": "am going to visit / is going to study / will transform"
+        }
+    else:
+        # High quality CEFR default
+        is_b = sublevel.startswith("B1") or sublevel.startswith("B2")
+        v_first = vocab_core.split(",")[0].strip() if vocab_core else "communication"
+        g_first = grammar_core.split(",")[0].strip() if grammar_core else topic
+        return {
+            "model_1": f"In daily communication, we apply {g_first.lower()} with total accuracy.",
+            "model_trans_1": f"En la comunicación cotidiana, aplicamos {g_first.lower()} con total precisión.",
+            "model_2": f"She demonstrates strong command of {v_first.lower()} in her conversations.",
+            "model_trans_2": f"Ella demuestra un sólido dominio de {v_first.lower()} en sus conversaciones.",
+            "err_wrong": f"He explain the rule to me without respect the grammar structure.",
+            "err_correct": f"He explains the rule to me following the correct grammar structure.",
+            "err_tip": f"Respeta siempre la concordancia sintáctica y los patrones de {topic}.",
+            "dialogue_q": f"How do you effectively use {topic.lower()} in real life?",
+            "dialogue_a": f"I practice applying the core structure in everyday English conversations.",
+            "formula_pattern": f"Sujeto + {g_first} + Complemento",
+            "formula_role_pattern": f"{g_first} / {v_first}"
+        }
+
+
 def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
     """Dynamically builds an authentic pedagogical 6-phase lesson from any CURRICULUM_GRAPH class node."""
     topic = node.get("topic", "English Lesson")
@@ -1661,24 +1797,17 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
     first_grammar_rule = grammar_core.split(",")[0].strip() if grammar_core else topic
     first_vocab = vocab_core.split(",")[0].strip() if vocab_core else "everyday situations"
 
-    # Contextual authentic sentence models based on CEFR level
-    is_b_level = sublevel.startswith("B1") or sublevel.startswith("B2")
-    if is_b_level:
-        model_sent_1 = f"In professional environments, we communicate clearly and express our ideas with confidence."
-        model_sent_2 = f"This structure allows us to express complex nuances effectively."
-        model_sent_trans_1 = f"En entornos profesionales, nos comunicamos con claridad y expresamos nuestras ideas con confianza."
-        practice_dialogue_q = f"How would you explain your perspective in an interactive discussion?"
-        practice_dialogue_a = f"From my perspective, this approach is the most effective solution."
-        err_wrong = f"He explained me the whole situation yesterday."
-        err_correct = f"He explained the whole situation to me yesterday."
-    else:
-        model_sent_1 = f"I speak English every day with my friends."
-        model_sent_2 = f"She practices conversation in English every morning."
-        model_sent_trans_1 = f"Hablo inglés todos los días con mis amigos."
-        practice_dialogue_q = f"Where do you usually practice your English?"
-        practice_dialogue_a = f"I practice speaking English at home and in my classes."
-        err_wrong = f"She don't have enough time today."
-        err_correct = f"She doesn't have enough time today."
+    models = _derive_topic_sentence_models(topic, grammar_core, vocab_core, sublevel)
+    model_sent_1 = models["model_1"]
+    model_sent_trans_1 = models["model_trans_1"]
+    model_sent_2 = models["model_2"]
+    model_sent_trans_2 = models["model_trans_2"]
+    err_wrong = models["err_wrong"]
+    err_correct = models["err_correct"]
+    err_tip = models["err_tip"]
+    practice_dialogue_q = models["dialogue_q"]
+    practice_dialogue_a = models["dialogue_a"]
+    formula_pattern = models["formula_pattern"]
 
     return {
         "schema": "ai_tutor.lesson.v1",
@@ -1690,8 +1819,8 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
             {
                 "phase_number": 1,
                 "phase_name": f"1. Fundamentos y Enfoque de {topic}",
-                "tutor_says": f"¡Bienvenido a tu clase de {topic}! En esta lección aprenderemos a dominar {grammar_core}. Piensa en esta estructura como una herramienta de precisión para comunicarte con claridad en nivel {sublevel}. Dominarás vocabulario clave como {vocab_core} y lograrás el objetivo: {can_do}. Observa los conceptos y ejemplos en la pizarra.",
-                "board_content": f"📌 FUNDAMENTOS DE {topic.upper()}:\n\n• Enfoque gramatical: {grammar_core}\n• Vocabulario clave: {vocab_core}\n• Meta comunicativa: {can_do}\n\n👉 Oración Modelo Principal:\n\"{model_sent_1}\"",
+                "tutor_says": f"¡Bienvenido a tu clase de {topic}! En esta lección aprenderemos a dominar {grammar_core}. Piensa en esta estructura como una herramienta de precisión para comunicarte con total seguridad en nivel {sublevel}. Fíjate en la oración modelo principal: '{model_sent_1}'.",
+                "board_content": f"📌 FUNDAMENTOS DE {topic.upper()}:\n\n• Enfoque gramatical: {grammar_core}\n• Vocabulario clave: {vocab_core}\n• Meta comunicativa: {can_do}\n\n👉 Oración Modelo Principal:\n\"{model_sent_1}\"\n(Traducción: {model_sent_trans_1})",
                 "image_style": "comic_scene",
                 "image_prompt": f"comic book panel illustration of young learners having an engaging conversation about {topic} in a bright modern study lounge, warm atmospheric lighting, strictly no text",
                 "interaction_type": "explanation",
@@ -1700,11 +1829,11 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
                 "key_structure": f"{first_grammar_rule}",
                 "target_audio_items": [
                     {"english": model_sent_1, "translation": model_sent_trans_1, "label": "Oración Principal"},
-                    {"english": model_sent_2, "translation": "Ella practica esta estructura de inglés cada mañana", "label": "Ejemplo Modelo"}
+                    {"english": model_sent_2, "translation": model_sent_trans_2, "label": "Ejemplo Modelo"}
                 ],
                 "grammar_structure": {
                     "title": f"Estructura Nuclear: {topic}",
-                    "formula": f"[ Sujeto ] + [ {first_grammar_rule} ] + [ Complemento ]",
+                    "formula": f"[ {formula_pattern} ]",
                     "formula_tokens": [
                         {"role": "Sujeto", "pattern": "I / You / He / She / We / They", "color": "blue"},
                         {"role": "Estructura Clave", "pattern": first_grammar_rule, "color": "purple"},
@@ -1717,21 +1846,20 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
                             "english": model_sent_1,
                             "spanish": model_sent_trans_1,
                             "parts": [
-                                {"role": "Sujeto", "text": "I", "color": "blue"},
-                                {"role": "Estructura", "text": "use", "color": "purple"},
-                                {"role": "Vocabulario", "text": first_vocab.lower(), "color": "emerald"},
-                                {"role": "Complemento", "text": "with friends", "color": "amber"}
+                                {"role": "Sujeto", "text": model_sent_1.split()[0] if model_sent_1 else "I", "color": "blue"},
+                                {"role": "Estructura", "text": first_grammar_rule[:20], "color": "purple"},
+                                {"role": "Vocabulario", "text": first_vocab.lower()[:20], "color": "emerald"}
                             ]
                         }
                     ],
-                    "tips": "Mantén el orden de las partes para asegurar coherencia y naturalidad."
+                    "tips": err_tip
                 }
             },
             {
                 "phase_number": 2,
                 "phase_name": f"2. Desglose Gramatical y Sintaxis de {topic}",
-                "tutor_says": f"Desglosemos la sintaxis de {topic} paso a paso. Para estructurar oraciones con precisión, aplicamos: {grammar_core}. Observa cómo cada término cumple una función indispensable en la frase.",
-                "board_content": f"⚡ FÓRMULAS Y REGLAS DE {topic.upper()}:\n\n• Regla principal: {grammar_core}\n• Vocabulario de apoyo: {vocab_core}\n• Aplicación práctica: {can_do}\n\n📌 Regla de oro: Respeta siempre la posición sintáctica de cada elemento.",
+                "tutor_says": f"Desglosemos la sintaxis de {topic} paso a paso. Para estructurar oraciones con precisión, aplicamos: {grammar_core}. Observa cómo cada término cumple una función indispensable en la frase y escucha el segundo ejemplo modelo.",
+                "board_content": f"⚡ FÓRMULAS Y REGLAS DE {topic.upper()}:\n\n• Regla principal: {grammar_core}\n• Vocabulario de apoyo: {vocab_core}\n• Aplicación práctica: {can_do}\n\n👉 Segundo Ejemplo Modelo:\n\"{model_sent_2}\"\n(Traducción: {model_sent_trans_2})\n\n📌 Regla de oro: {err_tip}",
                 "image_style": "flat_art",
                 "image_prompt": f"flat 2D vector educational illustration of a student taking notes on a modern desk with colorful grammar formula cards, clean minimalist design, strictly no text",
                 "interaction_type": "explanation",
@@ -1739,14 +1867,14 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
                 "expected_answer": None,
                 "key_structure": f"{first_grammar_rule}",
                 "target_audio_items": [
-                    {"english": model_sent_1, "translation": model_sent_trans_1, "label": "Fórmula Maestra"}
+                    {"english": model_sent_2, "translation": model_sent_trans_2, "label": "Fórmula Maestra"}
                 ]
             },
             {
                 "phase_number": 3,
                 "phase_name": "3. Reto de Pronunciación y Ritmo de Frase",
-                "tutor_says": f"Llegó el momento de entrenar la pronunciación y la fluidez oral en {topic}. Escucha la frase modelo y graba tu pronunciación conectando las palabras de forma continua.",
-                "board_content": f"🗣️ RETO FONÉTICO:\n\n• Enlace de palabras y ritmo natural\n• Vocabulario objetivo: {vocab_core}\n\nGraba tu voz con el micrófono.",
+                "tutor_says": f"Llegó el momento de entrenar la pronunciación y la fluidez oral en {topic}. Escucha la frase modelo con atención y graba tu pronunciación conectando las palabras de forma continua usando tu micrófono.",
+                "board_content": f"🗣️ RETO FONÉTICO:\n\n• \"{model_sent_1}\"\n(Traducción: {model_sent_trans_1})\n\nClave de articulación:\n• Enlace de palabras y ritmo natural\n• Vocabulario objetivo: {vocab_core}\n\nGraba tu voz con el micrófono.",
                 "image_style": "comic_scene",
                 "image_prompt": "comic book panel illustration of a student speaking with confidence into a studio microphone, expressive cell shading, strictly no text",
                 "interaction_type": "pronunciation",
@@ -1760,8 +1888,8 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
             {
                 "phase_number": 4,
                 "phase_name": "4. Detección y Corrección de Errores Típicos",
-                "tutor_says": f"Analicemos el error más común que cometen los estudiantes al aplicar {topic}: la interferencia del orden sintáctico en español. Observa la corrección en la pizarra y resuelve el desafío.",
-                "board_content": f"⚔️ ANÁLISIS DE ERROR FRECUENTE:\n\n❌ Incorrecto: \"{err_wrong}\"\n✅ Correcto: \"{err_correct}\"\n\n📌 Regla: Mantén la concordancia exacta y evita la traducción literal.",
+                "tutor_says": f"Analicemos el error más común que cometen los estudiantes al aplicar {topic}: la interferencia del orden sintáctico en español. Observa la corrección en la pizarra: decimos '{err_correct}' y nunca '{err_wrong}'. Resuelve el desafío.",
+                "board_content": f"⚔️ ANÁLISIS DE ERROR FRECUENTE:\n\n❌ Incorrecto: \"{err_wrong}\"\n✅ Correcto: \"{err_correct}\"\n\n📌 Regla: {err_tip}",
                 "image_style": "concept_art",
                 "image_prompt": "cinematic 2D concept art of an interactive chalkboard with glowing green checkmarks and study notes, strictly no text",
                 "interaction_type": "error_correction",
@@ -1775,7 +1903,7 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
             {
                 "phase_number": 5,
                 "phase_name": "5. Juego de Rol y Producción Comunicativa",
-                "tutor_says": f"Vamos a simular una conversación real. Tu objetivo es responder en inglés aplicando {grammar_core} para cumplir la meta: {can_do}.",
+                "tutor_says": f"Vamos a simular una conversación real. Te formularé la pregunta '{practice_dialogue_q}'. Tu objetivo es responder en inglés aplicando la estructura aprendida: '{practice_dialogue_a}'.",
                 "board_content": f"🎭 DESAFÍO COMUNICATIVO:\n\nPregunta: \"{practice_dialogue_q}\"\n\nTu respuesta modelo:\n• \"{practice_dialogue_a}\"",
                 "image_style": "comic_scene",
                 "image_prompt": "comic book panel illustration of two friendly people conversing outdoors in a vibrant city setting, strictly no text",
@@ -1791,7 +1919,7 @@ def _build_curriculum_node_fallback(node: dict, sublevel: str) -> dict:
             {
                 "phase_number": 6,
                 "phase_name": f"6. Resumen y Dominio: {topic}",
-                "tutor_says": f"¡Excelente trabajo! Has completado la lección sobre {topic}. Hoy aprendiste {grammar_core} y vocabulario clave como {vocab_core}. ¡Estás listo para el siguiente módulo!",
+                "tutor_says": f"¡Excelente trabajo! Has completado la lección sobre {topic}. Hoy dominaste {grammar_core} y vocabulario clave como {vocab_core}. ¡Estás listo para el siguiente módulo!",
                 "board_content": f"🎉 RESUMEN DE DOMINIO: {topic.upper()}\n\n✔ Gramática aprendida: {grammar_core}\n✔ Vocabulario dominado: {vocab_core}\n✔ Logro: {can_do}",
                 "image_style": "flat_art",
                 "image_prompt": "flat 2D vector illustration of a shining golden trophy badge with stars, clean vibrant colors, strictly no text",

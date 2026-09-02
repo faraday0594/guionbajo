@@ -1048,7 +1048,7 @@ class TutorAgent:
         t_low = f"{topic} {grammar_target}".lower()
 
         # 1. Past Continuous & Interrupted Actions
-        if any(k in t_low for k in ["past continuous", "interrupted", "was/were", "while", "when"]):
+        if any(k in t_low for k in ["past continuous", "pasado continuo", "interrupted action", "was/were +", "while i was", "while they were", "was cooking", "were playing"]):
             return [
                 {
                     "id": "ex-1",

@@ -1395,12 +1395,17 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
           const corLow = cor.toLowerCase();
           const incLow = inc.toLowerCase();
 
-          // If either side contains "leeve", fix it cleanly:
-          if (corLow.includes('leeve') || incLow.includes('leeve')) {
+          // If either side contains "leeve" or "leave in spain", fix it cleanly:
+          if (
+            corLow.includes('leeve') ||
+            incLow.includes('leeve') ||
+            corLow.includes('leave in spain') ||
+            incLow.includes('leave in spain')
+          ) {
             return {
               correct: 'I live in Spain',
               incorrect: 'I leeve in Spain',
-              why: 'Usa la vocal corta /ɪ/ en "live", no el sonido largo /iː/',
+              why: 'Usa la vocal corta /ɪ/ en "live", no el sonido largo /iː/ ("leave" significa salir/irse)',
             };
           }
 
@@ -1925,6 +1930,90 @@ function buildFrontendOfflineLesson(topic: string, sublevel: string, lessonId: s
         spanish_translation: 'Si no nos apresuramos, la tienda cerrará antes de que lleguemos.',
         image_prompt: 'A couple walking fast down a city shopping street at dusk, 2D vector art, no text',
         hint: 'Consecuencia futura: will close.'
+      }
+    ];
+  } else if (low.includes('sound') || low.includes('intro') || low.includes('greet') || low.includes('to be') || low.includes('personal') || low.includes('hello')) {
+    modelSentence1 = 'Hello, my name is Carlos and I am from Spain.';
+    modelSentenceTrans1 = 'Hola, mi nombre es Carlos y soy de España.';
+    modelSentence2 = 'She is Maria and she lives in Madrid.';
+    modelSentenceTrans2 = 'Ella es María y vive en Madrid.';
+    ruleTitle = 'Introductions & Verb To Be (am / is / are)';
+    formulaText = '[ Sujeto ] + [ Verb To Be (am/is/are) ] + [ Complemento / Origen ]';
+    errorWrong = 'I is Carlos and she are from Spain.';
+    errorCorrect = 'I am Carlos and she is from Spain.';
+    errorTip = 'Con I usamos am; con He/She/It usamos is; con We/You/They usamos are.';
+    exercises = [
+      {
+        id: 'ex-1',
+        sentence: 'Hello, I _____ [am / is / are] Carlos and I live in Madrid.',
+        options: ['am', 'is', 'are'],
+        expected_answer: 'am',
+        spanish_translation: 'Hola, yo soy Carlos y vivo en Madrid.',
+        image_prompt: 'A friendly man waving and smiling warmly in front of a city landmark, 2D vector art, no text',
+        hint: 'Con el pronombre I usamos am.'
+      },
+      {
+        id: 'ex-2',
+        sentence: 'Maria _____ [is / am / are] an architect from Barcelona.',
+        options: ['is', 'am', 'are'],
+        expected_answer: 'is',
+        spanish_translation: 'María es arquitecta de Barcelona.',
+        image_prompt: 'A young professional woman smiling with architectural blueprints, 2D vector art, no text',
+        hint: 'Con She (Maria) usamos is.'
+      },
+      {
+        id: 'ex-3',
+        sentence: 'They _____ [are / is / am] new students in the English course.',
+        options: ['are', 'is', 'am'],
+        expected_answer: 'are',
+        spanish_translation: 'Ellos son nuevos estudiantes en el curso de inglés.',
+        image_prompt: 'Two cheerful students holding notebooks in a sunny campus hallway, 2D vector art, no text',
+        hint: 'Con They usamos are.'
+      },
+      {
+        id: 'ex-4',
+        sentence: 'My name _____ [is / are / am] Sofia and it is nice to meet you.',
+        options: ['is', 'are', 'am'],
+        expected_answer: 'is',
+        spanish_translation: 'Mi nombre es Sofía y es un gusto conocerte.',
+        image_prompt: 'A woman introducing herself politely with a gentle hand gesture, 2D vector art, no text',
+        hint: 'My name equivale a tercera persona singular: is.'
+      },
+      {
+        id: 'ex-5',
+        sentence: 'Where _____ [are / is / am] you from?',
+        options: ['are', 'is', 'am'],
+        expected_answer: 'are',
+        spanish_translation: '¿De dónde eres tú?',
+        image_prompt: 'Two travelers chatting happily at a coffee stand, 2D vector art, no text',
+        hint: 'Con you en preguntas usamos are you.'
+      },
+      {
+        id: 'ex-6',
+        sentence: 'He _____ [is / are / am] from Spain and speaks Spanish fluently.',
+        options: ['is', 'are', 'am'],
+        expected_answer: 'is',
+        spanish_translation: 'Él es de España y habla español con fluidez.',
+        image_prompt: 'A young man in a casual blue jacket in a historic European square, 2D vector art, no text',
+        hint: 'Con He usamos is.'
+      },
+      {
+        id: 'ex-7',
+        sentence: 'We _____ [are / is / am] very excited to learn English together.',
+        options: ['are', 'is', 'am'],
+        expected_answer: 'are',
+        spanish_translation: 'Estamos muy emocionados de aprender inglés juntos.',
+        image_prompt: 'A diverse group of smiling classmates sitting at a circular study table, 2D vector art, no text',
+        hint: 'Con We usamos are.'
+      },
+      {
+        id: 'ex-8',
+        sentence: 'It _____ [is / are / am] a wonderful morning to practice conversation.',
+        options: ['is', 'are', 'am'],
+        expected_answer: 'is',
+        spanish_translation: 'Es una mañana maravillosa para practicar conversación.',
+        image_prompt: 'Morning sun shining through big classroom windows, 2D vector art, no text',
+        hint: 'Con It usamos is.'
       }
     ];
   } else {
@@ -2499,6 +2588,8 @@ export default function LessonPage() {
   const cinemaNextSlideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioFinishedNaturallyRef = useRef(false);
   const itemRecognitionRef = useRef<any>(null);
+  const itemSilenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exerciseSilenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopCurrentAudio = () => {
@@ -2551,7 +2642,13 @@ export default function LessonPage() {
         if (lessonId && lessonId !== 'new' && !lessonId.startsWith('a1') && !lessonId.startsWith('a2') && !lessonId.startsWith('b1') && !lessonId.startsWith('b2')) {
           try {
             const existing = await api.getLesson(lessonId);
-            if (existing && existing.script && existing.script.phases) {
+            const isTopicMismatch = Boolean(
+              topicParam &&
+              existing?.topic &&
+              topicParam.trim().toLowerCase() !== existing.topic.trim().toLowerCase()
+            );
+
+            if (existing && existing.script && existing.script.phases && !isTopicMismatch) {
               data = {
                 id: existing.id || lessonId,
                 title: existing.topic || topicParam,
@@ -2643,9 +2740,10 @@ export default function LessonPage() {
           });
 
           // Topic-specific authentic 8-exercise bank
-          const isPastTopic = topicParam.toLowerCase().includes('past') || topicParam.toLowerCase().includes('was');
-          const isPresentTopic = topicParam.toLowerCase().includes('present') || topicParam.toLowerCase().includes('routine') || topicParam.toLowerCase().includes('habit');
+          const isPastTopic = (topicParam.toLowerCase().includes('past') || topicParam.toLowerCase().includes('was')) && !topicParam.toLowerCase().includes('routine');
+          const isPresentTopic = topicParam.toLowerCase().includes('present') || topicParam.toLowerCase().includes('routine') || topicParam.toLowerCase().includes('daily') || topicParam.toLowerCase().includes('habit');
           const isFutureTopic = topicParam.toLowerCase().includes('future') || topicParam.toLowerCase().includes('going to') || topicParam.toLowerCase().includes('will');
+          const isIntroTopic = topicParam.toLowerCase().includes('sound') || topicParam.toLowerCase().includes('intro') || topicParam.toLowerCase().includes('greet') || topicParam.toLowerCase().includes('to be') || topicParam.toLowerCase().includes('personal') || topicParam.toLowerCase().includes('hello');
 
           const defaultExercises = isPastTopic ? [
             {
@@ -2793,15 +2891,88 @@ export default function LessonPage() {
               image_prompt: 'A person sleeping in a comfortable bed, 2D vector art, no text',
               hint: 'Con el sujeto I el verbo no lleva -s.'
             }
+          ] : isIntroTopic ? [
+            {
+              id: 'ex-1',
+              sentence: 'Hello, I _____ [am / is / are] Carlos and I live in Madrid.',
+              options: ['am', 'is', 'are'],
+              expected_answer: 'am',
+              spanish_translation: 'Hola, yo soy Carlos y vivo en Madrid.',
+              image_prompt: 'A friendly man waving and smiling warmly in front of a city landmark, 2D vector art, no text',
+              hint: 'Con el pronombre I usamos am.'
+            },
+            {
+              id: 'ex-2',
+              sentence: 'Maria _____ [is / am / are] an architect from Barcelona.',
+              options: ['is', 'am', 'are'],
+              expected_answer: 'is',
+              spanish_translation: 'María es arquitecta de Barcelona.',
+              image_prompt: 'A young professional woman smiling with architectural blueprints, 2D vector art, no text',
+              hint: 'Con She (Maria) usamos is.'
+            },
+            {
+              id: 'ex-3',
+              sentence: 'They _____ [are / is / am] new students in the English course.',
+              options: ['are', 'is', 'am'],
+              expected_answer: 'are',
+              spanish_translation: 'Ellos son nuevos estudiantes en el curso de inglés.',
+              image_prompt: 'Two cheerful students holding notebooks in a sunny campus hallway, 2D vector art, no text',
+              hint: 'Con They usamos are.'
+            },
+            {
+              id: 'ex-4',
+              sentence: 'My name _____ [is / are / am] Sofia and it is nice to meet you.',
+              options: ['is', 'are', 'am'],
+              expected_answer: 'is',
+              spanish_translation: 'Mi nombre es Sofía y es un gusto conocerte.',
+              image_prompt: 'A woman introducing herself politely with a gentle hand gesture, 2D vector art, no text',
+              hint: 'My name equivale a tercera persona singular: is.'
+            },
+            {
+              id: 'ex-5',
+              sentence: 'Where _____ [are / is / am] you from?',
+              options: ['are', 'is', 'am'],
+              expected_answer: 'are',
+              spanish_translation: '¿De dónde eres tú?',
+              image_prompt: 'Two travelers chatting happily at a coffee stand, 2D vector art, no text',
+              hint: 'Con you en preguntas usamos are you.'
+            },
+            {
+              id: 'ex-6',
+              sentence: 'He _____ [is / are / am] from Spain and speaks Spanish fluently.',
+              options: ['is', 'are', 'am'],
+              expected_answer: 'is',
+              spanish_translation: 'Él es de España y habla español con fluidez.',
+              image_prompt: 'A young man in a casual blue jacket in a historic European square, 2D vector art, no text',
+              hint: 'Con He usamos is.'
+            },
+            {
+              id: 'ex-7',
+              sentence: 'We _____ [are / is / am] very excited to learn English together.',
+              options: ['are', 'is', 'am'],
+              expected_answer: 'are',
+              spanish_translation: 'Estamos muy emocionados de aprender inglés juntos.',
+              image_prompt: 'A diverse group of smiling classmates sitting at a circular study table, 2D vector art, no text',
+              hint: 'Con We usamos are.'
+            },
+            {
+              id: 'ex-8',
+              sentence: 'It _____ [is / are / am] a wonderful morning to practice conversation.',
+              options: ['is', 'are', 'am'],
+              expected_answer: 'is',
+              spanish_translation: 'Es una mañana maravillosa para practicar conversación.',
+              image_prompt: 'Morning sun shining through big classroom windows, 2D vector art, no text',
+              hint: 'Con It usamos is.'
+            }
           ] : [
             {
               id: 'ex-1',
-              sentence: `When practicing daily, you should _____ [apply / applying / applied] the structure of ${topicParam} clearly.`,
-              options: ['apply', 'applying', 'applied'],
-              expected_answer: 'apply',
-              spanish_translation: `Al practicar a diario, debes aplicar la estructura de ${topicParam} con claridad.`,
-              image_prompt: `A smiling student studying with headphones and a tablet in a bright room, 2D vector art, no text`,
-              hint: 'Usa el verbo base después de modales: should apply.'
+              sentence: `Can you _____ [speak / speaks / speaking] English with clarity and confidence?`,
+              options: ['speak', 'speaks', 'speaking'],
+              expected_answer: 'speak',
+              spanish_translation: `¿Puedes hablar inglés con claridad y confianza?`,
+              image_prompt: `A student speaking English in a modern study lounge, 2D vector art, no text`,
+              hint: 'Tras el verbo modal Can usamos la forma base: speak.'
             },
             {
               id: 'ex-2',
@@ -3316,6 +3487,18 @@ export default function LessonPage() {
     setIsRecording(false);
   };
 
+  const stopItemRecording = () => {
+    if (itemSilenceTimerRef.current) {
+      clearTimeout(itemSilenceTimerRef.current);
+      itemSilenceTimerRef.current = null;
+    }
+    if (itemRecognitionRef.current) {
+      try { itemRecognitionRef.current.stop(); } catch (_) {}
+    }
+    setItemRecordingKey(null);
+    setItemLiveTranscript('');
+  };
+
   // 4. Universal Per-Item Pronunciation Recording (Used across Studio Board & Timeline)
   const startItemRecognition = (key: string, targetSentence: string) => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -3325,12 +3508,16 @@ export default function LessonPage() {
       return;
     }
 
+    if (itemSilenceTimerRef.current) {
+      clearTimeout(itemSilenceTimerRef.current);
+      itemSilenceTimerRef.current = null;
+    }
     if (itemRecognitionRef.current) {
       try { itemRecognitionRef.current.stop(); } catch (_) {}
     }
 
     const rec = new SpeechRecognition();
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = true;
     rec.lang = 'en-US';
     itemRecognitionRef.current = rec;
@@ -3347,11 +3534,25 @@ export default function LessonPage() {
         t += event.results[i][0].transcript;
       }
       const normalized = normalizeNumberWords(t);
-      finalTranscript = normalized;
-      setItemLiveTranscript(normalized);
+      if (normalized.trim()) {
+        finalTranscript = normalized;
+        setItemLiveTranscript(normalized);
+
+        // ⏱️ 1.5 seconds silence detection: give students time to pause without cutting them off
+        if (itemSilenceTimerRef.current) {
+          clearTimeout(itemSilenceTimerRef.current);
+        }
+        itemSilenceTimerRef.current = setTimeout(() => {
+          try { rec.stop(); } catch (_) {}
+        }, 1500);
+      }
     };
 
     rec.onend = () => {
+      if (itemSilenceTimerRef.current) {
+        clearTimeout(itemSilenceTimerRef.current);
+        itemSilenceTimerRef.current = null;
+      }
       try { sfx.playMicStop(); } catch (_) {}
       if (finalTranscript.trim()) {
         const clean = normalizeNumberWords(finalTranscript.trim());
@@ -3363,6 +3564,10 @@ export default function LessonPage() {
     };
 
     rec.onerror = (e: any) => {
+      if (itemSilenceTimerRef.current) {
+        clearTimeout(itemSilenceTimerRef.current);
+        itemSilenceTimerRef.current = null;
+      }
       console.warn('Item recognition error:', e);
       try { sfx.playMicStop(); } catch (_) {}
       setItemRecordingKey(null);
@@ -3467,18 +3672,23 @@ export default function LessonPage() {
       return;
     }
 
+    if (exerciseSilenceTimerRef.current) {
+      clearTimeout(exerciseSilenceTimerRef.current);
+      exerciseSilenceTimerRef.current = null;
+    }
     if (itemRecognitionRef.current) {
       try { itemRecognitionRef.current.stop(); } catch (_) {}
     }
 
     const rec = new SpeechRecognition();
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = true;
     rec.lang = 'en-US';
     itemRecognitionRef.current = rec;
 
     setItemRecordingKey(exerciseKey);
     setItemLiveTranscript('');
+    try { sfx.playMicStart(); } catch (_) {}
 
     let finalTranscript = '';
 
@@ -3488,11 +3698,26 @@ export default function LessonPage() {
         t += event.results[i][0].transcript;
       }
       const normalized = normalizeNumberWords(t);
-      finalTranscript = normalized;
-      setItemLiveTranscript(normalized);
+      if (normalized.trim()) {
+        finalTranscript = normalized;
+        setItemLiveTranscript(normalized);
+
+        // ⏱️ 1.5 seconds silence detection: give students time to pause without cutting them off
+        if (exerciseSilenceTimerRef.current) {
+          clearTimeout(exerciseSilenceTimerRef.current);
+        }
+        exerciseSilenceTimerRef.current = setTimeout(() => {
+          try { rec.stop(); } catch (_) {}
+        }, 1500);
+      }
     };
 
     rec.onend = () => {
+      if (exerciseSilenceTimerRef.current) {
+        clearTimeout(exerciseSilenceTimerRef.current);
+        exerciseSilenceTimerRef.current = null;
+      }
+      try { sfx.playMicStop(); } catch (_) {}
       if (finalTranscript.trim()) {
         const cleanVal = normalizeNumberWords(finalTranscript.trim());
         setExerciseInputs(prev => ({ ...prev, [exerciseKey.replace('exercise-item-', '')]: cleanVal }));
@@ -3504,7 +3729,12 @@ export default function LessonPage() {
     };
 
     rec.onerror = (e: any) => {
+      if (exerciseSilenceTimerRef.current) {
+        clearTimeout(exerciseSilenceTimerRef.current);
+        exerciseSilenceTimerRef.current = null;
+      }
       console.warn('Exercise recognition error:', e);
+      try { sfx.playMicStop(); } catch (_) {}
       setItemRecordingKey(null);
       setItemLiveTranscript('');
     };
@@ -4489,7 +4719,7 @@ export default function LessonPage() {
                     diagramSvg={currentDiagramSvg || phase.diagram_svg || null}
                     pedagogicalTip={phase.tips || phase.grammar_structure?.tips || (phase.grammar_structure?.explanation ? `💡 ${phase.grammar_structure.explanation}` : undefined) || 'Presta atención a cómo la pronunciación y la estructura transforman el significado natural en inglés.'}
                     onStartItemRecording={startItemRecognition}
-                    onStopItemRecording={() => setItemRecordingKey(null)}
+                    onStopItemRecording={stopItemRecording}
                     itemRecordingKey={itemRecordingKey}
                     itemProcessingKey={itemProcessingKey}
                     itemLiveTranscript={itemLiveTranscript}

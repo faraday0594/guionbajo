@@ -1669,7 +1669,7 @@ def _derive_topic_sentence_models(topic: str, grammar_core: str, vocab_core: str
             "formula_pattern": "Sujeto + Verbo(+-s) + Complemento",
             "formula_role_pattern": "wake up / wakes up / works / studies"
         }
-    elif any(k in low for k in ["past continuous", "interrupted", "was/were +", "while"]):
+    elif any(k in low for k in ["past continuous", "pasado continuo", "interrupted action", "was/were +", "while i was", "while they were"]):
         return {
             "model_1": "I was cooking dinner in the kitchen when the lights suddenly went out.",
             "model_trans_1": "Estaba cocinando la cena en la cocina cuando de repente se fue la luz.",

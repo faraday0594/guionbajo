@@ -185,6 +185,8 @@ async def get_lesson(
         if isinstance(script_data, dict) and "phases" in script_data and isinstance(script_data["phases"], list):
             agent = TutorAgent()
             script_data = agent._audit_and_sanitize_lesson_content(script_data, lesson.topic, lesson.sublevel)
+            lesson.lesson_data = script_data
+            await db.commit()
     except Exception as e:
         logger.warning(f"Error auditing lesson script: {e}")
 

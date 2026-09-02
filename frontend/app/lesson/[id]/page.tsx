@@ -1622,6 +1622,42 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
         }
       }
     }
+    // 4. Sanitize Grammar Formula (Fix "Present Simple Affirmative (I wake up" or generic repeated formulas)
+    if (step.visual_action === 'show_grammar_formula' || p.formula) {
+      const formulaStr = String(p.formula || '').toLowerCase();
+      if (formulaStr.includes('present simple affirmative (i wake up') || formulaStr.includes('syntax formula') || formulaStr.includes('i wake up')) {
+        const pName = String(phase?.phase_name || '').toLowerCase();
+        const pSays = String(typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '')).toLowerCase();
+        if (pName.includes('-s') || pSays.includes('-s') || pName.includes('third person') || pSays.includes('tercera persona') || pSays.includes('magia de la -s') || pSays.includes('works')) {
+          p.title = 'Regla: Tercera Persona Singular (He / She / It)';
+          p.formula = '[ He / She / It ] + [ Verbo + -s / -es / -ies ] + [ Complemento ]';
+          p.formula_tokens = [
+            { role: 'Sujeto 3ra Persona', pattern: 'He / She / It / Carlos', color: 'blue' },
+            { role: 'Verbo con -s', pattern: 'works / watches / studies', color: 'purple' },
+            { role: 'Complemento', pattern: 'at 6 AM / coffee / English', color: 'emerald' },
+          ];
+          p.explanation = 'Con He, She, It agrega -s al verbo (works, sleeps), -es tras silbidos (watches, goes) o -ies (studies).';
+        } else {
+          p.title = 'Estructura: Hábitos y Rutinas Cotidianas';
+          p.formula = '[ I / You / We / They ] + [ Verbo Base ] + [ Complemento ]';
+          p.formula_tokens = [
+            { role: 'Sujeto', pattern: 'I / You / We / They', color: 'blue' },
+            { role: 'Verbo Base', pattern: 'wake up / have breakfast / drink', color: 'purple' },
+            { role: 'Complemento', pattern: 'early / hot coffee / every day', color: 'emerald' },
+          ];
+          p.explanation = 'Usa la forma base del verbo con los pronombres I, You, We, They.';
+        }
+      }
+    }
+
+    // 5. Sanitize Diagram SVG (Fix Frequency Timeline repeating on third person)
+    if (step.visual_action === 'show_diagram' && p.svg) {
+      const pCombined = `${phase?.phase_name || ''} ${phase?.board_content || ''} ${typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '')}`.toLowerCase();
+      const isThird = pCombined.includes('-s') || pCombined.includes('third person') || pCombined.includes('tercera persona') || pCombined.includes('magia de la -s') || pCombined.includes('works');
+      if (isThird && (p.svg.includes('FREQUENCY ADVERBS') || p.svg.includes('ALWAYS'))) {
+        p.svg = THIRD_PERSON_VERB_RULES_SVG;
+      }
+    }
 
     return { ...step, payload: p };
   });

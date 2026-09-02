@@ -414,22 +414,27 @@ class TutorAgent:
 
     def _resolve_didactic_diagram_svg(self, p: dict, topic: str) -> Optional[str]:
         """Resolves or generates a rich didactic vector SVG diagram for temporal/frequency/spatial topics."""
+        combined_text = f"{topic} {p.get('phase_name', '')} {p.get('board_content', '')} {p.get('tutor_says', '')}".lower()
+        is_third_person = any(w in combined_text for w in ["third person", "tercera persona", "-s", "-es", "-ies", "he/she/it", "la magia de la -s", "works", "watches", "studies"])
+
         diag = p.get("diagram_svg")
         if diag and isinstance(diag, str):
             raw_svg = diag.strip()
             raw_svg = re.sub(r'<think>.*?</think>', '', raw_svg, flags=re.DOTALL).strip()
-            svg_match = re.search(r'(<svg[\s\S]*?</svg>)', raw_svg, re.IGNORECASE)
-            if svg_match:
-                return svg_match.group(1).strip()
-            elif raw_svg.startswith("<svg"):
-                return raw_svg
+            # If the saved SVG is mismatched (e.g. Frequency Adverbs saved on third-person or routines)
+            if is_third_person and ("FREQUENCY ADVERBS" in raw_svg or "ALWAYS" in raw_svg):
+                diag = None  # Invalidate mismatched frequency diagram
+            else:
+                svg_match = re.search(r'(<svg[\s\S]*?</svg>)', raw_svg, re.IGNORECASE)
+                if svg_match:
+                    return svg_match.group(1).strip()
+                elif raw_svg.startswith("<svg"):
+                    return raw_svg
 
         phase_num = p.get("phase_number") or p.get("phase_index") or 1
         # Only inject smart diagram on conceptual/foundation phases (phases 1, 2, 3 or 4)
         if phase_num not in (1, 2, 3, 4):
             return None
-
-        combined_text = f"{topic} {p.get('phase_name', '')} {p.get('board_content', '')}".lower()
 
         # 0. Places & There is / There are / Prepositions of Place (Existential & Spatial Relations)
         if any(w in combined_text for w in ["there is", "there are", "places & there is", "preposition", "preposicion", "next to", "in front of", "between", "opposite", "existencia"]):
@@ -1908,6 +1913,7 @@ class TutorAgent:
             # Keep explanation phases clean from bottom exercise clutter
             p["is_practice_slide"] = False
             p["exercises"] = []
+            p["grammar_structure"] = self._normalize_grammar_structure(p, topic, sublevel)
             p["diagram_svg"] = self._resolve_didactic_diagram_svg(p, topic)
             p["voice_chunks"] = self._build_phase_voice_chunks(p, topic, sublevel)
             p["storyboard_steps"] = self._build_phase_storyboard(p)
@@ -1937,6 +1943,8 @@ class TutorAgent:
         # Re-number all phases consecutively and refresh chunks
         for i, p in enumerate(clean_phases):
             p["phase_number"] = i + 1
+            p["grammar_structure"] = self._normalize_grammar_structure(p, topic, sublevel)
+            p["diagram_svg"] = self._resolve_didactic_diagram_svg(p, topic)
             p["voice_chunks"] = self._build_phase_voice_chunks(p, topic, sublevel)
             p["storyboard_steps"] = self._build_phase_storyboard(p)
             p["storyboard_timeline"] = self._build_phase_storyboard_timeline(p, topic, sublevel)
@@ -1954,22 +1962,25 @@ class TutorAgent:
         
         # 1. If already provided as a valid dict
         if isinstance(gs, dict) and (gs.get("formula") or gs.get("formula_tokens")):
-            if not gs.get("title") or "Syntax Formula" in str(gs.get("title")):
-                gs["title"] = f"Estructura: {p.get('phase_name', topic)}"
-            if not gs.get("formula_tokens") and gs.get("formula"):
-                tokens = []
-                parts = re.split(r'\s*\+\s*|\s*→\s*|\s*\|\s*', str(gs["formula"]))
-                colors = ["blue", "purple", "emerald", "amber", "rose"]
-                for i, part in enumerate(parts):
-                    clean_part = part.strip().strip("[]()")
-                    if clean_part:
-                        tokens.append({
-                            "role": f"Elemento {i+1}",
-                            "pattern": clean_part,
-                            "color": colors[i % len(colors)]
-                        })
-                gs["formula_tokens"] = tokens
-            return gs
+            form_str = str(gs.get("formula", "")).lower()
+            # If it's a generic placeholder or repeated topic formula, invalidate and re-derive!
+            if not any(bad in form_str for bad in ["present simple affirmative (i wake up", "syntax formula", "should apply", "core pattern", "i wake up"]):
+                if not gs.get("title") or "Syntax Formula" in str(gs.get("title")):
+                    gs["title"] = f"Estructura: {p.get('phase_name', topic)}"
+                if not gs.get("formula_tokens") and gs.get("formula"):
+                    tokens = []
+                    parts = re.split(r'\s*\+\s*|\s*→\s*|\s*\|\s*', str(gs["formula"]))
+                    colors = ["blue", "purple", "emerald", "amber", "rose"]
+                    for i, part in enumerate(parts):
+                        clean_part = part.strip().strip("[]()")
+                        if clean_part:
+                            tokens.append({
+                                "role": f"Elemento {i+1}",
+                                "pattern": clean_part,
+                                "color": colors[i % len(colors)]
+                            })
+                    gs["formula_tokens"] = tokens
+                return gs
 
         # 2. Derive intelligent grammar structure from topic and curriculum node
         node = self._find_curriculum_node(topic, sublevel) or {}

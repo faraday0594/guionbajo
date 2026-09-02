@@ -474,8 +474,18 @@ export function cleanTextForTTS(text: string): string {
   // Remove emojis
   clean = clean.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF\u2600-\u27BF]/g, '');
 
-  // Remove IPA /.../
-  clean = clean.replace(/\/([^\/]+)\//g, (_, p1) => ` ${p1.replace(/['ˈ\.:ː]/g, '')} `);
+  // 3. Clean IPA phonetic transcriptions in slashes (e.g. /s/ -> ese, /z/ -> z sonora, /fəʊnz/ -> strip)
+  clean = clean.replace(/\/([^\/]+)\//g, (_, raw) => {
+    const p1 = raw.trim().replace(/['ˈ\.:ː\s]/g, '');
+    if (p1 === 's' || p1 === 'S') return ' ese ';
+    if (p1 === 'z' || p1 === 'Z') return ' z sonora ';
+    if (p1 === 'ɪz' || p1 === 'iz' || p1 === 'Iz') return ' iz ';
+    if (p1 === 'iː' || p1 === 'i:' || p1 === 'ii') return ' i larga ';
+    if (p1 === 'ɪ' || p1 === 'I') return ' i corta ';
+    if (p1 === 'ð' || p1 === 'th') return ' sonido th ';
+    // Strip whole-word phonetic spellings (like /fəʊnz/, /penz/, /bæɡz/, /bʊks/) completely:
+    return ' ';
+  });
 
   // Replace slashes in alternatives like I/You or s/es -> I o You, s o es
   clean = clean.replace(/([A-Za-z0-9]+)\s*\/\s*([A-Za-z0-9]+)/g, '$1 o $2');
@@ -495,7 +505,8 @@ export function cleanTextForTTS(text: string): string {
 }
 
 function createBrowserSpeechAudioAdapter(text: string, voiceId = 'female-shaonv') {
-  const words = text.split(/\s+/).filter(Boolean).length;
+  const cleanedSpeech = cleanTextForTTS(text);
+  const words = cleanedSpeech.split(/\s+/).filter(Boolean).length;
   const isEnglish = voiceId.startsWith('en-') || voiceId.includes('roger') || voiceId.includes('jenny');
   const estimatedSeconds = Math.max(words * 0.38, 1.8);
 
@@ -518,7 +529,7 @@ function createBrowserSpeechAudioAdapter(text: string, voiceId = 'female-shaonv'
         try {
           window.speechSynthesis.cancel();
           await ensureBrowserVoices();
-          const utterance = new SpeechSynthesisUtterance(text);
+          const utterance = new SpeechSynthesisUtterance(cleanedSpeech);
           utterance.lang = isEnglish ? 'en-US' : 'es-MX';
           utterance.rate = isEnglish ? 0.9 : 1.0;
           const bestVoice = getBestBrowserVoice(isEnglish ? 'en' : 'es');

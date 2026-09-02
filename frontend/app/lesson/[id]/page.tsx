@@ -746,6 +746,62 @@ const FUTURE_GOING_TO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 
   <text x="350" y="265" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#94a3b8">Ejemplo: &quot;I am going to travel tomorrow&quot;</text>
 </svg>`;
 
+const THIRD_PERSON_VERB_RULES_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgS" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgS)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">REGLAS DE TERCERA PERSONA (HE / SHE / IT)</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Transformación del verbo afirmativo en Present Simple</text>
+
+  <!-- Column 1: Regla General +S -->
+  <g transform="translate(30, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(56,189,248,0.12)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#0284c7"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">+S (Regla General)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• work ➔ <tspan fill="#38bdf8" font-weight="bold">works</tspan></text>
+    <text x="15" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• live ➔ <tspan fill="#38bdf8" font-weight="bold">lives</tspan></text>
+    <text x="15" y="115" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• sleep ➔ <tspan fill="#38bdf8" font-weight="bold">sleeps</tspan></text>
+    <text x="15" y="140" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• drink ➔ <tspan fill="#38bdf8" font-weight="bold">drinks</tspan></text>
+    <text x="100" y="168" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#7dd3fc">La mayoría de verbos</text>
+  </g>
+
+  <!-- Column 2: Terminación +ES -->
+  <g transform="translate(250, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(192,132,252,0.12)" stroke="#c084fc" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#7e22ce"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">+ES (-ch, -sh, -ss, -x, -o)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• watch ➔ <tspan fill="#c084fc" font-weight="bold">watches</tspan></text>
+    <text x="15" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• go ➔ <tspan fill="#c084fc" font-weight="bold">goes</tspan></text>
+    <text x="15" y="115" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• wash ➔ <tspan fill="#c084fc" font-weight="bold">washes</tspan></text>
+    <text x="15" y="140" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• fix ➔ <tspan fill="#c084fc" font-weight="bold">fixes</tspan></text>
+    <text x="100" y="168" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#c084fc">Sonido /ɪz/ tras silbido</text>
+  </g>
+
+  <!-- Column 3: Consonante + Y -> +IES -->
+  <g transform="translate(470, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(52,211,153,0.12)" stroke="#34d399" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#059669"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">-Y ➔ +IES (Consonante + Y)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• study ➔ <tspan fill="#34d399" font-weight="bold">studies</tspan></text>
+    <text x="15" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• fly ➔ <tspan fill="#34d399" font-weight="bold">flies</tspan></text>
+    <text x="15" y="115" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• try ➔ <tspan fill="#34d399" font-weight="bold">tries</tspan></text>
+    <text x="15" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">• play ➔ plays (vocal + y)</text>
+    <text x="100" y="168" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#34d399">Cambia 'y' por 'ies'</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(30, 275)">
+    <rect x="0" y="0" width="640" height="80" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="320" y="28" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      FÓRMULA: <tspan fill="#38bdf8">[ He / She / It ]</tspan> + <tspan fill="#c084fc">[ Verbo + -s / -es / -ies ]</tspan> + <tspan fill="#34d399">[ Complemento ]</tspan>
+    </text>
+    <text x="320" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#e2e8f0">
+      Ejemplo: &quot;Carlos <tspan fill="#c084fc" font-weight="bold">wakes up</tspan> at 6 AM and Elena <tspan fill="#c084fc" font-weight="bold">watches</tspan> documentaries.&quot;
+    </text>
+  </g>
+</svg>`;
+
 export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
   if (phase?.diagram_svg && typeof phase.diagram_svg === 'string' && phase.diagram_svg.includes('<svg')) {
     return phase.diagram_svg;
@@ -782,23 +838,34 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return PAST_CONTINUOUS_TIMELINE_SVG;
   }
 
-  // 2. Frequency & Routines
+  // 2. Third-Person Singular Verb Rules (-s / -es / -ies) for Daily Routines
   if (
-    combined.includes('adverb') ||
-    combined.includes('frequency') ||
-    combined.includes('frecuencia') ||
-    combined.includes('always') ||
-    combined.includes('usually') ||
-    combined.includes('rutina') ||
-    combined.includes('routine') ||
-    combined.includes('habit') ||
-    combined.includes('sometimes') ||
-    combined.includes('never')
+    combined.includes('third person') ||
+    combined.includes('tercera persona') ||
+    combined.includes('la magia de la -s') ||
+    combined.includes('he / she / it') ||
+    combined.includes('terminación -s') ||
+    (combined.includes('-s') && (combined.includes('work') || combined.includes('watch') || combined.includes('sleep') || combined.includes('rule')))
+  ) {
+    return THIRD_PERSON_VERB_RULES_SVG;
+  }
+
+  // 3. Frequency & Adverbs (ONLY for Time & Frequency topics, not for -s third person)
+  if (
+    (combined.includes('adverb') ||
+     combined.includes('frequency') ||
+     combined.includes('frecuencia') ||
+     combined.includes('always') ||
+     combined.includes('usually') ||
+     combined.includes('sometimes') ||
+     combined.includes('never')) &&
+    !combined.includes('third person') &&
+    !combined.includes('tercera persona')
   ) {
     return FREQUENCY_TIMELINE_SVG;
   }
 
-  // 3. Past Simple (Actions finished in the past)
+  // 4. Past Simple (Actions finished in the past)
   if (
     combined.includes('past simple') ||
     combined.includes('irregular past') ||
@@ -808,7 +875,7 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return PAST_SIMPLE_TIMELINE_SVG;
   }
 
-  // 4. Future Plans (be going to)
+  // 5. Future Plans (be going to)
   if (
     combined.includes('going to') ||
     combined.includes('future') ||

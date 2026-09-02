@@ -585,8 +585,66 @@ class TutorAgent:
   </g>
 </svg>"""
 
-        # 2. Adverbs of Frequency & Routine Timeline
-        if any(w in combined_text for w in ["adverb", "frequency", "frecuencia", "always", "usually", "rutina", "routine", "habit", "sometimes", "never"]):
+        # 2. Third-Person Singular Verb Rules (-s / -es / -ies) for Daily Routines
+        if any(w in combined_text for w in ["third person", "tercera persona", "-s", "-es", "-ies", "he/she/it", "la magia de la -s", "works", "watches", "studies"]) and not any(w in combined_text for w in ["frequency", "frecuencia", "always", "usually"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgS" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgS)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">REGLAS DE TERCERA PERSONA (HE / SHE / IT)</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Transformación del verbo afirmativo en Present Simple</text>
+
+  <!-- Column 1: Regla General +S -->
+  <g transform="translate(30, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(56,189,248,0.12)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#0284c7"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">+S (Regla General)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• work ➔ <tspan fill="#38bdf8" font-weight="bold">works</tspan></text>
+    <text x="15" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• live ➔ <tspan fill="#38bdf8" font-weight="bold">lives</tspan></text>
+    <text x="15" y="115" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• sleep ➔ <tspan fill="#38bdf8" font-weight="bold">sleeps</tspan></text>
+    <text x="15" y="140" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• drink ➔ <tspan fill="#38bdf8" font-weight="bold">drinks</tspan></text>
+    <text x="100" y="168" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#7dd3fc">La mayoría de verbos</text>
+  </g>
+
+  <!-- Column 2: Terminación +ES -->
+  <g transform="translate(250, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(192,132,252,0.12)" stroke="#c084fc" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#7e22ce"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">+ES (-ch, -sh, -ss, -x, -o)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• watch ➔ <tspan fill="#c084fc" font-weight="bold">watches</tspan></text>
+    <text x="15" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• go ➔ <tspan fill="#c084fc" font-weight="bold">goes</tspan></text>
+    <text x="15" y="115" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• wash ➔ <tspan fill="#c084fc" font-weight="bold">washes</tspan></text>
+    <text x="15" y="140" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• fix ➔ <tspan fill="#c084fc" font-weight="bold">fixes</tspan></text>
+    <text x="100" y="168" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#c084fc">Sonido /ɪz/ tras silbido</text>
+  </g>
+
+  <!-- Column 3: Consonante + Y -> +IES -->
+  <g transform="translate(470, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(52,211,153,0.12)" stroke="#34d399" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#059669"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">-Y ➔ +IES (Consonante + Y)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• study ➔ <tspan fill="#34d399" font-weight="bold">studies</tspan></text>
+    <text x="15" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• fly ➔ <tspan fill="#34d399" font-weight="bold">flies</tspan></text>
+    <text x="15" y="115" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• try ➔ <tspan fill="#34d399" font-weight="bold">tries</tspan></text>
+    <text x="15" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">• play ➔ plays (vocal + y)</text>
+    <text x="100" y="168" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#34d399">Cambia 'y' por 'ies'</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(30, 275)">
+    <rect x="0" y="0" width="640" height="80" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="320" y="28" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      FÓRMULA: <tspan fill="#38bdf8">[ He / She / It ]</tspan> + <tspan fill="#c084fc">[ Verbo + -s / -es / -ies ]</tspan> + <tspan fill="#34d399">[ Complemento ]</tspan>
+    </text>
+    <text x="320" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#e2e8f0">
+      Ejemplo: "Carlos <tspan fill="#c084fc" font-weight="bold">wakes up</tspan> at 6 AM and Elena <tspan fill="#c084fc" font-weight="bold">watches</tspan> documentaries."
+    </text>
+  </g>
+</svg>"""
+
+        # 3. Adverbs of Frequency & Routine Timeline (ONLY for Time & Frequency topics)
+        if any(w in combined_text for w in ["adverb", "frequency", "frecuencia", "time & frequency", "always / usually", "adverbs of frequency"]) and not any(w in combined_text for w in ["third person", "-s", "tercera persona"]):
             return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
   <defs>
     <linearGradient id="chalkBg" x1="0" y1="0" x2="1" y2="1">
@@ -2070,6 +2128,103 @@ class TutorAgent:
                     "tips": "This y These son para objetos cercanos; That y Those para objetos lejanos."
                 }
 
+        # 4. Dedicated phase-specific grammar structures for Daily Routines & Present Simple
+        if any(k in low_top for k in ["routine", "rutina", "daily", "present simple", "habit"]):
+            p_name = str(p.get("phase_name", "")).lower()
+            p_says = str(p.get("tutor_says", "")).lower()
+            if any(k in p_name or k in p_says for k in ["-s", "third person", "tercera persona", "magia de la -s", "he / she", "works"]):
+                return {
+                    "title": "Regla: Tercera Persona Singular (He / She / It)",
+                    "formula": "[ He / She / It ] + [ Verbo + -s / -es / -ies ] + [ Complemento ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto 3ra Persona", "pattern": "He / She / It / Carlos", "color": "blue"},
+                        {"role": "Verbo con -s", "pattern": "works / watches / studies", "color": "purple"},
+                        {"role": "Complemento", "pattern": "at 6 AM / coffee / English", "color": "emerald"}
+                    ],
+                    "explanation": "Con He, She, It agrega -s al verbo (works, sleeps), -es tras silbidos (watches, goes) o -ies (studies).",
+                    "example_breakdowns": [
+                        {
+                            "english": "Mateo wakes up at six in the morning.",
+                            "spanish": "Mateo se despierta a las seis de la mañana.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "Mateo", "color": "blue"},
+                                {"role": "Verbo-s", "text": "wakes up", "color": "purple"},
+                                {"role": "Hora", "text": "at six in the morning", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Nunca omitas la -s con He/She/It: 'Carlos works' (no 'Carlos work')."
+                }
+            elif any(k in p_name or k in p_says for k in ["fonét", "phonetic", "pronunciación", "sonido", "contrast"]):
+                return {
+                    "title": "Pronunciación de la Terminación -s (/s/, /z/, /ɪz/)",
+                    "formula": "/s/ (sorda) | /z/ (sonora) | /ɪz/ (silbidos)",
+                    "formula_tokens": [
+                        {"role": "Sonido /s/", "pattern": "sleeps / eats / works", "color": "blue"},
+                        {"role": "Sonido /z/", "pattern": "lives / plays / reads", "color": "purple"},
+                        {"role": "Sonido /ɪz/", "pattern": "watches / exercises", "color": "emerald"}
+                    ],
+                    "explanation": "/s/ tras consonante sorda; /z/ tras vocal o consonante sonora; /ɪz/ como sílaba extra tras silbidos.",
+                    "example_breakdowns": [
+                        {
+                            "english": "Elena watches documentaries.",
+                            "spanish": "Elena mira documentales.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "Elena", "color": "blue"},
+                                {"role": "Sonido /ɪz/", "text": "watches", "color": "purple"},
+                                {"role": "Objeto", "text": "documentaries", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "En 'watches' y 'exercises', pronuncia la terminación como 'iz'."
+                }
+            elif any(k in p_name or k in p_says for k in ["error", "trampa", "duelo", "pitfall"]):
+                return {
+                    "title": "Corrección de Error: Concordancia de Sujeto",
+                    "formula": "❌ 'He wake up' ➔ ✅ 'He wakes up'",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "He / She / It", "color": "blue"},
+                        {"role": "Forma Correcta", "pattern": "wakes up / has breakfast", "color": "emerald"},
+                        {"role": "Error a Evitar", "pattern": "wake up (sin -s)", "color": "rose"}
+                    ],
+                    "explanation": "El error más frecuente en hispanohablantes es olvidar la -s en tercera persona.",
+                    "example_breakdowns": [
+                        {
+                            "english": "He wakes up at seven.",
+                            "spanish": "Él se despierta a las siete.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "He", "color": "blue"},
+                                {"role": "Verbo", "text": "wakes up", "color": "emerald"},
+                                {"role": "Hora", "text": "at seven", "color": "purple"}
+                            ]
+                        }
+                    ],
+                    "tips": "Verifica siempre el sujeto antes de pronunciar el verbo."
+                }
+            else:
+                return {
+                    "title": "Estructura: Hábitos y Rutinas Cotidianas",
+                    "formula": "[ I / You / We / They ] + [ Verbo Base ] + [ Complemento ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / We / They", "color": "blue"},
+                        {"role": "Verbo Base", "pattern": "wake up / have breakfast / drink", "color": "purple"},
+                        {"role": "Complemento", "pattern": "early / hot coffee / every day", "color": "emerald"}
+                    ],
+                    "explanation": "Usa la forma base del verbo con los pronombres I, You, We, They.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I wake up at seven and drink coffee.",
+                            "spanish": "Me despierto a las siete y tomo café.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Verbo", "text": "wake up", "color": "purple"},
+                                {"role": "Complemento", "text": "at seven and drink coffee", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Describe tus hábitos con el verbo en forma base: 'I wake up'."
+                }
+
         # Fallback to grammar_core if available
         if grammar_core:
             return {
@@ -2577,41 +2732,40 @@ class TutorAgent:
                 }
             })
 
-        # ── Step 3: Example Sentence(s) / Diagram / Whiteboard Notes ──
+        # ── Step 3: Didactic Diagram (if applicable) ──
         if diagram:
             s3_audio = remaining[0] if remaining else "Analiza el esquema didáctico para comprender la relación conceptual."
             remaining = remaining[1:] if remaining else []
             timeline.append({
                 "step_index": len(timeline) + 1,
-                "step_title": "3. Esquema Didáctico",
+                "step_title": f"{len(timeline)+1}. Esquema Didáctico",
                 "tutor_audio": s3_audio,
                 "visual_action": "show_diagram",
                 "payload": {
                     "svg": diagram
                 }
             })
-        else:
-            first_item = target_audio[0] if target_audio else {}
-            s3_audio = remaining[0] if remaining else (f"Escucha y observa este ejemplo: {first_item.get('english', 'la oración en la pizarra')}." if first_item else "Analiza los ejemplos clave.")
-            remaining = remaining[1:] if remaining else []
-            s3_spoken = self._extract_spoken_english_examples(s3_audio)
 
-            # Reconcile with extracted spoken verbs and their exact paired translations
-            target_trans = s3_spoken.get("transformations") or spoken_overall.get("transformations") or []
-            target_eng = s3_spoken.get("primary") or spoken_overall.get("primary") or first_item.get("english") or "wake up"
-            target_spa = s3_spoken.get("primary_translation") or spoken_overall.get("primary_translation") or first_item.get("translation") or first_item.get("spanish") or "Oración modelo en contexto."
-            target_contrast = s3_spoken.get("contrasts") or spoken_overall.get("contrasts") or []
-            target_phonetic = s3_spoken.get("phonetic_pairs") or spoken_overall.get("phonetic_pairs") or []
-            target_freq = s3_spoken.get("frequency_scale") or spoken_overall.get("frequency_scale") or []
-            
-            extra_examples = s3_spoken.get("additional") or spoken_overall.get("additional") or []
-            if not extra_examples and len(target_audio) > 1:
-                extra_examples = target_audio[1:5]
+        # ── Step 4: Examples, Verb Transformations & Oral Practice ──
+        first_item = target_audio[0] if target_audio else {}
+        s_audio = remaining[0] if remaining else (f"Escucha y observa este ejemplo: {first_item.get('english', 'la oración en la pizarra')}." if first_item else "Practica los ejemplos en voz alta.")
+        remaining = remaining[1:] if remaining else []
+        s_spoken = self._extract_spoken_english_examples(s_audio)
 
+        target_trans = s_spoken.get("transformations") or spoken_overall.get("transformations") or []
+        target_eng = s_spoken.get("primary") or spoken_overall.get("primary") or first_item.get("english") or "I wake up early"
+        target_spa = s_spoken.get("primary_translation") or spoken_overall.get("primary_translation") or first_item.get("translation") or first_item.get("spanish") or "Me despierto temprano."
+        target_contrast = s_spoken.get("contrasts") or spoken_overall.get("contrasts") or []
+        target_phonetic = s_spoken.get("phonetic_pairs") or spoken_overall.get("phonetic_pairs") or []
+        target_freq = s_spoken.get("frequency_scale") or spoken_overall.get("frequency_scale") or []
+        extra_examples = s_spoken.get("additional") or spoken_overall.get("additional") or (target_audio[1:5] if len(target_audio) > 1 else [])
+
+        # Only add example sentence step if there are examples, transformations, or no diagram was shown
+        if not diagram or target_trans or target_eng or extra_examples or target_contrast:
             timeline.append({
                 "step_index": len(timeline) + 1,
-                "step_title": "3. Ejemplos en Acción",
-                "tutor_audio": s3_audio,
+                "step_title": f"{len(timeline)+1}. Ejemplos y Práctica Oral",
+                "tutor_audio": s_audio,
                 "visual_action": "show_example_sentence",
                 "payload": {
                     "english": target_eng,

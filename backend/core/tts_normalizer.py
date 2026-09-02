@@ -208,10 +208,25 @@ def normalize_tts_text(text: str, is_spanish_tutor: bool = True) -> str:
     processed = re.sub(r'[\U00010000-\U0010ffff]', '', processed)
     processed = re.sub(r'[\u2600-\u27BF\uE000-\uF8FF]', '', processed)
 
-    # 3. Clean IPA phonetic transcriptions in slashes (e.g. /ʃʊd/ -> shud, /ˈev.ri deɪ/ -> evri dei)
+    # 3. Clean IPA phonetic transcriptions in slashes (e.g. /s/ -> ese, /z/ -> z sonora, /fəʊnz/ -> strip)
     def clean_ipa(m):
-        raw = m.group(1).replace('ˈ', '').replace('.', '').replace('ː', '').replace(' ', '')
-        return f" {raw} "
+        raw = m.group(1).strip()
+        clean = raw.replace('ˈ', '').replace('.', '').replace('ː', '').replace(' ', '')
+        if clean in ['s', 'S']:
+            return " ese "
+        if clean in ['z', 'Z']:
+            return " z sonora "
+        if clean in ['ɪz', 'iz', 'Iz']:
+            return " iz "
+        if clean in ['iː', 'i:', 'ii']:
+            return " i larga "
+        if clean in ['ɪ', 'I']:
+            return " i corta "
+        if clean in ['ð', 'th']:
+            return " sonido th "
+        # Whole-word phonetic spellings (like /fəʊnz/, /penz/, /bæɡz/) must be stripped
+        # so neural TTS voices never articulate raw phonetic glyphs or spelling noise
+        return " "
     processed = re.sub(r'/([A-Za-zʃʊʌæəɪɔɑɜθðʒŋːˈ\.\s]+)/', clean_ipa, processed)
 
     # 4. Clean alternatives with slashes (e.g. I/You -> I o You, s/es -> s o es, should/must -> should o must)

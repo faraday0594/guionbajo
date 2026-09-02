@@ -1355,17 +1355,171 @@ class TutorAgent:
                 }
             ]
 
-        # 5. General / Contextual default for any topic (8 exercises)
+        # 5. Objects & Possession (This / That / These / Those, Possessive 's, Plural Nouns)
+        elif any(k in t_low for k in ["object", "possession", "demonstrative", "this / that", "these / those", "plural"]):
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "_____ [This / These / Those] is my new smartphone on the desk.",
+                    "options": ["This", "These", "Those"],
+                    "expected_answer": "This",
+                    "spanish_translation": "Este es mi nuevo teléfono inteligente sobre el escritorio.",
+                    "image_prompt": "A modern smartphone resting next to a coffee mug on a clean wooden desk, 2D vector art, no text",
+                    "hint": "Para un solo objeto singular cercano usamos 'This is'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "_____ [Those / That / This] are your house keys on the kitchen counter.",
+                    "options": ["Those", "That", "This"],
+                    "expected_answer": "Those",
+                    "spanish_translation": "Esas son las llaves de tu casa sobre la mesada de la cocina.",
+                    "image_prompt": "A shiny keychain with brass keys lying on a marble kitchen island, 2D vector art, no text",
+                    "hint": "Para objetos plurales lejos del hablante usamos 'Those are'."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "Is this _____ [John's / Johns / John] black leather jacket?",
+                    "options": ["John's", "Johns", "John"],
+                    "expected_answer": "John's",
+                    "spanish_translation": "¿Esta es la chaqueta de cuero negro de John?",
+                    "image_prompt": "A stylish black leather jacket hanging neatly on a wooden coat rack, 2D vector art, no text",
+                    "hint": "El posesivo sajón en inglés requiere apóstrofo y 's': 'John's'."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "She has two luxury _____ [watches / watchs / watch] in her collection.",
+                    "options": ["watches", "watchs", "watch"],
+                    "expected_answer": "watches",
+                    "spanish_translation": "Ella tiene dos relojes de lujo en su colección.",
+                    "image_prompt": "Two elegant metallic wristwatches displayed inside a velvet box, 2D vector art, no text",
+                    "hint": "Sustantivos terminados en -ch agregan -es en plural: 'watches'."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "_____ [These / This / That] books belong to the university library.",
+                    "options": ["These", "This", "That"],
+                    "expected_answer": "These",
+                    "spanish_translation": "Estos libros pertenecen a la biblioteca universitaria.",
+                    "image_prompt": "A stack of colorful academic textbooks on a study desk, 2D vector art, no text",
+                    "hint": "Para sustantivos plurales cercanos (books) usamos 'These'."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "That red sports car _____ [is / are / am] Sarah's new vehicle.",
+                    "options": ["is", "are", "am"],
+                    "expected_answer": "is",
+                    "spanish_translation": "Ese auto deportivo rojo es el nuevo vehículo de Sarah.",
+                    "image_prompt": "A sleek red sports car parked in front of a modern house, 2D vector art, no text",
+                    "hint": "Sujeto singular 'That car' lleva el verbo 'is'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "Where are Carlos's _____ [glasses / glass / glasss]? He cannot read without them.",
+                    "options": ["glasses", "glass", "glasss"],
+                    "expected_answer": "glasses",
+                    "spanish_translation": "¿Dónde están los lentes de Carlos? No puede leer sin ellos.",
+                    "image_prompt": "A pair of reading glasses resting on an open book next to a desk lamp, 2D vector art, no text",
+                    "hint": "Palabras terminadas en -ss agregan -es: 'glasses'."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "This is Maria's backpack and that is _____ [David's / Davids / David] laptop bag.",
+                    "options": ["David's", "Davids", "David"],
+                    "expected_answer": "David's",
+                    "spanish_translation": "Esta es la mochila de María y esa es la bolsa de la laptop de David.",
+                    "image_prompt": "A student backpack and a messenger laptop bag on a university bench, 2D vector art, no text",
+                    "hint": "Indica pertenencia con el apóstrofo: 'David's'."
+                }
+            ]
+
+        # 6. English Sounds & Introductions / Greetings / Verb To Be
+        elif any(k in t_low for k in ["sound", "intro", "greet", "to be", "personal", "hello", "name"]):
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "Hello, I _____ [am / is / are] Carlos and I live in Madrid.",
+                    "options": ["am", "is", "are"],
+                    "expected_answer": "am",
+                    "spanish_translation": "Hola, yo soy Carlos y vivo en Madrid.",
+                    "image_prompt": "A friendly man waving and smiling warmly in front of a city landmark, 2D vector art, no text",
+                    "hint": "Con el pronombre I usamos am."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "Maria _____ [is / am / are] an architect from Barcelona.",
+                    "options": ["is", "am", "are"],
+                    "expected_answer": "is",
+                    "spanish_translation": "María es arquitecta de Barcelona.",
+                    "image_prompt": "A young professional woman smiling with architectural blueprints, 2D vector art, no text",
+                    "hint": "Con She (Maria) usamos is."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "They _____ [are / is / am] new students in the English course.",
+                    "options": ["are", "is", "am"],
+                    "expected_answer": "are",
+                    "spanish_translation": "Ellos son nuevos estudiantes en el curso de inglés.",
+                    "image_prompt": "Two cheerful students holding notebooks in a sunny campus hallway, 2D vector art, no text",
+                    "hint": "Con They usamos are."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "My name _____ [is / are / am] Sofia and it is nice to meet you.",
+                    "options": ["is", "are", "am"],
+                    "expected_answer": "is",
+                    "spanish_translation": "Mi nombre es Sofía y es un gusto conocerte.",
+                    "image_prompt": "A woman introducing herself politely with a gentle hand gesture, 2D vector art, no text",
+                    "hint": "My name equivale a tercera persona singular: is."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "Where _____ [are / is / am] you from?",
+                    "options": ["are", "is", "am"],
+                    "expected_answer": "are",
+                    "spanish_translation": "¿De dónde eres tú?",
+                    "image_prompt": "Two travelers chatting happily at a coffee stand, 2D vector art, no text",
+                    "hint": "Con you en preguntas usamos are you."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "He _____ [is / are / am] from Spain and speaks Spanish fluently.",
+                    "options": ["is", "are", "am"],
+                    "expected_answer": "is",
+                    "spanish_translation": "Él es de España y habla español con fluidez.",
+                    "image_prompt": "A young man in a casual blue jacket in a historic European square, 2D vector art, no text",
+                    "hint": "Con He usamos is."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "We _____ [are / is / am] very excited to learn English together.",
+                    "options": ["are", "is", "am"],
+                    "expected_answer": "are",
+                    "spanish_translation": "Estamos muy emocionados de aprender inglés juntos.",
+                    "image_prompt": "A diverse group of smiling classmates sitting at a circular study table, 2D vector art, no text",
+                    "hint": "Con We usamos are."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "It _____ [is / are / am] a wonderful morning to practice conversation.",
+                    "options": ["is", "are", "am"],
+                    "expected_answer": "is",
+                    "spanish_translation": "Es una mañana maravillosa para practicar conversación.",
+                    "image_prompt": "Morning sun shining through big classroom windows, 2D vector art, no text",
+                    "hint": "Con It usamos is."
+                }
+            ]
+
+        # 7. General Contextual Default
         else:
             return [
                 {
                     "id": "ex-1",
-                    "sentence": f"When practicing daily, you should _____ [apply / applying / applied] the structure of {topic} clearly.",
-                    "options": ["apply", "applying", "applied"],
-                    "expected_answer": "apply",
-                    "spanish_translation": f"Al practicar a diario, debes aplicar la estructura de {topic} con claridad.",
-                    "image_prompt": f"A smiling student studying with headphones and a tablet in a bright room, 2D flat vector art, no text",
-                    "hint": f"Usa el verbo base después de modales: 'should apply'."
+                    "sentence": f"Can you _____ [speak / speaks / speaking] English with clarity and confidence?",
+                    "options": ["speak", "speaks", "speaking"],
+                    "expected_answer": "speak",
+                    "spanish_translation": f"¿Puedes hablar inglés con claridad y confianza?",
+                    "image_prompt": f"A student speaking English in a modern study lounge, 2D flat vector art, no text",
+                    "hint": f"Tras el modal Can usamos la forma base del verbo: 'speak'."
                 },
                 {
                     "id": "ex-2",
@@ -1840,6 +1994,80 @@ class TutorAgent:
                         }
                     ] if first_audio else [],
                     "tips": "Mantén el orden sintáctico para asegurar coherencia y naturalidad."
+                }
+
+        # 3. Dedicated phase-specific grammar structures for Objects & Possession
+        if "object" in low_top or "possession" in low_top or "demonstrative" in low_top:
+            p_name = str(p.get("phase_name", "")).lower()
+            p_says = str(p.get("tutor_says", "")).lower()
+            if "plural" in p_name or "plural" in p_says:
+                return {
+                    "title": "Regla Morfológica: Plurales Regulares (-s / -es)",
+                    "formula": "[ Singular: a / an + Sustantivo ] → [ Plural: Sustantivo + -s / -es ]",
+                    "formula_tokens": [
+                        {"role": "Singular", "pattern": "a book / a glass / a watch", "color": "blue"},
+                        {"role": "Cambio", "pattern": "→", "color": "purple"},
+                        {"role": "Plural Regular", "pattern": "books / glasses / watches", "color": "emerald"}
+                    ],
+                    "explanation": "La mayoría de sustantivos agrega -s (book → books); palabras terminadas en -s, -sh, -ch, -x agregan -es (glasses, watches).",
+                    "example_breakdowns": [
+                        {
+                            "english": "One book becomes three books.",
+                            "spanish": "Un libro se convierte en tres libros.",
+                            "parts": [
+                                {"role": "Singular", "text": "One book", "color": "blue"},
+                                {"role": "Cambio", "text": "becomes", "color": "purple"},
+                                {"role": "Plural", "text": "three books", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Pronuncia -es como una sílaba extra con sonido /ɪz/ tras silbidos: glasses, watches."
+                }
+            elif "posesiv" in p_name or "possession" in p_name or "'s" in p_name or "trampa" in p_name or "error" in p_name:
+                return {
+                    "title": "Fórmula: Posesivo Sajón ('s)",
+                    "formula": "[ Poseedor ] + [ 's ] + [ Objeto Poseído ]",
+                    "formula_tokens": [
+                        {"role": "Poseedor", "pattern": "John / Maria / My friend", "color": "blue"},
+                        {"role": "Apóstrofo Posesivo", "pattern": "'s", "color": "purple"},
+                        {"role": "Objeto Poseído", "pattern": "pen / phone / jacket", "color": "emerald"}
+                    ],
+                    "explanation": "En inglés la pertenencia se indica con 's tras el poseedor: 'John's pen' (el bolígrafo de John). Nunca digas 'John pen'.",
+                    "example_breakdowns": [
+                        {
+                            "english": "This is John's pen.",
+                            "spanish": "Este es el bolígrafo de John.",
+                            "parts": [
+                                {"role": "Demostrativo", "text": "This is", "color": "blue"},
+                                {"role": "Poseedor", "text": "John's", "color": "purple"},
+                                {"role": "Objeto", "text": "pen", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Coloca el poseedor antes del objeto: 'Sarah's notebook' en vez de 'the notebook of Sarah'."
+                }
+            else:
+                return {
+                    "title": "Estructura: Demostrativos en Inglés",
+                    "formula": "[ This / That (Singular) | These / Those (Plural) ] + [ is / are ] + [ Objeto ]",
+                    "formula_tokens": [
+                        {"role": "Demostrativo", "pattern": "This / That (is) | These / Those (are)", "color": "blue"},
+                        {"role": "Verbo To Be", "pattern": "is / are", "color": "purple"},
+                        {"role": "Objeto", "pattern": "my phone / your keys", "color": "emerald"}
+                    ],
+                    "explanation": "Usa 'This/That' con 'is' para singular; usa 'These/Those' con 'are' para plural.",
+                    "example_breakdowns": [
+                        {
+                            "english": "This is my phone.",
+                            "spanish": "Este es mi teléfono.",
+                            "parts": [
+                                {"role": "Demostrativo", "text": "This", "color": "blue"},
+                                {"role": "Verbo", "text": "is", "color": "purple"},
+                                {"role": "Objeto", "text": "my phone", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "This y These son para objetos cercanos; That y Those para objetos lejanos."
                 }
 
         # Fallback to grammar_core if available

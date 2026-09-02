@@ -1137,6 +1137,32 @@ const COMMON_ENGLISH_SPANISH: Record<string, string> = {
   'i usually drink coffee at 8 am in the morning': 'Normalmente tomo café a las 8 AM por la mañana',
   'i usually drink coffee': 'Normalmente tomo café (orden correcto)',
   'i drink usually coffee': 'Orden incorrecto del adverbio',
+  'this is': 'este/esta es',
+  'that is': 'ese/aquel es',
+  'these are': 'estos/estas son',
+  'those are': 'esos/aquellos son',
+  'this is my phone': 'Este es mi teléfono.',
+  'that is your car': 'Ese es tu auto.',
+  'these are my keys': 'Estas son mis llaves.',
+  'those are our bags': 'Esas son nuestras mochilas.',
+  'these are my glasses': 'Estas son mis gafas / lentes.',
+  'this is john\'s pen': 'Este es el bolígrafo de John.',
+  'john\'s pen': 'El bolígrafo de John.',
+  'sarah\'s notebook': 'El cuaderno de Sarah.',
+  'book': 'libro',
+  'books': 'libros',
+  'glass': 'vaso / lente',
+  'glasses': 'gafas / lentes',
+  'watch': 'reloj',
+  'watches': 'relojes',
+  'key': 'llave',
+  'keys': 'llaves',
+  'pen': 'bolígrafo / lapicero',
+  'pens': 'bolígrafos / lapiceros',
+  'phone': 'teléfono',
+  'phones': 'teléfonos',
+  'cup': 'taza',
+  'cups': 'tazas',
 };
 
 // ─── HELPER: Extract Spoken English Quotes & Transformations from Tutor Speech
@@ -1357,15 +1383,19 @@ function extractSpokenEnglishQuotes(speechText: string) {
     }
   }
 
-  let primaryEng = 'I live in Spain';
-  let primarySpa = '';
+  let primaryEng = 'This is my phone';
+  let primarySpa = 'Este es mi teléfono.';
   const modelMatch = speechText.match(/(?:ejemplo|oración\s+modelo|intenta\s+decir\s+en\s+voz\s+alta)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
   if (modelMatch && isValidEnglishTargetPhrase(modelMatch[1].trim()) && !incorrectQuotes.has(modelMatch[1].trim().toLowerCase())) {
     primaryEng = modelMatch[1].trim();
     primarySpa = COMMON_ENGLISH_SPANISH[primaryEng.toLowerCase()] || 'Oración modelo en contexto';
   } else if (items.length > 0) {
-    primaryEng = items[0].english;
-    primarySpa = items[0].translation;
+    // 🌟 Prioritize complete sentences (words >= 3) over isolated words ('books') or short fragments ('this is')
+    const fullSentenceItem = items.find(it => it.english.trim().split(/\s+/).length >= 3);
+    const twoWordItem = items.find(it => it.english.trim().split(/\s+/).length >= 2 && !['this is', 'that is', 'these are', 'those are'].includes(it.english.trim().toLowerCase()));
+    const itemToUse = fullSentenceItem || twoWordItem || items[0];
+    primaryEng = itemToUse.english;
+    primarySpa = itemToUse.translation || COMMON_ENGLISH_SPANISH[primaryEng.toLowerCase()] || 'Oración modelo';
   }
 
   return {
@@ -1386,7 +1416,7 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
   return steps.map((step) => {
     const p = { ...step.payload };
 
-    // 1. Sanitize Contrasts (Swap if inverted, fix "leeve", remove duplicates)
+    // 1. Sanitize Contrasts (Swap if inverted, fix "leeve", fix "john pen", remove duplicates)
     if (p.contrasts && Array.isArray(p.contrasts)) {
       const sanitizedContrasts = p.contrasts
         .map((ct: any) => {
@@ -1406,6 +1436,20 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
               correct: 'I live in Spain',
               incorrect: 'I leeve in Spain',
               why: 'Usa la vocal corta /ɪ/ en "live", no el sonido largo /iː/ ("leave" significa salir/irse)',
+            };
+          }
+
+          // If either side is "john pen" or "john" as possessive
+          if (
+            corLow.includes('john pen') ||
+            incLow.includes('john pen') ||
+            (corLow === 'john' && incLow.includes('pen')) ||
+            (incLow === 'john' && corLow.includes('pen'))
+          ) {
+            return {
+              correct: "This is John's pen",
+              incorrect: "This is John pen",
+              why: "Usa el apóstrofo con 's para indicar posesión: John's pen (no 'John pen')",
             };
           }
 
@@ -1482,17 +1526,33 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
 
     // 3. Sanitize primary English target sentence & ensure accurate translation
     if (p.english) {
-      const engLow = String(p.english).toLowerCase().trim();
+      let engLow = String(p.english).toLowerCase().trim();
       if (
         engLow === 'to be' ||
         engLow === 'espain' ||
         engLow === 'i maria' ||
         engLow === 'i liv in spain' ||
+        engLow === 'john pen' ||
         !isValidEnglishTargetPhrase(p.english)
       ) {
-        const validAlt = p.additional_examples?.[0]?.english || 'I am from Spain, and I live in Madrid.';
+        const fullAlt = p.additional_examples?.find((ad: any) => ad.english && ad.english.trim().split(/\s+/).length >= 3)?.english;
+        const validAlt = fullAlt || p.additional_examples?.[0]?.english || 'This is my phone and those are your keys.';
         p.english = validAlt;
-        p.spanish = p.additional_examples?.[0]?.translation || 'Soy de España y vivo en Madrid.';
+        p.spanish = COMMON_ENGLISH_SPANISH[validAlt.toLowerCase()] || p.additional_examples?.[0]?.translation || 'Oración modelo';
+      } else {
+        // If single isolated word ('books', 'pens') or incomplete fragment ('this is', 'that is'), upgrade to full sentence if available
+        if (engLow.split(/\s+/).length < 2 || ['this is', 'that is', 'these are', 'those are'].includes(engLow)) {
+          const fullAlt = p.additional_examples?.find((ad: any) => ad.english && ad.english.trim().split(/\s+/).length >= 3);
+          if (fullAlt) {
+            p.english = fullAlt.english;
+            p.spanish = fullAlt.translation || fullAlt.spanish || COMMON_ENGLISH_SPANISH[fullAlt.english.toLowerCase()] || 'Oración modelo';
+          }
+        }
+        // Force correct Spanish translation from dictionary if available (prevents 'books' -> 'Estas son mis gafas')
+        engLow = String(p.english).toLowerCase().trim();
+        if (COMMON_ENGLISH_SPANISH[engLow]) {
+          p.spanish = COMMON_ENGLISH_SPANISH[engLow];
+        }
       }
     }
 
@@ -2014,6 +2074,90 @@ function buildFrontendOfflineLesson(topic: string, sublevel: string, lessonId: s
         spanish_translation: 'Es una mañana maravillosa para practicar conversación.',
         image_prompt: 'Morning sun shining through big classroom windows, 2D vector art, no text',
         hint: 'Con It usamos is.'
+      }
+    ];
+  } else if (low.includes('object') || low.includes('possession') || low.includes('demonstrative') || low.includes('this') || low.includes('that')) {
+    modelSentence1 = 'This is my phone and those are your keys.';
+    modelSentenceTrans1 = 'Este es mi teléfono y esas son tus llaves.';
+    modelSentence2 = "This is John's jacket and these are Sarah's books.";
+    modelSentenceTrans2 = 'Esta es la chaqueta de John y estos son los libros de Sarah.';
+    ruleTitle = "Demostrativos (This / That / These / Those) y Posesivo ('s)";
+    formulaText = "[ This / That (is) | These / Those (are) ] + [ Posesivo / Nombre's ] + [ Objeto ]";
+    errorWrong = "This are my keys and that is the book of John.";
+    errorCorrect = "These are my keys and that is John's book.";
+    errorTip = "Usa 'These are' con plurales y el posesivo sajón 'John's book' para pertenencia.";
+    exercises = [
+      {
+        id: 'ex-1',
+        sentence: '_____ [This / These / Those] is my new smartphone on the desk.',
+        options: ['This', 'These', 'Those'],
+        expected_answer: 'This',
+        spanish_translation: 'Este es mi nuevo teléfono inteligente sobre el escritorio.',
+        image_prompt: 'A modern smartphone resting next to a coffee mug on a clean wooden desk, 2D vector art, no text',
+        hint: "Para un solo objeto singular cercano usamos 'This is'."
+      },
+      {
+        id: 'ex-2',
+        sentence: '_____ [Those / That / This] are your house keys on the kitchen counter.',
+        options: ['Those', 'That', 'This'],
+        expected_answer: 'Those',
+        spanish_translation: 'Esas son las llaves de tu casa sobre la mesada de la cocina.',
+        image_prompt: 'A shiny keychain with brass keys lying on a marble kitchen island, 2D vector art, no text',
+        hint: "Para objetos plurales lejos del hablante usamos 'Those are'."
+      },
+      {
+        id: 'ex-3',
+        sentence: "Is this _____ [John's / Johns / John] black leather jacket?",
+        options: ["John's", 'Johns', 'John'],
+        expected_answer: "John's",
+        spanish_translation: '¿Esta es la chaqueta de cuero negro de John?',
+        image_prompt: 'A stylish black leather jacket hanging neatly on a wooden coat rack, 2D vector art, no text',
+        hint: "El posesivo sajón en inglés requiere apóstrofo y 's': 'John's'."
+      },
+      {
+        id: 'ex-4',
+        sentence: 'She has two luxury _____ [watches / watchs / watch] in her collection.',
+        options: ['watches', 'watchs', 'watch'],
+        expected_answer: 'watches',
+        spanish_translation: 'Ella tiene dos relojes de lujo en su colección.',
+        image_prompt: 'Two elegant metallic wristwatches displayed inside a velvet box, 2D vector art, no text',
+        hint: "Sustantivos terminados en -ch agregan -es en plural: 'watches'."
+      },
+      {
+        id: 'ex-5',
+        sentence: '_____ [These / This / That] books belong to the university library.',
+        options: ['These', 'This', 'That'],
+        expected_answer: 'These',
+        spanish_translation: 'Estos libros pertenecen a la biblioteca universitaria.',
+        image_prompt: 'A stack of colorful academic textbooks on a study desk, 2D vector art, no text',
+        hint: "Para sustantivos plurales cercanos (books) usamos 'These'."
+      },
+      {
+        id: 'ex-6',
+        sentence: "That red sports car _____ [is / are / am] Sarah's new vehicle.",
+        options: ['is', 'are', 'am'],
+        expected_answer: 'is',
+        spanish_translation: 'Ese auto deportivo rojo es el nuevo vehículo de Sarah.',
+        image_prompt: 'A sleek red sports car parked in front of a modern house, 2D vector art, no text',
+        hint: "Sujeto singular 'That car' lleva el verbo 'is'."
+      },
+      {
+        id: 'ex-7',
+        sentence: "Where are Carlos's _____ [glasses / glass / glasss]? He cannot read without them.",
+        options: ['glasses', 'glass', 'glasss'],
+        expected_answer: 'glasses',
+        spanish_translation: '¿Dónde están los lentes de Carlos? No puede leer sin ellos.',
+        image_prompt: 'A pair of reading glasses resting on an open book next to a desk lamp, 2D vector art, no text',
+        hint: "Palabras terminadas en -ss agregan -es: 'glasses'."
+      },
+      {
+        id: 'ex-8',
+        sentence: "This is Maria's backpack and that is _____ [David's / Davids / David] laptop bag.",
+        options: ["David's", 'Davids', 'David'],
+        expected_answer: "David's",
+        spanish_translation: 'Esta es la mochila de María y esa es la bolsa de la laptop de David.',
+        image_prompt: 'A student backpack and a messenger laptop bag on a university bench, 2D vector art, no text',
+        hint: "Indica pertenencia con el apóstrofo: 'David's'."
       }
     ];
   } else {
@@ -2744,6 +2888,7 @@ export default function LessonPage() {
           const isPresentTopic = topicParam.toLowerCase().includes('present') || topicParam.toLowerCase().includes('routine') || topicParam.toLowerCase().includes('daily') || topicParam.toLowerCase().includes('habit');
           const isFutureTopic = topicParam.toLowerCase().includes('future') || topicParam.toLowerCase().includes('going to') || topicParam.toLowerCase().includes('will');
           const isIntroTopic = topicParam.toLowerCase().includes('sound') || topicParam.toLowerCase().includes('intro') || topicParam.toLowerCase().includes('greet') || topicParam.toLowerCase().includes('to be') || topicParam.toLowerCase().includes('personal') || topicParam.toLowerCase().includes('hello');
+          const isObjectsTopic = topicParam.toLowerCase().includes('object') || topicParam.toLowerCase().includes('possession') || topicParam.toLowerCase().includes('demonstrative') || topicParam.toLowerCase().includes('this') || topicParam.toLowerCase().includes('that') || topicParam.toLowerCase().includes('these') || topicParam.toLowerCase().includes('those');
 
           const defaultExercises = isPastTopic ? [
             {
@@ -2963,6 +3108,79 @@ export default function LessonPage() {
               spanish_translation: 'Es una mañana maravillosa para practicar conversación.',
               image_prompt: 'Morning sun shining through big classroom windows, 2D vector art, no text',
               hint: 'Con It usamos is.'
+            }
+          ] : isObjectsTopic ? [
+            {
+              id: 'ex-1',
+              sentence: '_____ [This / These / Those] is my new smartphone on the desk.',
+              options: ['This', 'These', 'Those'],
+              expected_answer: 'This',
+              spanish_translation: 'Este es mi nuevo teléfono inteligente sobre el escritorio.',
+              image_prompt: 'A modern smartphone resting next to a coffee mug on a clean wooden desk, 2D vector art, no text',
+              hint: "Para un solo objeto singular cercano usamos 'This is'."
+            },
+            {
+              id: 'ex-2',
+              sentence: '_____ [Those / That / This] are your house keys on the kitchen counter.',
+              options: ['Those', 'That', 'This'],
+              expected_answer: 'Those',
+              spanish_translation: 'Esas son las llaves de tu casa sobre la mesada de la cocina.',
+              image_prompt: 'A shiny keychain with brass keys lying on a marble kitchen island, 2D vector art, no text',
+              hint: "Para objetos plurales lejos del hablante usamos 'Those are'."
+            },
+            {
+              id: 'ex-3',
+              sentence: "Is this _____ [John's / Johns / John] black leather jacket?",
+              options: ["John's", 'Johns', 'John'],
+              expected_answer: "John's",
+              spanish_translation: '¿Esta es la chaqueta de cuero negro de John?',
+              image_prompt: 'A stylish black leather jacket hanging neatly on a wooden coat rack, 2D vector art, no text',
+              hint: "El posesivo sajón en inglés requiere apóstrofo y 's': 'John's'."
+            },
+            {
+              id: 'ex-4',
+              sentence: 'She has two luxury _____ [watches / watchs / watch] in her collection.',
+              options: ['watches', 'watchs', 'watch'],
+              expected_answer: 'watches',
+              spanish_translation: 'Ella tiene dos relojes de lujo en su colección.',
+              image_prompt: 'Two elegant metallic wristwatches displayed inside a velvet box, 2D vector art, no text',
+              hint: "Sustantivos terminados en -ch agregan -es en plural: 'watches'."
+            },
+            {
+              id: 'ex-5',
+              sentence: '_____ [These / This / That] books belong to the university library.',
+              options: ['These', 'This', 'That'],
+              expected_answer: 'These',
+              spanish_translation: 'Estos libros pertenecen a la biblioteca universitaria.',
+              image_prompt: 'A stack of colorful academic textbooks on a study desk, 2D vector art, no text',
+              hint: "Para sustantivos plurales cercanos (books) usamos 'These'."
+            },
+            {
+              id: 'ex-6',
+              sentence: "That red sports car _____ [is / are / am] Sarah's new vehicle.",
+              options: ['is', 'are', 'am'],
+              expected_answer: 'is',
+              spanish_translation: 'Ese auto deportivo rojo es el nuevo vehículo de Sarah.',
+              image_prompt: 'A sleek red sports car parked in front of a modern house, 2D vector art, no text',
+              hint: "Sujeto singular 'That car' lleva el verbo 'is'."
+            },
+            {
+              id: 'ex-7',
+              sentence: "Where are Carlos's _____ [glasses / glass / glasss]? He cannot read without them.",
+              options: ['glasses', 'glass', 'glasss'],
+              expected_answer: 'glasses',
+              spanish_translation: '¿Dónde están los lentes de Carlos? No puede leer sin ellos.',
+              image_prompt: 'A pair of reading glasses resting on an open book next to a desk lamp, 2D vector art, no text',
+              hint: "Palabras terminadas en -ss agregan -es: 'glasses'."
+            },
+            {
+              id: 'ex-8',
+              sentence: "This is Maria's backpack and that is _____ [David's / Davids / David] laptop bag.",
+              options: ["David's", 'Davids', 'David'],
+              expected_answer: "David's",
+              spanish_translation: 'Esta es la mochila de María y esa es la bolsa de la laptop de David.',
+              image_prompt: 'A student backpack and a messenger laptop bag on a university bench, 2D vector art, no text',
+              hint: "Indica pertenencia con el apóstrofo: 'David's'."
             }
           ] : [
             {

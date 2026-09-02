@@ -1144,31 +1144,87 @@ function extractSpokenEnglishQuotes(speechText: string) {
     .map(m => ({ from: m[1].trim(), to: m[2].trim() }))
     .filter(t => t.from.length >= 2 && t.to.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(t.from) && !/[áéíóúñÁÉÍÓÚÑ]/.test(t.to));
 
-  const contMatches = Array.from(
-    speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:y no|y nunca|no|en lugar de|instead of|mientras que)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
-  );
-  const contrasts = contMatches
-    .map(m => ({ correct: m[1].trim(), incorrect: m[2].trim(), why: 'Contraste fonético / gramatical' }))
-    .filter(c => c.correct.length >= 2 && c.incorrect.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(c.correct) && !/[áéíóúñÁÉÍÓÚÑ]/.test(c.incorrect));
+  const contrasts: Array<{ correct: string; incorrect: string; why: string }> = [];
+  const incorrectQuotes = new Set<string>();
 
-  // Detect Common Errors introduced like: "Un error típico ... diciendo 'I drink usually coffee'"
-  const errMatch = speechText.match(/(?:error\s+típico[^\n\r]*?diciendo|diciendo|es\s+incorrecto\s+decir|en\s+lugar\s+de\s+decir|no\s+digas)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
-  if (errMatch) {
-    const incorrectQuote = errMatch[1].trim();
-    if (!contrasts.some(c => c.incorrect.toLowerCase() === incorrectQuote.toLowerCase())) {
-      let correctCand = 'I usually drink coffee';
-      const modelCand = speechText.match(/(?:ejemplo|orden\s+correcto[^\n\r]*?['"‘“]|modelo\s+es[^\n\r]*?['"‘“])\s*['"‘“]?([^'"‘“’”\n\r]+)['"’”]/i);
-      if (modelCand) {
-        const cand = modelCand[1].trim();
-        if (cand.length >= 3 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cand)) {
-          correctCand = cand.split(/\s+/).slice(0, 4).join(' ');
-        }
+  // 1. Explicit Dual Matching: e.g. "La versión ❌ Incorrecta sería 'I Maria' ... La versión ✅ Correcta es 'I am Maria'"
+  const explicitDualMatches = Array.from(
+    speechText.matchAll(/(?:versión\s+(?:❌\s*)?incorrecta[^\n\r]*?|forma\s+incorrecta[^\n\r]*?)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”][^\n\r]{0,80}?(?:versión\s+(?:✅\s*)?correcta[^\n\r]*?|forma\s+correcta[^\n\r]*?)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+  );
+  for (const edm of explicitDualMatches) {
+    const inc = edm[1].trim();
+    const cor = edm[2].trim();
+    if (inc.length >= 2 && cor.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) {
+      contrasts.push({ correct: cor, incorrect: inc, why: 'Duelo gramatical / fonético' });
+      incorrectQuotes.add(inc.toLowerCase());
+    }
+  }
+
+  // 2. Explicit Reverse Matching: e.g. "La forma correcta es 'I am Maria' ... error ... 'I Maria'"
+  const explicitReverseMatches = Array.from(
+    speechText.matchAll(/(?:forma\s+correcta[^\n\r]*?|versión\s+correcta[^\n\r]*?)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”][^\n\r]{0,80}?(?:error|incorrect[ao]|en\s+lugar\s+de)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+  );
+  for (const erm of explicitReverseMatches) {
+    const cor = erm[1].trim();
+    const inc = erm[2].trim();
+    if (cor.length >= 2 && inc.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) {
+      if (!contrasts.some(c => c.correct.toLowerCase() === cor.toLowerCase())) {
+        contrasts.push({ correct: cor, incorrect: inc, why: 'Duelo gramatical / fonético' });
       }
-      contrasts.push({
-        correct: correctCand,
-        incorrect: incorrectQuote,
-        why: 'El adverbio va SIEMPRE ANTES del verbo principal',
-      });
+      incorrectQuotes.add(inc.toLowerCase());
+    }
+  }
+
+  // 3. "en lugar de" / "en vez de" / "instead of":
+  // In Spanish, saying "decir 'Espain' en lugar de 'Spain'" -> m[1] is INCORRECT ('Espain'), m[2] is CORRECT ('Spain')!
+  const enLugarDeMatches = Array.from(
+    speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:en\s+lugar\s+de|en\s+vez\s+de|instead\s+of)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+  );
+  for (const elm of enLugarDeMatches) {
+    const inc = elm[1].trim();
+    const cor = elm[2].trim();
+    if (inc.length >= 2 && cor.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) {
+      if (!contrasts.some(c => c.correct.toLowerCase() === cor.toLowerCase())) {
+        contrasts.push({ correct: cor, incorrect: inc, why: 'Evita la interferencia del español' });
+      }
+      incorrectQuotes.add(inc.toLowerCase());
+    }
+  }
+
+  // 4. "di X y no Y" / "usa X y nunca Y":
+  // Here m[1] is CORRECT, m[2] is INCORRECT
+  const yNoMatches = Array.from(
+    speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:y\s+no|y\s+nunca|mientras\s+que\s+no)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+  );
+  for (const ynm of yNoMatches) {
+    const cor = ynm[1].trim();
+    const inc = ynm[2].trim();
+    if (cor.length >= 2 && inc.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) {
+      if (!contrasts.some(c => c.correct.toLowerCase() === cor.toLowerCase())) {
+        contrasts.push({ correct: cor, incorrect: inc, why: 'Regla de pronunciación y gramática' });
+      }
+      incorrectQuotes.add(inc.toLowerCase());
+    }
+  }
+
+  // 5. Scan speech for error phrases to BAN from audio practice
+  const generalErrorMatches = Array.from(
+    speechText.matchAll(/(?:error\s+típico|error\s+común|error\s+gravísimo|trampa|es\s+incorrecto\s+decir|no\s+digas|en\s+vez\s+de\s+decir|diciendo)\s*[^'"‘“’”\n\r]{0,40}['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+  );
+  for (const gem of generalErrorMatches) {
+    const inc = gem[1].trim().toLowerCase();
+    if (!contrasts.some(c => c.correct.toLowerCase() === inc)) {
+      incorrectQuotes.add(inc);
+    }
+  }
+
+  const trailingErrorMatches = Array.from(
+    speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”]\s*[^'"‘“’”\n\r]{0,35}(?:es\s+(?:un\s+)?error|está\s+mal|es\s+incorrecto|sin\s+verbo|pronunciación\s+española)/gi)
+  );
+  for (const tem of trailingErrorMatches) {
+    const inc = tem[1].trim().toLowerCase();
+    if (!contrasts.some(c => c.correct.toLowerCase() === inc)) {
+      incorrectQuotes.add(inc);
     }
   }
 
@@ -1213,19 +1269,20 @@ function extractSpokenEnglishQuotes(speechText: string) {
   }
   for (const c of contrasts) {
     syntacticPartQuotes.add(c.incorrect.toLowerCase());
+    incorrectQuotes.add(c.incorrect.toLowerCase());
   }
 
   // Extract Real Spoken Drill Sentences (e.g. "Repite conmigo mentalmente: I always wake up early. She never eats at night.")
   const drillSentences: Array<{ english: string; translation: string }> = [];
-  const drillMatch = speechText.match(/(?:repite\s+conmigo(?:\s+mentalmente)?:\s*|practica\s+con:\s*)([^.\n\r]+(?:\.[^.\n\r]+)*)/i);
+  const drillMatch = speechText.match(/(?:repite\s+conmigo(?:\s+mentalmente)?:\s*|practica\s+con:\s*|intenta\s+decir\s+en\s+voz\s+alta:\s*|intenta\s+decir\s+en\s+voz\s+alta\s*['"‘“]?)([^.\n\r]+(?:\.[^.\n\r]+)*)/i);
   if (drillMatch) {
-    const drillRaw = drillMatch[1];
+    const drillRaw = drillMatch[1].replace(/['"‘“’”]/g, '');
     for (const s of drillRaw.split(/[.;]/)) {
       const sClean = s.replace(/^(?:mentalmente|conmigo|y)\s*[:,\s]*/i, '').trim();
-      if (sClean.split(/\s+/).length >= 3 && !/[áéíóúñÁÉÍÓÚÑ]/.test(sClean)) {
+      if (sClean.split(/\s+/).length >= 3 && !/[áéíóúñÁÉÍÓÚÑ]/.test(sClean) && !incorrectQuotes.has(sClean.toLowerCase())) {
         drillSentences.push({
           english: sClean,
-          translation: COMMON_ENGLISH_SPANISH[sClean.toLowerCase()] || 'Práctica oral',
+          translation: COMMON_ENGLISH_SPANISH[sClean.toLowerCase()] || 'Práctica oral modelo',
         });
       }
     }
@@ -1245,7 +1302,7 @@ function extractSpokenEnglishQuotes(speechText: string) {
     'que', 'al', 'a', 'son', 'va', 'van', 'colocado', 'antes', 'despues', 'palabra', 'oracion',
     'frase', 'regla', 'sujeto', 'verbo', 'complemento', 'tiempo', 'lugar', 'manana', 'tarde', 'noche',
     'siempre', 'normalmente', 'usualmente', 'a veces', 'nunca', 'frecuencia', 'rutina', 'habito',
-    'yo', 'tu', 'el', 'ella', 'nosotros', 'ustedes', 'ellos', 'ellas'
+    'yo', 'tu', 'el', 'ella', 'nosotros', 'ustedes', 'ellos', 'ellas', 'madrid', 'españa', 'carlos', 'maria'
   ]);
 
   const isSpanishPhrase = (text: string): boolean => {
@@ -1258,7 +1315,7 @@ function extractSpokenEnglishQuotes(speechText: string) {
 
   const metaDisqualifiers = new Set([
     's', 'es', 'ed', 'ing', 'd', 've', 're', 'll', 'm', 't', 'i', 'he', 'she', 'it', 'we', 'they', 'you',
-    'ch', 'sh', 'x', 'z', 'regla', 'fórmula', 'sujeto', 'verbo', 'complemento', 'pizarra', 'ejemplo', 'eat', 'have', 'uniforme', 'corbata'
+    'ch', 'sh', 'x', 'z', 'regla', 'fórmula', 'sujeto', 'verbo', 'complemento', 'pizarra', 'ejemplo', 'eat', 'have', 'uniforme', 'corbata', 'to be', 'live', 'spain'
   ]);
 
   const items: Array<{ english: string; translation: string }> = [];
@@ -1266,7 +1323,7 @@ function extractSpokenEnglishQuotes(speechText: string) {
 
   // Include drill sentences first
   for (const d of drillSentences) {
-    if (!isSpanishPhrase(d.english) && !seen.has(d.english.toLowerCase())) {
+    if (!isSpanishPhrase(d.english) && !seen.has(d.english.toLowerCase()) && !incorrectQuotes.has(d.english.toLowerCase())) {
       seen.add(d.english.toLowerCase());
       items.push(d);
     }
@@ -1276,38 +1333,52 @@ function extractSpokenEnglishQuotes(speechText: string) {
   for (const m of rawQuotes) {
     const eng = m[1].trim();
     const low = eng.toLowerCase();
-    if (eng.length >= 2 && !metaDisqualifiers.has(low) && !seen.has(low) && !isSpanishPhrase(eng)) {
-      seen.add(low);
-      let trans = COMMON_ENGLISH_SPANISH[low] || '';
-      if (m.index !== undefined) {
-        const endPos = m.index + m[0].length;
-        const trailer = speechText.slice(endPos, endPos + 50);
 
-        // Check if following quote is the translation: significa 'te despiertas'
-        const transQuoteMatch = trailer.match(/^(?:\s*(?:significa|es decir|es|o sea|se traduce como|traducido como))\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
-        if (transQuoteMatch) {
-          const explicitSpa = transQuoteMatch[1].trim();
-          trans = explicitSpa;
-          seen.add(explicitSpa.toLowerCase());
-        } else if (!trans) {
-          const defMatch = trailer.match(/^(?:\s*(?:significa|es decir|es|o sea|se traduce como)\s+)?([a-zA-ZáéíóúñÁÉÍÓÚÑ\s]{3,25})/i);
-          if (defMatch && /significa|es|es decir|o sea/i.test(trailer.slice(0, 15))) {
-            const rawT = defMatch[1].trim().replace(/[.,;:]+$/, '');
-            const cleanT = rawT.replace(/^(?:decir|cuando|y|que|un|una|muestra|cómo|la)\s+/i, '').trim();
-            if (cleanT.length >= 3 && isSpanishPhrase(cleanT)) {
-              trans = cleanT;
-            }
+    // 🛡️ BANNED FROM AUDIO PRACTICE:
+    // 1. Any phrase identified as incorrect or an error
+    if (incorrectQuotes.has(low)) continue;
+    if (contrasts.some(c => c.incorrect.toLowerCase() === low)) continue;
+
+    // 2. Reject meta tokens, syntactic tokens, Spanish phrases, or phrases containing "error/trampa"
+    if (metaDisqualifiers.has(low) || seen.has(low) || isSpanishPhrase(eng)) continue;
+    if (/error|incorrect|trampa|fals[ao]|gravísimo/i.test(eng)) continue;
+
+    // 3. Must be a valid English phrase (rejects grammar labels, lone words, invalid respellings)
+    if (!isValidEnglishTargetPhrase(eng)) continue;
+
+    seen.add(low);
+    let trans = COMMON_ENGLISH_SPANISH[low] || '';
+    if (m.index !== undefined) {
+      const endPos = m.index + m[0].length;
+      const trailer = speechText.slice(endPos, endPos + 50);
+
+      // Check if following quote is the translation: significa 'te despiertas'
+      const transQuoteMatch = trailer.match(/^(?:\s*(?:significa|es decir|es|o sea|se traduce como|traducido como))\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
+      if (transQuoteMatch) {
+        const explicitSpa = transQuoteMatch[1].trim();
+        trans = explicitSpa;
+        seen.add(explicitSpa.toLowerCase());
+      } else if (!trans) {
+        const defMatch = trailer.match(/^(?:\s*(?:significa|es decir|es|o sea|se traduce como)\s+)?([a-zA-ZáéíóúñÁÉÍÓÚÑ\s]{3,25})/i);
+        if (defMatch && /significa|es|es decir|o sea/i.test(trailer.slice(0, 15))) {
+          const rawT = defMatch[1].trim().replace(/[.,;:]+$/, '');
+          const cleanT = rawT.replace(/^(?:decir|cuando|y|que|un|una|muestra|cómo|la)\s+/i, '').trim();
+          if (cleanT.length >= 3 && isSpanishPhrase(cleanT)) {
+            trans = cleanT;
           }
         }
       }
-      items.push({ english: eng, translation: trans });
     }
+    // Only push if translation does NOT indicate an error!
+    if (trans && /error|incorrect|trampa|gravísimo|mal/i.test(trans)) continue;
+
+    items.push({ english: eng, translation: trans });
   }
 
   // Also include minimal pair words in items if not already added
   for (const pair of phoneticPairs) {
     for (const [w, tr] of [[pair.word1, pair.trans1], [pair.word2, pair.trans2]] as const) {
-      if (w && !seen.has(w.toLowerCase())) {
+      if (w && !seen.has(w.toLowerCase()) && !incorrectQuotes.has(w.toLowerCase()) && isValidEnglishTargetPhrase(w)) {
         seen.add(w.toLowerCase());
         items.push({ english: w, translation: tr || '' });
       }
@@ -1315,10 +1386,10 @@ function extractSpokenEnglishQuotes(speechText: string) {
   }
 
   // Model sentence selection
-  let primaryEng = 'I wake up at 7 AM';
-  let primarySpa = 'Me despierto a las 7 AM';
-  const modelMatch = speechText.match(/(?:ejemplo|oración\s+modelo)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
-  if (modelMatch) {
+  let primaryEng = '';
+  let primarySpa = '';
+  const modelMatch = speechText.match(/(?:ejemplo|oración\s+modelo|intenta\s+decir\s+en\s+voz\s+alta)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
+  if (modelMatch && isValidEnglishTargetPhrase(modelMatch[1].trim()) && !incorrectQuotes.has(modelMatch[1].trim().toLowerCase())) {
     primaryEng = modelMatch[1].trim();
     primarySpa = COMMON_ENGLISH_SPANISH[primaryEng.toLowerCase()] || 'Oración modelo en contexto';
   } else if (items.length > 0) {
@@ -1333,7 +1404,7 @@ function extractSpokenEnglishQuotes(speechText: string) {
     primary_translation: primarySpa,
     items,
     additional,
-    transformations,
+    transformations: [],
     contrasts,
     phonetic_pairs: phoneticPairs,
     frequency_scale: frequencyScale,

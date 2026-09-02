@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import ScoreDisplay from './TutorPanel/ScoreDisplay';
+import { isValidEnglishTargetPhrase } from '@/app/lesson/[id]/page';
 
 export interface TimelineStepPayload {
   title?: string;
@@ -808,14 +809,32 @@ export default function TimelineVisualRenderer({
                       )}
 
                       {/* 5. Additional secondary examples if present (with Listen + Mic practice) */}
-                      {p.additional_examples && p.additional_examples.filter(ad => ad.english && ad.english.trim().length >= 2).length > 0 && (
+                      {p.additional_examples && p.additional_examples.filter(ad => {
+                        if (!ad.english || ad.english.trim().length < 3) return false;
+                        const low = ad.english.toLowerCase().trim();
+                        if (low.includes('error') || low.includes('incorrect') || low.includes('trampa') || low.includes('gravísimo')) return false;
+                        const transLow = (ad.translation || ad.spanish || '').toLowerCase();
+                        if (transLow.includes('error') || transLow.includes('incorrect') || transLow.includes('trampa') || transLow.includes('gravísimo')) return false;
+                        if (p.contrasts?.some(c => c.incorrect?.toLowerCase() === low || c.correct?.toLowerCase() === low)) return false;
+                        if (p.contrast && (p.contrast.incorrect?.toLowerCase() === low || p.contrast.correct?.toLowerCase() === low)) return false;
+                        return isValidEnglishTargetPhrase(ad.english);
+                      }).length > 0 && (
                         <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
                           <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300/80 block">
                             Otros Ejemplos y Verbos Clave:
                           </span>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {p.additional_examples
-                              .filter(ad => ad.english && ad.english.trim().length >= 2)
+                              .filter(ad => {
+                                if (!ad.english || ad.english.trim().length < 3) return false;
+                                const low = ad.english.toLowerCase().trim();
+                                if (low.includes('error') || low.includes('incorrect') || low.includes('trampa') || low.includes('gravísimo')) return false;
+                                const transLow = (ad.translation || ad.spanish || '').toLowerCase();
+                                if (transLow.includes('error') || transLow.includes('incorrect') || transLow.includes('trampa') || transLow.includes('gravísimo')) return false;
+                                if (p.contrasts?.some(c => c.incorrect?.toLowerCase() === low || c.correct?.toLowerCase() === low)) return false;
+                                if (p.contrast && (p.contrast.incorrect?.toLowerCase() === low || p.contrast.correct?.toLowerCase() === low)) return false;
+                                return isValidEnglishTargetPhrase(ad.english);
+                              })
                               .map((ad, adIdx) => {
                                 const exKey = `ex-${currentStepNumber}-${adIdx}`;
                                 const isThisRecording = itemRecordingKey === exKey;
@@ -1136,11 +1155,14 @@ export default function TimelineVisualRenderer({
                   )}
 
                   {/* ──────────────────────────────────────────────────────────
-                      F. BOARD NOTES / SUMMARY
+                      F. BOARD NOTES / SUMMARY (Only show if distinct and actionable)
                       ────────────────────────────────────────────────────────── */}
-                  {step.visual_action === 'show_board_notes' && p.notes && (
-                    <div className="p-4 rounded-2xl bg-black/50 border border-white/15 text-white/90 text-xs font-mono leading-relaxed space-y-1">
-                      <strong className="text-brand-cyan block">📌 Nota Clave:</strong>
+                  {step.visual_action === 'show_board_notes' && p.notes && p.notes.trim() !== (step.tutor_audio || '').trim() && (
+                    <div className="p-4 rounded-2xl bg-black/50 border border-brand-cyan/30 text-white/90 text-xs font-mono leading-relaxed space-y-1 shadow-md">
+                      <strong className="text-brand-cyan flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px]">
+                        <Lightbulb size={13} className="text-brand-cyan" />
+                        <span>Resumen Pedagógico:</span>
+                      </strong>
                       <p>{p.notes}</p>
                     </div>
                   )}

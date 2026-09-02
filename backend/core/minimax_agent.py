@@ -2413,13 +2413,14 @@ class TutorAgent:
                 }
             })
         elif remaining:
+            first_sentence = (remaining[0].split(".")[0].strip() + ".") if remaining else "Recuerda aplicar este patrón en tus conversaciones."
             timeline.append({
                 "step_index": len(timeline) + 1,
                 "step_title": f"{len(timeline)+1}. Resumen Clave",
                 "tutor_audio": " ".join(remaining),
                 "visual_action": "show_board_notes",
                 "payload": {
-                    "notes": " ".join(remaining)
+                    "notes": first_sentence
                 }
             })
 

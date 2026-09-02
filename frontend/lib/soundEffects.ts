@@ -158,6 +158,32 @@ class SoundEffectsEngine {
     osc.start(now);
     osc.stop(now + 0.1);
   }
+
+  /**
+   * 🛑 Mic Stop / Processing Beep
+   * Gentle descending micro-tone alerting that recording ended and AI processing started.
+   */
+  playMicStop() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1174.66, now);
+    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.08); // D6 -> G5
+
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.1);
+  }
 }
 
 export const sfx = new SoundEffectsEngine();

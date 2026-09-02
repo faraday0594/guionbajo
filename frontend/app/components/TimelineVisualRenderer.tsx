@@ -18,6 +18,7 @@ import {
   Activity,
   RotateCcw,
   X,
+  Loader2,
 } from 'lucide-react';
 import ScoreDisplay from './TutorPanel/ScoreDisplay';
 import { isValidEnglishTargetPhrase } from '@/app/lesson/[id]/page';
@@ -737,56 +738,134 @@ export default function TimelineVisualRenderer({
                       ))}
 
                       {/* 4. Main English Sentence / Core Target */}
-                      {p.english && (
-                        <div className="my-3 p-3.5 rounded-xl bg-black/50 border border-white/15 flex items-center justify-between gap-3">
-                          <div className="space-y-1">
-                            <div className="text-sm sm:text-base font-bold font-mono text-white tracking-wide">
-                              &quot;{p.english}&quot;
+                      {p.english && (() => {
+                        const mainKey = `main-${currentStepNumber}`;
+                        const isThisRecording = itemRecordingKey === mainKey;
+                        const isThisProcessing = itemProcessingKey === mainKey;
+                        const evalItem = itemEvaluations?.[mainKey];
+                        const score = evalItem ? (evalItem.overall_score ?? evalItem.score ?? (evalItem.is_correct ? 95 : 60)) : null;
+
+                        return (
+                          <div className="my-3 p-3.5 rounded-2xl bg-black/50 border border-white/15 space-y-2.5">
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="space-y-1">
+                                <div className="text-sm sm:text-base font-bold font-mono text-white tracking-wide">
+                                  &quot;{p.english}&quot;
+                                </div>
+                                {p.spanish && (
+                                  <div className="text-xs text-brand-text-secondary italic">
+                                    ({p.spanish})
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {onPlayAudio && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onPlayAudio(p.english!)}
+                                    className="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 border border-emerald-500/40 transition-all flex items-center gap-1.5 text-xs font-semibold shadow-md cursor-pointer"
+                                    title="Escuchar oración en inglés nativo"
+                                  >
+                                    <Volume2 size={14} />
+                                    <span className="hidden sm:inline">Escuchar</span>
+                                  </button>
+                                )}
+                                {onStartItemRecording && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (isThisRecording) {
+                                        onStopItemRecording?.();
+                                      } else {
+                                        onStartItemRecording(mainKey, p.english!);
+                                      }
+                                    }}
+                                    disabled={isThisProcessing}
+                                    className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold shadow-md cursor-pointer ${
+                                      isThisRecording
+                                        ? 'bg-rose-500 text-white animate-pulse border-rose-400'
+                                        : isThisProcessing
+                                        ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300'
+                                        : 'bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border-cyan-500/40'
+                                    }`}
+                                    title="Practicar pronunciación con micrófono"
+                                  >
+                                    {isThisProcessing ? (
+                                      <>
+                                        <Loader2 size={14} className="animate-spin text-cyan-300" />
+                                        <span className="hidden sm:inline">Evaluando...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Mic size={14} />
+                                        <span className="hidden sm:inline">{isThisRecording ? 'Detener' : 'Practicar'}</span>
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            {p.spanish && (
-                              <div className="text-xs text-brand-text-secondary italic">
-                                ({p.spanish})
+
+                            {/* Active Recording Transcript Indicator */}
+                            {isThisRecording && (
+                              <div className="w-full text-xs font-mono text-rose-300 bg-rose-950/50 p-2.5 rounded-xl border border-rose-500/50 flex items-center justify-between gap-2 animate-pulse shadow-md">
+                                <div className="flex items-center gap-2 truncate">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping flex-shrink-0" />
+                                  <span className="font-bold">Escuchando:</span>
+                                  <span className="italic truncate">{itemLiveTranscript || 'Habla ahora en inglés...'}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={onStopItemRecording}
+                                  className="px-2 py-0.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold flex-shrink-0 cursor-pointer"
+                                >
+                                  Listo
+                                </button>
+                              </div>
+                            )}
+
+                            {/* AI Processing Status Indicator */}
+                            {isThisProcessing && (
+                              <div className="w-full text-xs font-mono text-cyan-300 bg-cyan-950/40 p-2.5 rounded-xl border border-cyan-500/50 flex items-center gap-2 shadow-md animate-pulse">
+                                <Loader2 size={14} className="animate-spin text-cyan-400 flex-shrink-0" />
+                                <span className="font-bold">Analizando tu pronunciación con IA...</span>
+                              </div>
+                            )}
+
+                            {/* Feedback & Score Pill */}
+                            {evalItem && score !== null && (
+                              <div className={`w-full text-xs font-mono p-3 rounded-xl border flex items-start gap-2.5 shadow-md ${
+                                evalItem.is_correct || score >= 75
+                                  ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-200'
+                                  : 'bg-amber-950/50 border-amber-500/50 text-amber-200'
+                              }`}>
+                                <div className="flex-shrink-0 mt-0.5">
+                                  {evalItem.is_correct || score >= 75 ? (
+                                    <CheckCircle2 size={16} className="text-emerald-400" />
+                                  ) : (
+                                    <AlertCircle size={16} className="text-amber-400" />
+                                  )}
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs">
+                                      {evalItem.is_correct || score >= 75 ? '🎯 ¡Excelente pronunciación!' : '💡 Buen intento'}
+                                    </span>
+                                    <span className="font-extrabold px-2 py-0.5 rounded-md bg-black/50 text-[11px]">
+                                      {score}%
+                                    </span>
+                                  </div>
+                                  {evalItem.feedback && (
+                                    <p className="text-xs leading-relaxed text-slate-200 font-sans">
+                                      {evalItem.feedback}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            {onPlayAudio && (
-                              <button
-                                type="button"
-                                onClick={() => onPlayAudio(p.english!)}
-                                className="p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 border border-emerald-500/40 transition-all flex items-center gap-1.5 text-xs font-semibold shadow-md"
-                                title="Escuchar oración"
-                              >
-                                <Volume2 size={14} />
-                                <span className="hidden sm:inline">Escuchar</span>
-                              </button>
-                            )}
-                            {onStartItemRecording && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const mainKey = `main-${currentStepNumber}`;
-                                  if (itemRecordingKey === mainKey) {
-                                    onStopItemRecording?.();
-                                  } else {
-                                    onStartItemRecording(mainKey, p.english!);
-                                  }
-                                }}
-                                disabled={itemProcessingKey === `main-${currentStepNumber}`}
-                                className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold shadow-md ${
-                                  itemRecordingKey === `main-${currentStepNumber}`
-                                    ? 'bg-red-500 text-white animate-pulse border-red-400'
-                                    : 'bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border-cyan-500/40'
-                                }`}
-                                title="Practicar pronunciación con micrófono"
-                              >
-                                <Mic size={14} />
-                                <span className="hidden sm:inline">Practicar</span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Parts breakdown chips if available */}
                       {p.parts && p.parts.length > 0 && (
@@ -823,7 +902,7 @@ export default function TimelineVisualRenderer({
                           <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300/80 block">
                             Otros Ejemplos y Verbos Clave:
                           </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             {p.additional_examples
                               .filter(ad => {
                                 if (!ad.english || ad.english.trim().length < 3) return false;
@@ -840,58 +919,120 @@ export default function TimelineVisualRenderer({
                                 const isThisRecording = itemRecordingKey === exKey;
                                 const isThisProcessing = itemProcessingKey === exKey;
                                 const evalItem = itemEvaluations?.[exKey];
+                                const score = evalItem ? (evalItem.overall_score ?? evalItem.score ?? (evalItem.is_correct ? 95 : 60)) : null;
 
                                 return (
                                   <div
                                     key={adIdx}
-                                    className="p-2.5 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between gap-2 hover:border-emerald-400/40 transition-colors"
+                                    className="p-3 rounded-xl bg-black/40 border border-white/10 flex flex-col justify-between gap-2 hover:border-emerald-400/40 transition-colors"
                                   >
-                                    <div className="text-xs space-y-0.5">
-                                      <div className="font-bold text-white font-mono">&quot;{ad.english}&quot;</div>
-                                      {(ad.translation || ad.spanish) && (
-                                        <div className="text-[10px] text-brand-text-secondary italic">
-                                          {ad.translation || ad.spanish}
-                                        </div>
-                                      )}
-                                      {evalItem && (
-                                        <div className="text-[10px] font-mono text-emerald-400 font-bold">
-                                          🎯 {evalItem.score}%
-                                        </div>
-                                      )}
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="text-xs space-y-0.5">
+                                        <div className="font-bold text-white font-mono">&quot;{ad.english}&quot;</div>
+                                        {(ad.translation || ad.spanish) && (
+                                          <div className="text-[10px] text-brand-text-secondary italic">
+                                            {ad.translation || ad.spanish}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                                        {onPlayAudio && ad.english && (
+                                          <button
+                                            type="button"
+                                            onClick={() => onPlayAudio(ad.english)}
+                                            className="p-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 transition-colors cursor-pointer"
+                                            title="Escuchar pronunciación"
+                                          >
+                                            <Volume2 size={13} />
+                                          </button>
+                                        )}
+                                        {onStartItemRecording && ad.english && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              if (isThisRecording) {
+                                                onStopItemRecording?.();
+                                              } else {
+                                                onStartItemRecording(exKey, ad.english);
+                                              }
+                                            }}
+                                            disabled={isThisProcessing}
+                                            className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                              isThisRecording
+                                                ? 'bg-rose-500 text-white animate-pulse border-rose-400'
+                                                : isThisProcessing
+                                                ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300'
+                                                : 'bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border-cyan-400/30'
+                                            }`}
+                                            title="Practicar con micrófono"
+                                          >
+                                            {isThisProcessing ? (
+                                              <Loader2 size={13} className="animate-spin text-cyan-300" />
+                                            ) : (
+                                              <Mic size={13} />
+                                            )}
+                                          </button>
+                                        )}
+                                      </div>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                      {onPlayAudio && ad.english && (
+
+                                    {/* Active Recording Transcript Indicator */}
+                                    {isThisRecording && (
+                                      <div className="w-full text-[11px] font-mono text-rose-300 bg-rose-950/40 p-2 rounded-lg border border-rose-500/40 flex items-center justify-between gap-1.5 animate-pulse">
+                                        <div className="flex items-center gap-1.5 truncate">
+                                          <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping flex-shrink-0" />
+                                          <span className="font-bold">Escuchando:</span>
+                                          <span className="italic truncate">{itemLiveTranscript || 'Habla ahora...'}</span>
+                                        </div>
                                         <button
                                           type="button"
-                                          onClick={() => onPlayAudio(ad.english)}
-                                          className="p-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 transition-colors"
-                                          title="Escuchar pronunciación"
+                                          onClick={onStopItemRecording}
+                                          className="px-1.5 py-0.5 rounded bg-rose-500 hover:bg-rose-600 text-white text-[9px] font-bold flex-shrink-0"
                                         >
-                                          <Volume2 size={12} />
+                                          OK
                                         </button>
-                                      )}
-                                      {onStartItemRecording && ad.english && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            if (isThisRecording) {
-                                              onStopItemRecording?.();
-                                            } else {
-                                              onStartItemRecording(exKey, ad.english);
-                                            }
-                                          }}
-                                          disabled={isThisProcessing}
-                                          className={`p-1.5 rounded-lg border transition-all ${
-                                            isThisRecording
-                                              ? 'bg-red-500 text-white animate-pulse border-red-400'
-                                              : 'bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border-cyan-400/30'
-                                          }`}
-                                          title="Practicar con micrófono"
-                                        >
-                                          <Mic size={12} />
-                                        </button>
-                                      )}
-                                    </div>
+                                      </div>
+                                    )}
+
+                                    {/* AI Processing Status Indicator */}
+                                    {isThisProcessing && (
+                                      <div className="w-full text-[11px] font-mono text-cyan-300 bg-cyan-950/40 p-2 rounded-lg border border-cyan-500/40 flex items-center gap-2 animate-pulse">
+                                        <Loader2 size={12} className="animate-spin text-cyan-400 flex-shrink-0" />
+                                        <span className="font-bold">Evaluando audio...</span>
+                                      </div>
+                                    )}
+
+                                    {/* Feedback & Score Pill */}
+                                    {evalItem && score !== null && (
+                                      <div className={`w-full text-[11px] font-mono p-2 rounded-lg border flex items-start gap-2 ${
+                                        evalItem.is_correct || score >= 75
+                                          ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                                          : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+                                      }`}>
+                                        <div className="flex-shrink-0 mt-0.5">
+                                          {evalItem.is_correct || score >= 75 ? (
+                                            <CheckCircle2 size={13} className="text-emerald-400" />
+                                          ) : (
+                                            <AlertCircle size={13} className="text-amber-400" />
+                                          )}
+                                        </div>
+                                        <div className="flex-1 space-y-0.5">
+                                          <div className="flex items-center justify-between">
+                                            <span className="font-bold">
+                                              {evalItem.is_correct || score >= 75 ? '🎯 Buen puntaje' : '💡 Por mejorar'}
+                                            </span>
+                                            <span className="font-extrabold px-1.5 py-0.2 rounded bg-black/40 text-[10px]">
+                                              {score}%
+                                            </span>
+                                          </div>
+                                          {evalItem.feedback && (
+                                            <p className="text-[10px] leading-tight text-slate-300 font-sans">
+                                              {evalItem.feedback}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}

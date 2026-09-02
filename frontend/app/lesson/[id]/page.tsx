@@ -1315,41 +1315,20 @@ function extractSpokenEnglishQuotes(speechText: string) {
     if (!text || typeof text !== 'string') return false;
     if (/[áéíóúñÁÉÍÓÚÑ]/.test(text)) return true;
     const tokens = text.split(/\s+/).map(w => w.toLowerCase().replace(/[,.:;!?"'()[\]{}]/g, ''));
-    if (tokens.length === 0) return false;
     return tokens.some(w => SPANISH_DISQUALIFIERS.has(w));
   };
 
-  const metaDisqualifiers = new Set([
-    's', 'es', 'ed', 'ing', 'd', 've', 're', 'll', 'm', 't', 'i', 'he', 'she', 'it', 'we', 'they', 'you',
-    'ch', 'sh', 'x', 'z', 'regla', 'fórmula', 'sujeto', 'verbo', 'complemento', 'pizarra', 'ejemplo', 'eat', 'have', 'uniforme', 'corbata', 'to be', 'live', 'spain'
-  ]);
+  const quoteRegex = /['"‘“]([^'"‘“’”\n\r]+)['"’”]/g;
+  const items: Array<{ english: string; translation: string; phonetic?: string }> = [];
+  const seen = new Set<string>();
 
-  const items: Array<{ english: string; translation: string }> = [];
-  const seen = new Set<string>(syntacticPartQuotes);
-
-  // Include drill sentences first
-  for (const d of drillSentences) {
-    if (!isSpanishPhrase(d.english) && !seen.has(d.english.toLowerCase()) && !incorrectQuotes.has(d.english.toLowerCase())) {
-      seen.add(d.english.toLowerCase());
-      items.push(d);
-    }
-  }
-
-  const rawQuotes = Array.from(speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”]/g));
-  for (const m of rawQuotes) {
+  let m;
+  while ((m = quoteRegex.exec(speechText)) !== null) {
     const eng = m[1].trim();
     const low = eng.toLowerCase();
 
-    // 🛡️ BANNED FROM AUDIO PRACTICE:
-    // 1. Any phrase identified as incorrect or an error
+    if (seen.has(low)) continue;
     if (incorrectQuotes.has(low)) continue;
-    if (contrasts.some(c => c.incorrect.toLowerCase() === low)) continue;
-
-    // 2. Reject meta tokens, syntactic tokens, Spanish phrases, or phrases containing "error/trampa"
-    if (metaDisqualifiers.has(low) || seen.has(low) || isSpanishPhrase(eng)) continue;
-    if (/error|incorrect|trampa|fals[ao]|gravísimo/i.test(eng)) continue;
-
-    // 3. Must be a valid English phrase (rejects grammar labels, lone words, invalid respellings)
     if (!isValidEnglishTargetPhrase(eng)) continue;
 
     seen.add(low);
@@ -1358,41 +1337,27 @@ function extractSpokenEnglishQuotes(speechText: string) {
       const endPos = m.index + m[0].length;
       const trailer = speechText.slice(endPos, endPos + 50);
 
-      // Check if following quote is the translation: significa 'te despiertas'
       const transQuoteMatch = trailer.match(/^(?:\s*(?:significa|es decir|es|o sea|se traduce como|traducido como))\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
       if (transQuoteMatch) {
         const explicitSpa = transQuoteMatch[1].trim();
         trans = explicitSpa;
         seen.add(explicitSpa.toLowerCase());
-      } else if (!trans) {
-        const defMatch = trailer.match(/^(?:\s*(?:significa|es decir|es|o sea|se traduce como)\s+)?([a-zA-ZáéíóúñÁÉÍÓÚÑ\s]{3,25})/i);
-        if (defMatch && /significa|es|es decir|o sea/i.test(trailer.slice(0, 15))) {
-          const rawT = defMatch[1].trim().replace(/[.,;:]+$/, '');
-          const cleanT = rawT.replace(/^(?:decir|cuando|y|que|un|una|muestra|cómo|la)\s+/i, '').trim();
-          if (cleanT.length >= 3 && isSpanishPhrase(cleanT)) {
-            trans = cleanT;
-          }
-        }
       }
     }
-    // Only push if translation does NOT indicate an error!
-    if (trans && /error|incorrect|trampa|gravísimo|mal/i.test(trans)) continue;
 
-    items.push({ english: eng, translation: trans });
-  }
+    if (!trans) trans = COMMON_ENGLISH_SPANISH[low] || 'Oración modelo';
 
-  // Also include minimal pair words in items if not already added
-  for (const pair of phoneticPairs) {
-    for (const [w, tr] of [[pair.word1, pair.trans1], [pair.word2, pair.trans2]] as const) {
-      if (w && !seen.has(w.toLowerCase()) && !incorrectQuotes.has(w.toLowerCase()) && isValidEnglishTargetPhrase(w)) {
-        seen.add(w.toLowerCase());
-        items.push({ english: w, translation: tr || '' });
-      }
+    items.push({
+      english: eng,
+      translation: trans,
+    });
+
+    if (eng.split(/\s+/).length >= 2) {
+      drillSentences.push({ english: eng, translation: trans });
     }
   }
 
-  // Model sentence selection
-  let primaryEng = '';
+  let primaryEng = 'I live in Spain';
   let primarySpa = '';
   const modelMatch = speechText.match(/(?:ejemplo|oración\s+modelo|intenta\s+decir\s+en\s+voz\s+alta)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
   if (modelMatch && isValidEnglishTargetPhrase(modelMatch[1].trim()) && !incorrectQuotes.has(modelMatch[1].trim().toLowerCase())) {
@@ -1403,14 +1368,12 @@ function extractSpokenEnglishQuotes(speechText: string) {
     primarySpa = items[0].translation;
   }
 
-  const additional = items.filter(it => it.english.toLowerCase() !== primaryEng.toLowerCase());
-
   return {
     primary: primaryEng,
     primary_translation: primarySpa,
     items,
-    additional,
-    transformations: [],
+    additional: items.filter((it: any) => it.english.toLowerCase() !== primaryEng.toLowerCase()),
+    transformations,
     contrasts,
     phonetic_pairs: phoneticPairs,
     frequency_scale: frequencyScale,
@@ -1423,21 +1386,34 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
   return steps.map((step) => {
     const p = { ...step.payload };
 
-    // 1. Sanitize Contrasts (Swap if inverted, remove if nonsensical)
+    // 1. Sanitize Contrasts (Swap if inverted, fix "leeve", remove duplicates)
     if (p.contrasts && Array.isArray(p.contrasts)) {
-      p.contrasts = p.contrasts
+      const sanitizedContrasts = p.contrasts
         .map((ct: any) => {
           let cor = String(ct.correct || '').trim();
           let inc = String(ct.incorrect || '').trim();
           const corLow = cor.toLowerCase();
           const incLow = inc.toLowerCase();
 
-          // Inversion Check: If 'correct' is an error ('espain', 'i maria', 'i am espain', 'i leeve', 'i liv')
+          // If either side contains "leeve", fix it cleanly:
+          if (corLow.includes('leeve') || incLow.includes('leeve')) {
+            return {
+              correct: 'I live in Spain',
+              incorrect: 'I leeve in Spain',
+              why: 'Usa la vocal corta /ɪ/ en "live", no el sonido largo /iː/',
+            };
+          }
+
+          // If both sides are identical, reject it
+          if (corLow === incLow) {
+            return null;
+          }
+
+          // Inversion Check: If 'correct' is an error ('espain', 'i maria', 'i am espain', 'i liv')
           if (
             corLow === 'espain' ||
             corLow === 'i maria' ||
             corLow === 'i am espain' ||
-            corLow.includes('leeve') ||
             corLow.includes('error') ||
             corLow.includes('incorrect') ||
             (corLow.includes('coffee') && incLow.includes('spain'))
@@ -1445,14 +1421,22 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
             if (incLow === 'spain' || incLow.includes('spain') || incLow.includes('live')) {
               return {
                 correct: incLow.includes('live') ? 'I live in Spain' : (incLow === 'spain' ? 'Spain' : inc),
-                incorrect: corLow.includes('coffee') ? 'I leeve in Spain' : cor,
+                incorrect: corLow.includes('coffee') ? 'I leeve in Spain' : (corLow === 'espain' ? 'Espain' : cor),
                 why: 'Pronunciación y gramática correcta',
+              };
+            }
+            if (corLow === 'espain') {
+              return {
+                correct: 'Spain',
+                incorrect: 'Espain',
+                why: 'No agregues la "e-" protética al inicio',
               };
             }
           }
           return { correct: cor, incorrect: inc, why: ct.why || 'Contraste fonético / gramatical' };
         })
-        .filter((ct: any) => ct.correct && ct.incorrect && isValidEnglishTargetPhrase(ct.correct));
+        .filter((ct: any): ct is { correct: string; incorrect: string; why: string } => Boolean(ct && ct.correct && ct.incorrect && isValidEnglishTargetPhrase(ct.correct)));
+      p.contrasts = sanitizedContrasts;
     }
 
     // 2. Sanitize additional_examples: Strictly purge erroneous items like 'Espain', 'I Maria', 'I liv in Spain', 'To Be'
@@ -1480,10 +1464,18 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
           return false;
         }
         return isValidEnglishTargetPhrase(ad.english);
+      }).map((ad: any) => {
+        const engLow = ad.english.toLowerCase().trim();
+        const fixedTrans = COMMON_ENGLISH_SPANISH[engLow] || ad.translation || ad.spanish || 'Oración modelo';
+        return {
+          ...ad,
+          translation: fixedTrans,
+          spanish: fixedTrans,
+        };
       });
     }
 
-    // 3. Sanitize primary English target sentence
+    // 3. Sanitize primary English target sentence & ensure accurate translation
     if (p.english) {
       const engLow = String(p.english).toLowerCase().trim();
       if (
@@ -3084,10 +3076,6 @@ export default function LessonPage() {
       };
 
       audio.onerror = () => {
-        if (audioTimerRef.current) {
-          clearInterval(audioTimerRef.current);
-          audioTimerRef.current = null;
-        }
         if (audioSessionIdRef.current === thisSessionId) {
           setTutorState('idle');
           if (autoAdvance && chunkIndex + 1 < chunks.length) {
@@ -3138,6 +3126,7 @@ export default function LessonPage() {
     stopCurrentAudio();
     const thisSessionId = audioSessionIdRef.current;
     setTutorState('thinking');
+    setAudioProgress(0);
 
     try {
       const audio = await playTTS(text);
@@ -3147,28 +3136,73 @@ export default function LessonPage() {
       }
       currentAudioRef.current = audio;
       setTutorState('speaking');
+
+      audio.ontimeupdate = () => {
+        if (audioSessionIdRef.current === thisSessionId && audio.duration && !isNaN(audio.duration)) {
+          setAudioProgress((audio.currentTime / audio.duration) * 100);
+        }
+      };
       audio.onended = () => {
         if (audioSessionIdRef.current === thisSessionId) {
           setTutorState('idle');
+          setAudioProgress(0);
         }
       };
       audio.onerror = () => {
         if (audioSessionIdRef.current === thisSessionId) {
           setTutorState('idle');
+          setAudioProgress(0);
         }
       };
     } catch (err) {
       console.warn('TTS Auxiliary error:', err);
       if (audioSessionIdRef.current === thisSessionId) {
         setTutorState('idle');
+        setAudioProgress(0);
       }
     }
   };
 
-  // Play individual English word/sentence audio with Jenny Neural HD
-  const handlePlayIndividualAudio = (text: string) => {
+  // Play individual English word/sentence audio with Jenny Neural HD + Dynamic Subtitles
+  const handlePlayIndividualAudio = async (text: string) => {
     if (!text || !text.trim()) return;
-    playEnglishAudio(text);
+    setCurrentSpeakingText(text);
+    stopCurrentAudio();
+    const thisSessionId = audioSessionIdRef.current;
+    setTutorState('thinking');
+    setAudioProgress(0);
+
+    try {
+      const audio = await playEnglishAudio(text);
+      if (audio && audioSessionIdRef.current === thisSessionId) {
+        currentAudioRef.current = audio;
+        setTutorState('speaking');
+        audio.ontimeupdate = () => {
+          if (audioSessionIdRef.current === thisSessionId && audio.duration && !isNaN(audio.duration)) {
+            setAudioProgress((audio.currentTime / audio.duration) * 100);
+          }
+        };
+        audio.onended = () => {
+          if (audioSessionIdRef.current === thisSessionId) {
+            setTutorState('idle');
+            setAudioProgress(0);
+          }
+        };
+        audio.onerror = () => {
+          if (audioSessionIdRef.current === thisSessionId) {
+            setTutorState('idle');
+            setAudioProgress(0);
+          }
+        };
+      } else if (audioSessionIdRef.current === thisSessionId) {
+        setTutorState('idle');
+      }
+    } catch (err) {
+      console.warn('Play individual English audio error:', err);
+      if (audioSessionIdRef.current === thisSessionId) {
+        setTutorState('idle');
+      }
+    }
   };
 
   // 3. Submit Main Task Answer
@@ -3303,6 +3337,7 @@ export default function LessonPage() {
 
     setItemRecordingKey(key);
     setItemLiveTranscript('');
+    try { sfx.playMicStart(); } catch (_) {}
 
     let finalTranscript = '';
 
@@ -3317,6 +3352,7 @@ export default function LessonPage() {
     };
 
     rec.onend = () => {
+      try { sfx.playMicStop(); } catch (_) {}
       if (finalTranscript.trim()) {
         const clean = normalizeNumberWords(finalTranscript.trim());
         handlePronunciationItemSubmit(key, targetSentence, clean);
@@ -3328,6 +3364,7 @@ export default function LessonPage() {
 
     rec.onerror = (e: any) => {
       console.warn('Item recognition error:', e);
+      try { sfx.playMicStop(); } catch (_) {}
       setItemRecordingKey(null);
       setItemLiveTranscript('');
     };
@@ -3338,6 +3375,7 @@ export default function LessonPage() {
   const handlePronunciationItemSubmit = async (key: string, targetSentence: string, transcript: string) => {
     const cleanTranscript = normalizeNumberWords(transcript);
     setItemProcessingKey(key);
+    setItemRecordingKey(null);
     try {
       const formData = new FormData();
       formData.append('phase', String((lesson?.phases?.[currentPhaseIdx]?.phase_number) || currentPhaseIdx + 1));
@@ -3346,16 +3384,24 @@ export default function LessonPage() {
       formData.append('expected_answer', targetSentence);
 
       const result = await api.evaluateLesson(lesson?.id || lessonId, formData);
+      const score = result.overall_score ?? result.score ?? (result.is_correct ? 95 : 60);
 
       setItemEvals(prev => ({
         ...prev,
         [key]: {
           is_correct: result.is_correct,
-          overall_score: result.overall_score ?? (result.is_correct ? 95 : 60),
+          overall_score: score,
+          score: score,
           feedback: result.feedback || (result.is_correct ? '¡Excelente pronunciación!' : 'Buen intento, practica nuevamente.'),
           corrected_answer: result.corrected_answer || targetSentence,
         },
       }));
+
+      if (result.is_correct || score >= 75) {
+        try { sfx.playSuccessChime(); } catch (_) {}
+      } else {
+        try { sfx.playMistake(); } catch (_) {}
+      }
 
       if (result.feedback) {
         speakText(result.feedback);

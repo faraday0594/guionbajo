@@ -28,6 +28,7 @@ from routers import (
     phonetics_router,
     reading_router,
     quest_router,
+    speech_router,
 )
 
 @asynccontextmanager
@@ -39,6 +40,7 @@ async def lifespan(app: FastAPI):
             try:
                 from sqlalchemy import text
                 await conn.execute(text("ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS preferred_voice VARCHAR DEFAULT 'female-yujie';"))
+                await conn.execute(text("ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS groq_api_key VARCHAR;"))
             except Exception:
                 pass
         print("[OK] Database tables initialized successfully.")
@@ -133,6 +135,7 @@ app.include_router(game_router)
 app.include_router(phonetics_router)
 app.include_router(reading_router)
 app.include_router(quest_router)
+app.include_router(speech_router)
 
 if __name__ == "__main__":
     import uvicorn

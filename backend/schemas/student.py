@@ -17,6 +17,9 @@ class StudentProfileResponse(BaseModel):
 class SettingsUpdate(BaseModel):
     api_key: str
 
+class GroqKeyUpdate(BaseModel):
+    api_key: str
+
 class VoicePreferenceUpdate(BaseModel):
     voice: str
 

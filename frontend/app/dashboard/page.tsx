@@ -396,9 +396,33 @@ export default function DashboardPage() {
           <PhoneticBoard />
         ) : (
           <>
+            {/* 🚀 Hero Next-Action CTA: 1-Click Instant Launch */}
+            <div className="mb-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-brand-accent/30 via-indigo-900/40 to-brand-cyan/20 border border-brand-cyan/40 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 group">
+              <div className="space-y-2 relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-bold uppercase tracking-wider">
+                  <Sparkles size={13} className="animate-spin text-brand-cyan" />
+                  <span>Tu Misión de Hoy • Nivel {activeSublevel}</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-outfit font-extrabold text-white">
+                  {currentPensum.modules[0]?.title || 'Daily Workout'}
+                </h2>
+                <p className="text-xs sm:text-sm text-brand-text-secondary max-w-xl">
+                  {currentPensum.modules[0]?.description || 'Aprende estructuras clave, fonética y juegos interactivos en 5 minutos.'}
+                </p>
+              </div>
 
-        {/* Level Selector Header */}
-        <section className="glass p-6 rounded-3xl border border-brand-accent/30 mb-8 space-y-5">
+              <button
+                onClick={() => handleLaunchModule(currentPensum.modules[0], 0)}
+                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-brand-accent to-brand-cyan text-white font-black text-sm shadow-xl shadow-brand-accent/40 hover:scale-105 transition-all flex items-center gap-3 relative z-10 flex-shrink-0 cursor-pointer"
+              >
+                <Play size={18} className="fill-current text-white" />
+                <span>CONTINUAR CLASE (5 MIN)</span>
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            {/* Level Selector Header */}
+            <section className="glass p-6 rounded-3xl border border-brand-accent/30 mb-8 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-brand-cyan text-xs font-bold uppercase tracking-wider mb-1">

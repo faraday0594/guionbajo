@@ -16,6 +16,7 @@ import {
   Square
 } from 'lucide-react';
 import { playEnglishAudio, api } from '@/lib/api';
+import { sfx } from '@/lib/soundEffects';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -64,8 +65,13 @@ export default function InteractiveExerciseStage({
   const [liveTranscript, setLiveTranscript] = useState('');
   const [isEvaluatingSpeech, setIsEvaluatingSpeech] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [groqWordFeedback, setGroqWordFeedback] = useState<Record<string, Array<{ word: string; status: 'correct' | 'mispronounced' | 'missing'; heard_as?: string }>>>({});
+  const [groqPhoneticTips, setGroqPhoneticTips] = useState<Record<string, string>>({});
 
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
 
   // Trigger image generation for all exercises on mount
   useEffect(() => {
@@ -180,106 +186,170 @@ export default function InteractiveExerciseStage({
     }));
 
     if (isCorrect) {
+      sfx.playSuccessChime();
       toast.success('¡Correcto! 🎉', { id: `ex-eval-${currentEx.id}` });
+      if (completedCount + 1 >= exercises.length) {
+        setTimeout(() => sfx.playStreakFanfare(), 600);
+      }
     } else {
+      sfx.playMistake();
       toast.error('Respuesta incorrecta 💡', { id: `ex-eval-${currentEx.id}` });
     }
   };
 
   const handleSelectOption = (option: string) => {
+    sfx.playPop();
     setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: option }));
     setTextInputs(prev => ({ ...prev, [currentEx.id]: option }));
     validateAnswer(option);
   };
 
-  // Real Speech Recognition with Continuous mode and comfortable pacing
-  const startVoiceRecording = () => {
+  // High-accuracy voice recording with Groq Whisper & Web Speech API preview
+  const startVoiceRecording = async () => {
     if (typeof window === 'undefined') return;
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast.error('Tu navegador no soporta reconocimiento de voz. Puedes seleccionar una opción o escribir tu respuesta.');
-      return;
-    }
 
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch (_) {}
-    }
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
-    }
-
-    const rec = new SpeechRecognition();
-    rec.lang = 'en-US';
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
-
+    sfx.playMicStart();
     setLiveTranscript('');
     latestSpokenRef.current = '';
-    setIsRecording(true);
-    toast('Micrófono activo 🎙️ Pronuncia la oración con calma a tu ritmo.', { icon: '🎙️', duration: 4000 });
+    audioChunksRef.current = [];
 
-    rec.onresult = (event: any) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const trans = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          final += trans;
-        } else {
-          interim += trans;
+    // 1. Capture real audio stream via MediaRecorder for Groq Whisper
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/mp4';
+
+      const mr = new MediaRecorder(stream, { mimeType });
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
         }
-      }
-      const currentSpoken = (final || interim).trim();
-      if (currentSpoken) {
-        latestSpokenRef.current = currentSpoken;
-        setLiveTranscript(currentSpoken);
-        setTextInputs(prev => ({ ...prev, [currentEx.id]: currentSpoken }));
+      };
+      mediaRecorderRef.current = mr;
+      mr.start(100);
+    } catch (err) {
+      console.warn('MediaRecorder error or mic denied:', err);
+    }
 
-        // Generous 4.5-second silence timeout after speech before auto-evaluating
-        if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-        silenceTimeoutRef.current = setTimeout(() => {
-          stopVoiceRecording();
-        }, 4500);
+    // 2. Start live browser speech preview if available
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (_) {}
       }
-    };
+      const rec = new SpeechRecognition();
+      rec.lang = 'en-US';
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
 
-    rec.onerror = (event: any) => {
-      console.warn('SpeechRecognition event in exercise:', event.error);
-      if (event.error === 'no-speech') {
-        return; // Keep microphone listening comfortably
-      }
-      setIsRecording(false);
-      if (event.error !== 'aborted') {
-        toast.error('Error de micrófono. Intenta de nuevo o escribe la respuesta.');
-      }
-    };
+      rec.onresult = (event: any) => {
+        let interim = '';
+        let final = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            final += event.results[i][0].transcript;
+          } else {
+            interim += event.results[i][0].transcript;
+          }
+        }
+        const currentSpoken = (final || interim).trim();
+        if (currentSpoken) {
+          latestSpokenRef.current = currentSpoken;
+          setLiveTranscript(currentSpoken);
+        }
+      };
 
-    rec.onend = () => {
-      setIsRecording(false);
-      const textToValidate = latestSpokenRef.current.trim();
-      if (textToValidate && textToValidate.length > 1) {
-        setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: textToValidate }));
-        validateAnswer(textToValidate);
-      }
-    };
+      rec.onerror = (e: any) => {
+        if (e.error !== 'no-speech' && e.error !== 'aborted') {
+          console.warn('SpeechRecognition event in exercise:', e.error);
+        }
+      };
 
-    recognitionRef.current = rec;
-    rec.start();
+      recognitionRef.current = rec;
+      try { rec.start(); } catch (_) {}
+    }
+
+    setIsRecording(true);
+    toast('Micrófono activo 🎙️ Pronuncia la oración con calma.', { icon: '🎙️', duration: 3000 });
   };
 
-  const stopVoiceRecording = () => {
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
-    }
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (_) {}
-    }
+  const stopVoiceRecording = async () => {
     setIsRecording(false);
+
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (_) {}
+    }
+
+    const mr = mediaRecorderRef.current;
+    if (mr && mr.state !== 'inactive') {
+      mr.onstop = async () => {
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(t => t.stop());
+          mediaStreamRef.current = null;
+        }
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        if (audioBlob.size > 500) {
+          setIsEvaluatingSpeech(true);
+          try {
+            const target = currentEx.expected_answer || fullSentenceSpoken;
+            const res = await api.transcribeAndEvaluateSpeech(audioBlob, target, topicParam);
+            if (res && res.success) {
+              setLiveTranscript(res.transcription);
+              setTextInputs(prev => ({ ...prev, [currentEx.id]: res.transcription }));
+              setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: res.transcription }));
+
+              if (res.word_feedback && res.word_feedback.length > 0) {
+                setGroqWordFeedback(prev => ({ ...prev, [currentEx.id]: res.word_feedback }));
+              }
+              if (res.phonetic_tip) {
+                setGroqPhoneticTips(prev => ({ ...prev, [currentEx.id]: res.phonetic_tip }));
+              }
+
+              const isOk = res.is_correct;
+              const fbk = res.phonetic_tip || (isOk ? '¡Pronunciación excelente!' : 'Revisa la articulación marcada.');
+
+              setEvaluatedItems(prev => ({
+                ...prev,
+                [currentEx.id]: { isCorrect: isOk, feedback: fbk }
+              }));
+
+              if (isOk) {
+                sfx.playSuccessChime();
+                toast.success('¡Excelente pronunciación! 🎉');
+                if (completedCount + 1 >= exercises.length) {
+                  setTimeout(() => sfx.playStreakFanfare(), 600);
+                }
+              } else {
+                sfx.playMistake();
+                toast.error('Revisa la pronunciación marcada 💡');
+              }
+              return;
+            }
+          } catch (err) {
+            console.warn('Groq speech evaluation error:', err);
+          } finally {
+            setIsEvaluatingSpeech(false);
+          }
+        }
+
+        const textToValidate = latestSpokenRef.current.trim();
+        if (textToValidate && textToValidate.length > 1) {
+          validateAnswer(textToValidate);
+        }
+      };
+      try { mr.stop(); } catch (_) {}
+    } else {
+      const textToValidate = latestSpokenRef.current.trim();
+      if (textToValidate && textToValidate.length > 1) {
+        validateAnswer(textToValidate);
+      }
+    }
   };
 
   const completedCount = Object.keys(evaluatedItems).filter(k => evaluatedItems[k]?.isCorrect).length;
@@ -472,6 +542,44 @@ export default function InteractiveExerciseStage({
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Word-level Groq Whisper Phonetic Alignment Badges */}
+            {groqWordFeedback[currentEx.id] && groqWordFeedback[currentEx.id].length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-3.5 rounded-2xl bg-black/60 border border-brand-cyan/30 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-brand-cyan uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles size={12} className="text-brand-cyan" />
+                    <span>Alineación Fonética Acústica (Groq Whisper)</span>
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-mono">Evaluación palabra por palabra</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {groqWordFeedback[currentEx.id].map((wf, wIdx) => (
+                    <span
+                      key={wIdx}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5 shadow-sm transition-all ${
+                        wf.status === 'correct'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-emerald-500/10'
+                          : wf.status === 'mispronounced'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-amber-500/10'
+                          : 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-rose-500/10'
+                      }`}
+                      title={wf.heard_as ? `Escuchado como: "${wf.heard_as}"` : undefined}
+                    >
+                      <span>{wf.status === 'correct' ? '✓' : '⚠️'}</span>
+                      <span>{wf.word}</span>
+                      {wf.heard_as && wf.heard_as.toLowerCase() !== wf.word.toLowerCase() && (
+                        <span className="text-[10px] opacity-80 font-normal">({wf.heard_as})</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
             {/* Smart Evaluation Feedback Box */}
             {currentEval && (

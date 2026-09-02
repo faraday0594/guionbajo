@@ -118,6 +118,33 @@ export const api = {
       ...options,
     }),
 
+  // ─── Speech & Groq Whisper Evaluation ────────────
+  transcribeAndEvaluateSpeech: async (
+    audioBlob: Blob,
+    targetPhrase?: string,
+    expectedPhoneme?: string
+  ): Promise<{
+    success: boolean;
+    transcription: string;
+    target?: string;
+    score: number;
+    is_correct: boolean;
+    word_feedback: Array<{ word: string; status: 'correct' | 'mispronounced' | 'missing'; heard_as?: string }>;
+    phonetic_tip: string;
+    latency_ms: number;
+    groq_active: boolean;
+  }> => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'speech_recording.webm');
+    if (targetPhrase) formData.append('target_phrase', targetPhrase);
+    if (expectedPhoneme) formData.append('expected_phoneme', expectedPhoneme);
+
+    return fetchWithAuth('/speech/transcribe-and-evaluate', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
   // ─── Adaptive Curriculum & Phonetics ─────────────
   generateAdaptiveLesson: (sublevel: string, class_index = 1, topic?: string) =>
     fetchWithAuth('/lesson/generate-adaptive', {

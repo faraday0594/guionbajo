@@ -9,6 +9,7 @@ from .game import router as game_router
 from .phonetics import router as phonetics_router
 from .reading import router as reading_router
 from .quest import router as quest_router
+from .speech import router as speech_router
 
 __all__ = [
     "auth_router",
@@ -22,4 +23,5 @@ __all__ = [
     "phonetics_router",
     "reading_router",
     "quest_router",
+    "speech_router",
 ]

@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import { sfx } from '@/lib/soundEffects';
 import GameArena from '@/app/components/games/GameArena';
 import ReadingPracticeArena from '@/app/components/reading/ReadingPracticeArena';
 
@@ -3302,6 +3303,7 @@ export default function LessonPage() {
   };
 
   const handlePrevSlide = () => {
+    sfx.playPop();
     stopCurrentAudio();
     if (currentPhaseIdx > 0) {
       setCurrentPhaseIdx((prev) => prev - 1);
@@ -3309,11 +3311,13 @@ export default function LessonPage() {
   };
 
   const handleNextSlide = async () => {
+    sfx.playPop();
     stopCurrentAudio();
     stopTutorVoice();
     if (lesson && currentPhaseIdx < lesson.phases.length - 1) {
       setCurrentPhaseIdx((prev) => prev + 1);
     } else {
+      sfx.playStreakFanfare();
       try {
         await api.completeLesson(lesson?.id || lessonId);
       } catch (err) {

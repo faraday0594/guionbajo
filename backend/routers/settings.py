@@ -4,8 +4,9 @@ from sqlalchemy.future import select
 from auth.dependencies import get_current_user
 from database import get_db
 from models.user import User, StudentProfile
-from schemas.student import SettingsUpdate, VoicePreferenceUpdate
+from schemas.student import SettingsUpdate, VoicePreferenceUpdate, GroqKeyUpdate
 from core.tts_service import AVAILABLE_VOICES
+from config import settings as app_settings
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -16,10 +17,16 @@ async def get_settings(current_user: User = Depends(get_current_user), db: Async
     
     key = profile.minimax_api_key if profile and profile.minimax_api_key else None
     masked_key = f"{key[:6]}...{key[-4:]}" if key else None
+    
+    groq_k = profile.groq_api_key if profile and hasattr(profile, "groq_api_key") and profile.groq_api_key else app_settings.GROQ_API_KEY
+    masked_groq = f"{groq_k[:6]}...{groq_k[-4:]}" if groq_k else None
+    
     preferred_voice = profile.preferred_voice if profile and getattr(profile, "preferred_voice", None) else "female-yujie"
     
     return {
         "minimax_api_key": masked_key,
+        "groq_api_key": masked_groq,
+        "groq_configured": bool(groq_k and groq_k.strip()),
         "preferred_voice": preferred_voice
     }
 
@@ -33,6 +40,20 @@ async def update_key(settings_update: SettingsUpdate, current_user: User = Depen
         db.add(profile)
     else:
         profile.minimax_api_key = settings_update.api_key
+    await db.commit()
+    
+    return {"status": "success"}
+
+@router.post("/groq-key")
+async def update_groq_key(groq_update: GroqKeyUpdate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+    profile = result.scalars().first()
+    
+    if not profile:
+        profile = StudentProfile(user_id=current_user.id, groq_api_key=groq_update.api_key)
+        db.add(profile)
+    else:
+        profile.groq_api_key = groq_update.api_key
     await db.commit()
     
     return {"status": "success"}

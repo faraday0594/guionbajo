@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 10080  # 7 days
     
+    GROQ_API_KEY: str = ""
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
+    GROQ_WHISPER_MODEL: str = "whisper-large-v3-turbo"
+    
     class Config:
         env_file = _env_path
         extra = "ignore"

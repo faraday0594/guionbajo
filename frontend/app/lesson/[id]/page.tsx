@@ -75,6 +75,8 @@ const UNGRAMMATICAL_ENGLISH_PATTERNS = [
   /\b(?:these|those)\s+is\b/i,                                                           // demonstrative mismatch
   /\bto\s+(?:have|be|do|go|work|live|sleep|watch|drink|study|eat)\b/i,                   // infinitive marker as oral target
   /\b(?:espain|i maria|i leeve|i liv|john pen)\b/i,                                      // known phonetic/syntax error quotes
+  /\b(?:don|doesn|didn|wasn|weren|isn|aren|won)\b/i,                                     // broken/truncated contraction
+  /^(?:do not|does not|don't|doesn't|do|does|did|not)$/i,                                // isolated auxiliary particle
 ];
 
 export function isValidEnglishTargetPhrase(text: string): boolean {
@@ -817,6 +819,55 @@ const THIRD_PERSON_VERB_RULES_SVG = `<svg xmlns="http://www.w3.org/2000/svg" vie
   </g>
 </svg>`;
 
+const DO_DOES_QUESTIONS_NEGATIVES_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgQN" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowQN" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgQN)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MAPA CONCEPTUAL: DO / DOES &amp; DON'T / DOESN'T</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Los motores auxiliares del Present Simple en Negaciones y Preguntas</text>
+
+  <!-- Left Card: NEGACIONES (don't / doesn't) -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="305" height="180" rx="12" fill="rgba(239,68,68,0.1)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#b91c1c"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. NEGACIONES: DON'T / DOESN'T</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• I / You / We / They ➔ <tspan fill="#f87171" font-weight="bold">don't</tspan> + Verbo Base</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#f87171" font-weight="bold">don't work</tspan> on Sundays."</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">• He / She / It ➔ <tspan fill="#f87171" font-weight="bold">doesn't</tspan> + Verbo Base</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"She <tspan fill="#f87171" font-weight="bold">doesn't work</tspan> here." <tspan fill="#94a3b8">(¡Sin -s!)</tspan></text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">❌ Nunca digas: "She doesn't works"</text>
+  </g>
+
+  <!-- Right Card: PREGUNTAS (Do / Does) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="305" height="180" rx="12" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. PREGUNTAS: DO / DOES ?</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• <tspan fill="#38bdf8" font-weight="bold">Do</tspan> + you / they + Verbo Base ?</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"<tspan fill="#38bdf8" font-weight="bold">Do you live</tspan> in Spain?"</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">• <tspan fill="#c084fc" font-weight="bold">Does</tspan> + he / she / it + Verbo Base ?</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"<tspan fill="#c084fc" font-weight="bold">Does she work</tspan> here?" <tspan fill="#94a3b8">(¡Sin -s!)</tspan></text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#7dd3fc">Respuestas: "Yes, I do" / "No, she doesn't"</text>
+  </g>
+
+  <!-- Bottom Golden Rule Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="80" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="28" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      💡 REGLA DE ORO: DO / DOES ABSORBEN LA CONJUGACIÓN
+    </text>
+    <text x="315" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#e2e8f0">
+      En preguntas y negaciones, el verbo principal va <tspan fill="#34d399" font-weight="bold">SIEMPRE en forma base</tspan> (sin -s / sin -es).
+    </text>
+  </g>
+</svg>`;
+
 export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
   if (phase?.diagram_svg && typeof phase.diagram_svg === 'string' && phase.diagram_svg.includes('<svg')) {
     return phase.diagram_svg;
@@ -842,7 +893,20 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return THERE_IS_THERE_ARE_SVG;
   }
 
-  // 1. Past Continuous & Interrupted Actions
+  // 1. Questions & Negatives (Do / Does, don't / doesn't)
+  if (
+    combined.includes('questions & negatives') ||
+    combined.includes('questions and negatives') ||
+    combined.includes('do / does') ||
+    combined.includes("don't / doesn't") ||
+    combined.includes('do and does') ||
+    (combined.includes('negative') && combined.includes('question')) ||
+    (combined.includes('auxiliar') && (combined.includes('do') || combined.includes('does')))
+  ) {
+    return DO_DOES_QUESTIONS_NEGATIVES_SVG;
+  }
+
+  // 2. Past Continuous & Interrupted Actions
   if (
     combined.includes('past continuous') ||
     combined.includes('interrupted') ||
@@ -853,19 +917,22 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return PAST_CONTINUOUS_TIMELINE_SVG;
   }
 
-  // 2. Third-Person Singular Verb Rules (-s / -es / -ies) for Daily Routines
+  // 3. Third-Person Singular Verb Rules (-s / -es / -ies) for Daily Routines (Affirmative Only)
   if (
-    combined.includes('third person') ||
-    combined.includes('tercera persona') ||
-    combined.includes('la magia de la -s') ||
-    combined.includes('he / she / it') ||
-    combined.includes('terminación -s') ||
-    (combined.includes('-s') && (combined.includes('work') || combined.includes('watch') || combined.includes('sleep') || combined.includes('rule')))
+    !combined.includes('question') &&
+    !combined.includes('negative') &&
+    !combined.includes('do / does') &&
+    !combined.includes("don't") &&
+    (combined.includes('third person') ||
+     combined.includes('tercera persona') ||
+     combined.includes('la magia de la -s') ||
+     combined.includes('terminación -s') ||
+     (combined.includes('-s') && (combined.includes('work') || combined.includes('watch') || combined.includes('sleep') || combined.includes('rule'))))
   ) {
     return THIRD_PERSON_VERB_RULES_SVG;
   }
 
-  // 3. Frequency & Adverbs (ONLY for Time & Frequency topics, not for -s third person)
+  // 4. Frequency & Adverbs (ONLY for Time & Frequency topics, not for -s third person)
   if (
     (combined.includes('adverb') ||
      combined.includes('frequency') ||
@@ -1426,13 +1493,14 @@ function extractSpokenEnglishQuotes(speechText: string) {
     return tokens.some(w => SPANISH_DISQUALIFIERS.has(w));
   };
 
-  const quoteRegex = /['"‘“]([^'"‘“’”\n\r]+)['"’”]/g;
+  const quoteRegex = /(?:["“]([^"”\n\r]+)["”]|(?:^|[\s(])'([^'\n\r]*(?:'[a-zA-Z][^'\n\r]*)*)'(?:$|[\s).,;!?]))/g;
   const items: Array<{ english: string; translation: string; phonetic?: string }> = [];
   const seen = new Set<string>();
 
   let m;
   while ((m = quoteRegex.exec(speechText)) !== null) {
-    const eng = m[1].trim();
+    const rawMatch = m[1] !== undefined ? m[1] : (m[2] !== undefined ? m[2] : '');
+    const eng = rawMatch.trim();
     const low = eng.toLowerCase();
 
     if (seen.has(low)) continue;
@@ -1637,13 +1705,48 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
         }
       }
     }
-    // 4. Sanitize Grammar Formula (Fix "Present Simple Affirmative (I wake up" or generic repeated formulas)
+    // 4. Sanitize Grammar Formula (Fix generic repeated formulas for Questions & Negatives, Daily Routines, etc.)
     if (step.visual_action === 'show_grammar_formula' || p.formula) {
       const formulaStr = String(p.formula || '').toLowerCase();
-      if (formulaStr.includes('present simple affirmative (i wake up') || formulaStr.includes('syntax formula') || formulaStr.includes('i wake up')) {
-        const pName = String(phase?.phase_name || '').toLowerCase();
-        const pSays = String(typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '')).toLowerCase();
-        if (pName.includes('-s') || pSays.includes('-s') || pName.includes('third person') || pSays.includes('tercera persona') || pSays.includes('magia de la -s') || pSays.includes('works')) {
+      const pName = String(phase?.phase_name || '').toLowerCase();
+      const pSays = String(typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '')).toLowerCase();
+      const pComb = `${pName} ${pSays} ${p.formula || ''}`.toLowerCase();
+
+      const isQN = pComb.includes('question') || pComb.includes('negative') || pComb.includes('do / does') || pComb.includes("don't") || pComb.includes("doesn't") || pComb.includes('auxiliar') || pComb.includes('motores');
+
+      if (isQN || formulaStr.includes('present simple affirmative (i wake up') || formulaStr.includes('syntax formula') || formulaStr.includes('i wake up') || (p.formula && p.formula.includes('[ Sujeto / Pronombre ] + [ Do / Does ] + [ Objeto'))) {
+        if (isQN) {
+          if (pComb.includes('pregunta') || pComb.includes('question') || pComb.includes('¿') || pComb.includes('do you') || pComb.includes('does she')) {
+            p.title = 'Estructura de Preguntas en Present Simple';
+            p.formula = '[ Do / Does ] + [ Sujeto ] + [ Verbo Base ] + [ Complemento ] ?';
+            p.formula_tokens = [
+              { role: 'Auxiliar', pattern: 'Do (I/You/We/They) | Does (He/She/It)', color: 'blue' },
+              { role: 'Sujeto', pattern: 'you / they / he / she', color: 'purple' },
+              { role: 'Verbo Base (¡Sin -s!)', pattern: 'live / work / study', color: 'emerald' },
+              { role: 'Complemento', pattern: 'in Spain? / English?', color: 'amber' },
+            ];
+            p.explanation = 'En preguntas, el auxiliar Do/Does va al inicio y el verbo principal va SIEMPRE en su forma base (sin -s).';
+          } else if (pComb.includes('negat') || pComb.includes("don't") || pComb.includes("doesn't")) {
+            p.title = 'Estructura de Oraciones Negativas';
+            p.formula = '[ Sujeto ] + [ don\'t / doesn\'t ] + [ Verbo Base ] + [ Complemento ]';
+            p.formula_tokens = [
+              { role: 'Sujeto', pattern: 'I / You / We / They | He / She / It', color: 'blue' },
+              { role: 'Auxiliar Negativo', pattern: 'don\'t (I/You/We/They) | doesn\'t (He/She/It)', color: 'purple' },
+              { role: 'Verbo Base (¡Sin -s!)', pattern: 'work / drink / sleep', color: 'emerald' },
+              { role: 'Complemento', pattern: 'on Sundays / coffee', color: 'amber' },
+            ];
+            p.explanation = 'Usa don\'t con I/You/We/They y doesn\'t con He/She/It. El verbo principal se mantiene en forma base.';
+          } else {
+            p.title = 'Regla: Los Motores Auxiliares (Do / Does & Don\'t / Doesn\'t)';
+            p.formula = 'Pregunta: [ Do / Does + Suj + Verbo Base ] | Negación: [ Suj + don\'t / doesn\'t + Verbo Base ]';
+            p.formula_tokens = [
+              { role: 'Grupo I/You/We/They', pattern: 'Do ... ? / ... don\'t + Verbo', color: 'blue' },
+              { role: 'Grupo He/She/It', pattern: 'Does ... ? / ... doesn\'t + Verbo', color: 'purple' },
+              { role: 'Verbo Principal', pattern: 'Forma Base (¡Sin -s!)', color: 'emerald' },
+            ];
+            p.explanation = 'El auxiliar absorbe toda la conjugación. El verbo principal jamás cambia de forma.';
+          }
+        } else if (pName.includes('-s') || pSays.includes('-s') || pName.includes('third person') || pSays.includes('tercera persona') || pSays.includes('magia de la -s') || pSays.includes('works')) {
           p.title = 'Regla: Tercera Persona Singular (He / She / It)';
           p.formula = '[ He / She / It ] + [ Verbo + -s / -es / -ies ] + [ Complemento ]';
           p.formula_tokens = [
@@ -1665,11 +1768,15 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
       }
     }
 
-    // 5. Sanitize Diagram SVG (Fix Frequency Timeline repeating on third person)
+    // 5. Sanitize Diagram SVG (Fix Frequency/Third Person Timeline repeating on Questions & Negatives or vice-versa)
     if (step.visual_action === 'show_diagram' && p.svg) {
       const pCombined = `${phase?.phase_name || ''} ${phase?.board_content || ''} ${typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '')}`.toLowerCase();
-      const isThird = pCombined.includes('-s') || pCombined.includes('third person') || pCombined.includes('tercera persona') || pCombined.includes('magia de la -s') || pCombined.includes('works');
-      if (isThird && (p.svg.includes('FREQUENCY ADVERBS') || p.svg.includes('ALWAYS'))) {
+      const isQN = pCombined.includes('question') || pCombined.includes('negative') || pCombined.includes('do / does') || pCombined.includes("don't") || pCombined.includes("doesn't") || pCombined.includes('auxiliar') || pCombined.includes('motores');
+      const isThird = !isQN && (pCombined.includes('-s') || pCombined.includes('third person') || pCombined.includes('tercera persona') || pCombined.includes('magia de la -s') || pCombined.includes('works'));
+
+      if (isQN && (p.svg.includes('REGLAS DE TERCERA PERSONA') || p.svg.includes('FREQUENCY ADVERBS') || p.svg.includes('ALWAYS'))) {
+        p.svg = DO_DOES_QUESTIONS_NEGATIVES_SVG;
+      } else if (isThird && (p.svg.includes('FREQUENCY ADVERBS') || p.svg.includes('ALWAYS'))) {
         p.svg = THIRD_PERSON_VERB_RULES_SVG;
       }
     }

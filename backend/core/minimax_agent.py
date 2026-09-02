@@ -416,14 +416,22 @@ class TutorAgent:
         """Resolves or generates a rich didactic vector SVG diagram for temporal/frequency/spatial topics."""
         combined_text = f"{topic} {p.get('phase_name', '')} {p.get('board_content', '')} {p.get('tutor_says', '')}".lower()
         is_third_person = any(w in combined_text for w in ["third person", "tercera persona", "-s", "-es", "-ies", "he/she/it", "la magia de la -s", "works", "watches", "studies"])
-
+        
+        # Invalidate mismatched third person / frequency diagrams on Questions & Negatives
+        is_qn = any(w in combined_text for w in ["questions & negatives", "questions and negatives", "do / does", "don't / doesn't", "do and does", "auxiliares do y does"])
+        
         diag = p.get("diagram_svg")
+        if is_qn and diag and ("REGLAS DE TERCERA PERSONA" in str(diag) or "FREQUENCY ADVERBS" in str(diag)):
+            diag = None
+
         if diag and isinstance(diag, str):
             raw_svg = diag.strip()
             raw_svg = re.sub(r'<think>.*?</think>', '', raw_svg, flags=re.DOTALL).strip()
             # If the saved SVG is mismatched (e.g. Frequency Adverbs saved on third-person or routines)
             if is_third_person and ("FREQUENCY ADVERBS" in raw_svg or "ALWAYS" in raw_svg):
                 diag = None  # Invalidate mismatched frequency diagram
+            elif is_qn and ("REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg):
+                diag = None
             else:
                 svg_match = re.search(r'(<svg[\s\S]*?</svg>)', raw_svg, re.IGNORECASE)
                 if svg_match:
@@ -444,19 +452,6 @@ class TutorAgent:
     <filter id="glowThere" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   </defs>
   <rect width="700" height="380" rx="16" fill="url(#chalkBgThere)" stroke="#27354f" stroke-width="1.5"/>
-  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MAPA CONCEPTUAL: THERE IS vs THERE ARE &amp; PREPOSITIONS</text>
-  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Concordancia gramatical de existencia y ubicación en el espacio</text>
-
-  <!-- Left Card: THERE IS (Singular) -->
-  <g transform="translate(45, 75)">
-    <rect x="0" y="0" width="295" height="150" rx="12" fill="rgba(192,132,252,0.12)" stroke="#c084fc" stroke-width="1.5"/>
-    <rect x="15" y="15" width="265" height="28" rx="6" fill="#7e22ce"/>
-    <text x="147" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">THERE IS + SINGULAR / 1 OBJETO</text>
-    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">✓ Con 'a / an' o incontables:</text>
-    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"There is <tspan fill="#38bdf8" font-weight="bold">a bank</tspan> near the park"</text>
-    <text x="30" y="110" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"There is <tspan fill="#38bdf8" font-weight="bold">some water</tspan> on the table"</text>
-    <text x="20" y="132" font-family="system-ui, sans-serif" font-size="10" fill="#a855f7">Pronunciación: /ðeər ɪz/ ("ther-iz")</text>
-  </g>
 
   <!-- Right Card: THERE ARE (Plural) -->
   <g transform="translate(360, 75)">
@@ -2137,10 +2132,85 @@ class TutorAgent:
                             ]
                         }
                     ],
-                    "tips": "This y These son para objetos cercanos; That y Those para objetos lejanos."
+        # 4. Dedicated phase-specific grammar structures for Questions & Negatives (Do / Does, don't / doesn't)
+        if any(k in low_top for k in ["questions & negatives", "questions and negatives", "do / does", "don't / doesn't", "do and does", "auxiliares"]):
+            p_name = str(p.get("phase_name", "")).lower()
+            p_says = str(p.get("tutor_says", "")).lower()
+            
+            if any(k in p_name or k in p_says for k in ["pregunta", "question", "interrogative", "¿", "do you", "does she"]):
+                return {
+                    "title": "Estructura de Preguntas en Present Simple",
+                    "formula": "[ Do / Does ] + [ Sujeto ] + [ Verbo Base ] + [ Complemento ] ?",
+                    "formula_tokens": [
+                        {"role": "Auxiliar", "pattern": "Do (I/You/We/They) | Does (He/She/It)", "color": "blue"},
+                        {"role": "Sujeto", "pattern": "you / they / he / she", "color": "purple"},
+                        {"role": "Verbo Base (¡Sin -s!)", "pattern": "live / work / study", "color": "emerald"},
+                        {"role": "Complemento", "pattern": "in Spain? / English?", "color": "amber"}
+                    ],
+                    "explanation": "En preguntas, el auxiliar Do/Does va al inicio y el verbo principal va SIEMPRE en su forma base (sin -s).",
+                    "example_breakdowns": [
+                        {
+                            "english": "Do you live in Spain?",
+                            "spanish": "¿Vives en España?",
+                            "parts": [
+                                {"role": "Auxiliar", "text": "Do", "color": "blue"},
+                                {"role": "Sujeto", "text": "you", "color": "purple"},
+                                {"role": "Verbo Base", "text": "live", "color": "emerald"},
+                                {"role": "Lugar", "text": "in Spain?", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Con Does, el verbo principal pierde la -s: 'Does she work?' (nunca 'Does she works?')."
+                }
+            elif any(k in p_name or k in p_says for k in ["negat", "don't", "doesn't", "not"]):
+                return {
+                    "title": "Estructura de Oraciones Negativas",
+                    "formula": "[ Sujeto ] + [ don't / doesn't ] + [ Verbo Base ] + [ Complemento ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / We / They | He / She / It", "color": "blue"},
+                        {"role": "Auxiliar Negativo", "pattern": "don't (I/You/We/They) | doesn't (He/She/It)", "color": "purple"},
+                        {"role": "Verbo Base (¡Sin -s!)", "pattern": "work / drink / sleep", "color": "emerald"},
+                        {"role": "Complemento", "pattern": "on Sundays / coffee", "color": "amber"}
+                    ],
+                    "explanation": "Usa don't con I/You/We/They y doesn't con He/She/It. El verbo principal se mantiene en forma base.",
+                    "example_breakdowns": [
+                        {
+                            "english": "She doesn't drink coffee.",
+                            "spanish": "Ella no toma café.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "She", "color": "blue"},
+                                {"role": "Auxiliar", "text": "doesn't", "color": "purple"},
+                                {"role": "Verbo Base", "text": "drink", "color": "emerald"},
+                                {"role": "Objeto", "text": "coffee.", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Doesn't ya contiene la -s. El verbo principal NUNCA lleva -s: 'She doesn't work'."
+                }
+            else:
+                return {
+                    "title": "Regla: Los Motores Auxiliares (Do / Does & Don't / Doesn't)",
+                    "formula": "Pregunta: [ Do / Does + Suj + Verbo Base ] | Negación: [ Suj + don't / doesn't + Verbo Base ]",
+                    "formula_tokens": [
+                        {"role": "Grupo I/You/We/They", "pattern": "Do ... ? / ... don't + Verbo", "color": "blue"},
+                        {"role": "Grupo He/She/It", "pattern": "Does ... ? / ... doesn't + Verbo", "color": "purple"},
+                        {"role": "Verbo Principal", "pattern": "Forma Base (¡Sin -s!)", "color": "emerald"}
+                    ],
+                    "explanation": "El auxiliar absorbe toda la conjugación. El verbo principal jamás cambia de forma.",
+                    "example_breakdowns": [
+                        {
+                            "english": "Do you work here? - No, I don't work here.",
+                            "spanish": "¿Trabajas aquí? - No, no trabajo aquí.",
+                            "parts": [
+                                {"role": "Pregunta", "text": "Do you work here?", "color": "blue"},
+                                {"role": "Negación", "text": "I don't work here.", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Recuerda: Do y Does son los motores que hacen funcionar las preguntas y negaciones."
                 }
 
-        # 4. Dedicated phase-specific grammar structures for Daily Routines & Present Simple
+        # 5. Dedicated phase-specific grammar structures for Daily Routines & Present Simple
         if any(k in low_top for k in ["routine", "rutina", "daily", "present simple", "habit"]):
             p_name = str(p.get("phase_name", "")).lower()
             p_says = str(p.get("tutor_says", "")).lower()

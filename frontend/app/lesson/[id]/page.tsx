@@ -77,12 +77,23 @@ const UNGRAMMATICAL_ENGLISH_PATTERNS = [
   /\b(?:espain|i maria|i leeve|i liv|john pen)\b/i,                                      // known phonetic/syntax error quotes
   /\b(?:don|doesn|didn|wasn|weren|isn|aren|won)\b/i,                                     // broken/truncated contraction
   /^(?:do not|does not|don't|doesn't|do|does|did|not)$/i,                                // isolated auxiliary particle
+  /^(?:s|re|ve|ll|d|m|t)\s+/i,                                                           // orphaned contraction fragment
+  /^(?:and|or|but|so|because|with|like|that|which|notice|we say|you say|they say|it says|formula:?)\b/i, // conversational fragment start
+  /\b(?:with|like|that|to|for|at|in|on|and|or|but|so|notice|formula:?)$/i,                // dangling preposition/connector
+  /^[,;:\-]/,                                                                            // leading punctuation
+  /[,;:\-]$/,                                                                            // trailing punctuation
+  /\b(?:metaphor|finished vs unfinished|the two formulas)\b/i,                           // meta topic labels
 ];
 
 export function isValidEnglishTargetPhrase(text: string): boolean {
   if (!text || typeof text !== 'string') return false;
   const cleaned = text.trim().replace(/^['"“‘`]+|['"”’`]+$/g, '').trim();
   if (cleaned.length < 3) return false;
+
+  // Disqualify if begins with lowercase letter (unless it's 'i ' or "i'")
+  if (cleaned[0] >= 'a' && cleaned[0] <= 'z' && !cleaned.startsWith('i ') && !cleaned.startsWith("i'")) {
+    return false;
+  }
 
   // Disqualify known ungrammatical / error phrases
   if (UNGRAMMATICAL_ENGLISH_PATTERNS.some(pat => pat.test(cleaned))) return false;
@@ -1577,13 +1588,13 @@ function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: 
   };
 }
 
-// ─── HELPER: Sanitize Any Timeline Steps (from Backend, LLM, or Cache) ────────
 function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: string): TimelineStep[] {
   const lowTop = (topic || '').toLowerCase();
-  const isPastContTopic = lowTop.includes('past continuous') || lowTop.includes('interrupted');
-  const isQNTopic = lowTop.includes('questions & negatives') || lowTop.includes('questions and negatives') || lowTop.includes('do / does');
-  const isRoutineTopic = !isPastContTopic && !isQNTopic && (lowTop.includes('daily routines') || lowTop.includes('routine') || lowTop.includes('habit'));
-  const isObjectTopic = !isPastContTopic && !isQNTopic && !isRoutineTopic && (lowTop.includes('object') || lowTop.includes('possession'));
+  const isPresentPerfectTopic = lowTop.includes('present perfect') || lowTop.includes('perfect vs past');
+  const isPastContTopic = !isPresentPerfectTopic && (lowTop.includes('past continuous') || lowTop.includes('interrupted'));
+  const isQNTopic = !isPresentPerfectTopic && !isPastContTopic && (lowTop.includes('questions & negatives') || lowTop.includes('questions and negatives') || lowTop.includes('do / does'));
+  const isRoutineTopic = !isPresentPerfectTopic && !isPastContTopic && !isQNTopic && (lowTop.includes('daily routines') || lowTop.includes('routine') || lowTop.includes('habit'));
+  const isObjectTopic = !isPresentPerfectTopic && !isPastContTopic && !isQNTopic && !isRoutineTopic && (lowTop.includes('object') || lowTop.includes('possession'));
 
   return steps.map((step) => {
     const p = { ...step.payload };
@@ -1771,8 +1782,47 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
       const pName = String(phase?.phase_name || '').toLowerCase();
       const pSays = String(typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '')).toLowerCase();
       const pComb = `${pName} ${pSays}`.toLowerCase();
-
-      if (isPastContTopic) {
+      if (isPresentPerfectTopic) {
+        if (pComb.includes('continuous') || pComb.includes('have been') || pComb.includes('duration') || pComb.includes('for / since')) {
+          p.title = 'Estructura: Present Perfect Continuous (Duración)';
+          p.formula = '[ Sujeto ] + [ have / has been ] + [ Verbo + -ing ] + [ for / since + Duración ]';
+          p.formula_tokens = [
+            { role: 'Sujeto', pattern: 'I / You / We / They (have) | He / She (has)', color: 'blue' },
+            { role: 'Auxiliar Continuo', pattern: 'have been / has been', color: 'purple' },
+            { role: 'Verbo con -ing', pattern: 'working / living / studying', color: 'emerald' },
+            { role: 'Duración', pattern: 'for three years / since 2021', color: 'amber' },
+          ];
+          p.explanation = 'Expresa una acción que comenzó en el pasado y continúa en el presente.';
+        } else if (pComb.includes('past simple') || pComb.includes('finished') || pComb.includes('cerrad') || pComb.includes('específic') || pComb.includes('2020')) {
+          p.title = 'Estructura: Past Simple (Tiempo Cerrado y Específico)';
+          p.formula = '[ Sujeto ] + [ Verbo Pasado (V2) ] + [ Fecha / Marcador Cerrado ]';
+          p.formula_tokens = [
+            { role: 'Sujeto', pattern: 'I / She / They', color: 'blue' },
+            { role: 'Verbo Pasado (V2)', pattern: 'went / visited / saw / finished', color: 'purple' },
+            { role: 'Tiempo Cerrado', pattern: 'in 2020 / yesterday / 2 years ago', color: 'rose' },
+          ];
+          p.explanation = 'Usa Past Simple cuando el tiempo está terminado o especificas exactamente cuándo ocurrió.';
+        } else if (pComb.includes('present perfect') || pComb.includes('experien') || pComb.includes('abiert') || pComb.includes('unfinished') || pComb.includes('three times')) {
+          p.title = 'Estructura: Present Perfect (Experiencias / Tiempo Abierto)';
+          p.formula = '[ Sujeto ] + [ have / has ] + [ Participio Pasado (V3) ] + [ Tiempo Abierto / Frecuencia ]';
+          p.formula_tokens = [
+            { role: 'Sujeto', pattern: 'I / You / We / They (have) | He / She (has)', color: 'blue' },
+            { role: 'Auxiliar', pattern: 'have / has', color: 'purple' },
+            { role: 'Participio Pasado (V3)', pattern: 'visited / seen / worked / eaten', color: 'emerald' },
+            { role: 'Tiempo Abierto', pattern: 'three times / so far / recently / ever', color: 'amber' },
+          ];
+          p.explanation = 'Expresa experiencias de vida o acciones en un periodo de tiempo aún abierto hacia el presente.';
+        } else {
+          p.title = 'Duelo Didáctico: Present Perfect vs Past Simple';
+          p.formula = 'Present Perfect: [ have/has + V3 ] (Abierto) vs Past Simple: [ Verbo V2 ] (Cerrado)';
+          p.formula_tokens = [
+            { role: 'Present Perfect (Abierto)', pattern: 'I have visited Japan (experiencia)', color: 'blue' },
+            { role: 'Frontera', pattern: 'vs', color: 'purple' },
+            { role: 'Past Simple (Cerrado)', pattern: 'I went to Japan in 2020 (fecha exacta)', color: 'rose' },
+          ];
+          p.explanation = 'Present Perfect conecta el pasado con el presente (tiempo abierto); Past Simple describe eventos terminados en un momento específico (tiempo cerrado).';
+        }
+      } else if (isPastContTopic) {
         if (pComb.includes('when') || pComb.includes('interrup') || pComb.includes('película')) {
           p.title = 'Estructura: Past Continuous con Interrupción (WHEN)';
           p.formula = '[ Past Continuous (Acción en progreso) ] + [ WHEN ] + [ Past Simple (Interrupción) ]';
@@ -1922,15 +1972,23 @@ function getPhaseStoryboardTimeline(phase: any, topic: string): TimelineStep[] {
       action = 'show_challenge';
       payload = { student_task: task, expected_answer: phase?.expected_answer, exercises };
     } else {
-      const firstTarget = targetAudio[0] || {};
-      const chosenPrimary = stepSpoken.primary || spokenOverall.primary || firstTarget.english || 'wake up';
-      const chosenSpa = stepSpoken.primary_translation || spokenOverall.primary_translation || firstTarget.translation || firstTarget.spanish || 'Oración modelo en contexto.';
+      const validTargets = (targetAudio || []).filter((it: any) => it.english && isValidEnglishTargetPhrase(it.english));
+      const firstTarget = validTargets[0] || (targetAudio[0] || {});
+
+      let chosenPrimary = firstTarget.english;
+      let chosenSpa = firstTarget.translation || firstTarget.spanish;
+
+      if (!chosenPrimary || !isValidEnglishTargetPhrase(chosenPrimary)) {
+        chosenPrimary = (stepSpoken.primary && isValidEnglishTargetPhrase(stepSpoken.primary)) ? stepSpoken.primary : ((spokenOverall.primary && isValidEnglishTargetPhrase(spokenOverall.primary)) ? spokenOverall.primary : 'I am practicing English today.');
+        chosenSpa = (stepSpoken.primary && isValidEnglishTargetPhrase(stepSpoken.primary)) ? stepSpoken.primary_translation : ((spokenOverall.primary && isValidEnglishTargetPhrase(spokenOverall.primary)) ? spokenOverall.primary_translation : 'Estoy practicando inglés hoy.');
+      }
+
       const chosenTrans = stepSpoken.transformations.length > 0 ? stepSpoken.transformations : (spokenOverall.transformations.length > 0 ? spokenOverall.transformations : []);
       const chosenContrast = stepSpoken.contrasts.length > 0 ? stepSpoken.contrasts : (spokenOverall.contrasts.length > 0 ? spokenOverall.contrasts : []);
       const chosenPhonetic = stepSpoken.phonetic_pairs.length > 0 ? stepSpoken.phonetic_pairs : (spokenOverall.phonetic_pairs.length > 0 ? spokenOverall.phonetic_pairs : []);
       const chosenFreq = stepSpoken.frequency_scale.length > 0 ? stepSpoken.frequency_scale : (spokenOverall.frequency_scale.length > 0 ? spokenOverall.frequency_scale : []);
       
-      const extraItems = stepSpoken.additional.length > 0 ? stepSpoken.additional : (spokenOverall.additional.length > 0 ? spokenOverall.additional : targetAudio.slice(1, 5));
+      const extraItems = validTargets.length > 1 ? validTargets.slice(1, 5) : (stepSpoken.additional.filter((it: any) => isValidEnglishTargetPhrase(it.english)).length > 0 ? stepSpoken.additional.filter((it: any) => isValidEnglishTargetPhrase(it.english)) : spokenOverall.additional.filter((it: any) => isValidEnglishTargetPhrase(it.english)));
 
       action = 'show_example_sentence';
       payload = {
@@ -1955,7 +2013,7 @@ function getPhaseStoryboardTimeline(phase: any, topic: string): TimelineStep[] {
     };
   });
 
-  return sanitizeTimelineSteps(rawSteps, phase);
+  return sanitizeTimelineSteps(rawSteps, phase, topic);
 }
 
 function buildFrontendOfflineLesson(topic: string, sublevel: string, lessonId: string) {

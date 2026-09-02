@@ -2115,6 +2115,106 @@ class TutorAgent:
                     "tips": "Con I/He/She/It usa 'was'; con You/We/They usa 'were'."
                 }
 
+        # Present Perfect vs Past Simple & Present Perfect structures
+        if "present perfect" in low_top or "perfect vs past" in low_top:
+            p_name = str(p.get("phase_name", "")).lower()
+            p_says = str(p.get("tutor_says", "")).lower()
+            if "continuous" in low_top or "have been" in p_name or "duration" in p_name or "for / since" in p_name:
+                return {
+                    "title": "Estructura: Present Perfect Continuous (Duración)",
+                    "formula": "[ Sujeto ] + [ have / has been ] + [ Verbo + -ing ] + [ for / since + Duración ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / We / They (have) | He / She (has)", "color": "blue"},
+                        {"role": "Auxiliar Continuo", "pattern": "have been / has been", "color": "purple"},
+                        {"role": "Verbo con -ing", "pattern": "working / living / studying", "color": "emerald"},
+                        {"role": "Marcador Temporal", "pattern": "for three years / since 2021", "color": "amber"}
+                    ],
+                    "explanation": "Expresa una acción que comenzó en el pasado y continúa desarrollándose en el presente.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I have been working here for three years.",
+                            "spanish": "He estado trabajando aquí durante tres años.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Auxiliar", "text": "have been", "color": "purple"},
+                                {"role": "Verbo-ing", "text": "working here", "color": "emerald"},
+                                {"role": "Duración", "text": "for three years", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Usa 'for' para periodos de tiempo (for 2 hours) y 'since' para un punto de inicio (since Monday)."
+                }
+            elif "past simple" in p_name or "finished" in p_name or "cerrad" in p_name or "específic" in p_name:
+                return {
+                    "title": "Estructura: Past Simple (Tiempo Cerrado y Específico)",
+                    "formula": "[ Sujeto ] + [ Verbo Pasado (V2) ] + [ Fecha / Marcador Cerrado ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / She / They", "color": "blue"},
+                        {"role": "Verbo Pasado (V2)", "pattern": "went / visited / saw / finished", "color": "purple"},
+                        {"role": "Tiempo Cerrado", "pattern": "in 2020 / yesterday / 2 years ago", "color": "rose"}
+                    ],
+                    "explanation": "Usa Past Simple cuando el tiempo está terminado o especificas exactamente cuándo ocurrió la acción.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I went to Japan in 2020.",
+                            "spanish": "Fui a Japón en 2020.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Verbo V2", "text": "went to Japan", "color": "purple"},
+                                {"role": "Fecha Cerrada", "text": "in 2020.", "color": "rose"}
+                            ]
+                        }
+                    ],
+                    "tips": "Si mencionas 'when', 'in 2019', 'yesterday' o 'ago', usa SIEMPRE Past Simple."
+                }
+            elif "present perfect" in p_name or "experien" in p_name or "abiert" in p_name or "unfinished" in p_name:
+                return {
+                    "title": "Estructura: Present Perfect (Experiencias / Tiempo Abierto)",
+                    "formula": "[ Sujeto ] + [ have / has ] + [ Participio Pasado (V3) ] + [ Tiempo Abierto / Frecuencia ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / You / We / They (have) | He / She (has)", "color": "blue"},
+                        {"role": "Auxiliar", "pattern": "have / has", "color": "purple"},
+                        {"role": "Participio Pasado (V3)", "pattern": "visited / seen / worked / eaten", "color": "emerald"},
+                        {"role": "Tiempo Abierto", "pattern": "three times / so far / recently / ever", "color": "amber"}
+                    ],
+                    "explanation": "Expresa experiencias de vida o acciones en un periodo de tiempo aún abierto hacia el presente.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I have visited Japan three times.",
+                            "spanish": "He visitado Japón tres veces.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Auxiliar", "text": "have", "color": "purple"},
+                                {"role": "Participio V3", "text": "visited Japan", "color": "emerald"},
+                                {"role": "Frecuencia", "text": "three times.", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Con I/You/We/They usa 'have'; con He/She/It usa 'has'."
+                }
+            else:
+                return {
+                    "title": "Duelo Didáctico: Present Perfect vs Past Simple",
+                    "formula": "Present Perfect: [ have/has + V3 ] (Abierto) vs Past Simple: [ Verbo V2 ] (Cerrado)",
+                    "formula_tokens": [
+                        {"role": "Present Perfect (Abierto)", "pattern": "I have visited Japan (experiencia)", "color": "blue"},
+                        {"role": "Frontera", "pattern": "vs", "color": "purple"},
+                        {"role": "Past Simple (Cerrado)", "pattern": "I went to Japan in 2020 (fecha exacta)", "color": "rose"}
+                    ],
+                    "explanation": "Present Perfect conecta el pasado con el presente (tiempo abierto); Past Simple describe eventos terminados en un momento específico (tiempo cerrado).",
+                    "example_breakdowns": [
+                        {
+                            "english": "I have visited Japan three times, but I went there in 2020.",
+                            "spanish": "He visitado Japón tres veces, pero fui allí en 2020.",
+                            "parts": [
+                                {"role": "Present Perfect", "text": "I have visited Japan", "color": "blue"},
+                                {"role": "Past Simple", "text": "I went there in 2020", "color": "rose"}
+                            ]
+                        }
+                    ],
+                    "tips": "Pregunta: 'Have you ever been to Japan?' ➔ Respuesta específica: 'Yes, I went there in 2020'."
+                }
+
         # Check key_structure if meaningful and not boilerplate
         key_struct = p.get("key_structure")
         if key_struct and isinstance(key_struct, str) and len(key_struct.strip()) > 3:
@@ -2721,14 +2821,26 @@ class TutorAgent:
             re.compile(r'\b(?:espain|i maria|i leeve|i liv|john pen)\b', re.IGNORECASE),
             re.compile(r'\b(?:don|doesn|didn|wasn|weren|isn|aren|won)\b', re.IGNORECASE),
             re.compile(r'^(?:do not|does not|don\'t|doesn\'t|do|does|did|not)$', re.IGNORECASE),
+            re.compile(r'^(?:s|re|ve|ll|d|m|t)\s+', re.IGNORECASE),
+            re.compile(r'^(?:and|or|but|so|because|with|like|that|which|notice|we say|you say|they say|it says|formula:?)\b', re.IGNORECASE),
+            re.compile(r'\b(?:with|like|that|to|for|at|in|on|and|or|but|so|notice|formula:?)$', re.IGNORECASE),
+            re.compile(r'^[,;:\-]', re.IGNORECASE),
+            re.compile(r'[,;:\-]$', re.IGNORECASE),
+            re.compile(r'\b(?:metaphor|finished vs unfinished|the two formulas)\b', re.IGNORECASE),
         ]
 
         def is_valid_english_phrase(text: str) -> bool:
             if not text or not isinstance(text, str):
                 return False
-            if any(pat.search(text) for pat in UNGRAMMATICAL_ENGLISH_PATTERNS):
+            cleaned = text.strip().strip("'\"`“”‘").strip()
+            if len(cleaned) < 3:
                 return False
-            return not is_spanish_phrase(text)
+            # Disqualify if begins with lowercase letter or orphaned apostrophe
+            if cleaned[0].islower() and not cleaned.startswith("i ") and not cleaned.startswith("i'"):
+                return False
+            if any(pat.search(cleaned) for pat in UNGRAMMATICAL_ENGLISH_PATTERNS):
+                return False
+            return not is_spanish_phrase(cleaned)
 
         raw_quotes = list(re.finditer(r"(?:[\"“]([^\"”\n\r]+)[\"”]|(?:^|[\s(])'([^'\n\r]*(?:'[a-zA-Z][^'\n\r]*)*)'(?:$|[\s).,;!?]))", speech_text))
         items = []
@@ -2959,18 +3071,20 @@ class TutorAgent:
             })
 
         # ── Step 4: Examples, Verb Transformations & Oral Practice ──
-        first_item = target_audio[0] if target_audio else {}
+        valid_targets = [it for it in target_audio if is_valid_english_phrase(it.get("english", ""))]
+        first_item = valid_targets[0] if valid_targets else (target_audio[0] if target_audio else {})
+
         s_audio = remaining[0] if remaining else (f"Escucha y observa este ejemplo: {first_item.get('english', 'la oración en la pizarra')}." if first_item else "Practica los ejemplos en voz alta.")
         remaining = remaining[1:] if remaining else []
         s_spoken = self._extract_spoken_english_examples(s_audio, p, topic)
 
         target_trans = s_spoken.get("transformations") or spoken_overall.get("transformations") or []
-        target_eng = s_spoken.get("primary") or spoken_overall.get("primary") or first_item.get("english") or "I am practicing English today."
-        target_spa = s_spoken.get("primary_translation") or spoken_overall.get("primary_translation") or first_item.get("translation") or first_item.get("spanish") or "Estoy practicando inglés hoy."
+        target_eng = first_item.get("english") or s_spoken.get("primary") or spoken_overall.get("primary") or "I am practicing English today."
+        target_spa = first_item.get("translation") or first_item.get("spanish") or s_spoken.get("primary_translation") or spoken_overall.get("primary_translation") or "Estoy practicando inglés hoy."
         target_contrast = s_spoken.get("contrasts") or spoken_overall.get("contrasts") or []
         target_phonetic = s_spoken.get("phonetic_pairs") or spoken_overall.get("phonetic_pairs") or []
         target_freq = s_spoken.get("frequency_scale") or spoken_overall.get("frequency_scale") or []
-        extra_examples = s_spoken.get("additional") or spoken_overall.get("additional") or (target_audio[1:5] if len(target_audio) > 1 else [])
+        extra_examples = valid_targets[1:5] if len(valid_targets) > 1 else (s_spoken.get("additional") or spoken_overall.get("additional") or [])
 
         # Only add example sentence step if there are examples, transformations, or no diagram was shown
         if not diagram or target_trans or target_eng or extra_examples or target_contrast:

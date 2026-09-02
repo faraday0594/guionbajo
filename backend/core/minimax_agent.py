@@ -1001,9 +1001,10 @@ class TutorAgent:
             f"• Slide 3: DESGLOSE GRAMATICAL Y VARIACIONES SINTÁCTICAS ('is_hook': false, 'interaction_type': 'explanation').\n"
             f"   - 'tutor_says': Desglose paso a paso explicando por qué las palabras van en ese orden exacto.\n"
             f"   - 'board_content': Reglas ortográficas/morfológicas y patrones sintácticos desglosados.\n"
-            f"• Slide 4: CONTRASTE, PRONUNCIACIÓN Y TRAMPAS COMUNES ('is_hook': false, 'interaction_type': 'explanation').\n"
-            f"   - 'tutor_says': Explicación de los errores típicos que cometen los hispanohablantes y cómo evitarlos.\n"
-            f"   - 'board_content': Duelo de oraciones: ❌ Incorrecto vs ✅ Correcto.\n\n"
+            f"• Slide 4: DUELO DE ERRORES SINTÁCTICOS Y COMUNICACIÓN REAL ('is_hook': false, 'interaction_type': 'explanation').\n"
+            f"   - 'tutor_says': Explicación de los errores sintácticos y de concordancia más comunes en hispanohablantes al usar '{topic}' y cómo formular oraciones correctas. CERO explicaciones fonéticas o símbolos IPA aquí (la pronunciación va estrictamente en el bonus final).\n"
+            f"   - 'board_content': Duelo de oraciones: ❌ Error sintáctico común vs ✅ Oración correcta.\n"
+            f"   - 'target_audio_items': Oraciones modelo 100% correctas en inglés (NUNCA incluyas oraciones con errores como 'She haves' o 'She work' como oraciones para practicar).\n\n"
             f"REGLAS OBLIGATORIAS:\n"
             f"1. {'Explicaciones (tutor_says), pizarra (board_content) y tareas en español con ejemplos en inglés.' if is_a_level else 'Full English immersion.'}\n"
             f"2. En cada fase incluye 'target_audio_items' con las oraciones modelo en inglés y su traducción.\n"
@@ -2561,20 +2562,39 @@ class TutorAgent:
                 return False
             return sum(1 for w in tokens if w in SPANISH_DISQUALIFIERS) >= 1
 
+        UNGRAMMATICAL_ENGLISH_PATTERNS = [
+            re.compile(r'\bhaves\b', re.IGNORECASE),
+            re.compile(r'\b(?:she|he|it)\s+(?:work|live|sleep|watch|drink|eat|study|go|do|have|read|play)\b', re.IGNORECASE),
+            re.compile(r'\b(?:i|you|we|they)\s+(?:works|lives|sleeps|watches|drinks|eats|studies|goes|does|has|reads|plays)\b', re.IGNORECASE),
+            re.compile(r'\b(?:i|you|we|they)\s+is\b', re.IGNORECASE),
+            re.compile(r'\b(?:he|she|it)\s+are\b', re.IGNORECASE),
+            re.compile(r'\b(?:this|that)\s+are\b', re.IGNORECASE),
+            re.compile(r'\b(?:these|those)\s+is\b', re.IGNORECASE),
+            re.compile(r'\bto\s+(?:have|be|do|go|work|live|sleep|watch|drink|study|eat)\b', re.IGNORECASE),
+            re.compile(r'\b(?:espain|i maria|i leeve|i liv|john pen)\b', re.IGNORECASE),
+        ]
+
+        def is_valid_english_phrase(text: str) -> bool:
+            if not text or not isinstance(text, str):
+                return False
+            if any(pat.search(text) for pat in UNGRAMMATICAL_ENGLISH_PATTERNS):
+                return False
+            return not is_spanish_phrase(text)
+
         raw_quotes = list(re.finditer(r"['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]", speech_text))
         items = []
         seen = set(syntactic_part_quotes)
 
         # Include drill sentences first
         for d in drill_sentences:
-            if not is_spanish_phrase(d["english"]) and d["english"].lower() not in seen:
+            if is_valid_english_phrase(d["english"]) and d["english"].lower() not in seen:
                 seen.add(d["english"].lower())
                 items.append(d)
 
         for m in raw_quotes:
             eng = m.group(1).strip()
             low = eng.lower()
-            if len(eng) >= 2 and low not in meta_disqualifiers and low not in seen and not is_spanish_phrase(eng):
+            if len(eng) >= 2 and low not in meta_disqualifiers and low not in seen and is_valid_english_phrase(eng):
                 seen.add(low)
                 trans = COMMON_ENGLISH_SPANISH.get(low) or ""
                 end_pos = m.end()
@@ -2599,18 +2619,20 @@ class TutorAgent:
         # Include minimal pair words in items if not present
         for pair in phonetic_pairs:
             for w, tr in [(pair["word1"], pair["trans1"]), (pair["word2"], pair["trans2"])]:
-                if w and w.lower() not in seen:
+                if w and w.lower() not in seen and is_valid_english_phrase(w):
                     seen.add(w.lower())
                     items.append({"english": w, "translation": tr or ""})
 
         # Model sentence selection
         model_match = re.search(r"(?:ejemplo|oración\s+modelo)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]", speech_text, re.IGNORECASE)
-        if model_match:
+        if model_match and is_valid_english_phrase(model_match.group(1).strip()):
             primary_eng = model_match.group(1).strip()
             primary_spa = COMMON_ENGLISH_SPANISH.get(primary_eng.lower(), "Oración modelo en contexto")
         elif items:
-            primary_eng = items[0]["english"]
-            primary_spa = items[0]["translation"]
+            full_sent = next((it for it in items if len(it["english"].split()) >= 3 and is_valid_english_phrase(it["english"])), None)
+            valid_it = full_sent or next((it for it in items if is_valid_english_phrase(it["english"])), items[0])
+            primary_eng = valid_it["english"]
+            primary_spa = valid_it["translation"]
         else:
             primary_eng = "I wake up at 7 AM"
             primary_spa = "Me despierto a las 7 AM"

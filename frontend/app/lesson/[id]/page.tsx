@@ -65,10 +65,25 @@ const GRAMMAR_AND_SPANISH_DISQUALIFIERS: string[] = [
   'sujetos', 'sujeto', 'verbo', 'tercera persona', 'primera persona'
 ];
 
+const UNGRAMMATICAL_ENGLISH_PATTERNS = [
+  /\bhaves\b/i,                                                                          // 'she haves' (grave error for 'has')
+  /\b(?:she|he|it)\s+(?:work|live|sleep|watch|drink|eat|study|go|do|have|read|play)\b/i, // missing -s 3rd person
+  /\b(?:i|you|we|they)\s+(?:works|lives|sleeps|watches|drinks|eats|studies|goes|does|has|reads|plays)\b/i, // extra -s
+  /\b(?:i|you|we|they)\s+is\b/i,                                                         // agreement error
+  /\b(?:he|she|it)\s+are\b/i,                                                            // agreement error
+  /\b(?:this|that)\s+are\b/i,                                                            // demonstrative mismatch
+  /\b(?:these|those)\s+is\b/i,                                                           // demonstrative mismatch
+  /\bto\s+(?:have|be|do|go|work|live|sleep|watch|drink|study|eat)\b/i,                   // infinitive marker as oral target
+  /\b(?:espain|i maria|i leeve|i liv|john pen)\b/i,                                      // known phonetic/syntax error quotes
+];
+
 export function isValidEnglishTargetPhrase(text: string): boolean {
   if (!text || typeof text !== 'string') return false;
   const cleaned = text.trim().replace(/^['"“‘`]+|['"”’`]+$/g, '').trim();
   if (cleaned.length < 3) return false;
+
+  // Disqualify known ungrammatical / error phrases
+  if (UNGRAMMATICAL_ENGLISH_PATTERNS.some(pat => pat.test(cleaned))) return false;
 
   // Disqualify if it contains syntax/math/bracket symbols
   if (/[/\\|\[\](){}+=→<>_~*#^]/.test(cleaned)) return false;

@@ -1315,7 +1315,7 @@ const COMMON_ENGLISH_SPANISH: Record<string, string> = {
 };
 
 // ─── HELPER: Extract Spoken English Quotes & Transformations from Tutor Speech
-function extractSpokenEnglishQuotes(speechText: string) {
+function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: any) {
   if (!speechText) return { primary: null, primary_translation: null, items: [], additional: [], transformations: [], contrasts: [], phonetic_pairs: [], frequency_scale: [], drill_sentences: [] };
 
   const transMatches = Array.from(
@@ -1533,8 +1533,24 @@ function extractSpokenEnglishQuotes(speechText: string) {
     }
   }
 
-  let primaryEng = 'This is my phone';
-  let primarySpa = 'Este es mi teléfono.';
+  const lowTop = (topic || '').toLowerCase();
+  let primaryEng = 'I am practicing English today.';
+  let primarySpa = 'Estoy practicando inglés hoy.';
+
+  if (lowTop.includes('past continuous') || lowTop.includes('interrupted')) {
+    primaryEng = 'I was sleeping when the phone rang.';
+    primarySpa = 'Estaba durmiendo cuando sonó el teléfono.';
+  } else if (lowTop.includes('question') || lowTop.includes('negative') || lowTop.includes('do / does')) {
+    primaryEng = 'Do you live in Madrid?';
+    primarySpa = '¿Vives en Madrid?';
+  } else if (lowTop.includes('routine') || lowTop.includes('daily')) {
+    primaryEng = 'I wake up at seven and drink coffee.';
+    primarySpa = 'Me despierto a las siete y tomo café.';
+  } else if (lowTop.includes('object') || lowTop.includes('possession')) {
+    primaryEng = 'This is my phone and those are your keys.';
+    primarySpa = 'Este es mi teléfono y esas son tus llaves.';
+  }
+
   const modelMatch = speechText.match(/(?:ejemplo|oración\s+modelo|intenta\s+decir\s+en\s+voz\s+alta)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/i);
   if (modelMatch && isValidEnglishTargetPhrase(modelMatch[1].trim()) && !incorrectQuotes.has(modelMatch[1].trim().toLowerCase())) {
     primaryEng = modelMatch[1].trim();
@@ -1562,7 +1578,13 @@ function extractSpokenEnglishQuotes(speechText: string) {
 }
 
 // ─── HELPER: Sanitize Any Timeline Steps (from Backend, LLM, or Cache) ────────
-function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep[] {
+function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: string): TimelineStep[] {
+  const lowTop = (topic || '').toLowerCase();
+  const isPastContTopic = lowTop.includes('past continuous') || lowTop.includes('interrupted');
+  const isQNTopic = lowTop.includes('questions & negatives') || lowTop.includes('questions and negatives') || lowTop.includes('do / does');
+  const isRoutineTopic = !isPastContTopic && !isQNTopic && (lowTop.includes('daily routines') || lowTop.includes('routine') || lowTop.includes('habit'));
+  const isObjectTopic = !isPastContTopic && !isQNTopic && !isRoutineTopic && (lowTop.includes('object') || lowTop.includes('possession'));
+
   return steps.map((step) => {
     const p = { ...step.payload };
 
@@ -1650,8 +1672,16 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
           engLow === 'i liv in spain' ||
           engLow === 'i leeve in spain' ||
           engLow === 'to be' ||
+          engLow === 'to have' ||
           engLow === 'live' ||
           engLow === 'spain' ||
+          engLow === 'john pen' ||
+          engLow === 'haves' ||
+          engLow === 'she haves' ||
+          engLow === 'do not' ||
+          engLow === 'does not' ||
+          engLow === 'don' ||
+          engLow === 'doesn' ||
           engLow.includes('error') ||
           engLow.includes('incorrect') ||
           engLow.includes('trampa')
@@ -1677,76 +1707,135 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
     // 3. Sanitize primary English target sentence & ensure accurate translation
     if (p.english) {
       let engLow = String(p.english).toLowerCase().trim();
+      const isWrongTopicDefault = (
+        (isPastContTopic && (engLow.includes('wake up') || engLow.includes('this is my phone') || engLow.includes('do i work'))) ||
+        (isQNTopic && (engLow.includes('wake up at 7') || engLow.includes('this is my phone') || engLow.includes('i was sleeping'))) ||
+        (isRoutineTopic && (engLow.includes('this is my phone') || engLow.includes('i was sleeping')))
+      );
+
       if (
+        isWrongTopicDefault ||
         engLow === 'to be' ||
+        engLow === 'to have' ||
         engLow === 'espain' ||
         engLow === 'i maria' ||
         engLow === 'i liv in spain' ||
         engLow === 'john pen' ||
+        engLow === 'she haves' ||
+        engLow === 'haves' ||
+        engLow === 'don' ||
+        engLow === 'doesn' ||
         !isValidEnglishTargetPhrase(p.english)
       ) {
         const fullAlt = p.additional_examples?.find((ad: any) => ad.english && ad.english.trim().split(/\s+/).length >= 3)?.english;
-        const validAlt = fullAlt || p.additional_examples?.[0]?.english || 'This is my phone and those are your keys.';
+        let defaultTopicSentence = 'I am practicing English today.';
+        let defaultTopicSpanish = 'Estoy practicando inglés hoy.';
+
+        if (isPastContTopic) {
+          defaultTopicSentence = 'I was sleeping when the phone rang.';
+          defaultTopicSpanish = 'Estaba durmiendo cuando sonó el teléfono.';
+        } else if (isQNTopic) {
+          defaultTopicSentence = 'Do you live in Spain?';
+          defaultTopicSpanish = '¿Vives en España?';
+        } else if (isRoutineTopic) {
+          defaultTopicSentence = 'I wake up at seven in the morning.';
+          defaultTopicSpanish = 'Me despierto a las siete de la mañana.';
+        } else if (isObjectTopic) {
+          defaultTopicSentence = 'This is my phone and those are your keys.';
+          defaultTopicSpanish = 'Este es mi teléfono y esas son tus llaves.';
+        }
+
+        const validAlt = fullAlt || p.additional_examples?.[0]?.english || defaultTopicSentence;
         p.english = validAlt;
-        p.spanish = COMMON_ENGLISH_SPANISH[validAlt.toLowerCase()] || p.additional_examples?.[0]?.translation || 'Oración modelo';
+        p.spanish = COMMON_ENGLISH_SPANISH[validAlt.toLowerCase()] || p.additional_examples?.[0]?.translation || defaultTopicSpanish;
       } else {
         // If single isolated word ('books', 'pens') or incomplete fragment ('this is', 'that is'), upgrade to full sentence if available
-        if (engLow.split(/\s+/).length < 2 || ['this is', 'that is', 'these are', 'those are'].includes(engLow)) {
+        if (engLow.split(/\s+/).length < 2 || ['this is', 'that is', 'these are', 'those are', 'do not', 'does not'].includes(engLow)) {
           const fullAlt = p.additional_examples?.find((ad: any) => ad.english && ad.english.trim().split(/\s+/).length >= 3);
           if (fullAlt) {
             p.english = fullAlt.english;
             p.spanish = fullAlt.translation || fullAlt.spanish || COMMON_ENGLISH_SPANISH[fullAlt.english.toLowerCase()] || 'Oración modelo';
           }
         }
-        // Force correct Spanish translation from dictionary if available (prevents 'books' -> 'Estas son mis gafas')
+        // Force correct Spanish translation from dictionary if available
         engLow = String(p.english).toLowerCase().trim();
         if (COMMON_ENGLISH_SPANISH[engLow]) {
           p.spanish = COMMON_ENGLISH_SPANISH[engLow];
         }
       }
     }
-    // 4. Sanitize Grammar Formula (Fix generic repeated formulas for Questions & Negatives, Daily Routines, etc.)
+
+    // 4. Sanitize Grammar Formula (Topic-Scoped)
     if (step.visual_action === 'show_grammar_formula' || p.formula) {
       const formulaStr = String(p.formula || '').toLowerCase();
       const pName = String(phase?.phase_name || '').toLowerCase();
       const pSays = String(typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '')).toLowerCase();
-      const pComb = `${pName} ${pSays} ${p.formula || ''}`.toLowerCase();
+      const pComb = `${pName} ${pSays}`.toLowerCase();
 
-      const isQN = pComb.includes('question') || pComb.includes('negative') || pComb.includes('do / does') || pComb.includes("don't") || pComb.includes("doesn't") || pComb.includes('auxiliar') || pComb.includes('motores');
-
-      if (isQN || formulaStr.includes('present simple affirmative (i wake up') || formulaStr.includes('syntax formula') || formulaStr.includes('i wake up') || (p.formula && p.formula.includes('[ Sujeto / Pronombre ] + [ Do / Does ] + [ Objeto'))) {
-        if (isQN) {
-          if (pComb.includes('pregunta') || pComb.includes('question') || pComb.includes('¿') || pComb.includes('do you') || pComb.includes('does she')) {
-            p.title = 'Estructura de Preguntas en Present Simple';
-            p.formula = '[ Do / Does ] + [ Sujeto ] + [ Verbo Base ] + [ Complemento ] ?';
-            p.formula_tokens = [
-              { role: 'Auxiliar', pattern: 'Do (I/You/We/They) | Does (He/She/It)', color: 'blue' },
-              { role: 'Sujeto', pattern: 'you / they / he / she', color: 'purple' },
-              { role: 'Verbo Base (¡Sin -s!)', pattern: 'live / work / study', color: 'emerald' },
-              { role: 'Complemento', pattern: 'in Spain? / English?', color: 'amber' },
-            ];
-            p.explanation = 'En preguntas, el auxiliar Do/Does va al inicio y el verbo principal va SIEMPRE en su forma base (sin -s).';
-          } else if (pComb.includes('negat') || pComb.includes("don't") || pComb.includes("doesn't")) {
-            p.title = 'Estructura de Oraciones Negativas';
-            p.formula = '[ Sujeto ] + [ don\'t / doesn\'t ] + [ Verbo Base ] + [ Complemento ]';
-            p.formula_tokens = [
-              { role: 'Sujeto', pattern: 'I / You / We / They | He / She / It', color: 'blue' },
-              { role: 'Auxiliar Negativo', pattern: 'don\'t (I/You/We/They) | doesn\'t (He/She/It)', color: 'purple' },
-              { role: 'Verbo Base (¡Sin -s!)', pattern: 'work / drink / sleep', color: 'emerald' },
-              { role: 'Complemento', pattern: 'on Sundays / coffee', color: 'amber' },
-            ];
-            p.explanation = 'Usa don\'t con I/You/We/They y doesn\'t con He/She/It. El verbo principal se mantiene en forma base.';
-          } else {
-            p.title = 'Regla: Los Motores Auxiliares (Do / Does & Don\'t / Doesn\'t)';
-            p.formula = 'Pregunta: [ Do / Does + Suj + Verbo Base ] | Negación: [ Suj + don\'t / doesn\'t + Verbo Base ]';
-            p.formula_tokens = [
-              { role: 'Grupo I/You/We/They', pattern: 'Do ... ? / ... don\'t + Verbo', color: 'blue' },
-              { role: 'Grupo He/She/It', pattern: 'Does ... ? / ... doesn\'t + Verbo', color: 'purple' },
-              { role: 'Verbo Principal', pattern: 'Forma Base (¡Sin -s!)', color: 'emerald' },
-            ];
-            p.explanation = 'El auxiliar absorbe toda la conjugación. El verbo principal jamás cambia de forma.';
-          }
-        } else if (pName.includes('-s') || pSays.includes('-s') || pName.includes('third person') || pSays.includes('tercera persona') || pSays.includes('magia de la -s') || pSays.includes('works')) {
+      if (isPastContTopic) {
+        if (pComb.includes('when') || pComb.includes('interrup') || pComb.includes('película')) {
+          p.title = 'Estructura: Past Continuous con Interrupción (WHEN)';
+          p.formula = '[ Past Continuous (Acción en progreso) ] + [ WHEN ] + [ Past Simple (Interrupción) ]';
+          p.formula_tokens = [
+            { role: 'Acción en Progreso', pattern: 'I was studying / She was driving', color: 'blue' },
+            { role: 'Conector', pattern: 'WHEN (cuando)', color: 'purple' },
+            { role: 'Interrupción Puntual', pattern: 'the phone rang / lights went out', color: 'rose' },
+          ];
+          p.explanation = 'Past Continuous expresa la acción larga que estaba en curso cuando ocurrió la interrupción en Past Simple.';
+        } else if (pComb.includes('while')) {
+          p.title = 'Estructura: Past Continuous con WHILE';
+          p.formula = '[ WHILE ] + [ Sujeto ] + [ was / were + -ing ] , [ Past Simple ]';
+          p.formula_tokens = [
+            { role: 'Conector', pattern: 'WHILE (mientras)', color: 'emerald' },
+            { role: 'Sujeto', pattern: 'she / they / I', color: 'blue' },
+            { role: 'Acción Continua', pattern: 'was driving / was cooking', color: 'purple' },
+            { role: 'Evento Puntual', pattern: 'it started to rain', color: 'rose' },
+          ];
+          p.explanation = 'WHILE introduce la acción larga en desarrollo continuo.';
+        } else {
+          p.title = 'Fórmula: Past Continuous (was / were + Verbo-ing)';
+          p.formula = '[ Sujeto ] + [ was / were ] + [ Verbo + -ing ] + [ Complemento ]';
+          p.formula_tokens = [
+            { role: 'Sujeto', pattern: 'I / He / She / It (was) | You / We / They (were)', color: 'blue' },
+            { role: 'Auxiliar', pattern: 'was / were', color: 'purple' },
+            { role: 'Verbo con -ing', pattern: 'sleeping / cooking / running', color: 'emerald' },
+            { role: 'Complemento', pattern: 'at 8 PM / dinner', color: 'amber' },
+          ];
+          p.explanation = 'Usa was con I/He/She/It y were con You/We/They. El verbo principal lleva -ing.';
+        }
+      } else if (isQNTopic) {
+        if (pComb.includes('pregunta') || pComb.includes('¿') || pComb.includes('do you') || pComb.includes('does she')) {
+          p.title = 'Estructura de Preguntas en Present Simple';
+          p.formula = '[ Do / Does ] + [ Sujeto ] + [ Verbo Base ] + [ Complemento ] ?';
+          p.formula_tokens = [
+            { role: 'Auxiliar', pattern: 'Do (I/You/We/They) | Does (He/She/It)', color: 'blue' },
+            { role: 'Sujeto', pattern: 'you / they / he / she', color: 'purple' },
+            { role: 'Verbo Base (¡Sin -s!)', pattern: 'live / work / study', color: 'emerald' },
+            { role: 'Complemento', pattern: 'in Spain? / English?', color: 'amber' },
+          ];
+          p.explanation = 'En preguntas, el auxiliar Do/Does va al inicio y el verbo principal va SIEMPRE en su forma base (sin -s).';
+        } else if (pComb.includes('negat') || pComb.includes("don't") || pComb.includes("doesn't")) {
+          p.title = 'Estructura de Oraciones Negativas';
+          p.formula = '[ Sujeto ] + [ don\'t / doesn\'t ] + [ Verbo Base ] + [ Complemento ]';
+          p.formula_tokens = [
+            { role: 'Sujeto', pattern: 'I / You / We / They | He / She / It', color: 'blue' },
+            { role: 'Auxiliar Negativo', pattern: 'don\'t (I/You/We/They) | doesn\'t (He/She/It)', color: 'purple' },
+            { role: 'Verbo Base (¡Sin -s!)', pattern: 'work / drink / sleep', color: 'emerald' },
+            { role: 'Complemento', pattern: 'on Sundays / coffee', color: 'amber' },
+          ];
+          p.explanation = 'Usa don\'t con I/You/We/They y doesn\'t con He/She/It. El verbo principal se mantiene en forma base.';
+        } else {
+          p.title = 'Regla: Los Motores Auxiliares (Do / Does & Don\'t / Doesn\'t)';
+          p.formula = 'Pregunta: [ Do / Does + Suj + Verbo Base ] | Negación: [ Suj + don\'t / doesn\'t + Verbo Base ]';
+          p.formula_tokens = [
+            { role: 'Grupo I/You/We/They', pattern: 'Do ... ? / ... don\'t + Verbo', color: 'blue' },
+            { role: 'Grupo He/She/It', pattern: 'Does ... ? / ... doesn\'t + Verbo', color: 'purple' },
+            { role: 'Verbo Principal', pattern: 'Forma Base (¡Sin -s!)', color: 'emerald' },
+          ];
+          p.explanation = 'El auxiliar absorbe toda la conjugación. El verbo principal jamás cambia de forma.';
+        }
+      } else if (isRoutineTopic) {
+        if (pComb.includes('-s') || pComb.includes('third person') || pComb.includes('tercera persona') || pComb.includes('magia de la -s') || pComb.includes('works')) {
           p.title = 'Regla: Tercera Persona Singular (He / She / It)';
           p.formula = '[ He / She / It ] + [ Verbo + -s / -es / -ies ] + [ Complemento ]';
           p.formula_tokens = [
@@ -1768,16 +1857,17 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
       }
     }
 
-    // 5. Sanitize Diagram SVG (Fix Frequency/Third Person Timeline repeating on Questions & Negatives or vice-versa)
+    // 5. Sanitize Diagram SVG (Strict Topic Anchoring)
     if (step.visual_action === 'show_diagram' && p.svg) {
-      const pCombined = `${phase?.phase_name || ''} ${phase?.board_content || ''} ${typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '')}`.toLowerCase();
-      const isQN = pCombined.includes('question') || pCombined.includes('negative') || pCombined.includes('do / does') || pCombined.includes("don't") || pCombined.includes("doesn't") || pCombined.includes('auxiliar') || pCombined.includes('motores');
-      const isThird = !isQN && (pCombined.includes('-s') || pCombined.includes('third person') || pCombined.includes('tercera persona') || pCombined.includes('magia de la -s') || pCombined.includes('works'));
-
-      if (isQN && (p.svg.includes('REGLAS DE TERCERA PERSONA') || p.svg.includes('FREQUENCY ADVERBS') || p.svg.includes('ALWAYS'))) {
+      if (isPastContTopic) {
+        p.svg = PAST_CONTINUOUS_TIMELINE_SVG;
+      } else if (isQNTopic) {
         p.svg = DO_DOES_QUESTIONS_NEGATIVES_SVG;
-      } else if (isThird && (p.svg.includes('FREQUENCY ADVERBS') || p.svg.includes('ALWAYS'))) {
-        p.svg = THIRD_PERSON_VERB_RULES_SVG;
+      } else if (isRoutineTopic) {
+        const pComb = `${phase?.phase_name || ''} ${phase?.board_content || ''} ${typeof phase?.tutor_says === 'string' ? phase.tutor_says : ''}`.toLowerCase();
+        if (pComb.includes('-s') || pComb.includes('third person') || pComb.includes('tercera persona')) {
+          p.svg = THIRD_PERSON_VERB_RULES_SVG;
+        }
       }
     }
 
@@ -1788,11 +1878,11 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep
 // ─── HELPER: Generate or Normalize Chronological Timeline Steps for Slide ────
 function getPhaseStoryboardTimeline(phase: any, topic: string): TimelineStep[] {
   if (phase?.storyboard_timeline && Array.isArray(phase.storyboard_timeline) && phase.storyboard_timeline.length > 0) {
-    return sanitizeTimelineSteps(phase.storyboard_timeline, phase);
+    return sanitizeTimelineSteps(phase.storyboard_timeline, phase, topic);
   }
 
   const fullSpeech = typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '');
-  const spokenOverall = extractSpokenEnglishQuotes(fullSpeech);
+  const spokenOverall = extractSpokenEnglishQuotes(fullSpeech, topic, phase);
 
   // Synthesize from voice chunks / grammar / target audio items
   const chunks = getPhaseVoiceChunks(phase, topic);

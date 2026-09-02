@@ -2038,6 +2038,83 @@ class TutorAgent:
                 "tips": "NUNCA digas 'Did you went?'; usa siempre 'Did you go?'."
             }
 
+        # Past Continuous & Interrupted Actions (was/were + -ing & when/while)
+        if "past continuous" in low_top or "interrupted" in low_top:
+            p_name = str(p.get("phase_name", "")).lower()
+            p_says = str(p.get("tutor_says", "")).lower()
+            if "when" in p_name or "interrup" in p_name or "when" in p_says:
+                return {
+                    "title": "Estructura: Past Continuous con Interrupción (WHEN)",
+                    "formula": "[ Past Continuous (Acción en progreso) ] + [ WHEN ] + [ Past Simple (Interrupción) ]",
+                    "formula_tokens": [
+                        {"role": "Acción en Progreso", "pattern": "I was studying / She was driving", "color": "blue"},
+                        {"role": "Conector", "pattern": "WHEN (cuando)", "color": "purple"},
+                        {"role": "Interrupción Puntual", "pattern": "the phone rang / lights went out", "color": "rose"}
+                    ],
+                    "explanation": "Usa Past Continuous (was/were + -ing) para la acción que estaba en progreso y Past Simple para la interrupción que ocurre con WHEN.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I was studying when the lights went out.",
+                            "spanish": "Estaba estudiando cuando se apagaron las luces.",
+                            "parts": [
+                                {"role": "En Progreso", "text": "I was studying", "color": "blue"},
+                                {"role": "Conector", "text": "when", "color": "purple"},
+                                {"role": "Interrupción", "text": "the lights went out", "color": "rose"}
+                            ]
+                        }
+                    ],
+                    "tips": "WHEN introduce siempre la acción corta e instantánea en Past Simple."
+                }
+            elif "while" in p_name or "while" in p_says:
+                return {
+                    "title": "Estructura: Past Continuous con WHILE",
+                    "formula": "[ WHILE ] + [ Sujeto ] + [ was / were + -ing ] , [ Past Simple ]",
+                    "formula_tokens": [
+                        {"role": "Conector", "pattern": "WHILE (mientras)", "color": "emerald"},
+                        {"role": "Sujeto", "pattern": "she / they / I", "color": "blue"},
+                        {"role": "Acción Continua", "pattern": "was driving / was cooking", "color": "purple"},
+                        {"role": "Evento Puntual", "pattern": "it started to rain", "color": "rose"}
+                    ],
+                    "explanation": "WHILE introduce la acción larga en desarrollo continuo.",
+                    "example_breakdowns": [
+                        {
+                            "english": "While she was driving, it started to rain.",
+                            "spanish": "Mientras ella conducía, empezó a llover.",
+                            "parts": [
+                                {"role": "Conector", "text": "While", "color": "emerald"},
+                                {"role": "Continuo", "text": "she was driving,", "color": "purple"},
+                                {"role": "Puntual", "text": "it started to rain", "color": "rose"}
+                            ]
+                        }
+                    ],
+                    "tips": "WHILE se acompaña siempre de un tiempo continuo (was/were + -ing)."
+                }
+            else:
+                return {
+                    "title": "Fórmula: Past Continuous (was / were + Verbo-ing)",
+                    "formula": "[ Sujeto ] + [ was / were ] + [ Verbo + -ing ] + [ Complemento ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / He / She / It (was) | You / We / They (were)", "color": "blue"},
+                        {"role": "Auxiliar", "pattern": "was / were", "color": "purple"},
+                        {"role": "Verbo con -ing", "pattern": "sleeping / cooking / running", "color": "emerald"},
+                        {"role": "Complemento", "pattern": "at 8 PM / dinner", "color": "amber"}
+                    ],
+                    "explanation": "Usa was con I/He/She/It y were con You/We/They. El verbo principal siempre lleva -ing.",
+                    "example_breakdowns": [
+                        {
+                            "english": "I was sleeping at ten last night.",
+                            "spanish": "Estaba durmiendo a las diez anoche.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Auxiliar", "text": "was", "color": "purple"},
+                                {"role": "Verbo-ing", "text": "sleeping", "color": "emerald"},
+                                {"role": "Tiempo", "text": "at ten last night", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Con I/He/She/It usa 'was'; con You/We/They usa 'were'."
+                }
+
         # Check key_structure if meaningful and not boilerplate
         key_struct = p.get("key_structure")
         if key_struct and isinstance(key_struct, str) and len(key_struct.strip()) > 3:
@@ -2496,7 +2573,7 @@ class TutorAgent:
 
         return steps
 
-    def _extract_spoken_english_examples(self, speech_text: str) -> dict:
+    def _extract_spoken_english_examples(self, speech_text: str, p: Optional[dict] = None, topic: str = "") -> dict:
         """
         Extracts exact English phrases, sentences, transformations, and contrasts
         quoted by the tutor in their speech with guaranteed translation pairing.
@@ -2642,6 +2719,8 @@ class TutorAgent:
             re.compile(r'\b(?:these|those)\s+is\b', re.IGNORECASE),
             re.compile(r'\bto\s+(?:have|be|do|go|work|live|sleep|watch|drink|study|eat)\b', re.IGNORECASE),
             re.compile(r'\b(?:espain|i maria|i leeve|i liv|john pen)\b', re.IGNORECASE),
+            re.compile(r'\b(?:don|doesn|didn|wasn|weren|isn|aren|won)\b', re.IGNORECASE),
+            re.compile(r'^(?:do not|does not|don\'t|doesn\'t|do|does|did|not)$', re.IGNORECASE),
         ]
 
         def is_valid_english_phrase(text: str) -> bool:
@@ -2651,7 +2730,7 @@ class TutorAgent:
                 return False
             return not is_spanish_phrase(text)
 
-        raw_quotes = list(re.finditer(r"['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]", speech_text))
+        raw_quotes = list(re.finditer(r"(?:[\"“]([^\"”\n\r]+)[\"”]|(?:^|[\s(])'([^'\n\r]*(?:'[a-zA-Z][^'\n\r]*)*)'(?:$|[\s).,;!?]))", speech_text))
         items = []
         seen = set(syntactic_part_quotes)
 
@@ -2662,7 +2741,7 @@ class TutorAgent:
                 items.append(d)
 
         for m in raw_quotes:
-            eng = m.group(1).strip()
+            eng = (m.group(1) if m.group(1) is not None else m.group(2) or "").strip()
             low = eng.lower()
             if len(eng) >= 2 and low not in meta_disqualifiers and low not in seen and is_valid_english_phrase(eng):
                 seen.add(low)
@@ -2704,8 +2783,38 @@ class TutorAgent:
             primary_eng = valid_it["english"]
             primary_spa = valid_it["translation"]
         else:
-            primary_eng = "I wake up at 7 AM"
-            primary_spa = "Me despierto a las 7 AM"
+            audio_items = p.get("target_audio_items", []) if p else []
+            first_audio = next((it for it in audio_items if is_valid_english_phrase(it.get("english", ""))), None)
+            
+            if first_audio:
+                primary_eng = first_audio["english"]
+                primary_spa = first_audio.get("translation") or first_audio.get("spanish") or "Oración modelo en contexto"
+            elif p and p.get("expected_answer") and is_valid_english_phrase(p.get("expected_answer")):
+                primary_eng = p.get("expected_answer")
+                primary_spa = "Respuesta modelo"
+            else:
+                low_top = topic.lower()
+                if "past continuous" in low_top or "interrupted" in low_top:
+                    primary_eng = "I was sleeping when the phone rang."
+                    primary_spa = "Estaba durmiendo cuando sonó el teléfono."
+                elif "question" in low_top or "negative" in low_top or "do / does" in low_top:
+                    primary_eng = "Do you live in Madrid?"
+                    primary_spa = "¿Vives en Madrid?"
+                elif "there is" in low_top or "there are" in low_top or "places" in low_top:
+                    primary_eng = "There is a park near my house."
+                    primary_spa = "Hay un parque cerca de mi casa."
+                elif "object" in low_top or "possession" in low_top:
+                    primary_eng = "This is my notebook and those are your keys."
+                    primary_spa = "Este es mi cuaderno y esas son tus llaves."
+                elif "routine" in low_top or "daily" in low_top:
+                    primary_eng = "I wake up at seven and drink coffee."
+                    primary_spa = "Me despierto a las siete y tomo café."
+                elif "frequency" in low_top or "time" in low_top:
+                    primary_eng = "I always have breakfast at eight."
+                    primary_spa = "Siempre desayuno a las ocho."
+                else:
+                    primary_eng = "We are practicing English today."
+                    primary_spa = "Estamos practicando inglés hoy."
 
         # Secondary additional examples (excluding primary)
         additional = [it for it in items if it["english"].lower() != primary_eng.lower()]
@@ -2747,7 +2856,7 @@ class TutorAgent:
         if not full_speech:
             full_speech = f"En esta fase exploraremos {topic or 'este concepto'} en detalle."
 
-        spoken_overall = self._extract_spoken_english_examples(full_speech)
+        spoken_overall = self._extract_spoken_english_examples(full_speech, p, topic)
 
         raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', full_speech) if s.strip()]
         if not raw_sentences:
@@ -2817,7 +2926,7 @@ class TutorAgent:
             first_item = target_audio[0]
             s2_audio = remaining[0] if remaining else f"Fíjate en esta oración: {first_item.get('english')}."
             remaining = remaining[1:] if remaining else []
-            s2_spoken = self._extract_spoken_english_examples(s2_audio)
+            s2_spoken = self._extract_spoken_english_examples(s2_audio, p, topic)
             eng_sentence = s2_spoken.get("primary") or first_item.get("english") or "Example sentence"
             spa_trans = s2_spoken.get("primary_translation") or first_item.get("translation") or first_item.get("spanish") or "Oración modelo"
 
@@ -2853,11 +2962,11 @@ class TutorAgent:
         first_item = target_audio[0] if target_audio else {}
         s_audio = remaining[0] if remaining else (f"Escucha y observa este ejemplo: {first_item.get('english', 'la oración en la pizarra')}." if first_item else "Practica los ejemplos en voz alta.")
         remaining = remaining[1:] if remaining else []
-        s_spoken = self._extract_spoken_english_examples(s_audio)
+        s_spoken = self._extract_spoken_english_examples(s_audio, p, topic)
 
         target_trans = s_spoken.get("transformations") or spoken_overall.get("transformations") or []
-        target_eng = s_spoken.get("primary") or spoken_overall.get("primary") or first_item.get("english") or "I wake up early"
-        target_spa = s_spoken.get("primary_translation") or spoken_overall.get("primary_translation") or first_item.get("translation") or first_item.get("spanish") or "Me despierto temprano."
+        target_eng = s_spoken.get("primary") or spoken_overall.get("primary") or first_item.get("english") or "I am practicing English today."
+        target_spa = s_spoken.get("primary_translation") or spoken_overall.get("primary_translation") or first_item.get("translation") or first_item.get("spanish") or "Estoy practicando inglés hoy."
         target_contrast = s_spoken.get("contrasts") or spoken_overall.get("contrasts") or []
         target_phonetic = s_spoken.get("phonetic_pairs") or spoken_overall.get("phonetic_pairs") or []
         target_freq = s_spoken.get("frequency_scale") or spoken_overall.get("frequency_scale") or []

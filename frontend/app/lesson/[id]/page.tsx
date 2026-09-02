@@ -956,6 +956,26 @@ export interface VoiceChunk {
 
 // ─── HELPER: Extract or Synthesize Discrete Voice Chunks ─────────────────────
 export function getPhaseVoiceChunks(phase: any, topic: string): VoiceChunk[] {
+  const isHook = phase?.phase_number === 1 || Boolean(phase?.is_hook);
+  if (isHook) {
+    let fullHookSpeech = typeof phase?.tutor_says === 'string'
+      ? phase.tutor_says
+      : phase?.tutor_says?.text || '';
+    if (!fullHookSpeech.trim() && phase?.voice_chunks?.length > 0) {
+      fullHookSpeech = phase.voice_chunks.map((c: any) => c.tutor_says).join(' ');
+    }
+    return [
+      {
+        chunk_id: 'chunk-1',
+        chunk_index: 1,
+        title: 'Situación en Contexto',
+        tutor_says: fullHookSpeech.trim(),
+        reveal_target: 'image',
+        highlight_target: 'illustration',
+      }
+    ];
+  }
+
   if (phase?.voice_chunks && Array.isArray(phase.voice_chunks) && phase.voice_chunks.length >= 2) {
     return phase.voice_chunks.map((c: any, idx: number) => ({
       chunk_id: c.chunk_id || `chunk-${idx + 1}`,
@@ -977,7 +997,6 @@ export function getPhaseVoiceChunks(phase: any, topic: string): VoiceChunk[] {
   }
 
   const rawSentences = tutorSpeech.split(/(?<=[.?!])\s+/).map((s: string) => s.trim()).filter(Boolean);
-  const isHook = phase?.phase_number === 1 || Boolean(phase?.is_hook);
   const hasExercises = Boolean(
     phase?.phase_number !== 1 && (phase?.student_task || phase?.expected_answer || phase?.exercises)
   );
@@ -1003,19 +1022,6 @@ export function getPhaseVoiceChunks(phase: any, topic: string): VoiceChunk[] {
     reveal_target: 'image',
     highlight_target: 'illustration',
   });
-
-  if (isHook) {
-    return [
-      {
-        chunk_id: 'chunk-1',
-        chunk_index: 1,
-        title: '1. Situación y Dilema',
-        tutor_says: tutorSpeech,
-        reveal_target: 'image',
-        highlight_target: 'illustration',
-      }
-    ];
-  }
 
   // Chunk 2: Grammar / Diagram / Concept Formula
   if (hasGrammar || hasDiagram || hasPhonetics || remaining.length >= 2) {
@@ -1412,10 +1418,95 @@ function extractSpokenEnglishQuotes(speechText: string) {
   };
 }
 
+// ─── HELPER: Sanitize Any Timeline Steps (from Backend, LLM, or Cache) ────────
+function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any): TimelineStep[] {
+  return steps.map((step) => {
+    const p = { ...step.payload };
+
+    // 1. Sanitize Contrasts (Swap if inverted, remove if nonsensical)
+    if (p.contrasts && Array.isArray(p.contrasts)) {
+      p.contrasts = p.contrasts
+        .map((ct: any) => {
+          let cor = String(ct.correct || '').trim();
+          let inc = String(ct.incorrect || '').trim();
+          const corLow = cor.toLowerCase();
+          const incLow = inc.toLowerCase();
+
+          // Inversion Check: If 'correct' is an error ('espain', 'i maria', 'i am espain', 'i leeve', 'i liv')
+          if (
+            corLow === 'espain' ||
+            corLow === 'i maria' ||
+            corLow === 'i am espain' ||
+            corLow.includes('leeve') ||
+            corLow.includes('error') ||
+            corLow.includes('incorrect') ||
+            (corLow.includes('coffee') && incLow.includes('spain'))
+          ) {
+            if (incLow === 'spain' || incLow.includes('spain') || incLow.includes('live')) {
+              return {
+                correct: incLow.includes('live') ? 'I live in Spain' : (incLow === 'spain' ? 'Spain' : inc),
+                incorrect: corLow.includes('coffee') ? 'I leeve in Spain' : cor,
+                why: 'Pronunciación y gramática correcta',
+              };
+            }
+          }
+          return { correct: cor, incorrect: inc, why: ct.why || 'Contraste fonético / gramatical' };
+        })
+        .filter((ct: any) => ct.correct && ct.incorrect && isValidEnglishTargetPhrase(ct.correct));
+    }
+
+    // 2. Sanitize additional_examples: Strictly purge erroneous items like 'Espain', 'I Maria', 'I liv in Spain', 'To Be'
+    if (p.additional_examples && Array.isArray(p.additional_examples)) {
+      p.additional_examples = p.additional_examples.filter((ad: any) => {
+        if (!ad.english || typeof ad.english !== 'string') return false;
+        const engLow = ad.english.toLowerCase().trim();
+        if (
+          engLow === 'espain' ||
+          engLow === 'i maria' ||
+          engLow === 'i am espain' ||
+          engLow === 'i liv in spain' ||
+          engLow === 'i leeve in spain' ||
+          engLow === 'to be' ||
+          engLow === 'live' ||
+          engLow === 'spain' ||
+          engLow.includes('error') ||
+          engLow.includes('incorrect') ||
+          engLow.includes('trampa')
+        ) {
+          return false;
+        }
+        const transLow = (ad.translation || ad.spanish || '').toLowerCase();
+        if (transLow.includes('error') || transLow.includes('incorrect') || transLow.includes('gravísimo')) {
+          return false;
+        }
+        return isValidEnglishTargetPhrase(ad.english);
+      });
+    }
+
+    // 3. Sanitize primary English target sentence
+    if (p.english) {
+      const engLow = String(p.english).toLowerCase().trim();
+      if (
+        engLow === 'to be' ||
+        engLow === 'espain' ||
+        engLow === 'i maria' ||
+        engLow === 'i liv in spain' ||
+        !isValidEnglishTargetPhrase(p.english)
+      ) {
+        const validAlt = p.additional_examples?.[0]?.english || 'I am from Spain, and I live in Madrid.';
+        p.english = validAlt;
+        p.spanish = p.additional_examples?.[0]?.translation || 'Soy de España y vivo en Madrid.';
+      }
+    }
+
+    return { ...step, payload: p };
+  });
+}
+
 // ─── HELPER: Generate or Normalize Chronological Timeline Steps for Slide ────
 function getPhaseStoryboardTimeline(phase: any, topic: string): TimelineStep[] {
   if (phase?.storyboard_timeline && Array.isArray(phase.storyboard_timeline) && phase.storyboard_timeline.length > 0) {
-    return phase.storyboard_timeline;
+    return sanitizeTimelineSteps(phase.storyboard_timeline, phase);
   }
 
   const fullSpeech = typeof phase?.tutor_says === 'string' ? phase.tutor_says : (phase?.tutor_says?.text || '');
@@ -1429,7 +1520,7 @@ function getPhaseStoryboardTimeline(phase: any, topic: string): TimelineStep[] {
   const exercises = phase?.exercises || [];
   const task = phase?.student_task;
 
-  return chunks.map((c, idx) => {
+  const rawSteps: TimelineStep[] = chunks.map((c, idx) => {
     let action: TimelineStep['visual_action'] = 'show_hero_image';
     let payload: any = {};
 
@@ -1491,6 +1582,8 @@ function getPhaseStoryboardTimeline(phase: any, topic: string): TimelineStep[] {
       payload,
     };
   });
+
+  return sanitizeTimelineSteps(rawSteps, phase);
 }
 
 function buildFrontendOfflineLesson(topic: string, sublevel: string, lessonId: string) {
@@ -4096,15 +4189,15 @@ export default function LessonPage() {
                   <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-brand-cyan/15 rounded-full blur-[120px] pointer-events-none" />
                   <div className="absolute -bottom-32 right-1/4 w-[400px] h-[300px] bg-brand-accent/15 rounded-full blur-[100px] pointer-events-none" />
 
-                  {/* Top Minimalist Hook Header Bar */}
+                  {/* Top Minimalist Scene Header Bar */}
                   <div className="w-full flex items-center justify-between gap-3 relative z-10 pb-3 border-b border-white/10 flex-shrink-0">
                     <div className="flex items-center gap-3">
                       <span className="px-3.5 py-1.5 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm">
                         <Sparkles size={14} className="text-brand-cyan animate-pulse" />
-                        <span>Hook de Apertura</span>
+                        <span>Situación en Contexto Real</span>
                       </span>
                       <h2 className="text-sm sm:text-base font-bold text-white/90 hidden sm:inline truncate max-w-md">
-                        {renderTextContent(phase.phase_name)}
+                        {renderTextContent(String(phase.phase_name || '').replace(/^(?:Fase\s*\d+\s*[:\-]\s*)?(?:Hook\s*[:\-]\s*)+/i, ''))}
                       </h2>
                     </div>
 
@@ -4112,25 +4205,11 @@ export default function LessonPage() {
                       <button
                         type="button"
                         onClick={() => speakText(typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '', true)}
-                        className="text-xs px-3 py-1.5 rounded-xl bg-brand-cyan/15 hover:bg-brand-cyan/30 border border-brand-cyan/35 text-brand-cyan hover:text-white flex items-center gap-1.5 transition-all font-semibold shadow-sm"
-                        title="Escuchar la locución del hook"
+                        className="text-xs px-3.5 py-1.5 rounded-xl bg-brand-cyan/15 hover:bg-brand-cyan/30 border border-brand-cyan/35 text-brand-cyan hover:text-white flex items-center gap-1.5 transition-all font-semibold shadow-sm cursor-pointer"
+                        title="Escuchar de nuevo la narración"
                       >
                         <Volume2 size={13} className="text-brand-cyan" />
-                        <span>Escuchar Hook</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowDynamicSubtitles(!showDynamicSubtitles)}
-                        className={`text-xs px-2.5 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 ${
-                          showDynamicSubtitles
-                            ? 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/40 shadow-sm'
-                            : 'glass border-brand-border text-brand-text-muted hover:text-white'
-                        }`}
-                        title={showDynamicSubtitles ? 'Ocultar subtítulos' : 'Mostrar subtítulos dinámicos'}
-                      >
-                        <Subtitles size={12} className={showDynamicSubtitles && tutorState === 'speaking' ? 'text-brand-cyan animate-pulse' : ''} />
-                        <span>{showDynamicSubtitles ? 'Subtítulos ON' : 'Subtítulos'}</span>
+                        <span>Repetir Narración</span>
                       </button>
                     </div>
                   </div>
@@ -4161,7 +4240,7 @@ export default function LessonPage() {
                             <>
                               <img
                                 src={hUrl}
-                                alt={hi.caption || 'Ilustración del Hook'}
+                                alt={hi.caption || 'Ilustración en contexto'}
                                 className="w-full h-full max-h-[360px] sm:max-h-[420px] object-cover rounded-3xl transition-transform duration-700 group-hover:scale-105"
                               />
                               {/* Soft Vignette Overlay */}
@@ -4193,7 +4272,7 @@ export default function LessonPage() {
                   {/* Bottom Action Footer with Cinematic CTA */}
                   <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10 relative z-10 flex-shrink-0">
                     <div className="text-xs text-white/70 font-chalk text-center sm:text-left">
-                      💡 <strong className="text-brand-cyan font-sans">El Hook:</strong> Escucha la introducción inmersiva y avanza a los conceptos.
+                      💡 <strong className="text-brand-cyan font-sans">Situación Inicial:</strong> Escucha la escena para conectar con los conceptos de hoy.
                     </div>
 
                     <motion.button

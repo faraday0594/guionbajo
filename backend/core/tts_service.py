@@ -447,11 +447,13 @@ async def synthesize_speech(
             return edge_audio
 
     # ── 3. ENGLISH PRACTICE / DRILL CONTENT ───────────────────────────────────
+    # If the text being read is exclusively or predominantly English (e.g. model sentences, vocabulary, drills),
+    # ALWAYS synthesize it with an authentic native English studio voice (Jenny or Roger),
+    # regardless of whether the student's tutor persona is Yujie or Alvaro.
     is_eng_content = is_predominantly_english(text)
-    if is_eng_content and not any(k in vid for k in ("yujie", "chengshu", "tianmei", "shaonv", "dalia", "jorge", "elvira", "alvaro", "paloma", "alonso")):
+    if is_eng_content:
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
-        # Check if female English voice requested or default to Jenny
-        is_explicit_male = any(m in vid for m in ("male", "roger", "guy", "christopher"))
+        is_explicit_male = any(m in vid for m in ("male", "roger", "guy", "christopher", "alvaro", "jorge", "alonso"))
         chosen_en_voice = "en-US-RogerNeural" if is_explicit_male else "en-US-JennyNeural"
         if vid.startswith("en-"):
             chosen_en_voice = voice_id

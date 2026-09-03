@@ -879,6 +879,58 @@ const DO_DOES_QUESTIONS_NEGATIVES_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
   </g>
 </svg>`;
 
+const PRESENT_PERFECT_VS_PAST_SIMPLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgPP" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowPP" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgPP)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">THE BRIDGE METAPHOR: PRESENT PERFECT vs PAST SIMPLE</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Tiempo Cerrado / Terminado (Past Simple) vs Tiempo Abierto / Conexión Hoy (Present Perfect)</text>
+
+  <!-- Left Card: PAST SIMPLE (Finished Stone Bridge) -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#b91c1c"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. PAST SIMPLE (TIEMPO CERRADO)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#f87171">• Acción y periodo terminados en el pasado:</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#f87171" font-weight="bold">went</tspan> to Japan <tspan fill="#fca5a5" font-weight="bold">in 2020</tspan>."</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#fca5a5">📍 Marcadores Específicos (Closed Time):</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">• yesterday, in 2020, 2 years ago, last week</text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">🔒 El puente está sellado y no conecta con hoy.</text>
+  </g>
+
+  <!-- Right Card: PRESENT PERFECT (Open Glass Bridge) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. PRESENT PERFECT (TIEMPO ABIERTO)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• Experiencia de vida / Conexión con el presente:</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#38bdf8" font-weight="bold">have visited</tspan> Japan <tspan fill="#7dd3fc" font-weight="bold">three times</tspan>."</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#7dd3fc">📍 Marcadores Abiertos (Unfinished Time):</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">• ever, never, three times, so far, recently, this year</text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#38bdf8">🌉 El puente sigue abierto hacia el presente.</text>
+  </g>
+
+  <!-- Bottom Golden Rule Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      💡 REGLA DE ORO: ¿CUÁNDO OCURRIÓ?
+    </text>
+    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Si mencionas el momento exacto (in 2020 / yesterday) ➔ <tspan fill="#f87171" font-weight="bold">Past Simple</tspan>.
+    </text>
+    <text x="315" y="68" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Si importa la experiencia o la frecuencia hasta hoy ➔ <tspan fill="#38bdf8" font-weight="bold">Present Perfect (have/has + V3)</tspan>.
+    </text>
+  </g>
+</svg>`;
+
 export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
   if (phase?.diagram_svg && typeof phase.diagram_svg === 'string' && phase.diagram_svg.includes('<svg')) {
     return phase.diagram_svg;
@@ -886,20 +938,22 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
   const phaseNum = phase?.phase_number || phase?.phase_index || 1;
   if (phaseNum > 4) return null;
 
-  const combined = `${topic || ''} ${phase?.phase_name || ''} ${typeof phase?.board_content === 'string' ? phase.board_content : ''}`.toLowerCase();
+  const lowTop = (topic || '').toLowerCase();
+  const pName = String(phase?.phase_name || '').toLowerCase();
+  const pBoard = typeof phase?.board_content === 'string' ? phase.board_content.toLowerCase() : '';
+  const combined = `${lowTop} ${pName} ${pBoard}`;
 
-  // 0. Places & There is / There are / Prepositions of Place (Check first for spatial & existential topics)
+  // 0. Present Perfect vs Past Simple
+  if (lowTop.includes('present perfect') || lowTop.includes('perfect vs past') || pName.includes('present perfect') || pName.includes('bridge')) {
+    return PRESENT_PERFECT_VS_PAST_SIMPLE_SVG;
+  }
+
+  // 1. Places & There is / There are / Prepositions of Place (Only if topic matches)
   if (
-    combined.includes('there is') ||
-    combined.includes('there are') ||
-    combined.includes('places & there is') ||
-    combined.includes('preposition') ||
-    combined.includes('preposicion') ||
-    combined.includes('next to') ||
-    combined.includes('in front of') ||
-    combined.includes('between') ||
-    combined.includes('opposite') ||
-    combined.includes('existencia')
+    lowTop.includes('places') ||
+    lowTop.includes('there is') ||
+    lowTop.includes('there are') ||
+    (lowTop.includes('preposition') && !lowTop.includes('perfect'))
   ) {
     return THERE_IS_THERE_ARE_SVG;
   }
@@ -1719,6 +1773,7 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
     if (p.english) {
       let engLow = String(p.english).toLowerCase().trim();
       const isWrongTopicDefault = (
+        (isPresentPerfectTopic && (engLow.includes('wake up') || engLow.includes('this is my phone') || engLow.includes('i was sleeping') || engLow.includes('practicing english') || engLow.includes('there is'))) ||
         (isPastContTopic && (engLow.includes('wake up') || engLow.includes('this is my phone') || engLow.includes('do i work'))) ||
         (isQNTopic && (engLow.includes('wake up at 7') || engLow.includes('this is my phone') || engLow.includes('i was sleeping'))) ||
         (isRoutineTopic && (engLow.includes('this is my phone') || engLow.includes('i was sleeping')))
@@ -1742,7 +1797,10 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
         let defaultTopicSentence = 'I am practicing English today.';
         let defaultTopicSpanish = 'Estoy practicando inglés hoy.';
 
-        if (isPastContTopic) {
+        if (isPresentPerfectTopic) {
+          defaultTopicSentence = 'I have visited Japan three times.';
+          defaultTopicSpanish = 'He visitado Japón tres veces.';
+        } else if (isPastContTopic) {
           defaultTopicSentence = 'I was sleeping when the phone rang.';
           defaultTopicSpanish = 'Estaba durmiendo cuando sonó el teléfono.';
         } else if (isQNTopic) {

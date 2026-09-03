@@ -415,13 +415,13 @@ class TutorAgent:
     def _resolve_didactic_diagram_svg(self, p: dict, topic: str) -> Optional[str]:
         """Resolves or generates a rich didactic vector SVG diagram for temporal/frequency/spatial topics."""
         combined_text = f"{topic} {p.get('phase_name', '')} {p.get('board_content', '')} {p.get('tutor_says', '')}".lower()
+        low_top = topic.lower()
+        is_pp = "present perfect" in low_top or "perfect vs past" in low_top
         is_third_person = any(w in combined_text for w in ["third person", "tercera persona", "-s", "-es", "-ies", "he/she/it", "la magia de la -s", "works", "watches", "studies"])
-        
-        # Invalidate mismatched third person / frequency diagrams on Questions & Negatives
-        is_qn = any(w in combined_text for w in ["questions & negatives", "questions and negatives", "do / does", "don't / doesn't", "do and does", "auxiliares do y does"])
+        is_qn = any(w in low_top for w in ["questions & negatives", "questions and negatives", "do / does", "don't / doesn't", "do and does", "auxiliares do y does"])
         
         diag = p.get("diagram_svg")
-        if is_qn and diag and ("REGLAS DE TERCERA PERSONA" in str(diag) or "FREQUENCY ADVERBS" in str(diag)):
+        if (is_qn or is_pp) and diag and ("REGLAS DE TERCERA PERSONA" in str(diag) or "FREQUENCY ADVERBS" in str(diag) or "THERE IS" in str(diag)):
             diag = None
 
         if diag and isinstance(diag, str):
@@ -431,6 +431,8 @@ class TutorAgent:
             if is_third_person and ("FREQUENCY ADVERBS" in raw_svg or "ALWAYS" in raw_svg):
                 diag = None  # Invalidate mismatched frequency diagram
             elif is_qn and ("REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg):
+                diag = None
+            elif is_pp and ("THERE IS" in raw_svg or "REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg):
                 diag = None
             else:
                 svg_match = re.search(r'(<svg[\s\S]*?</svg>)', raw_svg, re.IGNORECASE)
@@ -444,8 +446,62 @@ class TutorAgent:
         if phase_num not in (1, 2, 3, 4):
             return None
 
-        # 0. Places & There is / There are / Prepositions of Place (Existential & Spatial Relations)
-        if any(w in combined_text for w in ["there is", "there are", "places & there is", "preposition", "preposicion", "next to", "in front of", "between", "opposite", "existencia"]):
+        # 0. Present Perfect vs Past Simple (The Bridge Metaphor)
+        if is_pp or any(w in combined_text for w in ["the bridge metaphor", "finished vs unfinished", "present perfect bridge", "past simple bridge"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgPP" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowPP" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgPP)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">THE BRIDGE METAPHOR: PRESENT PERFECT vs PAST SIMPLE</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Tiempo Cerrado / Terminado (Past Simple) vs Tiempo Abierto / Conexión Hoy (Present Perfect)</text>
+
+  <!-- Left Card: PAST SIMPLE (Finished Stone Bridge) -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#b91c1c"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. PAST SIMPLE (TIEMPO CERRADO)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#f87171">• Acción y periodo terminados en el pasado:</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#f87171" font-weight="bold">went</tspan> to Japan <tspan fill="#fca5a5" font-weight="bold">in 2020</tspan>."</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#fca5a5">📍 Marcadores Específicos (Closed Time):</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">• yesterday, in 2020, 2 years ago, last week</text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">🔒 El puente está sellado y no conecta con hoy.</text>
+  </g>
+
+  <!-- Right Card: PRESENT PERFECT (Open Glass Bridge) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. PRESENT PERFECT (TIEMPO ABIERTO)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• Experiencia de vida / Conexión con el presente:</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#38bdf8" font-weight="bold">have visited</tspan> Japan <tspan fill="#7dd3fc" font-weight="bold">three times</tspan>."</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#7dd3fc">📍 Marcadores Abiertos (Unfinished Time):</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">• ever, never, three times, so far, recently, this year</text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#38bdf8">🌉 El puente sigue abierto hacia el presente.</text>
+  </g>
+
+  <!-- Bottom Golden Rule Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      💡 REGLA DE ORO: ¿CUÁNDO OCURRIÓ?
+    </text>
+    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Si mencionas el momento exacto (in 2020 / yesterday) ➔ <tspan fill="#f87171" font-weight="bold">Past Simple</tspan>.
+    </text>
+    <text x="315" y="68" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Si importa la experiencia o la frecuencia hasta hoy ➔ <tspan fill="#38bdf8" font-weight="bold">Present Perfect (have/has + V3)</tspan>.
+    </text>
+  </g>
+</svg>"""
+
+        # 1. Places & There is / There are / Prepositions of Place (Existential & Spatial Relations)
+        if (any(w in low_top for w in ["places", "there is", "there are"]) or (any(w in low_top for w in ["preposition"]) and not is_pp)):
             return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
   <defs>
     <linearGradient id="chalkBgThere" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>

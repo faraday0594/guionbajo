@@ -71,6 +71,66 @@ COMMON_ENGLISH_SPANISH = {
     "prize": "premio (/praɪz/)"
 }
 
+SPANISH_DISQUALIFIERS = {
+    "me", "te", "se", "nos", "os", "mi", "tu", "su", "mis", "tus", "sus", "nuestro", "nuestra",
+    "despierto", "despiertas", "despierta", "despertamos", "despiertan", "despertarse", "despertar",
+    "desayuno", "desayunas", "desayuna", "desayunamos", "desayunan", "desayunar",
+    "trabajo", "trabajas", "trabaja", "trabajamos", "trabajan", "trabajar",
+    "estudio", "estudias", "estudia", "estudiamos", "estudian", "estudiar",
+    "duermo", "duermes", "duerme", "dormimos", "duermen", "dormir",
+    "como", "comes", "come", "comemos", "comen", "comer",
+    "hago", "haces", "hace", "hacemos", "hacen", "hacer",
+    "ejercicio", "ejercicios", "significa", "es", "decir", "o", "sea", "muestra", "como",
+    "la", "el", "los", "las", "un", "una", "unos", "unas", "de", "del", "en", "para", "por", "con",
+    "que", "al", "a", "son", "va", "van", "colocado", "antes", "despues", "palabra", "oracion",
+    "frase", "regla", "sujeto", "verbo", "complemento", "tiempo", "lugar", "manana", "tarde", "noche",
+    "siempre", "normalmente", "usualmente", "a veces", "nunca", "frecuencia", "rutina", "habito",
+    "yo", "tu", "el", "ella", "nosotros", "ustedes", "ellos", "ellas"
+}
+
+def is_spanish_phrase(text: str) -> bool:
+    if not text or not isinstance(text, str):
+        return False
+    if re.search(r'[áéíóúñÁÉÍÓÚÑ]', text):
+        return True
+    tokens = [w.lower().strip(",.:;!?\"'()[]{}") for w in text.split()]
+    if not tokens:
+        return False
+    return sum(1 for w in tokens if w in SPANISH_DISQUALIFIERS) >= 1
+
+UNGRAMMATICAL_ENGLISH_PATTERNS = [
+    re.compile(r'\bhaves\b', re.IGNORECASE),
+    re.compile(r'\b(?:she|he|it)\s+(?:work|live|sleep|watch|drink|eat|study|go|do|have|read|play)\b', re.IGNORECASE),
+    re.compile(r'\b(?:i|you|we|they)\s+(?:works|lives|sleeps|watches|drinks|eats|studies|goes|does|has|reads|plays)\b', re.IGNORECASE),
+    re.compile(r'\b(?:i|you|we|they)\s+is\b', re.IGNORECASE),
+    re.compile(r'\b(?:he|she|it)\s+are\b', re.IGNORECASE),
+    re.compile(r'\b(?:this|that)\s+are\b', re.IGNORECASE),
+    re.compile(r'\b(?:these|those)\s+is\b', re.IGNORECASE),
+    re.compile(r'\bto\s+(?:have|be|do|go|work|live|sleep|watch|drink|study|eat)\b', re.IGNORECASE),
+    re.compile(r'\b(?:espain|i maria|i leeve|i liv|john pen)\b', re.IGNORECASE),
+    re.compile(r'\b(?:don|doesn|didn|wasn|weren|isn|aren|won)\b', re.IGNORECASE),
+    re.compile(r'^(?:do not|does not|don\'t|doesn\'t|do|does|did|not)$', re.IGNORECASE),
+    re.compile(r'^(?:s|re|ve|ll|d|m|t)\s+', re.IGNORECASE),
+    re.compile(r'^(?:and|or|but|so|because|with|like|that|which|notice|we say|you say|they say|it says|formula:?)\b', re.IGNORECASE),
+    re.compile(r'\b(?:with|like|that|to|for|at|in|on|and|or|but|so|notice|formula:?)$', re.IGNORECASE),
+    re.compile(r'^[,;:\-]', re.IGNORECASE),
+    re.compile(r'[,;:\-]$', re.IGNORECASE),
+    re.compile(r'\b(?:metaphor|finished vs unfinished|the two formulas)\b', re.IGNORECASE),
+]
+
+def is_valid_english_phrase(text: str) -> bool:
+    if not text or not isinstance(text, str):
+        return False
+    cleaned = text.strip().strip("'\"`“”‘").strip()
+    if len(cleaned) < 3:
+        return False
+    # Disqualify if begins with lowercase letter or orphaned apostrophe
+    if cleaned[0].islower() and not cleaned.startswith("i ") and not cleaned.startswith("i'"):
+        return False
+    if any(pat.search(cleaned) for pat in UNGRAMMATICAL_ENGLISH_PATTERNS):
+        return False
+    return not is_spanish_phrase(cleaned)
+
 SYSTEM_PROMPT_TEMPLATE = """You are Guionbajo, a world-class master English language professor certified in CEFR and communicative pedagogy.
 You are designing an interactive cinematic micro-lesson for a student at level {current_sublevel} whose native language is {native_language}.
 
@@ -2365,6 +2425,8 @@ class TutorAgent:
                             ]
                         }
                     ],
+                    "tips": "Usa 'This/These' para cosas cercanas y 'That/Those' para cosas lejanas."
+                }
         # 4. Dedicated phase-specific grammar structures for Questions & Negatives (Do / Does, don't / doesn't)
         if any(k in low_top for k in ["questions & negatives", "questions and negatives", "do / does", "don't / doesn't", "do and does", "auxiliares"]):
             p_name = str(p.get("phase_name", "")).lower()
@@ -2837,66 +2899,6 @@ class TutorAgent:
             "s", "es", "ed", "ing", "d", "ve", "re", "ll", "m", "t", "i", "he", "she", "it", "we", "they", "you",
             "ch", "sh", "x", "z", "regla", "fórmula", "sujeto", "verbo", "complemento", "pizarra", "ejemplo", "eat", "have", "uniforme", "corbata"
         }
-
-        SPANISH_DISQUALIFIERS = {
-            "me", "te", "se", "nos", "os", "mi", "tu", "su", "mis", "tus", "sus", "nuestro", "nuestra",
-            "despierto", "despiertas", "despierta", "despertamos", "despiertan", "despertarse", "despertar",
-            "desayuno", "desayunas", "desayuna", "desayunamos", "desayunan", "desayunar",
-            "trabajo", "trabajas", "trabaja", "trabajamos", "trabajan", "trabajar",
-            "estudio", "estudias", "estudia", "estudiamos", "estudian", "estudiar",
-            "duermo", "duermes", "duerme", "dormimos", "duermen", "dormir",
-            "como", "comes", "come", "comemos", "comen", "comer",
-            "hago", "haces", "hace", "hacemos", "hacen", "hacer",
-            "ejercicio", "ejercicios", "significa", "es", "decir", "o", "sea", "muestra", "como",
-            "la", "el", "los", "las", "un", "una", "unos", "unas", "de", "del", "en", "para", "por", "con",
-            "que", "al", "a", "son", "va", "van", "colocado", "antes", "despues", "palabra", "oracion",
-            "frase", "regla", "sujeto", "verbo", "complemento", "tiempo", "lugar", "manana", "tarde", "noche",
-            "siempre", "normalmente", "usualmente", "a veces", "nunca", "frecuencia", "rutina", "habito",
-            "yo", "tu", "el", "ella", "nosotros", "ustedes", "ellos", "ellas"
-        }
-
-        def is_spanish_phrase(text: str) -> bool:
-            if not text or not isinstance(text, str):
-                return False
-            if re.search(r'[áéíóúñÁÉÍÓÚÑ]', text):
-                return True
-            tokens = [w.lower().strip(",.:;!?\"'()[]{}") for w in text.split()]
-            if not tokens:
-                return False
-            return sum(1 for w in tokens if w in SPANISH_DISQUALIFIERS) >= 1
-
-        UNGRAMMATICAL_ENGLISH_PATTERNS = [
-            re.compile(r'\bhaves\b', re.IGNORECASE),
-            re.compile(r'\b(?:she|he|it)\s+(?:work|live|sleep|watch|drink|eat|study|go|do|have|read|play)\b', re.IGNORECASE),
-            re.compile(r'\b(?:i|you|we|they)\s+(?:works|lives|sleeps|watches|drinks|eats|studies|goes|does|has|reads|plays)\b', re.IGNORECASE),
-            re.compile(r'\b(?:i|you|we|they)\s+is\b', re.IGNORECASE),
-            re.compile(r'\b(?:he|she|it)\s+are\b', re.IGNORECASE),
-            re.compile(r'\b(?:this|that)\s+are\b', re.IGNORECASE),
-            re.compile(r'\b(?:these|those)\s+is\b', re.IGNORECASE),
-            re.compile(r'\bto\s+(?:have|be|do|go|work|live|sleep|watch|drink|study|eat)\b', re.IGNORECASE),
-            re.compile(r'\b(?:espain|i maria|i leeve|i liv|john pen)\b', re.IGNORECASE),
-            re.compile(r'\b(?:don|doesn|didn|wasn|weren|isn|aren|won)\b', re.IGNORECASE),
-            re.compile(r'^(?:do not|does not|don\'t|doesn\'t|do|does|did|not)$', re.IGNORECASE),
-            re.compile(r'^(?:s|re|ve|ll|d|m|t)\s+', re.IGNORECASE),
-            re.compile(r'^(?:and|or|but|so|because|with|like|that|which|notice|we say|you say|they say|it says|formula:?)\b', re.IGNORECASE),
-            re.compile(r'\b(?:with|like|that|to|for|at|in|on|and|or|but|so|notice|formula:?)$', re.IGNORECASE),
-            re.compile(r'^[,;:\-]', re.IGNORECASE),
-            re.compile(r'[,;:\-]$', re.IGNORECASE),
-            re.compile(r'\b(?:metaphor|finished vs unfinished|the two formulas)\b', re.IGNORECASE),
-        ]
-
-        def is_valid_english_phrase(text: str) -> bool:
-            if not text or not isinstance(text, str):
-                return False
-            cleaned = text.strip().strip("'\"`“”‘").strip()
-            if len(cleaned) < 3:
-                return False
-            # Disqualify if begins with lowercase letter or orphaned apostrophe
-            if cleaned[0].islower() and not cleaned.startswith("i ") and not cleaned.startswith("i'"):
-                return False
-            if any(pat.search(cleaned) for pat in UNGRAMMATICAL_ENGLISH_PATTERNS):
-                return False
-            return not is_spanish_phrase(cleaned)
 
         raw_quotes = list(re.finditer(r"(?:[\"“]([^\"”\n\r]+)[\"”]|(?:^|[\s(])'([^'\n\r]*(?:'[a-zA-Z][^'\n\r]*)*)'(?:$|[\s).,;!?]))", speech_text))
         items = []

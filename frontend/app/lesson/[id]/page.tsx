@@ -931,6 +931,161 @@ const PRESENT_PERFECT_VS_PAST_SIMPLE_SVG = `<svg xmlns="http://www.w3.org/2000/s
   </g>
 </svg>`;
 
+const SECOND_CONDITIONAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgCond" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowCond" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgCond)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">SECOND CONDITIONAL: LA PUERTA A MUNDOS HIPOTÉTICOS</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Situación Irreal en el Presente / Futuro Imaginario (Condición ➔ Resultado)</text>
+
+  <!-- Left Card: REALITY / HYPOTHETICAL CONDITION -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. IF CLAUSE (CONDICIÓN HIPOTÉTICA)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• If + Sujeto + Past Simple:</text>
+    <text x="30" y="92" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"If I <tspan fill="#38bdf8" font-weight="bold">won</tspan> the lottery..."</text>
+    <text x="30" y="112" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"If she <tspan fill="#38bdf8" font-weight="bold">were</tspan> here..."</text>
+    
+    <text x="20" y="142" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#94a3b8">🔑 El pasado actúa como distancia irreal:</text>
+    <text x="30" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">• No ocurrió en el pasado; es un escenario imaginario hoy.</text>
+  </g>
+
+  <!-- Right Card: IMAGINARY RESULT (Main Clause) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(168,85,247,0.10)" stroke="#a855f7" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#7e22ce"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. MAIN CLAUSE (RESULTADO IMAGINARIO)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">• Sujeto + WOULD / COULD + Verbo Base:</text>
+    <text x="30" y="92" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"...I <tspan fill="#c084fc" font-weight="bold">would travel</tspan> the world."</text>
+    <text x="30" y="112" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"...she <tspan fill="#c084fc" font-weight="bold">could help</tspan> us."</text>
+    
+    <text x="20" y="142" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#d8b4fe">💡 Consecuencia lógica imaginaria:</text>
+    <text x="30" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">• 'Would' crea el resultado hipotético del dilema.</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      FÓRMULA NUCLEAR: <tspan fill="#38bdf8">[ If + Past Simple ]</tspan> + <tspan fill="#f59e0b">,</tspan> + <tspan fill="#c084fc">[ would / could + Verbo Base ]</tspan>
+    </text>
+    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      "If I <tspan fill="#38bdf8" font-weight="bold">had</tspan> more free time, I <tspan fill="#c084fc" font-weight="bold">would learn</tspan> French."
+    </text>
+    <text x="315" y="68" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">
+      Inversión sin coma: "I would learn French <tspan fill="#38bdf8">if I had</tspan> more free time."
+    </text>
+  </g>
+</svg>`;
+
+const MODALS_OF_DEDUCTION_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgMod" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowMod" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgMod)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MODALS OF DEDUCTION: ESCALA DE CERTEZA LÓGICA</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Nivel de evidencia y convicción del hablante (Certeza Absoluta ➔ Imposibilidad)</text>
+
+  <!-- 3 Columns: MUST (95%), MIGHT/COULD (50%), CAN'T (0%) -->
+  <g transform="translate(30, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(16,185,129,0.12)" stroke="#10b981" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#059669"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">MUST (~95% Certeza)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#34d399">Lógica casi segura:</text>
+    <text x="15" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"She <tspan fill="#34d399" font-weight="bold">must be</tspan> tired."</text>
+    <text x="15" y="108" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">(Trabajó 12 horas)</text>
+    <text x="15" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"He <tspan fill="#34d399" font-weight="bold">must have left</tspan>."</text>
+    <text x="100" y="165" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#6ee7b7">Deducción afirmativa</text>
+  </g>
+
+  <g transform="translate(250, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#d97706"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">MIGHT / COULD (~50%)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#fbbf24">Posibilidad abierta:</text>
+    <text x="15" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"It <tspan fill="#fbbf24" font-weight="bold">might rain</tspan> later."</text>
+    <text x="15" y="108" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">(Hay nubes grises)</text>
+    <text x="15" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"They <tspan fill="#fbbf24" font-weight="bold">could have lost</tspan>."</text>
+    <text x="100" y="165" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#fde68a">No hay certeza total</text>
+  </g>
+
+  <g transform="translate(470, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(239,68,68,0.12)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#dc2626"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">CAN'T (~0% Imposible)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#f87171">Lógicamente imposible:</text>
+    <text x="15" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"It <tspan fill="#f87171" font-weight="bold">can't be</tspan> true!"</text>
+    <text x="15" y="108" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">(Es contradictorio)</text>
+    <text x="15" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"She <tspan fill="#f87171" font-weight="bold">can't have said</tspan> that."</text>
+    <text x="100" y="165" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#fca5a5">Deducción negativa</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(30, 275)">
+    <rect x="0" y="0" width="640" height="80" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="320" y="28" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      PASADO: <tspan fill="#38bdf8">[ Sujeto ]</tspan> + <tspan fill="#fbbf24">[ must / might / can't ]</tspan> + <tspan fill="#34d399">[ HAVE + V3 (Participio) ]</tspan>
+    </text>
+    <text x="320" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#e2e8f0">
+      Ejemplo: "She <tspan fill="#34d399" font-weight="bold">must have left</tspan> her keys at home." (Conclusión lógica sobre el pasado)
+    </text>
+  </g>
+</svg>`;
+
+const RELATIVE_CLAUSES_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgRel" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowRel" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgRel)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">RELATIVE CLAUSES: EL PUENTE CONECTOR DE ORACIONES</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Fusión de 2 oraciones en 1 sola sin repetir el sujeto (Who / Which / That)</text>
+
+  <!-- Left Box: Sentences 1 & 2 -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="280" height="185" rx="12" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="15" y="15" width="250" height="28" rx="6" fill="#b91c1c"/>
+    <text x="140" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">ORACIONES SEPARADAS (REPETITIVO)</text>
+    
+    <text x="15" y="75" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">1. "I met a <tspan fill="#38bdf8" font-weight="bold">woman</tspan>."</text>
+    <text x="15" y="105" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">2. "<tspan fill="#ef4444" font-weight="bold">She</tspan> can speak six languages."</text>
+    
+    <text x="15" y="145" font-family="system-ui, sans-serif" font-size="11" fill="#fca5a5">❌ Problema:</text>
+    <text x="15" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">El pronombre 'She' repite a 'woman'.</text>
+  </g>
+
+  <!-- Right Box: Merged Sentence -->
+  <g transform="translate(385, 75)">
+    <rect x="0" y="0" width="280" height="185" rx="12" fill="rgba(16,185,129,0.10)" stroke="#10b981" stroke-width="1.5"/>
+    <rect x="15" y="15" width="250" height="28" rx="6" fill="#059669"/>
+    <text x="140" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">ORACIÓN CON RELATIVE CLAUSE</text>
+    
+    <text x="15" y="75" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#34d399">✓ Fusión Fluida con WHO / THAT:</text>
+    <text x="15" y="100" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"I met a <tspan fill="#38bdf8" font-weight="bold">woman</tspan> <tspan fill="#34d399" font-weight="bold">WHO</tspan> speaks six languages."</text>
+    
+    <text x="15" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">• <tspan fill="#38bdf8" font-weight="bold">WHO</tspan> para personas</text>
+    <text x="15" y="158" font-family="system-ui, sans-serif" font-size="10" fill="#fbbf24">WHICH para cosas / objetos</text>
+    <text x="15" y="175" font-family="system-ui, sans-serif" font-size="10" fill="#34d399">• <tspan fill="#34d399" font-weight="bold">THAT</tspan> para ambos en estilo informal</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      FÓRMULA: <tspan fill="#38bdf8">[ Sustantivo / Antecedente ]</tspan> + <tspan fill="#34d399">[ who / which / that ]</tspan> + <tspan fill="#c084fc">[ Cláusula Relativa ]</tspan>
+    </text>
+    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Ejemplo: "The <tspan fill="#38bdf8">hotel</tspan> <tspan fill="#34d399">which</tspan> <tspan fill="#c084fc">we booked</tspan> was near the beach."
+    </text>
+  </g>
+</svg>`;
+
 export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
   if (phase?.diagram_svg && typeof phase.diagram_svg === 'string' && phase.diagram_svg.includes('<svg')) {
     return phase.diagram_svg;
@@ -943,12 +1098,62 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
   const pBoard = typeof phase?.board_content === 'string' ? phase.board_content.toLowerCase() : '';
   const combined = `${lowTop} ${pName} ${pBoard}`;
 
-  // 0. Present Perfect vs Past Simple
-  if (lowTop.includes('present perfect') || lowTop.includes('perfect vs past') || pName.includes('present perfect') || pName.includes('bridge')) {
+  // 0. Modals of Deduction & Probability (Certainty Scale)
+  if (
+    lowTop.includes('deduction') ||
+    lowTop.includes('modal verbs') ||
+    lowTop.includes('modals of deduction') ||
+    lowTop.includes('must / might / can') ||
+    lowTop.includes('advanced modals') ||
+    combined.includes('modals of deduction') ||
+    combined.includes('certainty scale') ||
+    combined.includes('must have') ||
+    combined.includes("can't have")
+  ) {
+    return MODALS_OF_DEDUCTION_SVG;
+  }
+
+  // 1. Conditionals (Zero, First, Second, Third, Wish & Regret)
+  if (
+    lowTop.includes('conditional') ||
+    lowTop.includes('condicional') ||
+    lowTop.includes('wish') ||
+    lowTop.includes('regret') ||
+    lowTop.includes('hypothetical') ||
+    combined.includes('second conditional') ||
+    combined.includes('first conditional') ||
+    combined.includes('third conditional') ||
+    combined.includes('zero conditional') ||
+    combined.includes('wish & regret') ||
+    combined.includes('if clause')
+  ) {
+    return SECOND_CONDITIONAL_SVG;
+  }
+
+  // 2. Relative Clauses (The Bridge Connector)
+  if (
+    lowTop.includes('relative clause') ||
+    lowTop.includes('relative clauses') ||
+    lowTop.includes('who / which / that') ||
+    lowTop.includes('defining relative') ||
+    combined.includes('relative clause') ||
+    combined.includes('relative pronoun')
+  ) {
+    return RELATIVE_CLAUSES_SVG;
+  }
+
+  // 3. Present Perfect vs Past Simple (The Bridge Metaphor)
+  if (
+    lowTop.includes('present perfect') ||
+    lowTop.includes('perfect vs past') ||
+    pName.includes('present perfect') ||
+    pName.includes('bridge') ||
+    combined.includes('the bridge metaphor')
+  ) {
     return PRESENT_PERFECT_VS_PAST_SIMPLE_SVG;
   }
 
-  // 1. Places & There is / There are / Prepositions of Place (Only if topic matches)
+  // 4. Places & There is / There are / Prepositions of Place (Only if topic matches)
   if (
     lowTop.includes('places') ||
     lowTop.includes('there is') ||
@@ -958,7 +1163,7 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return THERE_IS_THERE_ARE_SVG;
   }
 
-  // 1. Questions & Negatives (Do / Does, don't / doesn't)
+  // 5. Questions & Negatives (Do / Does, don't / doesn't)
   if (
     combined.includes('questions & negatives') ||
     combined.includes('questions and negatives') ||
@@ -971,7 +1176,7 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return DO_DOES_QUESTIONS_NEGATIVES_SVG;
   }
 
-  // 2. Past Continuous & Interrupted Actions
+  // 6. Past Continuous & Interrupted Actions
   if (
     combined.includes('past continuous') ||
     combined.includes('interrupted') ||
@@ -982,7 +1187,7 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return PAST_CONTINUOUS_TIMELINE_SVG;
   }
 
-  // 3. Third-Person Singular Verb Rules (-s / -es / -ies) for Daily Routines (Affirmative Only)
+  // 7. Third-Person Singular Verb Rules (-s / -es / -ies) for Daily Routines (Affirmative Only)
   if (
     !combined.includes('question') &&
     !combined.includes('negative') &&
@@ -997,7 +1202,7 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return THIRD_PERSON_VERB_RULES_SVG;
   }
 
-  // 4. Frequency & Adverbs (ONLY for Time & Frequency topics, not for -s third person)
+  // 8. Frequency & Adverbs (ONLY for Time & Frequency topics, not for -s third person)
   if (
     (combined.includes('adverb') ||
      combined.includes('frequency') ||
@@ -1012,17 +1217,27 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return FREQUENCY_TIMELINE_SVG;
   }
 
-  // 4. Past Simple (Actions finished in the past)
-  if (
-    combined.includes('past simple') ||
-    combined.includes('irregular past') ||
-    combined.includes('regular verb') ||
-    combined.includes('pasado simple')
-  ) {
+  // 9. Past Simple (ONLY for pure Past Simple topics, never for conditionals or modals)
+  const isPastSimpleTopic =
+    lowTop.includes('past simple') ||
+    lowTop.includes('irregular past') ||
+    lowTop.includes('regular verb') ||
+    lowTop.includes('pasado simple');
+  const isOtherTense =
+    lowTop.includes('conditional') ||
+    lowTop.includes('condicional') ||
+    lowTop.includes('modal') ||
+    lowTop.includes('wish') ||
+    lowTop.includes('regret') ||
+    lowTop.includes('passive') ||
+    lowTop.includes('relative') ||
+    lowTop.includes('interrupted');
+
+  if (isPastSimpleTopic && !isOtherTense) {
     return PAST_SIMPLE_TIMELINE_SVG;
   }
 
-  // 5. Future Plans (be going to)
+  // 10. Future Plans (be going to)
   if (
     combined.includes('going to') ||
     combined.includes('future') ||

@@ -837,8 +837,171 @@ class TutorAgent:
   </g>
 </svg>"""
 
-        # 2. Past Simple Timeline
-        if any(w in combined_text for w in ["past simple", "was / were", "was/were", "irregular past", "regular verb", "pasado simple"]):
+        # 2.0. Modals of Deduction & Probability (Certainty Scale) - MUST check before general conditionals/past simple
+        if any(w in low_top for w in ["deduction", "modal verbs", "modals of deduction", "must / might / can't", "advanced modals", "deduction & regret"]) or any(w in combined_text for w in ["modals of deduction", "must have", "might have", "can't have", "certainty scale"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgMod" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowMod" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgMod)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MODALS OF DEDUCTION: ESCALA DE CERTEZA LÓGICA</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Nivel de evidencia y convicción del hablante (Certeza Absoluta ➔ Imposibilidad)</text>
+
+  <!-- 3 Columns: MUST (95%), MIGHT/COULD (50%), CAN'T (0%) -->
+  <g transform="translate(30, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(16,185,129,0.12)" stroke="#10b981" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#059669"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">MUST (~95% Certeza)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#34d399">Lógica casi segura:</text>
+    <text x="15" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"She <tspan fill="#34d399" font-weight="bold">must be</tspan> tired."</text>
+    <text x="15" y="108" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">(Trabajó 12 horas)</text>
+    <text x="15" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"He <tspan fill="#34d399" font-weight="bold">must have left</tspan>."</text>
+    <text x="100" y="165" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#6ee7b7">Deducción afirmativa</text>
+  </g>
+
+  <g transform="translate(250, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#d97706"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">MIGHT / COULD (~50%)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#fbbf24">Posibilidad abierta:</text>
+    <text x="15" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"It <tspan fill="#fbbf24" font-weight="bold">might rain</tspan> later."</text>
+    <text x="15" y="108" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">(Hay nubes grises)</text>
+    <text x="15" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"They <tspan fill="#fbbf24" font-weight="bold">could have lost</tspan>."</text>
+    <text x="100" y="165" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#fde68a">No hay certeza total</text>
+  </g>
+
+  <g transform="translate(470, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(239,68,68,0.12)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#dc2626"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">CAN'T (~0% Imposible)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#f87171">Lógicamente imposible:</text>
+    <text x="15" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"It <tspan fill="#f87171" font-weight="bold">can't be</tspan> true!"</text>
+    <text x="15" y="108" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">(Es contradictorio)</text>
+    <text x="15" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"She <tspan fill="#f87171" font-weight="bold">can't have said</tspan> that."</text>
+    <text x="100" y="165" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#fca5a5">Deducción negativa</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(30, 275)">
+    <rect x="0" y="0" width="640" height="80" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="320" y="28" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      PASADO: <tspan fill="#38bdf8">[ Sujeto ]</tspan> + <tspan fill="#fbbf24">[ must / might / can't ]</tspan> + <tspan fill="#34d399">[ HAVE + V3 (Participio) ]</tspan>
+    </text>
+    <text x="320" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#e2e8f0">
+      Ejemplo: "She <tspan fill="#34d399" font-weight="bold">must have left</tspan> her keys at home." (Conclusión lógica sobre el pasado)
+    </text>
+  </g>
+</svg>"""
+
+        # 2.1. Conditionals (Zero, First, Second, Third, Wish & Regret) - MUST check before Past Simple!
+        if any(w in low_top for w in ["conditional", "condicional", "wish", "regret", "hypothetical", "impossible world"]) or any(w in combined_text for w in ["second conditional", "first conditional", "third conditional", "zero conditional", "wish & regret", "if clause"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgCond" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowCond" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgCond)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">SECOND CONDITIONAL: LA PUERTA A MUNDOS HIPOTÉTICOS</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Situación Irreal en el Presente / Futuro Imaginario (Condición ➔ Resultado)</text>
+
+  <!-- Left Card: REALITY / HYPOTHETICAL CONDITION -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. IF CLAUSE (CONDICIÓN HIPOTÉTICA)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• If + Sujeto + Past Simple:</text>
+    <text x="30" y="92" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"If I <tspan fill="#38bdf8" font-weight="bold">won</tspan> the lottery..."</text>
+    <text x="30" y="112" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"If she <tspan fill="#38bdf8" font-weight="bold">were</tspan> here..."</text>
+    
+    <text x="20" y="142" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#94a3b8">🔑 El pasado actúa como distancia irreal:</text>
+    <text x="30" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">• No ocurrió en el pasado; es un escenario imaginario hoy.</text>
+  </g>
+
+  <!-- Right Card: IMAGINARY RESULT (Main Clause) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(168,85,247,0.10)" stroke="#a855f7" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#7e22ce"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. MAIN CLAUSE (RESULTADO IMAGINARIO)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">• Sujeto + WOULD / COULD + Verbo Base:</text>
+    <text x="30" y="92" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"...I <tspan fill="#c084fc" font-weight="bold">would travel</tspan> the world."</text>
+    <text x="30" y="112" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"...she <tspan fill="#c084fc" font-weight="bold">could help</tspan> us."</text>
+    
+    <text x="20" y="142" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#d8b4fe">💡 Consecuencia lógica imaginaria:</text>
+    <text x="30" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">• 'Would' crea el resultado hipotético del dilema.</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      FÓRMULA NUCLEAR: <tspan fill="#38bdf8">[ If + Past Simple ]</tspan> + <tspan fill="#f59e0b">,</tspan> + <tspan fill="#c084fc">[ would / could + Verbo Base ]</tspan>
+    </text>
+    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      "If I <tspan fill="#38bdf8" font-weight="bold">had</tspan> more free time, I <tspan fill="#c084fc" font-weight="bold">would learn</tspan> French."
+    </text>
+    <text x="315" y="68" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">
+      Inversión sin coma: "I would learn French <tspan fill="#38bdf8">if I had</tspan> more free time."
+    </text>
+  </g>
+</svg>"""
+
+        # 2.2. Relative Clauses (The Bridge Connector) - MUST check before Past Simple!
+        if any(w in low_top for w in ["relative clause", "relative clauses", "who / which / that", "defining relative"]) or any(w in combined_text for w in ["relative clause", "who / which / that", "relative pronoun"]):
+            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgRel" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowRel" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgRel)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">RELATIVE CLAUSES: EL PUENTE CONECTOR DE ORACIONES</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Fusión de 2 oraciones en 1 sola sin repetir el sujeto (Who / Which / That)</text>
+
+  <!-- Left Box: Sentences 1 & 2 -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="280" height="185" rx="12" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="15" y="15" width="250" height="28" rx="6" fill="#b91c1c"/>
+    <text x="140" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">ORACIONES SEPARADAS (REPETITIVO)</text>
+    
+    <text x="15" y="75" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">1. "I met a <tspan fill="#38bdf8" font-weight="bold">woman</tspan>."</text>
+    <text x="15" y="105" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">2. "<tspan fill="#ef4444" font-weight="bold">She</tspan> can speak six languages."</text>
+    
+    <text x="15" y="145" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#fca5a5">❌ Problema:</text>
+    <text x="15" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">El pronombre 'She' repite a 'woman'.</text>
+  </g>
+
+  <!-- Right Box: Merged Sentence -->
+  <g transform="translate(385, 75)">
+    <rect x="0" y="0" width="280" height="185" rx="12" fill="rgba(16,185,129,0.10)" stroke="#10b981" stroke-width="1.5"/>
+    <rect x="15" y="15" width="250" height="28" rx="6" fill="#059669"/>
+    <text x="140" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">ORACIÓN CON RELATIVE CLAUSE</text>
+    
+    <text x="15" y="75" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#34d399">✓ Fusión Fluida con WHO / THAT:</text>
+    <text x="15" y="100" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"I met a <tspan fill="#38bdf8" font-weight="bold">woman</tspan> <tspan fill="#34d399" font-weight="bold">WHO</tspan> speaks six languages."</text>
+    
+    <text x="15" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">• <tspan fill="#38bdf8" font-weight="bold">WHO</tspan> para personas</text>
+    <text x="15" y="158" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">• <tspan fill="#fbbf24" font-weight="bold">WHICH</tspan> para cosas / objetos</text>
+    <text x="15" y="175" font-family="system-ui, sans-serif" font-size="10" fill="#34d399">• <tspan fill="#34d399" font-weight="bold">THAT</tspan> para ambos en estilo informal</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      FÓRMULA: <tspan fill="#38bdf8">[ Sustantivo / Antecedente ]</tspan> + <tspan fill="#34d399">[ who / which / that ]</tspan> + <tspan fill="#c084fc">[ Cláusula Relativa ]</tspan>
+    </text>
+    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Ejemplo: "The <tspan fill="#38bdf8">hotel</tspan> <tspan fill="#34d399">which</tspan> <tspan fill="#c084fc">we booked</tspan> was near the beach."
+    </text>
+  </g>
+</svg>"""
+
+        # 2.3. Past Simple Timeline (ONLY for pure Past Simple topics, never for conditionals or modals)
+        is_past_simple = any(w in low_top for w in ["past simple", "irregular past", "regular verb", "pasado simple"])
+        is_other_tense = any(w in low_top for w in ["conditional", "condicional", "modal", "wish", "regret", "narrative", "present perfect", "passive", "relative", "interrupted"])
+        if is_past_simple and not is_other_tense:
             return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" width="100%" height="100%">
   <defs>
     <linearGradient id="chalkBg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
@@ -2602,31 +2765,396 @@ class TutorAgent:
                     "tips": "Describe tus hábitos con el verbo en forma base: 'I wake up'."
                 }
 
-        # Fallback to grammar_core if available
-        if grammar_core:
+        # 6. Modals of Deduction & Probability (must/might/can't, must have, should have)
+        if any(k in low_top for k in ["deduction", "modals of deduction", "advanced modals", "modal verbs", "modal of", "modal"]):
+            p_name = str(p.get("phase_name", "")).lower()
+            if "past" in p_name or "regret" in low_top or "have" in p_name:
+                return {
+                    "title": "Estructura: Deducción Lógica en Pasado (Must / Might / Can't have)",
+                    "formula": "[ Sujeto ] + [ must / might / can't ] + [ have + Participio (V3) ] + [ Complemento ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "She / He / They / I", "color": "blue"},
+                        {"role": "Modal de Certeza", "pattern": "must (95%) | might/could (50%) | can't (0%)", "color": "purple"},
+                        {"role": "Estructura Perfecta", "pattern": "have + Participio V3 (left / seen / lost)", "color": "emerald"},
+                        {"role": "Complemento", "pattern": "her keys / the train / at home", "color": "amber"}
+                    ],
+                    "explanation": "Formula deducciones lógicas sobre el pasado según la evidencia: 'must have' (casi seguro), 'might have' (quizás), 'can't have' (imposible).",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "She must have left her keys at home.",
+                            "spanish": "Ella debe haber dejado sus llaves en casa.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "She", "color": "blue"},
+                                {"role": "Modal Pasado", "text": "must have left", "color": "purple"},
+                                {"role": "Complemento", "text": "her keys at home.", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Para deducciones negativas imposibles usa SIEMPRE 'can't have' (nunca 'mustn't have')."
+                }
+            else:
+                return {
+                    "title": "Estructura: Deducción en Presente (Must / Might / Can't)",
+                    "formula": "[ Sujeto ] + [ must / might / can't ] + [ Verbo Base ] + [ Complemento ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "He / She / It / They", "color": "blue"},
+                        {"role": "Modal", "pattern": "must (seguro) | might (quizás) | can't (imposible)", "color": "purple"},
+                        {"role": "Verbo Base", "pattern": "be / know / work", "color": "emerald"},
+                        {"role": "Complemento", "pattern": "tired / the answer / at the hospital", "color": "amber"}
+                    ],
+                    "explanation": "Expresa grados de certeza sobre el presente: 'must' (95% certeza), 'might' (50% posibilidad), 'can't' (0% imposibilidad).",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "He must be very tired after working 12 hours.",
+                            "spanish": "Él debe estar muy cansado después de trabajar 12 horas.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "He", "color": "blue"},
+                                {"role": "Modal + Verbo", "text": "must be", "color": "purple"},
+                                {"role": "Complemento", "text": "very tired.", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "El verbo tras el modal va SIEMPRE en forma base pura sin 'to'."
+                }
+
+        # 7. Conditionals (Zero, First, Second, Third, Mixed, Wish & Regret)
+        if any(k in low_top for k in ["conditional", "condicional", "wish", "regret", "hypothetical"]):
+            p_name = str(p.get("phase_name", "")).lower()
+            p_says = str(p.get("tutor_says", "")).lower()
+            
+            if "second" in low_top or "2nd" in low_top or "imaginar" in p_name or "imposible" in p_name or "irreal" in p_name or "second" in p_name:
+                return {
+                    "title": "Estructura: Second Conditional (Situaciones Hipotéticas)",
+                    "formula": "[ If + Sujeto + Past Simple ] + , + [ Sujeto + would / could + Verbo Base ]",
+                    "formula_tokens": [
+                        {"role": "Condición Hipotética", "pattern": "If + I / you / she + Past Simple (won / were / had)", "color": "blue"},
+                        {"role": "Coma", "pattern": ",", "color": "purple"},
+                        {"role": "Sujeto Principal", "pattern": "I / she / they", "color": "blue"},
+                        {"role": "Auxiliar Modal", "pattern": "would / could / might", "color": "purple"},
+                        {"role": "Verbo Base", "pattern": "travel / buy / help", "color": "emerald"},
+                        {"role": "Complemento", "pattern": "the world / a car", "color": "amber"}
+                    ],
+                    "explanation": "Expresa situaciones imaginarias o hipotéticas en el presente o futuro. En la condición 'If' usamos Past Simple ('were' para todas las personas del verbo to be), y en el resultado usamos 'would/could' + verbo base.",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "If I won the lottery, I would travel the world.",
+                            "spanish": "Si ganara la lotería, viajaría por el mundo.",
+                            "parts": [
+                                {"role": "Condición If", "text": "If I won the lottery,", "color": "blue"},
+                                {"role": "Resultado", "text": "I would travel the world.", "color": "purple"}
+                            ]
+                        }
+                    ],
+                    "tips": "Usa 'If I were you' en lugar de 'If I was you' para dar consejos. Inversión sin coma: 'I would travel if I won'."
+                }
+            elif "first" in low_top or "1st" in low_top or "probab" in p_name or "futuro" in p_name:
+                return {
+                    "title": "Estructura: First Conditional (Posibilidades Reales)",
+                    "formula": "[ If + Sujeto + Present Simple ] + , + [ Sujeto + will / won't + Verbo Base ]",
+                    "formula_tokens": [
+                        {"role": "Condición Real", "pattern": "If + Present Simple (rains / study)", "color": "blue"},
+                        {"role": "Coma", "pattern": ",", "color": "purple"},
+                        {"role": "Sujeto", "pattern": "I / you / we / they / he", "color": "blue"},
+                        {"role": "Auxiliar Futuro", "pattern": "will / won't (can / might)", "color": "purple"},
+                        {"role": "Verbo Base", "pattern": "stay / pass / call", "color": "emerald"}
+                    ],
+                    "explanation": "Expresa una condición real o muy probable en el presente y su consecuencia directa en el futuro.",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "If it rains tomorrow, I will stay at home.",
+                            "spanish": "Si llueve mañana, me quedaré en casa.",
+                            "parts": [
+                                {"role": "Condición", "text": "If it rains tomorrow,", "color": "blue"},
+                                {"role": "Resultado", "text": "I will stay at home.", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "NUNCA uses 'will' en la cláusula con If: di 'If it rains' (no 'If it will rain')."
+                }
+            elif "third" in low_top or "3rd" in low_top or "pasado imposible" in p_name:
+                return {
+                    "title": "Estructura: Third Conditional (Arrepentimientos del Pasado)",
+                    "formula": "[ If + Sujeto + had + V3 ] + , + [ Sujeto + would have + Participio (V3) ]",
+                    "formula_tokens": [
+                        {"role": "Condición Pasada", "pattern": "If + had + V3 (studied / known)", "color": "blue"},
+                        {"role": "Coma", "pattern": ",", "color": "purple"},
+                        {"role": "Resultado Pasado", "pattern": "would have + V3 (passed / helped)", "color": "emerald"}
+                    ],
+                    "explanation": "Describe situaciones del pasado que no ocurrieron y sus consecuencias hipotéticas.",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "If I had studied, I would have passed the exam.",
+                            "spanish": "Si hubiera estudiado, habría aprobado el examen.",
+                            "parts": [
+                                {"role": "Condición", "text": "If I had studied,", "color": "blue"},
+                                {"role": "Resultado", "text": "I would have passed the exam.", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "Contracción coloquial: 'If I'd known, I'd have come'."
+                }
+            elif "wish" in low_top or "regret" in low_top:
+                return {
+                    "title": "Estructura: Wish & Regret (Deseos y Lamentos)",
+                    "formula": "[ Sujeto ] + [ wish / wishes ] + [ Past Simple (Deseo Presente) | had + V3 (Pasado) ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "I / She / We", "color": "blue"},
+                        {"role": "Verbo Wish", "pattern": "wish / wishes", "color": "purple"},
+                        {"role": "Situación Deseada", "pattern": "I had more time / I had studied harder", "color": "emerald"}
+                    ],
+                    "explanation": "Usa 'wish + Past Simple' para desear un cambio en el presente; usa 'wish + had + V3' para lamentar un hecho del pasado.",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "I wish I had more free time.",
+                            "spanish": "Desearía tener más tiempo libre.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "I", "color": "blue"},
+                                {"role": "Deseo", "text": "wish", "color": "purple"},
+                                {"role": "Estado Deseado", "text": "I had more free time.", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "'I wish I knew' (deseo de saber hoy) vs 'I wish I had known' (lamento no haberlo sabido antes)."
+                }
+            else:
+                return {
+                    "title": "Estructura: Zero Conditional (Hechos Universales)",
+                    "formula": "[ If / When + Sujeto + Present Simple ] + , + [ Sujeto + Present Simple ]",
+                    "formula_tokens": [
+                        {"role": "Condición Universal", "pattern": "If / When + Present Simple", "color": "blue"},
+                        {"role": "Coma", "pattern": ",", "color": "purple"},
+                        {"role": "Resultado Científico", "pattern": "Sujeto + Present Simple", "color": "emerald"}
+                    ],
+                    "explanation": "Se usa para verdades universales, hechos científicos o causas con resultado 100% garantizado.",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "If you heat water to 100 degrees, it boils.",
+                            "spanish": "Si calientas agua a 100 grados, hierve.",
+                            "parts": [
+                                {"role": "Condición", "text": "If you heat water to 100 degrees,", "color": "blue"},
+                                {"role": "Resultado", "text": "it boils.", "color": "emerald"}
+                            ]
+                        }
+                    ],
+                    "tips": "En Zero Conditional puedes sustituir 'If' por 'When' sin alterar el significado."
+                }
+
+        # 8. Passive Voice (Present & Past)
+        if any(k in low_top for k in ["passive", "pasiva", "passive voice", "voz pasiva"]):
+            p_name = str(p.get("phase_name", "")).lower()
+            if "past" in p_name or "past" in low_top:
+                return {
+                    "title": "Estructura: Voz Pasiva en Pasado (Past Passive)",
+                    "formula": "[ Sujeto Receptor ] + [ was / were ] + [ Participio (V3) ] + [ (by + Agente) ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto Receptor", "pattern": "The bridge / The documents", "color": "blue"},
+                        {"role": "Verbo To Be Pasado", "pattern": "was (singular) | were (plural)", "color": "purple"},
+                        {"role": "Participio V3", "pattern": "built / signed / discovered", "color": "emerald"},
+                        {"role": "Agente (Opcional)", "pattern": "by the engineer / in 1995", "color": "amber"}
+                    ],
+                    "explanation": "Pone el foco en el objeto que recibió la acción en el pasado en lugar de quién la ejecutó.",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "The bridge was built in 1995.",
+                            "spanish": "El puente fue construido en 1995.",
+                            "parts": [
+                                {"role": "Receptor", "text": "The bridge", "color": "blue"},
+                                {"role": "Voz Pasiva", "text": "was built", "color": "purple"},
+                                {"role": "Circunstancia", "text": "in 1995.", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "El agente con 'by' solo se incluye si aporta información relevante y no obvia."
+                }
+            else:
+                return {
+                    "title": "Estructura: Voz Pasiva en Presente (Present Passive)",
+                    "formula": "[ Sujeto Receptor ] + [ am / is / are ] + [ Participio (V3) ] + [ (by + Agente) ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto Receptor", "pattern": "English / Coffee / Smartphones", "color": "blue"},
+                        {"role": "Verbo To Be", "pattern": "is (singular) | are (plural)", "color": "purple"},
+                        {"role": "Participio V3", "pattern": "spoken / produced / made", "color": "emerald"},
+                        {"role": "Complemento", "pattern": "worldwide / in Colombia / in Asia", "color": "amber"}
+                    ],
+                    "explanation": "En voz pasiva el verbo 'to be' lleva el tiempo gramatical y el verbo principal va siempre en Participio (V3).",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "English is spoken all around the world.",
+                            "spanish": "El inglés es hablado en todo el mundo.",
+                            "parts": [
+                                {"role": "Receptor", "text": "English", "color": "blue"},
+                                {"role": "Pasiva", "text": "is spoken", "color": "purple"},
+                                {"role": "Lugar", "text": "all around the world.", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Usa 'is' para singular e incontables; usa 'are' para plurales."
+                }
+
+        # 9. Relative Clauses (who / which / that / where)
+        if any(k in low_top for k in ["relative clause", "relative clauses", "who / which / that", "defining relative"]):
             return {
-                "title": f"Estructura: {topic}",
-                "formula": f"[ Sujeto ] + [ {grammar_core.split(',')[0]} ] + [ Complemento ]",
+                "title": "Estructura: Relative Clauses (Oraciones de Relativo)",
+                "formula": "[ Sustantivo / Antecedente ] + [ who / which / that ] + [ Cláusula Relativa ]",
                 "formula_tokens": [
-                    {"role": "Sujeto", "pattern": "Sujeto / Pronombre", "color": "blue"},
-                    {"role": "Estructura Clave", "pattern": grammar_core.split(',')[0], "color": "purple"},
-                    {"role": "Complemento", "pattern": "Objeto / Tiempo / Lugar", "color": "emerald"}
+                    {"role": "Sustantivo", "pattern": "The woman / The book / The hotel", "color": "blue"},
+                    {"role": "Pronombre Relativo", "pattern": "who (personas) | which (cosas) | that (ambos)", "color": "purple"},
+                    {"role": "Cláusula Relativa", "pattern": "speaks French / I bought yesterday / we booked", "color": "emerald"}
                 ],
-                "explanation": f"Patrón gramatical fundamental de {topic}.",
+                "explanation": "Fusiona dos ideas en una sola oración fluida conectando el sustantivo con su información descriptiva sin repetir pronombres.",
                 "example_breakdowns": [
                     {
-                        "english": first_audio or "I practiced English today.",
-                        "spanish": "Oración modelo",
+                        "english": first_audio or "I met a woman who speaks six languages.",
+                        "spanish": "Conocí a una mujer que habla seis idiomas.",
                         "parts": [
-                            {"role": "Sujeto", "text": "I", "color": "blue"},
-                            {"role": "Acción", "text": "practiced", "color": "purple"},
-                            {"role": "Complemento", "text": "English today", "color": "emerald"}
+                            {"role": "Sustantivo", "text": "I met a woman", "color": "blue"},
+                            {"role": "Pronombre Relativo", "text": "who", "color": "purple"},
+                            {"role": "Cláusula", "text": "speaks six languages.", "color": "emerald"}
                         ]
                     }
-                ] if first_audio else [],
-                "tips": "Asegúrate de conjugar el verbo en el tiempo y persona correspondiente."
+                ],
+                "tips": "Usa 'who' para personas, 'which' para objetos/animales, y 'that' en estilo conversacional informal para ambos."
             }
 
+        # 10. Reported Speech
+        if any(k in low_top for k in ["reported speech", "indirect speech", "discurso indirecto", "say vs tell"]):
+            return {
+                "title": "Estructura: Reported Speech (Estilo Indirecto)",
+                "formula": "[ Sujeto ] + [ said / told me + (that) ] + [ Sujeto + Verbo en Pasado Retrocedido ]",
+                "formula_tokens": [
+                    {"role": "Emisor", "pattern": "She / He / Carlos", "color": "blue"},
+                    {"role": "Verbo de Reporte", "pattern": "said (that) | told me (that)", "color": "purple"},
+                    {"role": "Backshift Temporal", "pattern": "was happy (am) | had arrived (arrived) | would come (will)", "color": "emerald"}
+                ],
+                "explanation": "Al reportar lo que otra persona dijo, los tiempos verbales retroceden un grado hacia el pasado (Backshift).",
+                "example_breakdowns": [
+                    {
+                        "english": first_audio or "She said that she was living in London.",
+                        "spanish": "Ella dijo que estaba viviendo en Londres.",
+                        "parts": [
+                            {"role": "Emisor", "text": "She said that", "color": "blue"},
+                            {"role": "Reporte", "text": "she was living in London.", "color": "emerald"}
+                        ]
+                    }
+                ],
+                "tips": "'Say' no requiere persona ('He said that...'); 'Tell' SIEMPRE requiere pronombre de objeto ('He told ME that...')."
+            }
+
+        # 11. Used to & Would (Past Habits)
+        if any(k in low_top for k in ["used to", "past habits", "hábitos pasados", "would for past"]):
+            return {
+                "title": "Estructura: Used to (Hábitos y Estados Pasados)",
+                "formula": "[ Sujeto ] + [ used to ] + [ Verbo Base ] + [ Complemento ]",
+                "formula_tokens": [
+                    {"role": "Sujeto", "pattern": "I / We / They / My father", "color": "blue"},
+                    {"role": "Hábito Pasado", "pattern": "used to (afirmativo) | didn't use to (negativo)", "color": "purple"},
+                    {"role": "Verbo Base", "pattern": "play / live / swim / read", "color": "emerald"},
+                    {"role": "Complemento", "pattern": "every summer / in Madrid", "color": "amber"}
+                ],
+                "explanation": "Describe hábitos o estados que eran verdad en el pasado pero ya no ocurren en el presente.",
+                "example_breakdowns": [
+                    {
+                        "english": first_audio or "I used to live in London when I was a child.",
+                        "spanish": "Solía vivir en Londres cuando era niño.",
+                        "parts": [
+                            {"role": "Sujeto", "text": "I", "color": "blue"},
+                            {"role": "Hábito", "text": "used to live", "color": "purple"},
+                            {"role": "Contexto", "text": "in London when I was a child.", "color": "emerald"}
+                        ]
+                    }
+                ],
+                "tips": "En preguntas y negaciones pierde la 'd': 'Did you use to...?' / 'I didn't use to'."
+            }
+
+        # 12. Comparatives & Superlatives
+        if any(k in low_top for k in ["comparative", "superlative", "comparativos", "superlativos", "comparison"]):
+            p_name = str(p.get("phase_name", "")).lower()
+            if "superlat" in p_name or "superlat" in low_top:
+                return {
+                    "title": "Estructura: Superlativos (The -est / The Most)",
+                    "formula": "[ Sujeto ] + [ Verbo To Be ] + [ the + -est / the most + Adjetivo ] + [ Contexto ]",
+                    "formula_tokens": [
+                        {"role": "Sujeto", "pattern": "Tokyo / This building", "color": "blue"},
+                        {"role": "Verbo", "pattern": "is / are", "color": "purple"},
+                        {"role": "Superlativo", "pattern": "the biggest (corto) | the most expensive (largo)", "color": "emerald"},
+                        {"role": "Contexto", "pattern": "in the world / in the city", "color": "amber"}
+                    ],
+                    "explanation": "Compara un elemento contra todo un grupo o el mundo entero.",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "Tokyo is the biggest city in the world.",
+                            "spanish": "Tokio es la ciudad más grande del mundo.",
+                            "parts": [
+                                {"role": "Sujeto", "text": "Tokyo is", "color": "blue"},
+                                {"role": "Superlativo", "text": "the biggest city", "color": "emerald"},
+                                {"role": "Contexto", "text": "in the world.", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Los superlativos llevan SIEMPRE el artículo 'the' antes del adjetivo."
+                }
+            else:
+                return {
+                    "title": "Estructura: Comparativos (-er than / More ... than)",
+                    "formula": "[ Elemento A ] + [ is / are ] + [ Adjetivo-er than / more ... than ] + [ Elemento B ]",
+                    "formula_tokens": [
+                        {"role": "Elemento A", "pattern": "My car / Spain", "color": "blue"},
+                        {"role": "Verbo", "pattern": "is / are", "color": "purple"},
+                        {"role": "Comparativo", "pattern": "faster than (corto) | more expensive than (largo)", "color": "emerald"},
+                        {"role": "Elemento B", "pattern": "your car / France", "color": "amber"}
+                    ],
+                    "explanation": "Compara dos elementos entre sí: adjetivos cortos de 1 sílaba agregan '-er than' (fast ➔ faster than); adjetivos largos usan 'more ... than'.",
+                    "example_breakdowns": [
+                        {
+                            "english": first_audio or "My car is faster than your car.",
+                            "spanish": "Mi auto es más rápido que tu auto.",
+                            "parts": [
+                                {"role": "Elemento A", "text": "My car is", "color": "blue"},
+                                {"role": "Comparativo", "text": "faster than", "color": "emerald"},
+                                {"role": "Elemento B", "text": "your car.", "color": "amber"}
+                            ]
+                        }
+                    ],
+                    "tips": "Nunca combines ambos: di 'faster than' (NO 'more faster than')."
+                }
+
+        # 13. Basic Identity & Introductions (Verb To Be Affirmative)
+        if any(k in low_top for k in ["english sounds & introductions", "introductions", "personal information", "getting started", "verb to be"]):
+            return {
+                "title": "Estructura: Verbo To Be (Identidad y Origen)",
+                "formula": "[ Sujeto ] + [ am / is / are ] + [ Nombre / Nacionalidad / Adjetivo ]",
+                "formula_tokens": [
+                    {"role": "Sujeto", "pattern": "I (am) | He / She (is) | You / We / They (are)", "color": "blue"},
+                    {"role": "Verbo To Be", "pattern": "am / is / are", "color": "purple"},
+                    {"role": "Identidad / Origen", "pattern": "Maria / from Spain / a student", "color": "emerald"}
+                ],
+                "explanation": "El verbo 'to be' conecta al sujeto con su identidad, profesión, origen o estado actual.",
+                "example_breakdowns": [
+                    {
+                        "english": first_audio or "I am from Spain and my name is Carlos.",
+                        "spanish": "Soy de España y mi nombre es Carlos.",
+                        "parts": [
+                            {"role": "Sujeto", "text": "I", "color": "blue"},
+                            {"role": "Verbo To Be", "text": "am", "color": "purple"},
+                            {"role": "Origen", "text": "from Spain.", "color": "emerald"}
+                        ]
+                    }
+                ],
+                "tips": "Contracciones orales: I'm, He's, She's, They're, We're."
+            }
+
+        # 14. Pure Vocabulary / Phonetics / Functional Topics: No artificial grammar formula needed!
+        is_pure_non_grammar = any(k in low_top for k in [
+            "vocabulary", "vocabulario", "food", "restaurant", "ordering", "shopping", "clothes", "ropa",
+            "family", "familia", "feelings", "emociones", "house", "furniture", "transport", "transporte",
+            "travel", "viajes", "weather", "clima", "body", "cuerpo", "hobbies", "professions", "profesiones",
+            "sound awareness", "vowel contrast", "consonant", "minimal pairs", "pronunciation", "fonética",
+            "greetings", "saludos", "directions", "direcciones"
+        ])
+        if is_pure_non_grammar:
+            return None
+
+        # Clean fallback: Return None instead of artificial "[ Sujeto ] + [ Topic ] + [ Complemento ]"
         return None
 
     def _build_phase_voice_chunks(self, p: dict, topic: str = "", sublevel: str = "") -> list:

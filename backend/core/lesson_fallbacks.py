@@ -1697,6 +1697,76 @@ def _derive_topic_sentence_models(topic: str, grammar_core: str, vocab_core: str
             "formula_pattern": "Sujeto + have/has + Participio (V3) + Complemento",
             "formula_role_pattern": "have visited / has worked / have seen"
         }
+    elif any(k in low for k in ["second conditional", "2nd conditional"]):
+        return {
+            "model_1": "If I won the lottery tomorrow, I would travel around the whole world.",
+            "model_trans_1": "Si ganara la lotería mañana, viajaría por todo el mundo.",
+            "model_2": "If she had more free time, she could learn another language.",
+            "model_trans_2": "Si ella tuviera más tiempo libre, podría aprender otro idioma.",
+            "err_wrong": "If I would win the lottery, I bought a big house.",
+            "err_correct": "If I won the lottery, I would buy a big house.",
+            "err_tip": "En la condición 'If' usamos Past Simple ('won/had'); en el resultado usamos 'would + Verbo Base'.",
+            "dialogue_q": "What would you do if you could live anywhere in the world?",
+            "dialogue_a": "If I could live anywhere, I would choose to live in Japan.",
+            "formula_pattern": "If + Sujeto + Past Simple, Sujeto + would + Verbo Base",
+            "formula_role_pattern": "If I won -> I would travel / If she were -> she could help"
+        }
+    elif any(k in low for k in ["third conditional", "3rd conditional"]):
+        return {
+            "model_1": "If I had studied harder in college, I would have passed the examination.",
+            "model_trans_1": "Si hubiera estudiado más en la universidad, habría aprobado el examen.",
+            "model_2": "If we had left earlier, we would not have missed our flight.",
+            "model_trans_2": "Si hubiéramos salido más temprano, no habríamos perdido el vuelo.",
+            "err_wrong": "If I would have studied, I would passed.",
+            "err_correct": "If I had studied, I would have passed.",
+            "err_tip": "En la condición usamos 'had + V3', y en el resultado usamos 'would have + V3'.",
+            "dialogue_q": "What would you have done differently if you had known the truth?",
+            "dialogue_a": "If I had known the truth, I would have warned my friends immediately.",
+            "formula_pattern": "If + Sujeto + had + V3, Sujeto + would have + V3",
+            "formula_role_pattern": "If had studied -> would have passed"
+        }
+    elif any(k in low for k in ["wish", "regret"]):
+        return {
+            "model_1": "I wish I had more free time to travel and explore new cultures.",
+            "model_trans_1": "Desearía tener más tiempo libre para viajar y explorar nuevas culturas.",
+            "model_2": "She wishes she had accepted the job offer last year.",
+            "model_trans_2": "Ella desearía haber aceptado la oferta de trabajo el año pasado.",
+            "err_wrong": "I wish I am rich and famous.",
+            "err_correct": "I wish I were rich and famous.",
+            "err_tip": "Para deseos presentes usamos 'wish + Past Simple' (I wish I had/were).",
+            "dialogue_q": "What is one thing you wish you could change about your routine?",
+            "dialogue_a": "I wish I could wake up earlier without feeling exhausted.",
+            "formula_pattern": "Sujeto + wish + Past Simple / had + V3",
+            "formula_role_pattern": "I wish I had / she wishes she had known"
+        }
+    elif any(k in low for k in ["relative clause", "relative clauses", "who / which / that"]):
+        return {
+            "model_1": "I met an inspiring professor who speaks six different languages fluently.",
+            "model_trans_1": "Conocí a un profesor inspirador que habla seis idiomas diferentes con fluidez.",
+            "model_2": "The software which we installed yesterday solved all our technical issues.",
+            "model_trans_2": "El software que instalamos ayer resolvió todos nuestros problemas técnicos.",
+            "err_wrong": "I met a woman she speaks six languages.",
+            "err_correct": "I met a woman who speaks six languages.",
+            "err_tip": "Une las dos ideas con 'who' para personas, 'which' para cosas, o 'that' para ambos.",
+            "dialogue_q": "Can you describe the teacher who influenced you the most?",
+            "dialogue_a": "She was an extraordinary mentor who always believed in our potential.",
+            "formula_pattern": "Sustantivo + who/which/that + Cláusula Relativa",
+            "formula_role_pattern": "a professor who speaks / the software which we installed"
+        }
+    elif any(k in low for k in ["deduction", "modals of deduction", "must have", "can't have"]):
+        return {
+            "model_1": "She must have left her keys at home because she cannot find them anywhere.",
+            "model_trans_1": "Ella debe haber dejado sus llaves en casa porque no las encuentra en ningún lugar.",
+            "model_2": "He can't have committed that mistake because he is extremely thorough.",
+            "model_trans_2": "Él no puede haber cometido ese error porque es extremadamente meticuloso.",
+            "err_wrong": "She must left her keys / She mustn't have done it.",
+            "err_correct": "She must have left her keys / She can't have done it.",
+            "err_tip": "Para deducción en pasado usa 'must have + V3' (casi seguro) o 'can't have + V3' (imposible).",
+            "dialogue_q": "Why is the office completely dark right now?",
+            "dialogue_a": "Everyone must have gone home because it is already eight o'clock.",
+            "formula_pattern": "Sujeto + must/might/can't + have + Participio (V3) + Complemento",
+            "formula_role_pattern": "must have left / can't have committed / might have forgotten"
+        }
     elif any(k in low for k in ["conditional", "condicional", "if +"]):
         return {
             "model_1": "If you practice speaking every single day, your fluency will improve rapidly.",

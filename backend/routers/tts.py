@@ -26,6 +26,7 @@ from models.user import User, StudentProfile
 from schemas.student import TTSRequest
 from core.tts_service import synthesize_speech, AVAILABLE_VOICES
 from core.wikimedia_ipa_map import WIKIMEDIA_IPA_CATALOG, get_wikimedia_entry
+from core.ipa_dictionary import annotate_sentence_words, get_word_ipa
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/tts", tags=["tts"])
@@ -531,7 +532,15 @@ async def tts_synthesize(
     if not audio_bytes:
         raise HTTPException(status_code=500, detail="Error en síntesis de voz")
 
-    return Response(content=audio_bytes, media_type="audio/mpeg")
+    return Response(
+        content=audio_bytes,
+        media_type="audio/mpeg",
+        headers={
+            "Cache-Control": "public, max-age=3600",
+            "X-Voice-Used": voice_id,
+        }
+    )
+
 
 
 @router.get("/phoneme")
@@ -569,6 +578,16 @@ async def tts_phoneme(
     except Exception as e:
         logger.error(f"Phoneme synthesis failure for '{raw}': {e}")
         raise HTTPException(status_code=500, detail=f"Phoneme synthesis failed: {e}")
+
+
+@router.get("/annotate")
+async def annotate_text(sentence: str = Query(..., description="Sentence or words to transcribe to IPA")):
+    """
+    Returns word tokens annotated with IPA transcriptions.
+    """
+    if not sentence:
+        return []
+    return annotate_sentence_words(sentence)
 
 
 @router.get("/voices")

@@ -382,65 +382,76 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
   ensureBrowserVoices();
 }
 
-export function getBestBrowserVoice(lang: 'en' | 'es', preferredName?: string): SpeechSynthesisVoice | null {
+export function getBestBrowserVoice(lang: 'en' | 'es', preferredNameOrId?: string): SpeechSynthesisVoice | null {
   const voices = getBrowserVoices();
   if (!voices || voices.length === 0) return null;
+
+  const pref = (preferredNameOrId || getSavedPreferredVoice() || '').toLowerCase();
+  const isMale = pref.includes('male') || pref.includes('jorge') || pref.includes('alvaro') || pref.includes('alonso') || pref.includes('roger') || pref.includes('guy') || pref.includes('qingse') || pref.includes('jingying') || pref.includes('daxuesheng');
 
   if (lang === 'en') {
     const enVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith('en'));
     if (enVoices.length === 0) return null;
 
-    if (preferredName) {
-      const match = enVoices.find((v) => v.name.toLowerCase().includes(preferredName.toLowerCase()));
+    // Filter out old robotic Microsoft Desktop voices (SAPI5 like Microsoft David Desktop / Microsoft Zira Desktop) if modern natural voices exist
+    const naturalEnVoices = enVoices.filter(v => !v.name.includes('Desktop') && !v.name.includes('David') && !v.name.includes('Zira'));
+    const candidateList = naturalEnVoices.length > 0 ? naturalEnVoices : enVoices;
+
+    if (preferredNameOrId) {
+      const match = candidateList.find((v) => v.name.toLowerCase().includes(preferredNameOrId.toLowerCase()));
       if (match) return match;
     }
 
     const priorityFilters = [
-      (v: SpeechSynthesisVoice) =>
-        (v.name.includes('Roger') || v.name.includes('Jenny') || v.name.includes('Aria') || v.name.includes('Natural')) &&
-        v.lang.startsWith('en'),
-      (v: SpeechSynthesisVoice) =>
-        (v.name.includes('Guy') || v.name.includes('Ava') || v.name.includes('Emma')) && v.lang.startsWith('en'),
+      // Modern Natural / Online Neural voices matching requested gender
+      (v: SpeechSynthesisVoice) => isMale
+        ? ((v.name.includes('Roger') || v.name.includes('Guy') || v.name.includes('Natural') || v.name.includes('Online')) && v.lang.startsWith('en'))
+        : ((v.name.includes('Jenny') || v.name.includes('Aria') || v.name.includes('Ava') || v.name.includes('Emma') || v.name.includes('Natural') || v.name.includes('Online')) && v.lang.startsWith('en')),
       (v: SpeechSynthesisVoice) => v.name.includes('Google') && v.lang.startsWith('en'),
-      (v: SpeechSynthesisVoice) =>
-        (v.name.includes('Samantha') || v.name.includes('Alex') || v.name.includes('Victoria')) &&
-        v.lang.startsWith('en'),
-      (v: SpeechSynthesisVoice) => v.name.includes('Microsoft') && v.lang.startsWith('en-US'),
-      (v: SpeechSynthesisVoice) => v.lang === 'en-US',
+      (v: SpeechSynthesisVoice) => (v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Alex')) && v.lang.startsWith('en'),
+      (v: SpeechSynthesisVoice) => v.lang === 'en-US' && !v.name.includes('Desktop'),
+      (v: SpeechSynthesisVoice) => v.lang.startsWith('en') && !v.name.includes('Desktop'),
       (v: SpeechSynthesisVoice) => v.lang.startsWith('en'),
     ];
 
     for (const test of priorityFilters) {
-      const found = enVoices.find(test);
+      const found = candidateList.find(test);
       if (found) return found;
     }
-    return enVoices[0];
+    return candidateList[0];
   } else {
     const esVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith('es'));
     if (esVoices.length === 0) return null;
 
-    if (preferredName) {
-      const match = esVoices.find((v) => v.name.toLowerCase().includes(preferredName.toLowerCase()));
+    // Filter out old robotic Microsoft Desktop voices (SAPI5 like Microsoft Sabina Desktop / Helena Desktop) if natural/google voices exist
+    const naturalEsVoices = esVoices.filter(v => !v.name.includes('Desktop') && !v.name.includes('Sabina Desktop') && !v.name.includes('Helena Desktop'));
+    const candidateList = naturalEsVoices.length > 0 ? naturalEsVoices : esVoices;
+
+    if (preferredNameOrId) {
+      const match = candidateList.find((v) => v.name.toLowerCase().includes(preferredNameOrId.toLowerCase()));
       if (match) return match;
     }
 
     const priorityFilters = [
-      (v: SpeechSynthesisVoice) =>
-        (v.name.includes('Dalia') || v.name.includes('Jorge') || v.name.includes('Sabina') || v.name.includes('Natural')) &&
-        v.lang.startsWith('es'),
+      // Modern Natural / Online Neural voices matching requested gender
+      (v: SpeechSynthesisVoice) => isMale
+        ? ((v.name.includes('Jorge') || v.name.includes('Alvaro') || v.name.includes('Alonso') || v.name.includes('Natural') || v.name.includes('Online')) && v.lang.startsWith('es'))
+        : ((v.name.includes('Dalia') || v.name.includes('Elvira') || v.name.includes('Paloma') || v.name.includes('Natural') || v.name.includes('Online')) && v.lang.startsWith('es')),
       (v: SpeechSynthesisVoice) => v.name.includes('Google') && v.lang.startsWith('es'),
-      (v: SpeechSynthesisVoice) => (v.name.includes('Paulina') || v.name.includes('Monica')) && v.lang.startsWith('es'),
-      (v: SpeechSynthesisVoice) => v.lang === 'es-MX' || v.lang === 'es-ES',
+      (v: SpeechSynthesisVoice) => (v.name.includes('Paulina') || v.name.includes('Monica') || v.name.includes('Laura')) && v.lang.startsWith('es'),
+      (v: SpeechSynthesisVoice) => (v.lang === 'es-MX' || v.lang === 'es-US' || v.lang === 'es-ES') && !v.name.includes('Desktop'),
+      (v: SpeechSynthesisVoice) => v.lang.startsWith('es') && !v.name.includes('Desktop'),
       (v: SpeechSynthesisVoice) => v.lang.startsWith('es'),
     ];
 
     for (const test of priorityFilters) {
-      const found = esVoices.find(test);
+      const found = candidateList.find(test);
       if (found) return found;
     }
-    return esVoices[0];
+    return candidateList[0];
   }
 }
+
 
 // Stop any currently speaking tutor voice
 export function stopTutorVoice() {
@@ -504,10 +515,11 @@ export function cleanTextForTTS(text: string): string {
   return clean;
 }
 
-function createBrowserSpeechAudioAdapter(text: string, voiceId = 'female-shaonv') {
+function createBrowserSpeechAudioAdapter(text: string, voiceId?: string) {
+  const targetVoice = voiceId && voiceId !== 'default' ? voiceId : getSavedPreferredVoice();
   const cleanedSpeech = cleanTextForTTS(text);
   const words = cleanedSpeech.split(/\s+/).filter(Boolean).length;
-  const isEnglish = voiceId.startsWith('en-') || voiceId.includes('roger') || voiceId.includes('jenny');
+  const isEnglish = targetVoice.startsWith('en-') || targetVoice.includes('roger') || targetVoice.includes('jenny');
   const estimatedSeconds = Math.max(words * 0.38, 1.8);
 
   let timer: NodeJS.Timeout | null = null;
@@ -532,7 +544,7 @@ function createBrowserSpeechAudioAdapter(text: string, voiceId = 'female-shaonv'
           const utterance = new SpeechSynthesisUtterance(cleanedSpeech);
           utterance.lang = isEnglish ? 'en-US' : 'es-MX';
           utterance.rate = isEnglish ? 0.9 : 1.0;
-          const bestVoice = getBestBrowserVoice(isEnglish ? 'en' : 'es');
+          const bestVoice = getBestBrowserVoice(isEnglish ? 'en' : 'es', targetVoice);
           if (bestVoice) utterance.voice = bestVoice;
 
           utterance.onend = () => {
@@ -672,7 +684,7 @@ export async function playTTS(text: string, voice?: string, emotion = 'calm', sp
 }
 
 // ─── TEST VOICE PREVIEW (Plays instant audio sample for any voice ID) ───────────
-export async function testVoicePreview(voiceId: string, previewText?: string): Promise<HTMLAudioElement | void> {
+export async function testVoicePreview(voiceId: string, previewText?: string): Promise<HTMLAudioElement | any> {
   stopTutorVoice();
   const sampleText = previewText || '¡Hola! Soy tu tutor en Guionbajo. Esta es una prueba de mi voz.';
   
@@ -700,8 +712,11 @@ export async function testVoicePreview(voiceId: string, previewText?: string): P
       return audio;
     }
   } catch (err) {
-    console.warn('Voice preview synthesis failed:', err);
+    console.warn('Voice preview synthesis failed, falling back to browser speech:', err);
   }
+
+  // Fallback to browser speech adapter matching voiceId
+  return createBrowserSpeechAudioAdapter(sampleText, voiceId);
 }
 
 // ─── PLAY ENGLISH AUDIO (Jenny / Roger / Aria Neural HD / Edge-TTS) ───────────
@@ -796,6 +811,11 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
       cleanupAndResolve();
     }, maxSafetyMs);
 
+    const savedVoice = getSavedPreferredVoice();
+    const isEng = lang === 'en';
+    const isFemale = !savedVoice.includes('male') && !savedVoice.includes('jorge') && !savedVoice.includes('alvaro') && !savedVoice.includes('alonso') && !savedVoice.includes('qingse') && !savedVoice.includes('jingying') && !savedVoice.includes('daxuesheng');
+    const targetVoice = isEng ? (isFemale ? 'en-US-JennyNeural' : 'en-US-RogerNeural') : (savedVoice || 'female-yujie');
+
     const fallbackToBrowserSpeech = async () => {
       if (typeof window === 'undefined' || !window.speechSynthesis) {
         cleanupAndResolve();
@@ -806,12 +826,11 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
         window.speechSynthesis.cancel();
         await ensureBrowserVoices();
         const utterance = new SpeechSynthesisUtterance(text.trim());
-        const isEng = lang === 'en';
         utterance.lang = isEng ? 'en-US' : 'es-MX';
         utterance.rate = isEng ? 0.9 : 1.0;
         utterance.pitch = 1.0;
 
-        const bestVoice = getBestBrowserVoice(isEng ? 'en' : 'es');
+        const bestVoice = getBestBrowserVoice(isEng ? 'en' : 'es', targetVoice);
         if (bestVoice) utterance.voice = bestVoice;
 
         utterance.onend = () => cleanupAndResolve();
@@ -825,7 +844,6 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
 
     (async () => {
       try {
-        const targetVoice = lang === 'en' ? 'en-US-JennyNeural' : 'female-shaonv';
         const blob = await api.synthesize(text, targetVoice);
         if (!blob || blob.size === 0 || finished) {
           if (!finished) fallbackToBrowserSpeech();
@@ -869,3 +887,4 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
     })();
   });
 }
+

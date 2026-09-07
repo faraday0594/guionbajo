@@ -7,6 +7,7 @@ import { Volume2, Sparkles, X, Layers, Award, Mic, Info, Play, Loader2 } from 'l
 import { api, playEnglishAudio } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
+import PhoneticLabSession from './PhoneticLabSession';
 
 interface PhonemeItem {
   ipa: string;
@@ -48,30 +49,13 @@ export default function PhoneticBoard({ inLessonMode = false, onClose }: Phoneti
   const [boardData, setBoardData] = useState<Record<string, PhonemeItem[]> | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPhoneme, setSelectedPhoneme] = useState<PhonemeItem | null>(null);
+  const [activeLabPhoneme, setActiveLabPhoneme] = useState<any | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [overallMastery, setOverallMastery] = useState<number>(0);
-  const [isStartingLesson, setIsStartingLesson] = useState<boolean>(false);
 
-  const startPhoneticLesson = async (phoneme: PhonemeItem) => {
-    try {
-      setIsStartingLesson(true);
-      toast.loading(`Generando clase especializada de fonética para ${phoneme.ipa}...`, { id: 'ph-gen' });
-      const res = await api.post('/phonetics/generate-lesson', {
-        phoneme_symbol: phoneme.ipa,
-        contrast_symbol: phoneme.contrast_with,
-        sublevel: phoneme.introduced_at || 'A1.1'
-      });
-      toast.success('¡Clase lista! Iniciando sesión...', { id: 'ph-gen' });
-      if (res && res.lesson_id) {
-        setSelectedPhoneme(null);
-        router.push(`/lesson/${res.lesson_id}`);
-      }
-    } catch (err) {
-      console.error('Error launching phonetic lesson:', err);
-      toast.error('No se pudo generar la clase de fonética', { id: 'ph-gen' });
-    } finally {
-      setIsStartingLesson(false);
-    }
+  const startPhoneticLesson = (phoneme: PhonemeItem) => {
+    setSelectedPhoneme(null);
+    setActiveLabPhoneme(phoneme);
   };
 
   useEffect(() => {
@@ -377,9 +361,10 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                 return (
                   <motion.div
                     key={ph.ipa}
+                    onClick={() => setSelectedPhoneme(ph)}
                     whileHover={{ scale: 1.03, y: -2 }}
                     whileTap={{ scale: 0.97 }}
-                    className={`group relative p-3 rounded-xl border transition-all duration-200 flex flex-col justify-between min-h-[110px] ${
+                    className={`group relative p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between min-h-[140px] cursor-pointer ${
                       isSelected
                         ? 'bg-zinc-800 border-emerald-500 shadow-lg shadow-emerald-500/10'
                         : 'bg-zinc-900/90 hover:bg-zinc-800/90 border-zinc-800 hover:border-zinc-700'
@@ -420,9 +405,31 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                       </button>
                     </div>
 
+                    {/* Visual Mouth Preview (Frontal SVG Diagram) */}
+                    <div 
+                      onClick={() => setSelectedPhoneme(ph)}
+                      className="my-1.5 w-full h-14 sm:h-16 rounded-xl bg-black/60 border border-zinc-800/80 hover:border-emerald-500/50 p-1 flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:bg-black/80"
+                      title={`Ver anatomía de ${ph.ipa}`}
+                    >
+                      {(() => {
+                        const clean = ph.ipa.startsWith('/') ? ph.ipa : `/${ph.ipa}/`;
+                        const audioPath = PHONEME_LOCAL_AUDIO_MAP[clean];
+                        const base = audioPath ? audioPath.replace('/audio/phonemes/', '').replace('.ogg', '') : 'vowel_short_i';
+                        const imgSrc = ph.mouth_frontal_img || `/images/phonemes/${base}_frontal.svg`;
+                        return (
+                          <img
+                            src={imgSrc}
+                            alt={`Boca para ${ph.ipa}`}
+                            className="w-full h-full object-contain drop-shadow"
+                            loading="lazy"
+                          />
+                        );
+                      })()}
+                    </div>
+
                     {/* Example Word Pill (Plays ONLY the single example word, never the description) */}
                     {exampleWord && (
-                      <div className="my-1.5 flex items-center justify-between gap-1">
+                      <div className="my-1 flex items-center justify-between gap-1">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -527,8 +534,8 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Frontal Lip View */}
-                    <div className="p-3 bg-zinc-900/90 rounded-xl border border-zinc-800 flex items-center gap-3">
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800 p-1 shadow-inner">
+                    <div className="p-3.5 bg-zinc-900/90 rounded-2xl border border-zinc-800 flex flex-col gap-3 shadow-md">
+                      <div className="w-full h-36 sm:h-44 rounded-xl overflow-hidden bg-black/60 border border-zinc-800/80 p-2 flex items-center justify-center shadow-inner">
                         {(() => {
                           const base = selectedPhoneme.mouth_frontal_img || (() => {
                             const clean = selectedPhoneme.ipa.replace(/\//g, '');
@@ -538,22 +545,24 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                           return (
                             <img
                               src={base}
-                              alt={`Frontal Lip shape for ${selectedPhoneme.ipa}`}
-                              className="w-full h-full object-contain"
+                              alt={`Vista Frontal (Labios) para ${selectedPhoneme.ipa}`}
+                              className="w-full h-full object-contain drop-shadow-md"
                               loading="lazy"
                             />
                           );
                         })()}
                       </div>
-                      <div className="text-xs space-y-1">
-                        <div className="text-rose-400 font-bold uppercase text-[11px] tracking-wide">👄 Vista Frontal (Labios)</div>
-                        <div className="text-zinc-300 leading-relaxed text-[11.5px]">{selectedPhoneme.mouth_guide?.frontal || 'Posición labial específica.'}</div>
+                      <div className="text-xs space-y-1.5">
+                        <div className="text-rose-400 font-bold uppercase text-[11px] tracking-wide flex items-center gap-1.5">
+                          <span>👄 Vista Frontal (Exterior: Labios y Dientes)</span>
+                        </div>
+                        <p className="text-zinc-300 leading-relaxed text-[11.5px]">{selectedPhoneme.mouth_guide?.frontal || 'Posición labial específica.'}</p>
                       </div>
                     </div>
 
                     {/* Lateral Sagittal View */}
-                    <div className="p-3 bg-zinc-900/90 rounded-xl border border-zinc-800 flex items-center gap-3">
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800 p-1 shadow-inner">
+                    <div className="p-3.5 bg-zinc-900/90 rounded-2xl border border-zinc-800 flex flex-col gap-3 shadow-md">
+                      <div className="w-full h-36 sm:h-44 rounded-xl overflow-hidden bg-black/60 border border-zinc-800/80 p-2 flex items-center justify-center shadow-inner">
                         {(() => {
                           const base = selectedPhoneme.mouth_lateral_img || (() => {
                             const clean = selectedPhoneme.ipa.replace(/\//g, '');
@@ -563,16 +572,18 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                           return (
                             <img
                               src={base}
-                              alt={`Lateral Sagittal shape for ${selectedPhoneme.ipa}`}
-                              className="w-full h-full object-contain"
+                              alt={`Corte Sagital (Lengua y Tracto) para ${selectedPhoneme.ipa}`}
+                              className="w-full h-full object-contain drop-shadow-md"
                               loading="lazy"
                             />
                           );
                         })()}
                       </div>
-                      <div className="text-xs space-y-1">
-                        <div className="text-cyan-400 font-bold uppercase text-[11px] tracking-wide">👅 Vista Lateral (Lengua/Paladar)</div>
-                        <div className="text-zinc-300 leading-relaxed text-[11.5px]">{selectedPhoneme.mouth_guide?.lateral || 'Posición de la lengua y resonancia.'}</div>
+                      <div className="text-xs space-y-1.5">
+                        <div className="text-cyan-400 font-bold uppercase text-[11px] tracking-wide flex items-center gap-1.5">
+                          <span>👅 Corte Sagital (Interior: Lengua y Tracto)</span>
+                        </div>
+                        <p className="text-zinc-300 leading-relaxed text-[11.5px]">{selectedPhoneme.mouth_guide?.lateral || 'Posición de la lengua y resonancia.'}</p>
                       </div>
                     </div>
                   </div>
@@ -661,33 +672,22 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                 <div className="text-[11px] text-zinc-400 text-center sm:text-left">
                   {inLessonMode
                     ? '💡 Consulta de pronunciación y anatomía articulatoria.'
-                    : '🎓 Clase guiada de 6 fases con voz del tutor, pronunciación y evaluación en tiempo real'}
+                    : '✨ Clase interactiva con atlas bucal en alta definición, audio puro y pares mínimos.'}
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
                   <button
                     onClick={() => setSelectedPhoneme(null)}
-                    disabled={isStartingLesson}
-                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors cursor-pointer"
                   >
                     {inLessonMode ? 'Volver al Tablero' : 'Cerrar'}
                   </button>
                   {!inLessonMode && (
                     <button
                       onClick={() => startPhoneticLesson(selectedPhoneme)}
-                      disabled={isStartingLesson}
-                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
                     >
-                      {isStartingLesson ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Generando Clase...
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-4 h-4 fill-black" />
-                          Practicar en Clase Guiada
-                        </>
-                      )}
+                      <Play className="w-4 h-4 fill-black" />
+                      <span>Iniciar Clase de Fonema</span>
                     </button>
                   )}
                 </div>
@@ -696,6 +696,14 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
           </div>
         )}
       </AnimatePresence>
+
+      {/* ── Active Phonetic Lab Session ── */}
+      {activeLabPhoneme && (
+        <PhoneticLabSession
+          phoneme={activeLabPhoneme}
+          onClose={() => setActiveLabPhoneme(null)}
+        />
+      )}
     </div>
   );
 }

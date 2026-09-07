@@ -267,7 +267,7 @@ def preprocess_text_for_tts(text: str, is_spanish_tutor: bool = True) -> str:
     return normalize_tts_text(text, is_spanish_tutor=is_spanish_tutor)
 
 async def _synthesize_google_tts(text: str, lang: str = "es", tld: str = "com") -> bytes:
-    """Synthesize speech using Google TTS (gTTS)."""
+    """Synthesize speech using Google TTS (gTTS) with timeout protection."""
     try:
         loop = asyncio.get_event_loop()
         def _generate():
@@ -275,20 +275,20 @@ async def _synthesize_google_tts(text: str, lang: str = "es", tld: str = "com") 
             bio = io.BytesIO()
             tts.write_to_fp(bio)
             return bio.getvalue()
-        return await loop.run_in_executor(None, _generate)
+        return await asyncio.wait_for(loop.run_in_executor(None, _generate), timeout=12.0)
     except Exception as e:
-        logger.warning(f"Google TTS synthesis error: {e}")
+        logger.warning(f"Google TTS synthesis error (lang={lang}, tld={tld}): {e}")
         return b""
 
 async def _fallback_edge_tts(text: str, voice_id: str = "es-MX-DaliaNeural", speed: float = 1.0) -> bytes:
-    """High-quality Microsoft Neural Voice synthesis."""
+    """High-quality Microsoft Edge Neural Voice synthesis."""
     try:
         vid = (voice_id or "").lower()
         if "jenny" in vid:
             voice = "en-US-JennyNeural"
         elif "aria" in vid:
             voice = "en-US-AriaNeural"
-        elif "sonia" in vid:
+        elif "sonia" in vid or "uk" in vid or "british" in vid:
             voice = "en-GB-SoniaNeural"
         elif "roger" in vid:
             voice = "en-US-RogerNeural"
@@ -302,8 +302,10 @@ async def _fallback_edge_tts(text: str, voice_id: str = "es-MX-DaliaNeural", spe
             voice = "es-ES-AlvaroNeural"
         elif "elvira" in vid:
             voice = "es-ES-ElviraNeural"
-        elif "jorge" in vid or "male" in vid or "college" in vid:
+        elif "jorge" in vid or "male" in vid or "college" in vid or "qingse" in vid or "jingying" in vid or "daxuesheng" in vid:
             voice = "es-MX-JorgeNeural"
+        elif "dalia" in vid or "female" in vid or "yujie" in vid or "chengshu" in vid or "tianmei" in vid or "shaonv" in vid or "presenter_female" in vid or "audiobook_female" in vid:
+            voice = "es-MX-DaliaNeural"
         elif voice_id.startswith("en-"):
             voice = voice_id
         elif voice_id.startswith("es-"):
@@ -323,23 +325,51 @@ async def _fallback_edge_tts(text: str, voice_id: str = "es-MX-DaliaNeural", spe
         return b""
 
 def is_predominantly_english(text: str) -> bool:
-    """Detects if text is purely/predominantly English sentence/words without Spanish introductory markers."""
+    """
+    Detects if text is strictly and exclusively an English sentence/drill without Spanish tutor instructions.
+    Returns True ONLY when there is clear evidence of English structure words and NO Spanish content.
+    """
     if not text or not isinstance(text, str):
         return False
-    if re.search(r'[áéíóúÁÉÍÓÚñÑ¿¡]', text):
+
+    # Any Spanish accent or punctuation instantly marks it as Spanish/Bilingual tutor speech
+    if re.search(r'[áéíóúÁÉÍÓÚñÑ¿¡üÜ]', text):
         return False
+
     spanish_words = {
         "el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "en", "para", "por", 
-        "con", "sin", "sobre", "entre", "este", "esta", "estos", "estas", "hola", "bienvenido", 
-        "bienvenida", "clase", "lección", "hoy", "vamos", "aprender", "fórmula", "regla", "sujeto",
-        "verbo", "complemento", "pizarra", "ejemplo", "observa", "revisa", "practica", "fíjate", "como",
-        "recuerda", "atención", "nota", "traducción", "aquí", "tienes"
+        "con", "sin", "sobre", "entre", "este", "esta", "estos", "estas", "ese", "esa", "esos", "esas",
+        "hola", "bienvenido", "bienvenida", "clase", "lección", "hoy", "vamos", "aprender", "fórmula",
+        "regla", "sujeto", "verbo", "complemento", "pizarra", "ejemplo", "observa", "revisa", "practica",
+        "fíjate", "como", "recuerda", "atención", "nota", "traducción", "aquí", "tienes", "muy", "bien",
+        "excelente", "correcto", "perfecto", "ahora", "turno", "frase", "oración", "fonema", "escucha",
+        "repite", "significa", "usa", "usamos", "cuando", "donde", "porque", "pero", "también", "tu", "tus",
+        "nuestro", "nuestra", "respuesta", "continuemos", "intenta", "pronunciar", "sonido", "palabra",
+        "palabras", "letra", "letras", "tiempo", "pasado", "presente", "futuro", "negación", "pregunta"
     }
-    tokens = [w.lower().strip(",.:;!?\"'()[]{}") for w in text.split()]
-    spanish_count = sum(1 for w in tokens if w in spanish_words)
-    if spanish_count >= 2:
+
+    english_markers = {
+        "the", "is", "are", "was", "were", "they", "them", "their", "we", "us", "our",
+        "you", "your", "he", "him", "his", "she", "her", "hers", "it", "its", "i", "me", "my",
+        "have", "has", "had", "do", "does", "did", "will", "would", "shall", "should", "can",
+        "could", "might", "must", "with", "from", "about", "into", "through", "during", "before",
+        "after", "because", "since", "until", "while", "where", "which", "whose", "what", "that", "this"
+    }
+
+    tokens = [w.lower().strip(",.:;!?\"'()[]{}/*_#") for w in text.split()]
+    tokens = [t for t in tokens if t]
+
+    if not tokens:
         return False
-    return True
+
+    spanish_count = sum(1 for w in tokens if w in spanish_words)
+    english_count = sum(1 for w in tokens if w in english_markers)
+
+    if spanish_count > 0:
+        return False
+
+    # Only consider predominantly English if it has clear English function words and no Spanish markers
+    return english_count >= 2 and spanish_count == 0
 
 async def _synthesize_minimax_tts(
     text: str,
@@ -353,7 +383,7 @@ async def _synthesize_minimax_tts(
     if not key or key == "your_minimax_api_key_here" or len(key) < 10:
         return None
 
-    # Map generic/edge IDs to MiniMax voice IDs
+    # Map generic/edge/google IDs to MiniMax voice IDs
     minimax_voice = voice_id
     if not voice_id or voice_id.startswith("edge-") or voice_id.startswith("en-") or voice_id.startswith("es-") or voice_id.startswith("google") or voice_id in ("default", "tutor"):
         minimax_voice = "female-yujie"
@@ -418,6 +448,11 @@ async def synthesize_speech(
     speed: float = 1.0,
     api_key: str = None
 ) -> bytes:
+    """
+    Master speech synthesis router:
+    Respects student's chosen voice persona (MiniMax HD, Edge Neural Studio, Google TTS).
+    Ensures smart fallback chaining (MiniMax -> Edge Neural Studio -> Google TTS).
+    """
     key = api_key or settings.MINIMAX_API_KEY
     vid = (voice_id or "").lower()
 
@@ -434,24 +469,29 @@ async def synthesize_speech(
             tld = "co.uk"
         else:
             tld = "com"
+        
         google_audio = await _synthesize_google_tts(speech_text, lang=lang, tld=tld)
         if google_audio and len(google_audio) > 100:
             return google_audio
+        # Fallback to Edge Neural
+        fallback_v = "en-US-JennyNeural" if is_eng else "es-MX-DaliaNeural"
+        return await _fallback_edge_tts(speech_text, voice_id=fallback_v, speed=speed)
 
     # ── 2. EXPLICIT MICROSOFT EDGE NEURAL STUDIO VOICES ───────────────────────
     if vid.startswith("es-") or vid.startswith("en-") or vid.startswith("edge-"):
-        is_eng = vid.startswith("en-") or "roger" in vid or "jenny" in vid
+        is_eng = vid.startswith("en-") or "roger" in vid or "jenny" in vid or "aria" in vid
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=not is_eng)
         edge_audio = await _fallback_edge_tts(speech_text, voice_id=voice_id, speed=speed)
         if edge_audio and len(edge_audio) > 100:
             return edge_audio
+        # Fallback to Google TTS
+        lang = "en" if is_eng else "es"
+        return await _synthesize_google_tts(speech_text, lang=lang)
 
-    # ── 3. ENGLISH PRACTICE / DRILL CONTENT ───────────────────────────────────
-    # If the text being read is exclusively or predominantly English (e.g. model sentences, vocabulary, drills),
-    # ALWAYS synthesize it with an authentic native English studio voice (Jenny or Roger),
-    # regardless of whether the student's tutor persona is Yujie or Alvaro.
-    is_eng_content = is_predominantly_english(text)
-    if is_eng_content:
+    # ── 3. STRICT ENGLISH DRILL / MODEL SENTENCE (ONLY IF 100% PURE ENGLISH) ─
+    # If the text is purely an English practice sentence without any Spanish,
+    # speak with native English Studio voice
+    if is_predominantly_english(text):
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
         is_explicit_male = any(m in vid for m in ("male", "roger", "guy", "christopher", "alvaro", "jorge", "alonso"))
         chosen_en_voice = "en-US-RogerNeural" if is_explicit_male else "en-US-JennyNeural"
@@ -463,7 +503,7 @@ async def synthesize_speech(
             return neural_audio
         return await _synthesize_google_tts(speech_text, lang="en")
 
-    # ── 4. SPANISH TUTOR SPEECH (MiniMax / Neural Fallbacks) ───────────────────
+    # ── 4. SPANISH TUTOR PERSONA SPEECH (MiniMax HD with Edge Studio Fallback) ─
     speech_text = preprocess_text_for_tts(text, is_spanish_tutor=True)
     if not speech_text:
         return b""
@@ -480,12 +520,22 @@ async def synthesize_speech(
         if minimax_audio and len(minimax_audio) > 200:
             return minimax_audio
 
-    # B) SECONDARY: Microsoft Neural Studio Voice
+    # B) SECONDARY: Microsoft Edge Neural Studio HD Voice (High-Fidelity Studio Persona)
     is_male = any(m in vid for m in ("male", "jorge", "alvaro", "alonso", "qingse", "jingying", "daxuesheng", "presenter_male"))
     fallback_spanish = "es-MX-JorgeNeural" if is_male else "es-MX-DaliaNeural"
+    if "es-es" in vid or "spain" in vid or "elvira" in vid or "alvaro" in vid:
+        fallback_spanish = "es-ES-AlvaroNeural" if is_male else "es-ES-ElviraNeural"
+    elif "es-us" in vid or "bilingual" in vid or "paloma" in vid or "alonso" in vid:
+        fallback_spanish = "es-US-AlonsoNeural" if is_male else "es-US-PalomaNeural"
+
     neural_audio = await _fallback_edge_tts(speech_text, voice_id=fallback_spanish, speed=speed)
     if neural_audio and len(neural_audio) > 100:
         return neural_audio
 
     # C) TERTIARY: Google TTS Spanish Fallback
-    return await _synthesize_google_tts(speech_text, lang="es")
+    google_audio = await _synthesize_google_tts(speech_text, lang="es", tld="com.mx")
+    if google_audio and len(google_audio) > 100:
+        return google_audio
+
+    return await _synthesize_google_tts(speech_text, lang="es", tld="com")
+

@@ -1,18 +1,83 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" width="100%" height="100%">
   <defs>
-    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#10B981" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="#090D16" stop-opacity="0"/>
+    <linearGradient id="skinG-fricative_zhf" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ddb89a"/>
+      <stop offset="100%" stop-color="#c9956c"/>
+    </linearGradient>
+    <linearGradient id="lipG-fricative_zhf" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e8788a"/>
+      <stop offset="100%" stop-color="#b83b58"/>
+    </linearGradient>
+    <radialGradient id="cavG-fricative_zhf" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e060a"/>
+      <stop offset="100%" stop-color="#0a0103"/>
     </radialGradient>
   </defs>
-  <rect width="200" height="200" rx="20" fill="#090D16"/>
-  <circle cx="100" cy="100" r="85" fill="url(#bgGlow)"/>
+  <rect width="300" height="260" rx="16" fill="#0b0f1a"/>
+
+  <!-- Voicing Status Badge: SONORO -->
+  <g transform="translate(208, 14)">
+    <rect width="78" height="20" rx="10" fill="#a855f7" fill-opacity="0.18" stroke="#c084fc" stroke-width="1"/>
+    <circle cx="10" cy="10" r="3.5" fill="#c084fc">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="0.6s" repeatCount="indefinite"/>
+    </circle>
+    <text x="21" y="13.5" fill="#e9d5ff" font-family="system-ui, sans-serif" font-size="8" font-weight="bold">SONORO</text>
+  </g>
+  <!-- Larynx Acoustic Waves (Vocal Vibration) -->
+  <g opacity="0.8">
+    <path d="M 136 222 Q 150 226 164 222" fill="none" stroke="#c084fc" stroke-width="1.8" stroke-linecap="round">
+      <animate attributeName="opacity" values="0.35;1;0.35" dur="0.45s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 130 227 Q 150 232 170 227" fill="none" stroke="#a855f7" stroke-width="1.4" stroke-linecap="round" opacity="0.6">
+      <animate attributeName="opacity" values="0.7;0.2;0.7" dur="0.45s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
   
-        <!-- Flared Protruded Lips ('Shhh' shape) -->
-        <path d="M 45 100 Q 100 60 155 100 Q 100 140 45 100 Z" fill="#F43F5E" stroke="#FDA4AF" stroke-width="2"/>
-        <ellipse cx="100" cy="100" rx="30" ry="20" fill="#0F172A"/>
-        <path d="M 75 92 Q 100 90 125 92 L 123 96 Q 100 95 77 96 Z" fill="#F8FAFC"/>
-        <path d="M 75 108 Q 100 106 125 108 L 123 104 Q 100 103 77 104 Z" fill="#F8FAFC"/>
-        
-  <text x="100" y="180" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Labios 'Sh' + Cuerdas Voz</text>
+  <!-- Face contour -->
+  <ellipse cx="150" cy="140" rx="100" ry="120" fill="url(#skinG-fricative_zhf)" opacity="0.12"/>
+  <!-- Nose base & nostrils -->
+  <path d="M 136 72 Q 142 68 150 69 Q 158 68 164 72" fill="none" stroke="#966b4f" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
+  <ellipse cx="143" cy="73" rx="3.5" ry="1.8" fill="#2d170d" opacity="0.4"/>
+  <ellipse cx="157" cy="73" rx="3.5" ry="1.8" fill="#2d170d" opacity="0.4"/>
+  <!-- Philtrum -->
+  <path d="M 147 75 Q 146 85 144 96" stroke="#8b5a38" stroke-width="1" stroke-linecap="round" opacity="0.3" fill="none"/>
+  <path d="M 153 75 Q 154 85 156 96" stroke="#8b5a38" stroke-width="1" stroke-linecap="round" opacity="0.3" fill="none"/>
+  <!-- Oral cavity inside flared lips -->
+  <ellipse cx="150" cy="136" rx="26" ry="18" fill="url(#cavG-fricative_zhf)" stroke="#0a0103" stroke-width="1"/>
+  <clipPath id="clip-flared-fricative_zhf"><ellipse cx="150" cy="136" rx="26" ry="18"/></clipPath>
+  <g clip-path="url(#clip-flared-fricative_zhf)">
+    <!-- Upper teeth closely aligned behind flared lips -->
+    <rect x="127" y="123" width="10" height="12" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="138.5" y="122" width="11" height="13" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="151" y="122" width="11" height="13" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="163.5" y="123" width="10" height="12" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.5"/>
+    <!-- Narrow turbulent air jet slit between dental arches -->
+    <line x1="125" y1="135.5" x2="175" y2="135.5" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.75"/>
+    <!-- Lower teeth closely aligned -->
+    <rect x="130" y="137" width="9.5" height="10" rx="1.5" fill="#e8e3dc" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="140.5" y="136.5" width="10" height="10.5" rx="1.5" fill="#e8e3dc" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="151.5" y="136.5" width="10" height="10.5" rx="1.5" fill="#e8e3dc" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="162" y="137" width="9.5" height="10" rx="1.5" fill="#e8e3dc" stroke="#c4bcaf" stroke-width="0.5"/>
+  </g>
+  <!-- Flared protruded fleshy lips (trumpet-like protrusion) -->
+  <path d="
+    M 150 98 C 136 98, 118 106, 112 118 C 106 128, 106 144, 112 154
+    C 118 166, 136 174, 150 174 C 164 174, 182 166, 188 154
+    C 194 144, 194 128, 188 118 C 182 106, 164 98, 150 98 Z
+    M 150 118 C 137 118, 126 126, 126 136 C 126 146, 137 154, 150 154
+    C 163 154, 174 146, 174 136 C 174 126, 163 118, 150 118 Z"
+    fill-rule="evenodd" fill="url(#lipG-fricative_zhf)" stroke="#731628" stroke-width="1.2"/>
+  <!-- Rim highlight -->
+  <ellipse cx="150" cy="136" rx="24" ry="18" fill="none" stroke="#480815" stroke-width="1.2" opacity="0.6"/>
+  <!-- Protrusion radial creases -->
+  <path d="M 120 120 Q 125 125 130 128" stroke="#5a0e1e" stroke-width="1" opacity="0.6" fill="none" stroke-linecap="round"/>
+  <path d="M 180 120 Q 175 125 170 128" stroke="#5a0e1e" stroke-width="1" opacity="0.6" fill="none" stroke-linecap="round"/>
+  <path d="M 120 152 Q 125 147 130 144" stroke="#5a0e1e" stroke-width="1" opacity="0.6" fill="none" stroke-linecap="round"/>
+  <path d="M 180 152 Q 175 147 170 144" stroke="#5a0e1e" stroke-width="1" opacity="0.6" fill="none" stroke-linecap="round"/>
+  <!-- Fleshy highlights -->
+  <ellipse cx="150" cy="166" rx="14" ry="3.5" fill="white" opacity="0.25"/>
+  <ellipse cx="150" cy="106" rx="10" ry="2.5" fill="white" opacity="0.2"/>
+  
+  <text x="150" y="245" fill="#64748b" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Labios 'Sh' + Cuerdas Voz</text>
 </svg>

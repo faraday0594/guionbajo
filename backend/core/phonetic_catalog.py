@@ -26,7 +26,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ɪ/",
         "contrast_pairs": [['sheep', 'ship'], ['feel', 'fill'], ['leave', 'live'], ['seat', 'sit']],
         "introduced_at": "A1.1",
-        "drill_sentence": "She sees three green trees near the beach."
+        "drill_sentence": "She sees three green trees near the beach.",
+        "svg_params": {
+            "lip_width": 62,
+            "lip_drop": 2,
+            "tongue_visible": False,
+            "tongue_path": "M 86 145 Q 100 108 135 100 Q 165 102 190 130 Q 208 162 218 200 Q 212 225 182 228 Q 142 222 112 202 Q 86 178 86 155 Z",
+            "focus_x": 125,
+            "focus_y": 102,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 180 Q 170 100 50 128"
+        }
     },
     "/ɪ/": {
         "ipa": "/ɪ/",
@@ -48,7 +60,21 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/iː/",
         "contrast_pairs": [['ship', 'sheep'], ['fill', 'feel'], ['live', 'leave'], ['sit', 'seat']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Tim bit a big piece of crisp biscuit."
+        "drill_sentence": "Tim bit a big piece of crisp biscuit.",
+        "svg_params": {
+            "lip_width": 52,
+            "lip_drop": 8,
+            "tongue_visible": False,
+            "tongue_path": "M 85 150 Q 102 132 138 122 Q 170 125 186 142 Q 202 165 204 195 Q 200 222 172 226 Q 135 224 108 205 Q 86 182 85 150 Z",
+            "focus_x": 138,
+            "focus_y": 120,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 235 235 C 235 185, 230 140, 218 126 C 200 108, 168 106, 138 108 C 105 110, 75 125, 50 134",
+            "tex1": "M 104 144 Q 138 134 170 146",
+            "tex2": "M 112 164 Q 142 152 172 166"
+        }
     },
     "/e/": {
         "ipa": "/e/",
@@ -70,7 +96,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/æ/",
         "contrast_pairs": [['bed', 'bad'], ['pen', 'pan'], ['men', 'man'], ['ten', 'tan']],
         "introduced_at": "A1.2",
-        "drill_sentence": "Ten red pens were sent on Wednesday."
+        "drill_sentence": "Ten red pens were sent on Wednesday.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 8,
+            "tongue_visible": False,
+            "tongue_path": "M 86 150 Q 100 125 135 120 Q 165 125 190 145 Q 208 170 218 200 Q 212 225 182 228 Q 142 222 112 202 Q 86 178 86 160 Z",
+            "focus_x": 125,
+            "focus_y": 125,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 180 Q 170 120 50 135"
+        }
     },
     "/æ/": {
         "ipa": "/æ/",
@@ -92,7 +130,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ʌ/",
         "contrast_pairs": [['cat', 'cut'], ['hat', 'hut'], ['bat', 'but'], ['bad', 'bed']],
         "introduced_at": "A1.2",
-        "drill_sentence": "That black cat sat on the fat man's hat."
+        "drill_sentence": "That black cat sat on the fat man's hat.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 22,
+            "tongue_visible": False,
+            "tongue_path": "M 84 158 Q 95 145 125 145 Q 155 150 185 165 Q 205 185 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 84 175 Z",
+            "focus_x": 125,
+            "focus_y": 145,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 170 145 50 150"
+        }
     },
     "/ʌ/": {
         "ipa": "/ʌ/",
@@ -114,7 +164,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/æ/",
         "contrast_pairs": [['cut', 'cat'], ['hut', 'hat'], ['luck', 'lack'], ['cup', 'cap']],
         "introduced_at": "A1.3",
-        "drill_sentence": "The funny puppy jumped into the muddy puddle."
+        "drill_sentence": "The funny puppy jumped into the muddy puddle.",
+        "svg_params": {
+            "lip_width": 44,
+            "lip_drop": 16,
+            "tongue_visible": False,
+            "tongue_path": "M 85 155 Q 100 145 130 145 Q 160 150 185 165 Q 205 185 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 85 172 Z",
+            "focus_x": 140,
+            "focus_y": 148,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 145 50 145"
+        }
     },
     "/ɑː/": {
         "ipa": "/ɑː/",
@@ -136,7 +198,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/æ/",
         "contrast_pairs": [['car', 'cat'], ['park', 'pack'], ['heart', 'hat']],
         "introduced_at": "A1.3",
-        "drill_sentence": "Park the dark car far in the farm garden."
+        "drill_sentence": "Park the dark car far in the farm garden.",
+        "svg_params": {
+            "lip_width": 44,
+            "lip_drop": 28,
+            "tongue_visible": False,
+            "tongue_path": "M 85 155 Q 95 152 120 155 Q 155 162 185 178 Q 205 195 218 215 Q 212 232 182 234 Q 142 228 112 212 Q 86 192 85 172 Z",
+            "focus_x": 140,
+            "focus_y": 155,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 232 195 Q 180 155 50 148"
+        }
     },
     "/ɒ/": {
         "ipa": "/ɒ/",
@@ -158,7 +232,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ɔː/",
         "contrast_pairs": [['spot', 'sport'], ['shot', 'short'], ['cot', 'caught']],
         "introduced_at": "A1.4",
-        "drill_sentence": "Tom got a lot of hot coffee in the pot."
+        "drill_sentence": "Tom got a lot of hot coffee in the pot.",
+        "svg_params": {
+            "lip_width": 36,
+            "lip_drop": 22,
+            "tongue_visible": False,
+            "tongue_path": "M 85 155 Q 95 152 120 155 Q 155 162 185 178 Q 205 195 218 215 Q 212 232 182 234 Q 142 228 112 212 Q 86 192 85 172 Z",
+            "focus_x": 160,
+            "focus_y": 160,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 232 195 Q 180 160 50 148"
+        }
     },
     "/ɔː/": {
         "ipa": "/ɔː/",
@@ -180,7 +266,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ɒ/",
         "contrast_pairs": [['sport', 'spot'], ['short', 'shot'], ['port', 'pot']],
         "introduced_at": "A1.4",
-        "drill_sentence": "Paul saw four tall horses walking on the lawn."
+        "drill_sentence": "Paul saw four tall horses walking on the lawn.",
+        "svg_params": {
+            "lip_width": 24,
+            "lip_drop": 20,
+            "tongue_visible": False,
+            "tongue_path": "M 84 158 Q 105 155 135 148 Q 172 118 198 122 Q 215 155 218 200 Q 212 225 182 228 Q 142 222 112 202 Q 86 182 84 158 Z",
+            "focus_x": 185,
+            "focus_y": 120,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 170 125 50 135"
+        }
     },
     "/ʊ/": {
         "ipa": "/ʊ/",
@@ -202,7 +300,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/uː/",
         "contrast_pairs": [['look', 'Luke'], ['pull', 'pool'], ['full', 'fool'], ['foot', 'food']],
         "introduced_at": "A2.1",
-        "drill_sentence": "Look at the good cookbook full of pudding recipes."
+        "drill_sentence": "Look at the good cookbook full of pudding recipes.",
+        "svg_params": {
+            "lip_width": 32,
+            "lip_drop": 6,
+            "tongue_visible": False,
+            "tongue_path": "M 86 150 Q 105 140 140 135 Q 175 125 200 145 Q 210 165 218 200 Q 212 225 182 228 Q 142 222 112 202 Q 86 185 86 165 Z",
+            "focus_x": 175,
+            "focus_y": 125,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 185 Q 175 125 50 135"
+        }
     },
     "/uː/": {
         "ipa": "/uː/",
@@ -224,7 +334,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ʊ/",
         "contrast_pairs": [['pool', 'pull'], ['fool', 'full'], ['suit', 'soot']],
         "introduced_at": "A2.1",
-        "drill_sentence": "Sue chose blue shoes for the cool swimming pool."
+        "drill_sentence": "Sue chose blue shoes for the cool swimming pool.",
+        "svg_params": {
+            "lip_width": 28,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 86 150 Q 110 135 150 120 Q 185 105 205 135 Q 212 165 218 200 Q 212 225 182 228 Q 142 222 112 205 Q 86 185 86 165 Z",
+            "focus_x": 185,
+            "focus_y": 108,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 185 Q 185 105 50 135"
+        }
     },
     "/ɜː/": {
         "ipa": "/ɜː/",
@@ -246,7 +368,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ə/",
         "contrast_pairs": [['word', 'ward'], ['burn', 'barn'], ['first', 'fast']],
         "introduced_at": "A2.2",
-        "drill_sentence": "The early bird works hard to learn words first."
+        "drill_sentence": "The early bird works hard to learn words first.",
+        "svg_params": {
+            "lip_width": 44,
+            "lip_drop": 10,
+            "tongue_visible": False,
+            "tongue_path": "M 85 148 Q 100 135 130 135 Q 160 140 185 155 Q 205 175 215 200 Q 212 225 182 228 Q 142 222 112 205 Q 86 185 85 165 Z",
+            "focus_x": 130,
+            "focus_y": 135,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 185 Q 160 135 50 140"
+        }
     },
     "/ə/": {
         "ipa": "/ə/",
@@ -268,7 +402,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ʌ/",
         "contrast_pairs": [['sofa', 'cup'], ['teacher', 'church']],
         "introduced_at": "A1.1",
-        "drill_sentence": "A doctor and a teacher arrived about eleven o'clock."
+        "drill_sentence": "A doctor and a teacher arrived about eleven o'clock.",
+        "svg_params": {
+            "lip_width": 44,
+            "lip_drop": 10,
+            "tongue_visible": False,
+            "tongue_path": "M 85 150 Q 100 140 130 140 Q 160 145 185 160 Q 205 180 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 85 170 Z",
+            "focus_x": 130,
+            "focus_y": 140,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 140 50 140"
+        }
     },
     "/eɪ/": {
         "ipa": "/eɪ/",
@@ -290,7 +436,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/e/",
         "contrast_pairs": [['taste', 'test'], ['late', 'let'], ['mate', 'met'], ['paper', 'pepper']],
         "introduced_at": "A1.2",
-        "drill_sentence": "They gave great praise to the brave player today."
+        "drill_sentence": "They gave great praise to the brave player today.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 8,
+            "tongue_visible": False,
+            "tongue_path": "M 86 150 Q 100 125 135 120 Q 165 125 190 145 Q 208 170 218 200 Q 212 225 182 228 Q 142 222 112 202 Q 86 178 86 160 Z",
+            "focus_x": 125,
+            "focus_y": 125,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 180 Q 170 120 50 135"
+        }
     },
     "/aɪ/": {
         "ipa": "/aɪ/",
@@ -312,7 +470,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ɔɪ/",
         "contrast_pairs": [['tie', 'toy'], ['buy', 'boy'], ['point', 'pint']],
         "introduced_at": "A1.3",
-        "drill_sentence": "Mike likes flying kites high in the night sky."
+        "drill_sentence": "Mike likes flying kites high in the night sky.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 22,
+            "tongue_visible": False,
+            "tongue_path": "M 84 158 Q 95 145 125 145 Q 155 150 185 165 Q 205 185 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 84 175 Z",
+            "focus_x": 125,
+            "focus_y": 145,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 170 145 50 150"
+        }
     },
     "/ɔɪ/": {
         "ipa": "/ɔɪ/",
@@ -334,7 +504,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/aɪ/",
         "contrast_pairs": [['boy', 'buy'], ['toy', 'tie'], ['noise', 'nice']],
         "introduced_at": "A2.2",
-        "drill_sentence": "The joyful boy destroyed the noisy toy coin."
+        "drill_sentence": "The joyful boy destroyed the noisy toy coin.",
+        "svg_params": {
+            "lip_width": 34,
+            "lip_drop": 18,
+            "tongue_visible": False,
+            "tongue_path": "M 85 155 Q 105 145 140 145 Q 175 135 200 155 Q 210 175 218 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 85 172 Z",
+            "focus_x": 175,
+            "focus_y": 135,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 175 135 50 145"
+        }
     },
     "/aʊ/": {
         "ipa": "/aʊ/",
@@ -356,7 +538,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/əʊ/",
         "contrast_pairs": [['now', 'no'], ['town', 'tone'], ['shout', 'show']],
         "introduced_at": "A1.4",
-        "drill_sentence": "How now brown cow walks around the sound town."
+        "drill_sentence": "How now brown cow walks around the sound town.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 22,
+            "tongue_visible": False,
+            "tongue_path": "M 84 158 Q 95 145 125 145 Q 155 150 185 165 Q 205 185 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 84 175 Z",
+            "focus_x": 125,
+            "focus_y": 145,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 170 145 50 150"
+        }
     },
     "/əʊ/": {
         "ipa": "/əʊ/",
@@ -378,7 +572,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ɔː/",
         "contrast_pairs": [['boat', 'bought'], ['coat', 'caught'], ['low', 'law']],
         "introduced_at": "A1.3",
-        "drill_sentence": "Joe rode home alone slowly through the cold snow."
+        "drill_sentence": "Joe rode home alone slowly through the cold snow.",
+        "svg_params": {
+            "lip_width": 44,
+            "lip_drop": 10,
+            "tongue_visible": False,
+            "tongue_path": "M 85 150 Q 100 140 130 140 Q 160 145 185 160 Q 205 180 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 85 170 Z",
+            "focus_x": 130,
+            "focus_y": 140,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 140 50 140"
+        }
     },
     "/ɪə/": {
         "ipa": "/ɪə/",
@@ -400,7 +606,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/eə/",
         "contrast_pairs": [['hear', 'hair'], ['fear', 'fair'], ['peer', 'pair']],
         "introduced_at": "A2.3",
-        "drill_sentence": "It is clear that dear peers hear near here."
+        "drill_sentence": "It is clear that dear peers hear near here.",
+        "svg_params": {
+            "lip_width": 60,
+            "lip_drop": 6,
+            "tongue_visible": False,
+            "tongue_path": "M 86 148 Q 100 115 135 110 Q 165 112 190 135 Q 208 162 218 200 Q 212 225 182 228 Q 142 222 112 202 Q 86 178 86 155 Z",
+            "focus_x": 125,
+            "focus_y": 112,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 180 Q 170 110 50 135"
+        }
     },
     "/eə/": {
         "ipa": "/eə/",
@@ -422,7 +640,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ɪə/",
         "contrast_pairs": [['hair', 'hear'], ['fair', 'fear'], ['bear', 'beer']],
         "introduced_at": "A2.3",
-        "drill_sentence": "Careful where you wear rare chairs over there."
+        "drill_sentence": "Careful where you wear rare chairs over there.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 8,
+            "tongue_visible": False,
+            "tongue_path": "M 86 150 Q 100 125 135 120 Q 165 125 190 145 Q 208 170 218 200 Q 212 225 182 228 Q 142 222 112 202 Q 86 178 86 160 Z",
+            "focus_x": 125,
+            "focus_y": 125,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 180 Q 170 120 50 135"
+        }
     },
     "/ʊə/": {
         "ipa": "/ʊə/",
@@ -444,7 +674,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ɔː/",
         "contrast_pairs": [['tour', 'tore'], ['sure', 'shore'], ['cure', 'core']],
         "introduced_at": "B1.1",
-        "drill_sentence": "I am sure the tourist tour will cure your boredom."
+        "drill_sentence": "I am sure the tourist tour will cure your boredom.",
+        "svg_params": {
+            "lip_width": 32,
+            "lip_drop": 6,
+            "tongue_visible": False,
+            "tongue_path": "M 86 150 Q 105 140 140 135 Q 175 125 200 145 Q 210 165 218 200 Q 212 225 182 228 Q 142 222 112 202 Q 86 185 86 165 Z",
+            "focus_x": 175,
+            "focus_y": 125,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 185 Q 175 125 50 135"
+        }
     },
     "/θ/": {
         "ipa": "/θ/",
@@ -466,7 +708,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ð/",
         "contrast_pairs": [['thigh', 'thy'], ['teeth', 'teethe'], ['ether', 'either'], ['think', 'sink']],
         "introduced_at": "A1.4",
-        "drill_sentence": "I think the three healthy thieves ran north."
+        "drill_sentence": "I think the three healthy thieves ran north.",
+        "svg_params": {
+            "lip_width": 46,
+            "lip_drop": 8,
+            "tongue_visible": True,
+            "tongue_path": "M 78 138 Q 88 128 108 126 Q 140 130 170 148 Q 200 168 215 200 Q 210 225 180 228 Q 140 222 110 202 Q 85 178 78 162 Z",
+            "focus_x": 78,
+            "focus_y": 132,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 170 135 55 132"
+        }
     },
     "/ð/": {
         "ipa": "/ð/",
@@ -488,7 +742,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/θ/",
         "contrast_pairs": [['this', 'think'], ['they', 'day'], ['breathe', 'breath'], ['then', 'den']],
         "introduced_at": "A1.4",
-        "drill_sentence": "They gather with their mother and brother together."
+        "drill_sentence": "They gather with their mother and brother together.",
+        "svg_params": {
+            "lip_width": 46,
+            "lip_drop": 8,
+            "tongue_visible": True,
+            "tongue_path": "M 78 138 Q 88 128 108 126 Q 140 130 170 148 Q 200 168 215 200 Q 210 225 180 228 Q 140 222 110 202 Q 85 178 78 162 Z",
+            "focus_x": 78,
+            "focus_y": 132,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 170 135 55 132"
+        }
     },
     "/s/": {
         "ipa": "/s/",
@@ -510,7 +776,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/z/",
         "contrast_pairs": [['sue', 'zoo'], ['peace', 'peas'], ['price', 'prize'], ['bus', 'buzz']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Seven sweet sisters sat silently beside six dogs."
+        "drill_sentence": "Seven sweet sisters sat silently beside six dogs.",
+        "svg_params": {
+            "lip_width": 55,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 84 140 Q 92 128 115 125 Q 145 132 175 155 Q 200 172 215 200 Q 210 225 180 228 Q 140 222 110 202 Q 85 178 84 160 Z",
+            "focus_x": 92,
+            "focus_y": 126,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 185 Q 160 128 50 132"
+        }
     },
     "/z/": {
         "ipa": "/z/",
@@ -532,7 +810,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/s/",
         "contrast_pairs": [['zoo', 'sue'], ['buzz', 'bus'], ['eyes', 'ice'], ['rise', 'rice']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Zoe visits zebras in busy crazy zoos."
+        "drill_sentence": "Zoe visits zebras in busy crazy zoos.",
+        "svg_params": {
+            "lip_width": 55,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 84 140 Q 92 128 115 125 Q 145 132 175 155 Q 200 172 215 200 Q 210 225 180 228 Q 140 222 110 202 Q 85 178 84 160 Z",
+            "focus_x": 92,
+            "focus_y": 126,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 185 Q 160 128 50 132"
+        }
     },
     "/ʃ/": {
         "ipa": "/ʃ/",
@@ -554,7 +844,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/tʃ/",
         "contrast_pairs": [['share', 'chair'], ['sheet', 'cheat'], ['shoe', 'chew'], ['wash', 'watch']],
         "introduced_at": "A1.2",
-        "drill_sentence": "She wished she washed shiny short shoes."
+        "drill_sentence": "She wished she washed shiny short shoes.",
+        "svg_params": {
+            "lip_width": 34,
+            "lip_drop": 14,
+            "tongue_visible": False,
+            "tongue_path": "M 85 148 Q 100 118 130 110 Q 160 108 185 130 Q 205 160 215 200 Q 210 225 180 228 Q 140 222 110 202 Q 85 178 85 148 Z",
+            "focus_x": 118,
+            "focus_y": 112,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 180 Q 160 108 50 130"
+        }
     },
     "/ʒ/": {
         "ipa": "/ʒ/",
@@ -576,7 +878,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/dʒ/",
         "contrast_pairs": [['measure', 'major'], ['pleasure', 'pledge']],
         "introduced_at": "B1.2",
-        "drill_sentence": "It is a pleasure to measure leisure treasures on television."
+        "drill_sentence": "It is a pleasure to measure leisure treasures on television.",
+        "svg_params": {
+            "lip_width": 34,
+            "lip_drop": 14,
+            "tongue_visible": False,
+            "tongue_path": "M 85 148 Q 100 118 130 110 Q 160 108 185 130 Q 205 160 215 200 Q 210 225 180 228 Q 140 222 110 202 Q 85 178 85 148 Z",
+            "focus_x": 118,
+            "focus_y": 112,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 180 Q 160 108 50 130"
+        }
     },
     "/tʃ/": {
         "ipa": "/tʃ/",
@@ -598,7 +912,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ʃ/",
         "contrast_pairs": [['chair', 'share'], ['cheat', 'sheet'], ['chew', 'shoe'], ['catch', 'cash']],
         "introduced_at": "A1.2",
-        "drill_sentence": "Charles cheered cheerfully during the match at church."
+        "drill_sentence": "Charles cheered cheerfully during the match at church.",
+        "svg_params": {
+            "lip_width": 34,
+            "lip_drop": 14,
+            "tongue_visible": False,
+            "tongue_path": "M 85 145 Q 95 115 125 105 Q 155 100 185 125 Q 205 158 215 200 Q 210 225 180 228 Q 140 222 110 202 Q 85 178 85 148 Z",
+            "focus_x": 108,
+            "focus_y": 105,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 175 Q 155 102 50 128"
+        }
     },
     "/dʒ/": {
         "ipa": "/dʒ/",
@@ -620,7 +946,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/tʃ/",
         "contrast_pairs": [['job', 'chop'], ['joke', 'choke'], ['gin', 'chin'], ['jump', 'chump']],
         "introduced_at": "A1.2",
-        "drill_sentence": "Judge John enjoys drinking orange juice in July."
+        "drill_sentence": "Judge John enjoys drinking orange juice in July.",
+        "svg_params": {
+            "lip_width": 34,
+            "lip_drop": 14,
+            "tongue_visible": False,
+            "tongue_path": "M 85 145 Q 95 115 125 105 Q 155 100 185 125 Q 205 158 215 200 Q 210 225 180 228 Q 140 222 110 202 Q 85 178 85 148 Z",
+            "focus_x": 108,
+            "focus_y": 105,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 175 Q 155 102 50 128"
+        }
     },
     "/f/": {
         "ipa": "/f/",
@@ -642,7 +980,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/v/",
         "contrast_pairs": [['fan', 'van'], ['safe', 'save'], ['few', 'view'], ['leaf', 'leave']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Four famous friends found fresh fruit quickly."
+        "drill_sentence": "Four famous friends found fresh fruit quickly.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 85 150 Q 100 140 130 140 Q 160 145 185 160 Q 205 180 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 85 170 Z",
+            "focus_x": 75,
+            "focus_y": 130,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 140 50 130"
+        }
     },
     "/v/": {
         "ipa": "/v/",
@@ -664,7 +1014,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/f/",
         "contrast_pairs": [['van', 'fan'], ['save', 'safe'], ['view', 'few'], ['vest', 'best']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Victor travels with vibrant energy every November."
+        "drill_sentence": "Victor travels with vibrant energy every November.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 85 150 Q 100 140 130 140 Q 160 145 185 160 Q 205 180 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 85 170 Z",
+            "focus_x": 75,
+            "focus_y": 130,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 140 50 130"
+        }
     },
     "/h/": {
         "ipa": "/h/",
@@ -686,7 +1048,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/r/",
         "contrast_pairs": [['hat', 'at'], ['hear', 'ear'], ['hold', 'old']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Harry had a happy holiday in his huge house."
+        "drill_sentence": "Harry had a happy holiday in his huge house.",
+        "svg_params": {
+            "lip_width": 44,
+            "lip_drop": 15,
+            "tongue_visible": False,
+            "tongue_path": "M 85 155 Q 100 150 130 150 Q 160 155 185 170 Q 205 190 215 210 Q 212 230 182 232 Q 142 225 112 215 Q 86 195 85 175 Z",
+            "focus_x": 235,
+            "focus_y": 250,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 235 250 Q 200 180 50 145"
+        }
     },
     "/p/": {
         "ipa": "/p/",
@@ -708,7 +1082,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/b/",
         "contrast_pairs": [['pat', 'bat'], ['pin', 'bin'], ['rope', 'robe'], ['cap', 'cab']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Peter picked a piece of paper for the party."
+        "drill_sentence": "Peter picked a piece of paper for the party.",
+        "svg_params": {
+            "lip_width": 46,
+            "lip_drop": 0,
+            "tongue_visible": False,
+            "tongue_path": "M 85 150 Q 100 140 130 140 Q 160 145 185 160 Q 205 180 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 85 170 Z",
+            "focus_x": 75,
+            "focus_y": 140,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 140 75 140"
+        }
     },
     "/b/": {
         "ipa": "/b/",
@@ -730,7 +1116,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/p/",
         "contrast_pairs": [['bat', 'pat'], ['bin', 'pin'], ['robe', 'rope'], ['cab', 'cap']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Bob bought big brown bags of bright balloons."
+        "drill_sentence": "Bob bought big brown bags of bright balloons.",
+        "svg_params": {
+            "lip_width": 46,
+            "lip_drop": 0,
+            "tongue_visible": False,
+            "tongue_path": "M 85 150 Q 100 140 130 140 Q 160 145 185 160 Q 205 180 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 85 170 Z",
+            "focus_x": 75,
+            "focus_y": 140,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 140 75 140"
+        }
     },
     "/t/": {
         "ipa": "/t/",
@@ -752,7 +1150,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/d/",
         "contrast_pairs": [['tin', 'din'], ['town', 'down'], ['heart', 'hard'], ['bat', 'bad']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Two tall teachers told ten funny tales."
+        "drill_sentence": "Two tall teachers told ten funny tales.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 92 128 Q 100 125 125 125 Q 155 135 180 155 Q 205 175 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 92 145 Z",
+            "focus_x": 95,
+            "focus_y": 128,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 140 95 128"
+        }
     },
     "/d/": {
         "ipa": "/d/",
@@ -774,7 +1184,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/t/",
         "contrast_pairs": [['din', 'tin'], ['down', 'town'], ['hard', 'heart'], ['bad', 'bat']],
         "introduced_at": "A1.1",
-        "drill_sentence": "David did daring deeds during difficult days."
+        "drill_sentence": "David did daring deeds during difficult days.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 92 128 Q 100 125 125 125 Q 155 135 180 155 Q 205 175 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 92 145 Z",
+            "focus_x": 95,
+            "focus_y": 128,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 140 95 128"
+        }
     },
     "/k/": {
         "ipa": "/k/",
@@ -796,7 +1218,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/g/",
         "contrast_pairs": [['coat', 'goat'], ['class', 'glass'], ['cold', 'gold'], ['back', 'bag']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Karl kept cooking crispy cookies in the kitchen."
+        "drill_sentence": "Karl kept cooking crispy cookies in the kitchen.",
+        "svg_params": {
+            "lip_width": 44,
+            "lip_drop": 10,
+            "tongue_visible": False,
+            "tongue_path": "M 85 155 Q 110 145 150 135 Q 190 110 200 135 Q 210 165 218 200 Q 212 225 182 228 Q 142 222 112 205 Q 86 185 85 165 Z",
+            "focus_x": 190,
+            "focus_y": 115,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 185 Q 200 115 190 115"
+        }
     },
     "/g/": {
         "ipa": "/g/",
@@ -818,7 +1252,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/k/",
         "contrast_pairs": [['goat', 'coat'], ['glass', 'class'], ['gold', 'cold'], ['bag', 'back']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Great green grass grows gracefully in Greg's garden."
+        "drill_sentence": "Great green grass grows gracefully in Greg's garden.",
+        "svg_params": {
+            "lip_width": 44,
+            "lip_drop": 10,
+            "tongue_visible": False,
+            "tongue_path": "M 85 155 Q 110 145 150 135 Q 190 110 200 135 Q 210 165 218 200 Q 212 225 182 228 Q 142 222 112 205 Q 86 185 85 165 Z",
+            "focus_x": 190,
+            "focus_y": 115,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 185 Q 200 115 190 115"
+        }
     },
     "/m/": {
         "ipa": "/m/",
@@ -840,7 +1286,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/n/",
         "contrast_pairs": [['mice', 'nice'], ['sum', 'sun'], ['mime', 'nine']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Many memorable moments make marvelous memories."
+        "drill_sentence": "Many memorable moments make marvelous memories.",
+        "svg_params": {
+            "lip_width": 46,
+            "lip_drop": 0,
+            "tongue_visible": False,
+            "tongue_path": "M 85 155 Q 100 148 130 150 Q 165 158 195 178 Q 210 198 218 218 Q 212 232 182 232 Q 142 226 112 208 Q 86 188 85 170 Z",
+            "focus_x": 76,
+            "focus_y": 142,
+            "nasal": True,
+            "velum": "M 215 95 Q 222 115 218 140 Q 215 158 210 170",
+            "uvula_y": 178,
+            "air": "M 218 120 Q 180 65 120 55 Q 100 55 75 70"
+        }
     },
     "/n/": {
         "ipa": "/n/",
@@ -862,7 +1320,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/ŋ/",
         "contrast_pairs": [['sin', 'sing'], ['thin', 'thing'], ['ran', 'rang'], ['pan', 'pang']],
         "introduced_at": "A1.1",
-        "drill_sentence": "No nice neighbor notices nine noisy nightingales."
+        "drill_sentence": "No nice neighbor notices nine noisy nightingales.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 92 128 Q 100 125 125 125 Q 155 135 180 155 Q 205 175 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 92 145 Z",
+            "focus_x": 95,
+            "focus_y": 128,
+            "nasal": True,
+            "velum": "M 215 95 Q 222 115 218 140 Q 215 158 210 170",
+            "uvula_y": 178,
+            "air": "M 218 120 Q 180 65 120 55 Q 100 55 75 70"
+        }
     },
     "/ŋ/": {
         "ipa": "/ŋ/",
@@ -884,7 +1354,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/n/",
         "contrast_pairs": [['sing', 'sin'], ['thing', 'thin'], ['ring', 'rinse'], ['bang', 'ban']],
         "introduced_at": "A1.3",
-        "drill_sentence": "The strong young king was singing a charming song."
+        "drill_sentence": "The strong young king was singing a charming song.",
+        "svg_params": {
+            "lip_width": 44,
+            "lip_drop": 10,
+            "tongue_visible": False,
+            "tongue_path": "M 85 155 Q 110 145 150 135 Q 190 110 200 135 Q 210 165 218 200 Q 212 225 182 228 Q 142 222 112 205 Q 86 185 85 165 Z",
+            "focus_x": 190,
+            "focus_y": 115,
+            "nasal": True,
+            "velum": "M 215 95 Q 222 115 218 140 Q 215 158 210 170",
+            "uvula_y": 178,
+            "air": "M 218 120 Q 180 65 120 55 Q 100 55 75 70"
+        }
     },
     "/l/": {
         "ipa": "/l/",
@@ -906,7 +1388,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/r/",
         "contrast_pairs": [['light', 'right'], ['glass', 'grass'], ['fly', 'fry'], ['belly', 'berry']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Lucy loves looking at lovely yellow lights."
+        "drill_sentence": "Lucy loves looking at lovely yellow lights.",
+        "svg_params": {
+            "lip_width": 50,
+            "lip_drop": 6,
+            "tongue_visible": False,
+            "tongue_path": "M 92 128 Q 105 125 130 135 Q 160 145 185 160 Q 205 180 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 92 145 Z",
+            "focus_x": 95,
+            "focus_y": 128,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 140 50 140"
+        }
     },
     "/r/": {
         "ipa": "/r/",
@@ -928,7 +1422,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/l/",
         "contrast_pairs": [['right', 'light'], ['grass', 'glass'], ['fry', 'fly'], ['red', 'led']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Robert ran rapidly around the red running ring."
+        "drill_sentence": "Robert ran rapidly around the red running ring.",
+        "svg_params": {
+            "lip_width": 38,
+            "lip_drop": 6,
+            "tongue_visible": False,
+            "tongue_path": "M 105 125 Q 115 135 135 140 Q 165 145 190 160 Q 205 180 215 205 Q 212 230 182 232 Q 142 225 112 210 Q 86 190 105 145 Z",
+            "focus_x": 105,
+            "focus_y": 125,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 190 Q 160 135 50 140"
+        }
     },
     "/w/": {
         "ipa": "/w/",
@@ -950,7 +1456,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/v/",
         "contrast_pairs": [['west', 'vest'], ['wine', 'vine'], ['wet', 'vet'], ['whale', 'veil']],
         "introduced_at": "A1.2",
-        "drill_sentence": "We will watch William walk while water winds west."
+        "drill_sentence": "We will watch William walk while water winds west.",
+        "svg_params": {
+            "lip_width": 28,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 86 150 Q 110 135 150 120 Q 185 105 205 135 Q 212 165 218 200 Q 212 225 182 228 Q 142 222 112 205 Q 86 185 86 165 Z",
+            "focus_x": 185,
+            "focus_y": 110,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 185 Q 185 110 50 135"
+        }
     },
     "/j/": {
         "ipa": "/j/",
@@ -972,7 +1490,19 @@ PHONETIC_CATALOG: Dict[str, Dict[str, Any]] = {
         "contrast_with": "/dʒ/",
         "contrast_pairs": [['yet', 'jet'], ['year', 'jeer'], ['yolk', 'joke'], ['yam', 'jam']],
         "introduced_at": "A1.1",
-        "drill_sentence": "Young yesterday youth yielded yellow yachts."
+        "drill_sentence": "Young yesterday youth yielded yellow yachts.",
+        "svg_params": {
+            "lip_width": 55,
+            "lip_drop": 4,
+            "tongue_visible": False,
+            "tongue_path": "M 86 145 Q 100 108 135 100 Q 165 102 190 130 Q 208 162 218 200 Q 212 225 182 228 Q 142 222 112 202 Q 86 178 86 155 Z",
+            "focus_x": 135,
+            "focus_y": 105,
+            "nasal": False,
+            "velum": "M 215 95 Q 228 108 232 122 Q 234 132 230 142",
+            "uvula_y": 150,
+            "air": "M 230 180 Q 170 105 50 135"
+        }
     },
 }
 

@@ -1,19 +1,67 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" width="100%" height="100%">
   <defs>
-    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#10B981" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="#090D16" stop-opacity="0"/>
+    <linearGradient id="skinG-vowel_long_uf" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ddb89a"/>
+      <stop offset="100%" stop-color="#c9956c"/>
+    </linearGradient>
+    <linearGradient id="lipG-vowel_long_uf" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e8788a"/>
+      <stop offset="100%" stop-color="#b83b58"/>
+    </linearGradient>
+    <radialGradient id="cavG-vowel_long_uf" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e060a"/>
+      <stop offset="100%" stop-color="#0a0103"/>
     </radialGradient>
   </defs>
-  <rect width="200" height="200" rx="20" fill="#090D16"/>
-  <circle cx="100" cy="100" r="85" fill="url(#bgGlow)"/>
+  <rect width="300" height="260" rx="16" fill="#0b0f1a"/>
+
+  <!-- Voicing Status Badge: SONORO -->
+  <g transform="translate(208, 14)">
+    <rect width="78" height="20" rx="10" fill="#a855f7" fill-opacity="0.18" stroke="#c084fc" stroke-width="1"/>
+    <circle cx="10" cy="10" r="3.5" fill="#c084fc">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="0.6s" repeatCount="indefinite"/>
+    </circle>
+    <text x="21" y="13.5" fill="#e9d5ff" font-family="system-ui, sans-serif" font-size="8" font-weight="bold">SONORO</text>
+  </g>
+  <!-- Larynx Acoustic Waves (Vocal Vibration) -->
+  <g opacity="0.8">
+    <path d="M 136 222 Q 150 226 164 222" fill="none" stroke="#c084fc" stroke-width="1.8" stroke-linecap="round">
+      <animate attributeName="opacity" values="0.35;1;0.35" dur="0.45s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 130 227 Q 150 232 170 227" fill="none" stroke="#a855f7" stroke-width="1.4" stroke-linecap="round" opacity="0.6">
+      <animate attributeName="opacity" values="0.7;0.2;0.7" dur="0.45s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
   
-        <!-- Small Tight Pursed Circle -->
-        <ellipse cx="100" cy="100" rx="35" ry="35" fill="#F43F5E" stroke="#FDA4AF" stroke-width="3"/>
-        <circle cx="100" cy="100" r="14" fill="#0F172A"/>
-        <!-- Protruding lip folds -->
-        <path d="M 75 100 Q 100 90 125 100" stroke="#FDA4AF" stroke-width="2" fill="none"/>
-        <path d="M 75 100 Q 100 110 125 100" stroke="#E11D48" stroke-width="2" fill="none"/>
-        
-  <text x="100" y="180" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Labios Tubulares Cerrados</text>
+  <!-- Face contour -->
+  <ellipse cx="150" cy="140" rx="100" ry="120" fill="url(#skinG-vowel_long_uf)" opacity="0.12"/>
+  <!-- Nose base & nostrils -->
+  <path d="M 136 72 Q 142 68 150 69 Q 158 68 164 72" fill="none" stroke="#966b4f" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
+  <ellipse cx="143" cy="73" rx="3.5" ry="1.8" fill="#2d170d" opacity="0.4"/>
+  <ellipse cx="157" cy="73" rx="3.5" ry="1.8" fill="#2d170d" opacity="0.4"/>
+  <!-- Philtrum -->
+  <path d="M 147 75 Q 146 85 144 96" stroke="#8b5a38" stroke-width="1" stroke-linecap="round" opacity="0.3" fill="none"/>
+  <path d="M 153 75 Q 154 85 156 96" stroke="#8b5a38" stroke-width="1" stroke-linecap="round" opacity="0.3" fill="none"/>
+  <!-- Small circular aperture -->
+  <ellipse cx="150" cy="136" rx="13" ry="15" fill="url(#cavG-vowel_long_uf)" stroke="#0a0103" stroke-width="1"/>
+  <!-- Puckered lip ring -->
+  <path d="
+    M 150 104 C 140 104, 126 112, 122 122 C 118 130, 118 142, 122 150
+    C 126 158, 138 166, 150 166 C 162 166, 174 158, 178 150
+    C 182 142, 182 130, 178 122 C 174 112, 160 104, 150 104 Z
+    M 150 121 C 142.8 121, 137 127.7, 137 136 C 137 144.3, 142.8 151, 150 151
+    C 157.2 151, 163 144.3, 163 136 C 163 127.7, 157.2 121, 150 121 Z"
+    fill-rule="evenodd" fill="url(#lipG-vowel_long_uf)" stroke="#731628" stroke-width="1.2"/>
+  <!-- Inner rim -->
+  <ellipse cx="150" cy="136" rx="13" ry="15" fill="none" stroke="#480815" stroke-width="1.4" opacity="0.75"/>
+  <!-- Pucker lines -->
+  <path d="M 128 125 L 133 129" stroke="#701528" stroke-width="1" opacity="0.55" stroke-linecap="round"/>
+  <path d="M 172 125 L 167 129" stroke="#701528" stroke-width="1" opacity="0.55" stroke-linecap="round"/>
+  <path d="M 128 147 L 133 143" stroke="#701528" stroke-width="1" opacity="0.55" stroke-linecap="round"/>
+  <path d="M 172 147 L 167 143" stroke="#701528" stroke-width="1" opacity="0.55" stroke-linecap="round"/>
+  <!-- Highlights -->
+  <ellipse cx="150" cy="159" rx="10" ry="2.8" fill="white" opacity="0.25"/>
+  <ellipse cx="150" cy="111" rx="8" ry="2" fill="white" opacity="0.18"/>
+  <text x="150" y="245" fill="#64748b" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Labios Tubulares Cerrados</text>
 </svg>

@@ -1,20 +1,64 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" width="100%" height="100%">
   <defs>
-    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#10B981" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="#090D16" stop-opacity="0"/>
+    <linearGradient id="skinG-fricative_vf" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ddb89a"/>
+      <stop offset="100%" stop-color="#c9956c"/>
+    </linearGradient>
+    <linearGradient id="lipG-fricative_vf" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e8788a"/>
+      <stop offset="100%" stop-color="#b83b58"/>
+    </linearGradient>
+    <radialGradient id="cavG-fricative_vf" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e060a"/>
+      <stop offset="100%" stop-color="#0a0103"/>
     </radialGradient>
   </defs>
-  <rect width="200" height="200" rx="20" fill="#090D16"/>
-  <circle cx="100" cy="100" r="85" fill="url(#bgGlow)"/>
+  <rect width="300" height="260" rx="16" fill="#0b0f1a"/>
+
+  <!-- Voicing Status Badge: SONORO -->
+  <g transform="translate(208, 14)">
+    <rect width="78" height="20" rx="10" fill="#a855f7" fill-opacity="0.18" stroke="#c084fc" stroke-width="1"/>
+    <circle cx="10" cy="10" r="3.5" fill="#c084fc">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="0.6s" repeatCount="indefinite"/>
+    </circle>
+    <text x="21" y="13.5" fill="#e9d5ff" font-family="system-ui, sans-serif" font-size="8" font-weight="bold">SONORO</text>
+  </g>
+  <!-- Larynx Acoustic Waves (Vocal Vibration) -->
+  <g opacity="0.8">
+    <path d="M 136 222 Q 150 226 164 222" fill="none" stroke="#c084fc" stroke-width="1.8" stroke-linecap="round">
+      <animate attributeName="opacity" values="0.35;1;0.35" dur="0.45s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 130 227 Q 150 232 170 227" fill="none" stroke="#a855f7" stroke-width="1.4" stroke-linecap="round" opacity="0.6">
+      <animate attributeName="opacity" values="0.7;0.2;0.7" dur="0.45s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
   
-        <!-- Top Teeth on Lower Lip -->
-        <path d="M 45 95 Q 100 70 155 95 Q 100 135 45 95 Z" fill="#F43F5E" stroke="#FDA4AF" stroke-width="2"/>
-        <path d="M 60 95 Q 100 85 140 95 Q 100 115 60 95 Z" fill="#0F172A"/>
-        <!-- Upper Teeth clearly visible pressing down -->
-        <path d="M 70 88 Q 100 86 130 88 L 128 104 Q 100 102 72 104 Z" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
-        <!-- Bottom lip tucked slightly under teeth -->
-        <path d="M 50 105 Q 100 115 150 105 Q 100 135 50 105 Z" fill="#E11D48"/>
-        
-  <text x="100" y="180" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Dientes en Labio + Vibración</text>
+  <!-- Face contour -->
+  <ellipse cx="150" cy="140" rx="100" ry="120" fill="url(#skinG-fricative_vf)" opacity="0.12"/>
+  <!-- Nose base & nostrils -->
+  <path d="M 136 72 Q 142 68 150 69 Q 158 68 164 72" fill="none" stroke="#966b4f" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
+  <ellipse cx="143" cy="73" rx="3.5" ry="1.8" fill="#2d170d" opacity="0.4"/>
+  <ellipse cx="157" cy="73" rx="3.5" ry="1.8" fill="#2d170d" opacity="0.4"/>
+  <!-- Philtrum -->
+  <path d="M 147 75 Q 146 85 144 96" stroke="#8b5a38" stroke-width="1" stroke-linecap="round" opacity="0.3" fill="none"/>
+  <path d="M 153 75 Q 154 85 156 96" stroke="#8b5a38" stroke-width="1" stroke-linecap="round" opacity="0.3" fill="none"/>
+  <!-- Upper lip -->
+  <path d="M 98 130 C 114 118, 132 116, 150 119 C 168 116, 186 118, 202 130 C 186 126, 168 125, 150 126 C 132 125, 114 126, 98 130 Z"
+    fill="url(#lipG-fricative_vf)" stroke="#8e243c" stroke-width="1.2"/>
+  <!-- Cavity behind teeth -->
+  <ellipse cx="150" cy="132" rx="44" ry="10" fill="url(#cavG-fricative_vf)"/>
+  <!-- Upper teeth pressing on lower lip -->
+  <g>
+    <rect x="130" y="123" width="12" height="14" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.6"/>
+    <rect x="144" y="122" width="13" height="15" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.6"/>
+    <rect x="159" y="123" width="12" height="14" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.6"/>
+  </g>
+  <!-- Lower lip tucked under incisors -->
+  <path d="M 98 133 C 118 139, 134 140, 150 140 C 166 140, 182 139, 202 133 C 190 158, 172 163, 150 163 C 128 163, 110 158, 98 133 Z"
+    fill="url(#lipG-fricative_vf)" stroke="#8e243c" stroke-width="1.2"/>
+  <!-- Friction contact line -->
+  <path d="M 126 139 Q 150 141 174 139" stroke="#7a182c" stroke-width="1.2" fill="none"/>
+  <ellipse cx="150" cy="154" rx="16" ry="3.5" fill="white" opacity="0.2"/>
+  <text x="150" y="245" fill="#64748b" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Dientes en Labio + Vibración</text>
 </svg>

@@ -1,22 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" width="100%" height="100%">
   <defs>
-    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#10B981" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="#090D16" stop-opacity="0"/>
+    <linearGradient id="skinG-fricative_th_voicelessf" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ddb89a"/>
+      <stop offset="100%" stop-color="#c9956c"/>
+    </linearGradient>
+    <linearGradient id="lipG-fricative_th_voicelessf" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e8788a"/>
+      <stop offset="100%" stop-color="#b83b58"/>
+    </linearGradient>
+    <radialGradient id="cavG-fricative_th_voicelessf" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e060a"/>
+      <stop offset="100%" stop-color="#0a0103"/>
     </radialGradient>
   </defs>
-  <rect width="200" height="200" rx="20" fill="#090D16"/>
-  <circle cx="100" cy="100" r="85" fill="url(#bgGlow)"/>
+  <rect width="300" height="260" rx="16" fill="#0b0f1a"/>
+
+  <!-- Voicing Status Badge: SORDO -->
+  <g transform="translate(216, 14)">
+    <rect width="70" height="20" rx="10" fill="#334155" fill-opacity="0.25" stroke="#475569" stroke-width="1"/>
+    <circle cx="10" cy="10" r="3" fill="#64748b"/>
+    <text x="20" y="13.5" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="8" font-weight="bold">SORDO</text>
+  </g>
+
   
-        <!-- Tongue Tip Between Front Teeth -->
-        <path d="M 45 100 Q 100 70 155 100 Q 100 130 45 100 Z" fill="#F43F5E" stroke="#FDA4AF" stroke-width="2"/>
-        <path d="M 60 100 Q 100 85 140 100 Q 100 115 60 100 Z" fill="#0F172A"/>
-        <!-- Upper Teeth -->
-        <path d="M 70 88 Q 100 86 130 88 L 128 97 Q 100 96 72 97 Z" fill="#F8FAFC"/>
-        <!-- Tongue Tip protruding between upper and lower teeth -->
-        <path d="M 80 97 Q 100 94 120 97 Q 100 108 80 97 Z" fill="#FB7185" stroke="#F43F5E" stroke-width="1.5"/>
-        <!-- Lower Teeth -->
-        <path d="M 75 107 Q 100 105 125 107 L 123 103 Q 100 101 77 103 Z" fill="#F8FAFC"/>
-        
-  <text x="100" y="180" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Lengua Entre Dientes (Sorda)</text>
+  <!-- Face contour -->
+  <ellipse cx="150" cy="140" rx="100" ry="120" fill="url(#skinG-fricative_th_voicelessf)" opacity="0.12"/>
+  <!-- Nose base & nostrils -->
+  <path d="M 136 72 Q 142 68 150 69 Q 158 68 164 72" fill="none" stroke="#966b4f" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
+  <ellipse cx="143" cy="73" rx="3.5" ry="1.8" fill="#2d170d" opacity="0.4"/>
+  <ellipse cx="157" cy="73" rx="3.5" ry="1.8" fill="#2d170d" opacity="0.4"/>
+  <!-- Philtrum -->
+  <path d="M 147 75 Q 146 85 144 96" stroke="#8b5a38" stroke-width="1" stroke-linecap="round" opacity="0.3" fill="none"/>
+  <path d="M 153 75 Q 154 85 156 96" stroke="#8b5a38" stroke-width="1" stroke-linecap="round" opacity="0.3" fill="none"/>
+  <!-- Upper lip -->
+  <path d="M 98 135 C 114 122, 132 120, 150 123 C 168 120, 186 122, 202 135 C 186 130, 168 128, 150 129 C 132 128, 114 130, 98 135 Z"
+    fill="url(#lipG-fricative_th_voicelessf)" stroke="#8e243c" stroke-width="1.2"/>
+  <!-- Cavity -->
+  <ellipse cx="150" cy="135" rx="44" ry="14" fill="url(#cavG-fricative_th_voicelessf)" stroke="#220306" stroke-width="1"/>
+  <clipPath id="clip-id-fricative_th_voicelessf"><ellipse cx="150" cy="135" rx="44" ry="14"/></clipPath>
+  <g clip-path="url(#clip-id-fricative_th_voicelessf)">
+    <!-- Upper teeth -->
+    <rect x="130" y="124" width="12" height="13" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="144" y="123" width="13" height="14" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="159" y="124" width="12" height="13" rx="1.5" fill="#f4f0eb" stroke="#c4bcaf" stroke-width="0.5"/>
+    <!-- TONGUE TIP visible protruding between teeth -->
+    <ellipse cx="150" cy="135" rx="20" ry="8" fill="#d4615a" stroke="#b33d35" stroke-width="1"/>
+    <!-- Lower teeth -->
+    <rect x="135" y="141" width="11" height="9" rx="1.5" fill="#e8e3dc" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="148" y="141" width="11" height="9" rx="1.5" fill="#e8e3dc" stroke="#c4bcaf" stroke-width="0.5"/>
+    <rect x="161" y="141" width="11" height="9" rx="1.5" fill="#e8e3dc" stroke="#c4bcaf" stroke-width="0.5"/>
+  </g>
+  <!-- Lower lip -->
+  <path d="M 98 135 C 114 141, 132 143, 150 143 C 168 143, 186 141, 202 135 C 190 158, 172 163, 150 163 C 128 163, 110 158, 98 135 Z"
+    fill="url(#lipG-fricative_th_voicelessf)" stroke="#8e243c" stroke-width="1.2"/>
+  <ellipse cx="150" cy="154" rx="16" ry="3.5" fill="white" opacity="0.2"/>
+  <text x="150" y="245" fill="#64748b" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Lengua Entre Dientes (Sorda)</text>
 </svg>

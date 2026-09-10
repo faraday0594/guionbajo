@@ -370,6 +370,72 @@ DO_DOES_QUESTIONS_NEGATIVES_SVG = """<svg xmlns="http://www.w3.org/2000/svg" vie
   </g>
 </svg>"""
 
+CAN_ABILITIES_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgCan" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowCan" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgCan)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MAPA CONCEPTUAL: CAN &amp; CAN'T (HABILIDADES Y CAPACIDADES)</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">El Verbo Modal Invariable para Habilidades Físicas y Mentales</text>
+
+  <!-- Left Card: AFIRMATIVA (can + base) -->
+  <g transform="translate(25, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(16,185,129,0.1)" stroke="#10b981" stroke-width="1.5"/>
+    <rect x="12" y="12" width="181" height="26" rx="6" fill="#059669"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">1. FORMA UNIVERSAL</text>
+    
+    <text x="12" y="62" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#34d399">[Sujeto] + can + Verbo Base</text>
+    <text x="12" y="80" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">¡CAN NUNCA cambia con He/She!</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">✅ "She <tspan fill="#34d399" font-weight="bold">can swim</tspan>."</text>
+    <text x="12" y="125" font-family="system-ui, sans-serif" font-size="10" fill="#f87171">❌ "She can swims" (¡Sin -s!)</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">✅ "He <tspan fill="#34d399" font-weight="bold">can play</tspan>."</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#f87171">❌ "He can to play" (¡Sin to!)</text>
+  </g>
+
+  <!-- Middle Card: NEGACIÓN (can't) -->
+  <g transform="translate(247, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(239,68,68,0.1)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="12" y="12" width="181" height="26" rx="6" fill="#b91c1c"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">2. NEGACIÓN (CAN'T)</text>
+    
+    <text x="12" y="62" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#f87171">[Sujeto] + can't + Verbo Base</text>
+    <text x="12" y="80" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">can't = cannot (contracción)</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">✅ "I <tspan fill="#f87171" font-weight="bold">can't drive</tspan>."</text>
+    <text x="12" y="125" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">❌ "He doesn't can drive"</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">✅ "They <tspan fill="#f87171" font-weight="bold">can't come</tspan>."</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Pronunciación: /kænt/ (US)</text>
+  </g>
+
+  <!-- Right Card: PREGUNTAS (Inversión) -->
+  <g transform="translate(470, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="12" y="12" width="181" height="26" rx="6" fill="#0284c7"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">3. PREGUNTAS (INVERSIÓN)</text>
+    
+    <text x="12" y="62" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#38bdf8">Can + [Sujeto] + Verbo Base ?</text>
+    <text x="12" y="80" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Invertimos el orden (¡Sin Do!)</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"<tspan fill="#38bdf8" font-weight="bold">Can you swim</tspan>?"</text>
+    <text x="12" y="125" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">❌ "Do you can swim?"</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#34d399">Respuestas Cortas:</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">"Yes, I can." / "No, I can't."</text>
+  </g>
+
+  <!-- Bottom Golden Rule Box -->
+  <g transform="translate(25, 275)">
+    <rect x="0" y="0" width="650" height="80" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="325" y="28" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      💡 LAS 3 REGLAS DE ORO DE CAN
+    </text>
+    <text x="325" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      1. <tspan fill="#34d399" font-weight="bold">Invariable:</tspan> I / You / He / She / We / They can (¡Sin -s, sin -ed!).
+    </text>
+    <text x="325" y="66" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      2. <tspan fill="#38bdf8" font-weight="bold">Verbo Desnudo:</tspan> Siempre va seguido de forma base (sin 'to').  3. <tspan fill="#f87171" font-weight="bold">Autónomo:</tspan> No usa do/does.
+    </text>
+  </g>
+</svg>"""
+
 SECOND_CONDITIONAL_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
   <defs>
     <linearGradient id="chalkBgCond" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
@@ -673,19 +739,28 @@ class TutorAgent:
         combined_text = f"{topic} {p.get('phase_name', '')} {p.get('board_content', '')} {p.get('tutor_says', '')}".lower()
         low_top = topic.lower()
         is_pp = "present perfect" in low_top or "perfect vs past" in low_top or "present perfect" in combined_text
+
+        # 0. Can & Abilities / Modal Verbs of Ability (HIGHEST PRIORITY for Can)
+        is_can = (
+            "can & abilities" in low_top or
+            "can and abilities" in low_top or
+            "abilities" in low_top or
+            "ability" in low_top or
+            "modal can" in low_top or
+            "can & can't" in low_top or
+            "can & abilities" in combined_text or
+            ("can" in low_top and ("ability" in combined_text or "habilidad" in combined_text or "swim" in combined_text))
+        )
         
-        # 1. Questions & Negatives detection (Do/Does, don't/doesn't, preguntas, negaciones, reflector)
-        is_qn = any(w in combined_text for w in [
+        # 1. Questions & Negatives detection (Do/Does, don't/doesn't) - STRICT (never generic 'preguntas')
+        is_qn = not is_can and any(w in combined_text for w in [
             "questions & negatives", "questions and negatives", "do / does", "do/does", 
-            "don't / doesn't", "don't/doesn't", "do and does", "reflector", "preguntas", 
-            "pregunta", "negaciones", "negación", "auxiliar do", "auxiliar does", 
-            "auxiliares do", "auxiliares do y does", "does he", "does she", "do you", 
-            "don't work", "doesn't work", "do or does", "do y does", "el reflector do/does",
-            "el reflector do / does"
+            "don't / doesn't", "don't/doesn't", "do and does", "el reflector do/does",
+            "el reflector do / does", "auxiliar do", "auxiliar does", "auxiliares do"
         ])
         
         # 2. Third person singular affirmative (ONLY when NOT questions/negatives)
-        is_third_person = not is_qn and any(w in combined_text for w in [
+        is_third_person = not is_qn and not is_can and any(w in combined_text for w in [
             "third person", "tercera persona", "-s", "-es", "-ies", "la magia de la -s", "terminación -s"
         ]) and any(w in combined_text for w in ["works", "watches", "studies", "regla general", "lives", "sleeps", "drinks", "affirmative", "afirmativ"])
         
@@ -693,9 +768,11 @@ class TutorAgent:
         if diag and isinstance(diag, str):
             raw_svg = diag.strip()
             raw_svg = re.sub(r'<think>.*?</think>', '', raw_svg, flags=re.DOTALL).strip()
-            # If the saved SVG is mismatched (e.g. Third Person rules saved on DO/DOES question/negation slide)
-            if is_qn and ("REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg or "THERE IS" in raw_svg):
-                diag = None  # Invalidate mismatched third person / frequency diagram
+            # If the saved SVG is mismatched (e.g. DO/DOES on Can, or Third Person rules saved on DO/DOES question/negation slide)
+            if is_can and ("DO / DOES" in raw_svg or "REGLAS DE TERCERA PERSONA" in raw_svg):
+                diag = None
+            elif is_qn and ("REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg or "THERE IS" in raw_svg or "CAN &" in raw_svg):
+                diag = None  # Invalidate mismatched diagram
             elif is_third_person and ("FREQUENCY ADVERBS" in raw_svg or "ALWAYS" in raw_svg or "DO / DOES" in raw_svg):
                 diag = None
             elif is_pp and ("THERE IS" in raw_svg or "REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg or "DO / DOES" in raw_svg):
@@ -712,7 +789,11 @@ class TutorAgent:
         if phase_num not in (1, 2, 3, 4):
             return None
 
-        # 0. Questions & Negatives (Do / Does, don't / doesn't, reflector)
+        # 0. Can & Abilities
+        if is_can:
+            return CAN_ABILITIES_SVG
+
+        # 1. Questions & Negatives (Do / Does, don't / doesn't, reflector)
         if is_qn:
             return DO_DOES_QUESTIONS_NEGATIVES_SVG
 
@@ -3574,6 +3655,26 @@ class TutorAgent:
             if len(source) >= 2 and len(target) >= 2 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', source) and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', target):
                 transformations.append({"from": source, "to": target})
 
+        def is_clearly_ungrammatical(text: str) -> bool:
+            if not text:
+                return True
+            t = text.strip().lower()
+            if re.search(r'\bcan\s+[a-z]+(?:s|ed|ing)\b', t):
+                return True
+            if re.search(r'\bcans\b', t):
+                return True
+            if re.search(r'\bcan\s+to\s+[a-z]+', t):
+                return True
+            if "doesn't can" in t or "don't can" in t:
+                return True
+            if "playeds" in t or ("swims" in t and "can" in t):
+                return True
+            if re.search(r'\bhaves\b', t):
+                return True
+            if re.search(r'\b(?:she|he|it)\s+doesn\'t\s+[a-z]+s\b', t):
+                return True
+            return False
+
         # 2. Flexible Contrast Matching & Common Error Detection
         contrast_pattern = re.compile(
             r"['\"‘“]([^'\"‘“’”\n\r]+)['\"’”][^'\"‘“’”\n\r]{0,35}?(?:y no|y nunca|no|en lugar de|instead of|mientras que)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]",
@@ -3581,27 +3682,39 @@ class TutorAgent:
         )
         contrasts = []
         for m in contrast_pattern.finditer(speech_text):
-            correct = m.group(1).strip()
-            incorrect = m.group(2).strip()
-            if len(correct) >= 2 and len(incorrect) >= 2 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', correct) and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', incorrect):
-                contrasts.append({"correct": correct, "incorrect": incorrect, "why": "Contraste de orden / regla"})
+            cor = m.group(1).strip()
+            inc = m.group(2).strip()
+            if len(cor) >= 2 and len(inc) >= 2 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', cor) and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', inc):
+                if is_clearly_ungrammatical(cor) and not is_clearly_ungrammatical(inc):
+                    cor, inc = inc, cor
+                if not is_clearly_ungrammatical(cor):
+                    contrasts.append({"correct": cor, "incorrect": inc, "why": "Contraste de regla gramatical"})
 
-        # Detect Common Errors introduced like: "Un error típico ... diciendo 'I drink usually coffee'"
+        # Detect Common Errors introduced like: "Un error típico ... diciendo 'She can swims'"
         err_match = re.search(r"(?:error\s+típico[^\n\r]*?diciendo|diciendo|es\s+incorrecto\s+decir|en\s+lugar\s+de\s+decir|no\s+digas)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]", speech_text, re.IGNORECASE)
         if err_match:
             incorrect_quote = err_match.group(1).strip()
             if not any(c["incorrect"].lower() == incorrect_quote.lower() for c in contrasts):
-                correct_cand = "I usually drink coffee"
-                model_cand = re.search(r"(?:ejemplo|orden\s+correcto[^\n\r]*?['\"‘“]|modelo\s+es[^\n\r]*?['\"‘“])\s*['\"‘“]?([^'\"‘“’”\n\r]+)['\"’”]", speech_text, re.IGNORECASE)
+                model_cand = re.search(r"(?:ejemplo|orden\s+correcto[^\n\r]*?['\"‘“]|modelo\s+es[^\n\r]*?['\"‘“]|forma\s+correcta[^\n\r]*?['\"‘“])\s*['\"‘“]?([^'\"‘“’”\n\r]+)['\"’”]", speech_text, re.IGNORECASE)
+                correct_cand = None
                 if model_cand:
                     cand = model_cand.group(1).strip()
-                    if len(cand) >= 3 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', cand):
-                        correct_cand = " ".join(cand.split()[:4])
-                contrasts.append({
-                    "correct": correct_cand,
-                    "incorrect": incorrect_quote,
-                    "why": "El adverbio va SIEMPRE ANTES del verbo principal"
-                })
+                    if len(cand) >= 3 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', cand) and not is_clearly_ungrammatical(cand):
+                        correct_cand = cand
+
+                if not correct_cand and p.get("target_audio_items"):
+                    for tai in p["target_audio_items"]:
+                        eng = (tai.get("english") or "").strip()
+                        if eng and not is_clearly_ungrammatical(eng):
+                            correct_cand = eng
+                            break
+
+                if correct_cand and not is_clearly_ungrammatical(correct_cand):
+                    contrasts.append({
+                        "correct": correct_cand,
+                        "incorrect": incorrect_quote,
+                        "why": "Forma gramatical correcta en contexto"
+                    })
 
         # 3. Frequency Scale / Table Items from speech (e.g. 'Always' 100%, 'Usually' 80%, 'Sometimes' 50%, 'Never' 0%)
         frequency_scale = []

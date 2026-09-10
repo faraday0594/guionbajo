@@ -45,6 +45,7 @@ import {
   Gamepad2,
   Layers,
   Lock,
+  Target,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -880,6 +881,72 @@ const DO_DOES_QUESTIONS_NEGATIVES_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
   </g>
 </svg>`;
 
+const CAN_ABILITIES_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgCan" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowCan" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgCan)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MAPA CONCEPTUAL: CAN &amp; CAN'T (HABILIDADES Y CAPACIDADES)</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">El Verbo Modal Invariable para Habilidades Físicas y Mentales</text>
+
+  <!-- Left Card: AFIRMATIVA (can + base) -->
+  <g transform="translate(25, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(16,185,129,0.1)" stroke="#10b981" stroke-width="1.5"/>
+    <rect x="12" y="12" width="181" height="26" rx="6" fill="#059669"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">1. FORMA UNIVERSAL</text>
+    
+    <text x="12" y="62" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#34d399">[Sujeto] + can + Verbo Base</text>
+    <text x="12" y="80" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">¡CAN NUNCA cambia con He/She!</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">✅ "She <tspan fill="#34d399" font-weight="bold">can swim</tspan>."</text>
+    <text x="12" y="125" font-family="system-ui, sans-serif" font-size="10" fill="#f87171">❌ "She can swims" (¡Sin -s!)</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">✅ "He <tspan fill="#34d399" font-weight="bold">can play</tspan>."</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#f87171">❌ "He can to play" (¡Sin to!)</text>
+  </g>
+
+  <!-- Middle Card: NEGACIÓN (can't) -->
+  <g transform="translate(247, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(239,68,68,0.1)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="12" y="12" width="181" height="26" rx="6" fill="#b91c1c"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">2. NEGACIÓN (CAN'T)</text>
+    
+    <text x="12" y="62" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#f87171">[Sujeto] + can't + Verbo Base</text>
+    <text x="12" y="80" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">can't = cannot (contracción)</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">✅ "I <tspan fill="#f87171" font-weight="bold">can't drive</tspan>."</text>
+    <text x="12" y="125" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">❌ "He doesn't can drive"</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">✅ "They <tspan fill="#f87171" font-weight="bold">can't come</tspan>."</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Pronunciación: /kænt/ (US)</text>
+  </g>
+
+  <!-- Right Card: PREGUNTAS (Inversión) -->
+  <g transform="translate(470, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="12" y="12" width="181" height="26" rx="6" fill="#0284c7"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">3. PREGUNTAS (INVERSIÓN)</text>
+    
+    <text x="12" y="62" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#38bdf8">Can + [Sujeto] + Verbo Base ?</text>
+    <text x="12" y="80" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Invertimos el orden (¡Sin Do!)</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"<tspan fill="#38bdf8" font-weight="bold">Can you swim</tspan>?"</text>
+    <text x="12" y="125" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">❌ "Do you can swim?"</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#34d399">Respuestas Cortas:</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">"Yes, I can." / "No, I can't."</text>
+  </g>
+
+  <!-- Bottom Golden Rule Box -->
+  <g transform="translate(25, 275)">
+    <rect x="0" y="0" width="650" height="80" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="325" y="28" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      💡 LAS 3 REGLAS DE ORO DE CAN
+    </text>
+    <text x="325" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      1. <tspan fill="#34d399" font-weight="bold">Invariable:</tspan> I / You / He / She / We / They can (¡Sin -s, sin -ed!).
+    </text>
+    <text x="325" y="66" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      2. <tspan fill="#38bdf8" font-weight="bold">Verbo Desnudo:</tspan> Siempre va seguido de forma base (sin 'to').  3. <tspan fill="#f87171" font-weight="bold">Autónomo:</tspan> No usa do/does.
+    </text>
+  </g>
+</svg>`;
+
 const PRESENT_PERFECT_VS_PAST_SIMPLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
   <defs>
     <linearGradient id="chalkBgPP" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
@@ -1099,31 +1166,50 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     : (typeof phase?.tutor_says?.text === 'string' ? phase.tutor_says.text.toLowerCase() : '');
   const combined = `${lowTop} ${pName} ${pBoard} ${pSpeech}`;
 
-  // 0. Questions & Negatives (Do / Does, don't / doesn't, El reflector DO/DOES) - Priority check
+  // 0. Can & Abilities / Modal Verbs of Ability (HIGHEST PRIORITY for Can)
+  const isCan =
+    lowTop.includes('can & abilities') ||
+    lowTop.includes('can and abilities') ||
+    lowTop.includes('abilities') ||
+    lowTop.includes('ability') ||
+    lowTop.includes("can & can't") ||
+    lowTop.includes("can and can't") ||
+    lowTop.includes('modal can') ||
+    lowTop === 'can' ||
+    combined.includes('can & abilities') ||
+    combined.includes('habilidades con can') ||
+    combined.includes('las 3 reglas de oro de can') ||
+    (combined.includes('can') && (combined.includes('abilities') || combined.includes('habilidad') || combined.includes('habilidades') || combined.includes('swim')));
+
+  if (isCan) {
+    return CAN_ABILITIES_SVG;
+  }
+
+  // 1. Questions & Negatives (Do / Does, don't / doesn't, El reflector DO/DOES) - STRICT (never generic 'preguntas')
   const isQn =
-    combined.includes('questions & negatives') ||
-    combined.includes('questions and negatives') ||
-    combined.includes('do / does') ||
-    combined.includes('do/does') ||
-    combined.includes("don't / doesn't") ||
-    combined.includes("don't") ||
-    combined.includes("doesn't") ||
-    combined.includes('do and does') ||
-    combined.includes('reflector') ||
-    combined.includes('preguntas') ||
-    combined.includes('negación') ||
-    combined.includes('negacion') ||
-    combined.includes('negativas') ||
-    (combined.includes('negative') && combined.includes('question')) ||
-    (combined.includes('auxiliar') && (combined.includes('do') || combined.includes('does')));
+    !isCan &&
+    (
+      combined.includes('questions & negatives') ||
+      combined.includes('questions and negatives') ||
+      combined.includes('do / does') ||
+      combined.includes('do/does') ||
+      combined.includes("don't / doesn't") ||
+      combined.includes("don't/doesn't") ||
+      combined.includes('el reflector do/does') ||
+      combined.includes('el reflector do / does') ||
+      ((combined.includes('auxiliar do') || combined.includes('auxiliar does') || combined.includes('auxiliares do')) && (combined.includes('pregunta') || combined.includes('negac')))
+    );
 
   if (isQn) {
     return DO_DOES_QUESTIONS_NEGATIVES_SVG;
   }
 
-  // If cached diagram_svg exists and is valid (not mismatched third-person rule on a question slide)
+  // If cached diagram_svg exists and is valid (not mismatched DO/DOES on Can, and not mismatched third-person rule on a question slide)
   if (phase?.diagram_svg && typeof phase.diagram_svg === 'string' && phase.diagram_svg.includes('<svg')) {
-    if (!phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || (!isQn && !combined.includes('reflector') && !combined.includes('do/does'))) {
+    if (
+      (!phase.diagram_svg.includes('DO / DOES') || isQn) &&
+      (!phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || (!isQn && !combined.includes('reflector') && !combined.includes('do/does')))
+    ) {
       return phase.diagram_svg;
     }
   }
@@ -1641,17 +1727,48 @@ function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: 
   const contrasts: Array<{ correct: string; incorrect: string; why: string }> = [];
   const incorrectQuotes = new Set<string>();
 
+  const isUngrammaticalPhrase = (text: string): boolean => {
+    if (!text) return true;
+    const t = text.trim().toLowerCase();
+    if (/\bcan\s+[a-z]+(?:s|ed|ing)\b/i.test(t)) return true;
+    if (/\bcans\b/i.test(t)) return true;
+    if (/\bcan\s+to\s+[a-z]+/i.test(t)) return true;
+    if (/\bdoesn't\s+can\b/i.test(t) || /\bdon't\s+can\b/i.test(t)) return true;
+    if (/\bplayeds\b/i.test(t) || (/\bswims\b/i.test(t) && /\bcan\b/i.test(t))) return true;
+    if (/\bhaves\b/i.test(t)) return true;
+    if (/\b(?:she|he|it)\s+doesn't\s+[a-z]+s\b/i.test(t)) return true;
+    if (/\b(?:i|you|we|they)\s+doesn't\b/i.test(t)) return true;
+    return false;
+  };
+
+  const addContrast = (candidateCorrect: string, candidateIncorrect: string, why: string) => {
+    let cor = candidateCorrect.trim();
+    let inc = candidateIncorrect.trim();
+    if (cor.length < 2 || inc.length < 2) return;
+    if (/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) return;
+
+    // 🛡️ Detect inversion: If candidate 'cor' is ungrammatical and 'inc' is grammatical, SWAP them!
+    if (isUngrammaticalPhrase(cor) && !isUngrammaticalPhrase(inc)) {
+      const temp = cor;
+      cor = inc;
+      inc = temp;
+    }
+
+    // 🛡️ Strict Safety: Never allow an ungrammatical phrase to be stored as 'correct'
+    if (isUngrammaticalPhrase(cor)) return;
+
+    if (!contrasts.some(c => c.correct.toLowerCase() === cor.toLowerCase())) {
+      contrasts.push({ correct: cor, incorrect: inc, why });
+    }
+    incorrectQuotes.add(inc.toLowerCase());
+  };
+
   // 1. Explicit Dual Matching: e.g. "La versión ❌ Incorrecta sería 'I Maria' ... La versión ✅ Correcta es 'I am Maria'"
   const explicitDualMatches = Array.from(
     speechText.matchAll(/(?:versión\s+(?:❌\s*)?incorrecta[^\n\r]*?|forma\s+incorrecta[^\n\r]*?)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”][^\n\r]{0,80}?(?:versión\s+(?:✅\s*)?correcta[^\n\r]*?|forma\s+correcta[^\n\r]*?)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
   );
   for (const edm of explicitDualMatches) {
-    const inc = edm[1].trim();
-    const cor = edm[2].trim();
-    if (inc.length >= 2 && cor.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) {
-      contrasts.push({ correct: cor, incorrect: inc, why: 'Duelo gramatical / fonético' });
-      incorrectQuotes.add(inc.toLowerCase());
-    }
+    addContrast(edm[2], edm[1], 'Duelo gramatical / fonético');
   }
 
   // 2. Explicit Reverse Matching: e.g. "La forma correcta es 'I am Maria' ... error ... 'I Maria'"
@@ -1659,30 +1776,16 @@ function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: 
     speechText.matchAll(/(?:forma\s+correcta[^\n\r]*?|versión\s+correcta[^\n\r]*?)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”][^\n\r]{0,80}?(?:error|incorrect[ao]|en\s+lugar\s+de)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
   );
   for (const erm of explicitReverseMatches) {
-    const cor = erm[1].trim();
-    const inc = erm[2].trim();
-    if (cor.length >= 2 && inc.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) {
-      if (!contrasts.some(c => c.correct.toLowerCase() === cor.toLowerCase())) {
-        contrasts.push({ correct: cor, incorrect: inc, why: 'Duelo gramatical / fonético' });
-      }
-      incorrectQuotes.add(inc.toLowerCase());
-    }
+    addContrast(erm[1], erm[2], 'Duelo gramatical / fonético');
   }
 
   // 3. "en lugar de" / "en vez de" / "instead of":
-  // In Spanish, saying "decir 'Espain' en lugar de 'Spain'" -> m[1] is INCORRECT ('Espain'), m[2] is CORRECT ('Spain')!
+  // In Spanish, saying "usa 'Spain' en lugar de 'Espain'" -> m[1] is CORRECT ('Spain'), m[2] is INCORRECT ('Espain')!
   const enLugarDeMatches = Array.from(
     speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:en\s+lugar\s+de|en\s+vez\s+de|instead\s+of)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
   );
   for (const elm of enLugarDeMatches) {
-    const inc = elm[1].trim();
-    const cor = elm[2].trim();
-    if (inc.length >= 2 && cor.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) {
-      if (!contrasts.some(c => c.correct.toLowerCase() === cor.toLowerCase())) {
-        contrasts.push({ correct: cor, incorrect: inc, why: 'Evita la interferencia del español' });
-      }
-      incorrectQuotes.add(inc.toLowerCase());
-    }
+    addContrast(elm[1], elm[2], 'Evita la interferencia del español');
   }
 
   // 4. "di X y no Y" / "usa X y nunca Y":
@@ -1691,14 +1794,7 @@ function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: 
     speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:y\s+no|y\s+nunca|mientras\s+que\s+no)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
   );
   for (const ynm of yNoMatches) {
-    const cor = ynm[1].trim();
-    const inc = ynm[2].trim();
-    if (cor.length >= 2 && inc.length >= 2 && !/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) {
-      if (!contrasts.some(c => c.correct.toLowerCase() === cor.toLowerCase())) {
-        contrasts.push({ correct: cor, incorrect: inc, why: 'Regla de pronunciación y gramática' });
-      }
-      incorrectQuotes.add(inc.toLowerCase());
-    }
+    addContrast(ynm[1], ynm[2], 'Regla de pronunciación y gramática');
   }
 
   // 5. Scan speech for error phrases to BAN from audio practice
@@ -3086,6 +3182,8 @@ export default function LessonPage() {
     totalCount: number;
     isUnlocked: boolean;
   }>({ correctCount: 0, totalCount: 0, isUnlocked: false });
+  const [boardEvaluations, setBoardEvaluations] = useState<Record<number, any>>({});
+  const [showIncompleteNoticeModal, setShowIncompleteNoticeModal] = useState(false);
 
   const handlePracticeProgressChange = useCallback((correct: number, total: number, isUnlocked: boolean) => {
     setPracticeProgress(prev => {
@@ -3286,6 +3384,81 @@ export default function LessonPage() {
       return findPhraseTimingInTimeline(item.english, phaseTimeline, fallbackRatio);
     });
   }, [targetAudioItems, phaseTimeline]);
+
+  // 🎬 Hook & Multi-Image Resolution
+  const isHook = currentPhaseIdx === 0 || Boolean(phase?.is_hook);
+
+  // 🗣️ Dedicated Phonetic Bonus Slide Resolution (strictly at the end of the lesson)
+  const isPhoneticBonus = Boolean(
+    phase?.is_phonetic_bonus ||
+    phase?.interaction_type === 'phonetic_bonus' ||
+    (phase?.phonetic_focus && currentPhaseIdx === (lesson?.phases?.length ? lesson.phases.length - 1 : currentPhaseIdx)) ||
+    (phase?.phase_name?.toLowerCase().includes('bonus de pronunciación')) ||
+    (phase?.phase_name?.toLowerCase().includes('fonét') && currentPhaseIdx === (lesson?.phases?.length ? lesson.phases.length - 1 : currentPhaseIdx))
+  );
+
+  // 🎯 Dedicated Practice Slide Resolution (strictly after all explanation slides)
+  const isPracticeSlide = !isHook && !isPhoneticBonus && Boolean(
+    phase?.is_practice_slide === true ||
+    (phase?.interaction_type === 'quiz' && currentPhaseIdx >= (lesson?.phases?.length ? lesson.phases.length - 2 : 1) && phase?.exercises && phase?.exercises.length > 0)
+  );
+
+  // 🛡️ Board exercises check on explanation slides
+  const hasBoardExercise = Boolean(
+    !isPracticeSlide && !isHook && (
+      phaseStoryboardTimeline?.some((s: any) => s.visual_action === 'show_challenge') ||
+      phase?.interaction_type === 'quiz' ||
+      phase?.interaction_type === 'challenge' ||
+      (exercises && exercises.length > 0) ||
+      Boolean(phase?.student_task && phase?.expected_answer)
+    )
+  );
+
+  const boardExerciseList: any[] = useMemo(() => {
+    if (!hasBoardExercise) return [];
+    if (exercises && exercises.length > 0) return exercises;
+    if (phase?.student_task || phase?.expected_answer) {
+      return [{
+        id: 'board-ex-0',
+        sentence: phase?.student_task || 'Completa la consigna explicada por el tutor.',
+        expected_answer: phase?.expected_answer || '',
+        options: phase?.exercises?.[0]?.options || [],
+      }];
+    }
+    return [{
+      id: 'board-ex-0',
+      sentence: 'Completa el desafío interactivo de la lección.',
+      expected_answer: '',
+    }];
+  }, [hasBoardExercise, exercises, phase]);
+
+  const totalBoardExercises = boardExerciseList.length;
+  const minBoardRequired = Math.ceil(totalBoardExercises * 0.8);
+  const correctBoardCount = useMemo(() => {
+    if (!hasBoardExercise || totalBoardExercises === 0) return 0;
+    return Object.values(boardEvaluations).filter((ev: any) => Boolean(ev?.is_correct)).length;
+  }, [hasBoardExercise, totalBoardExercises, boardEvaluations]);
+
+  const isBoard80Met = !hasBoardExercise || (totalBoardExercises > 0 && correctBoardCount >= minBoardRequired);
+  const isBoardAllCompleted = !hasBoardExercise || (totalBoardExercises > 0 && correctBoardCount === totalBoardExercises);
+
+  const isSlideExerciseLocked = (isPracticeSlide && practiceProgress.totalCount > 0 && !practiceProgress.isUnlocked) ||
+    (hasBoardExercise && totalBoardExercises > 0 && !isBoard80Met);
+
+  const noticeModalData = useMemo(() => {
+    if (isPracticeSlide) {
+      const total = practiceProgress.totalCount;
+      const completed = practiceProgress.correctCount;
+      const remaining = Math.max(0, total - completed);
+      const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+      return { totalCount: total, completedCount: completed, remaining, progressPercent: percent };
+    }
+    const total = totalBoardExercises;
+    const completed = correctBoardCount;
+    const remaining = Math.max(0, total - completed);
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { totalCount: total, completedCount: completed, remaining, progressPercent: percent };
+  }, [isPracticeSlide, practiceProgress, totalBoardExercises, correctBoardCount]);
 
   // Normalized Grammar Structure Object
   const normalizedGrammarStructure = useMemo<any>(() => {
@@ -4134,6 +4307,12 @@ export default function LessonPage() {
     const promptKey = `${currentPhaseIdx}-${topicParam}`;
     setImageLoading(!minimaxImageMap[promptKey]);
     setEvaluation(null);
+    setBoardEvaluations({});
+    setShowIncompleteNoticeModal(false);
+    setSelectedExerciseIdx(0);
+    setSelectedChallengeOption(null);
+    setTextInput('');
+    setPracticeProgress({ correctCount: 0, totalCount: 0, isUnlocked: false });
     setShowTranscript(false);
     setItemRecordingKey(null);
     setItemProcessingKey(null);
@@ -4415,8 +4594,12 @@ export default function LessonPage() {
       formData.append('phase', String(currentPhase.phase_number || currentPhaseIdx + 1));
       formData.append('answer', textAnswer);
 
-      const qText = typeof currentPhase.student_task === 'string' ? currentPhase.student_task : (currentPhase.tutor_says || '');
-      const eText = typeof currentPhase.expected_answer === 'string' ? currentPhase.expected_answer : '';
+      const activeEx: any = (boardExerciseList && boardExerciseList.length > 0)
+        ? (boardExerciseList[selectedExerciseIdx] || boardExerciseList[0])
+        : (exercises && exercises.length > 0 ? (exercises[selectedExerciseIdx] || exercises[0]) : null);
+
+      const qText = activeEx?.cleanSentence || activeEx?.sentence || activeEx?.question || (typeof currentPhase.student_task === 'string' ? currentPhase.student_task : (currentPhase.tutor_says || ''));
+      const eText = activeEx?.expected_answer || (typeof currentPhase.expected_answer === 'string' ? currentPhase.expected_answer : '');
 
       formData.append('question', qText);
       formData.append('expected_answer', eText);
@@ -4436,6 +4619,10 @@ export default function LessonPage() {
       };
 
       setEvaluation(formattedEval);
+      setBoardEvaluations(prev => ({
+        ...prev,
+        [selectedExerciseIdx]: formattedEval
+      }));
       setTutorState('idle');
 
       if (formattedEval.feedback) {
@@ -4767,21 +4954,7 @@ export default function LessonPage() {
     }
   };
 
-  const handleNextSlide = async () => {
-    const currentP = lesson?.phases?.[currentPhaseIdx];
-    const isCurPractice = Boolean(currentP?.is_practice_slide || currentP?.interaction_type === 'quiz');
-
-    // 🛡️ Block advancing if 80% threshold of exercises is not yet achieved
-    if (isCurPractice && practiceProgress.totalCount > 0 && !practiceProgress.isUnlocked) {
-      const minReq = Math.ceil(practiceProgress.totalCount * 0.8);
-      sfx.playMistake();
-      toast.error(
-        `🔒 Debes resolver al menos ${minReq} de los ${practiceProgress.totalCount} ejercicios (80%) para continuar.`,
-        { id: 'practice-lock-guard', duration: 4000 }
-      );
-      return;
-    }
-
+  const executeAdvanceSlide = async () => {
     sfx.playPop();
     stopCurrentAudio();
     stopTutorVoice();
@@ -4799,13 +4972,65 @@ export default function LessonPage() {
     }
   };
 
+  const handleNextSlide = async () => {
+    // 🛡️ 1. Practice Slide Check (80% minimum requirement)
+    if (isPracticeSlide && practiceProgress.totalCount > 0) {
+      if (!practiceProgress.isUnlocked) {
+        const minReq = Math.ceil(practiceProgress.totalCount * 0.8);
+        sfx.playMistake();
+        toast.error(
+          `🔒 Debes resolver al menos ${minReq} de los ${practiceProgress.totalCount} ejercicios (80%) para continuar.`,
+          { id: 'practice-lock-guard', duration: 4000 }
+        );
+        return;
+      }
+      // If >=80% threshold achieved but not all completed (e.g. 7 of 8), prompt student
+      if (practiceProgress.correctCount < practiceProgress.totalCount) {
+        setShowIncompleteNoticeModal(true);
+        return;
+      }
+    }
+
+    // 🛡️ 2. Board Slide with Exercises Check (80% minimum requirement)
+    if (hasBoardExercise && totalBoardExercises > 0) {
+      if (!isBoard80Met) {
+        sfx.playMistake();
+        if (totalBoardExercises > 1) {
+          toast.error(
+            `🔒 Debes resolver al menos ${minBoardRequired} de los ${totalBoardExercises} ejercicios (80%) del desafío para continuar.`,
+            { id: 'board-lock-guard', duration: 4000 }
+          );
+        } else {
+          toast.error(
+            `🔒 Completa y aprueba el ejercicio interactivo en la pizarra antes de continuar.`,
+            { id: 'board-lock-guard', duration: 4000 }
+          );
+        }
+        return;
+      }
+      // If >=80% threshold achieved but not all completed, prompt student
+      if (!isBoardAllCompleted) {
+        setShowIncompleteNoticeModal(true);
+        return;
+      }
+    }
+
+    await executeAdvanceSlide();
+  };
+
   // 🎬 Cinema mode: auto-advance
   useEffect(() => {
     if (!cinemaModeActive || tutorState !== 'idle' || !lesson) return;
     if (!audioFinishedNaturallyRef.current) return;
     audioFinishedNaturallyRef.current = false;
     cinemaNextSlideRef.current = setTimeout(() => {
-      if (cinemaModeRef.current) handleNextSlide();
+      if (cinemaModeRef.current) {
+        // Do NOT auto-advance if an exercise on this slide is locked or incomplete!
+        if (isPracticeSlide || hasBoardExercise) {
+          return;
+        }
+        handleNextSlide();
+      }
     }, 2200);
     return () => {
       if (cinemaNextSlideRef.current) {
@@ -4813,7 +5038,7 @@ export default function LessonPage() {
         cinemaNextSlideRef.current = null;
       }
     };
-  }, [tutorState, cinemaModeActive, lesson]);
+  }, [tutorState, cinemaModeActive, lesson, isPracticeSlide, hasBoardExercise]);
 
   // 🎬 Stable Viewport Focus: Keeps student focused on words being revealed & spoken
   useEffect(() => {
@@ -4995,24 +5220,6 @@ export default function LessonPage() {
     setRevealedTargets(new Set(['image']));
     playVoiceChunk(0, true);
   };
-
-  // 🎬 Hook & Multi-Image Resolution
-  const isHook = currentPhaseIdx === 0 || Boolean(phase.is_hook);
-
-  // 🗣️ Dedicated Phonetic Bonus Slide Resolution (strictly at the end of the lesson)
-  const isPhoneticBonus = Boolean(
-    phase.is_phonetic_bonus ||
-    phase.interaction_type === 'phonetic_bonus' ||
-    (phase.phonetic_focus && currentPhaseIdx === (lesson?.phases?.length ? lesson.phases.length - 1 : currentPhaseIdx)) ||
-    (phase.phase_name?.toLowerCase().includes('bonus de pronunciación')) ||
-    (phase.phase_name?.toLowerCase().includes('fonét') && currentPhaseIdx === (lesson?.phases?.length ? lesson.phases.length - 1 : currentPhaseIdx))
-  );
-
-  // 🎯 Dedicated Practice Slide Resolution (strictly after all explanation slides)
-  const isPracticeSlide = !isHook && !isPhoneticBonus && Boolean(
-    phase.is_practice_slide === true ||
-    (phase.interaction_type === 'quiz' && currentPhaseIdx >= (lesson?.phases?.length ? lesson.phases.length - 2 : 1) && phase.exercises && phase.exercises.length > 0)
-  );
 
   // ─── Image Generation & Hook Visuals ───────────────────────────────────────
   const rawImagePrompt = typeof phase.image_prompt === 'string' && phase.image_prompt.trim().length > 10
@@ -5793,7 +6000,12 @@ export default function LessonPage() {
                     itemEvaluations={itemEvals}
                     exercises={exercises}
                     currentExerciseIdx={selectedExerciseIdx}
-                    onSelectExercise={(idx) => setSelectedExerciseIdx(idx)}
+                    onSelectExercise={(idx) => {
+                      setSelectedExerciseIdx(idx);
+                      setEvaluation(boardEvaluations[idx] || null);
+                      setSelectedChallengeOption(null);
+                      setTextInput('');
+                    }}
                     onSelectOption={(opt) => {
                       setSelectedChallengeOption(opt);
                       setTextInput(opt);
@@ -5809,6 +6021,11 @@ export default function LessonPage() {
                     evaluation={evaluation}
                     onResetEvaluation={() => {
                       setEvaluation(null);
+                      setBoardEvaluations(prev => {
+                        const next = { ...prev };
+                        delete next[selectedExerciseIdx];
+                        return next;
+                      });
                       setTextInput('');
                       setSelectedChallengeOption(null);
                     }}
@@ -6122,12 +6339,22 @@ export default function LessonPage() {
                     <button
                       key={idx}
                       onClick={() => {
-                        const isCurPractice = Boolean(lesson?.phases?.[currentPhaseIdx]?.is_practice_slide || lesson?.phases?.[currentPhaseIdx]?.interaction_type === 'quiz');
-                        if (isCurPractice && idx > currentPhaseIdx && practiceProgress.totalCount > 0 && !practiceProgress.isUnlocked) {
-                          const minReq = Math.ceil(practiceProgress.totalCount * 0.8);
-                          sfx.playMistake();
-                          toast.error(`🔒 Completa al menos el 80% de los ejercicios (${minReq} de ${practiceProgress.totalCount}) para desbloquear los siguientes slides.`);
-                          return;
+                        if (idx > currentPhaseIdx) {
+                          if (isPracticeSlide && practiceProgress.totalCount > 0 && !practiceProgress.isUnlocked) {
+                            const minReq = Math.ceil(practiceProgress.totalCount * 0.8);
+                            sfx.playMistake();
+                            toast.error(`🔒 Completa al menos el 80% de los ejercicios (${minReq} de ${practiceProgress.totalCount}) para desbloquear los siguientes slides.`);
+                            return;
+                          }
+                          if (hasBoardExercise && totalBoardExercises > 0 && !isBoard80Met) {
+                            sfx.playMistake();
+                            if (totalBoardExercises > 1) {
+                              toast.error(`🔒 Completa al menos el 80% de los ejercicios (${minBoardRequired} de ${totalBoardExercises}) para desbloquear los siguientes slides.`);
+                            } else {
+                              toast.error(`🔒 Completa y aprueba el ejercicio interactivo en la pizarra antes de avanzar.`);
+                            }
+                            return;
+                          }
                         }
                         setCurrentPhaseIdx(idx);
                       }}
@@ -6201,23 +6428,33 @@ export default function LessonPage() {
               <motion.button
                 type="button"
                 onClick={handleNextSlide}
-                whileHover={isPracticeSlide && !practiceProgress.isUnlocked ? {} : { scale: 1.04 }}
-                whileTap={isPracticeSlide && !practiceProgress.isUnlocked ? {} : { scale: 0.97 }}
+                whileHover={isSlideExerciseLocked ? {} : { scale: 1.04 }}
+                whileTap={isSlideExerciseLocked ? {} : { scale: 0.97 }}
                 className={`px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1 sm:gap-1.5 ${
-                  isPracticeSlide && !practiceProgress.isUnlocked
+                  isSlideExerciseLocked
                     ? 'bg-zinc-800 text-zinc-500 border border-zinc-700/60 cursor-not-allowed opacity-75'
                     : 'bg-gradient-to-r from-brand-accent to-indigo-600 hover:from-brand-accent/90 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(108,99,255,0.4)] hover:shadow-[0_0_30px_rgba(108,99,255,0.6)] cursor-pointer'
                 }`}
                 title={
-                  isPracticeSlide && !practiceProgress.isUnlocked
-                    ? `Bloqueado: Requiere al menos el 80% de los ejercicios correctos`
+                  isSlideExerciseLocked
+                    ? isPracticeSlide
+                      ? `Bloqueado: Requiere al menos el 80% de los ejercicios correctos (${practiceProgress.correctCount}/${Math.ceil(practiceProgress.totalCount * 0.8)})`
+                      : totalBoardExercises > 1
+                        ? `Bloqueado: Requiere al menos el 80% de los ejercicios correctos (${correctBoardCount}/${minBoardRequired})`
+                        : 'Bloqueado: Resuelve el ejercicio interactivo de la pizarra para continuar'
                     : 'Avanzar al siguiente slide'
                 }
               >
-                {isPracticeSlide && !practiceProgress.isUnlocked ? (
+                {isSlideExerciseLocked ? (
                   <>
                     <Lock size={14} className="text-amber-400" />
-                    <span>Bloqueado (80%)</span>
+                    <span>
+                      {isPracticeSlide
+                        ? `Bloqueado (${practiceProgress.correctCount}/${Math.ceil(practiceProgress.totalCount * 0.8)})`
+                        : totalBoardExercises > 1
+                          ? `Bloqueado (${correctBoardCount}/${minBoardRequired})`
+                          : 'Resuelve el Ejercicio'}
+                    </span>
                   </>
                 ) : (
                   <>
@@ -6234,6 +6471,75 @@ export default function LessonPage() {
           </footer>
         )}
       </div>
+
+      {/* 🛡️ Incomplete Exercises Confirmation Modal (Shown when >=80% threshold is met but <100%) */}
+      <AnimatePresence>
+        {showIncompleteNoticeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-lg rounded-3xl bg-gradient-to-b from-zinc-900 via-zinc-900/95 to-black border border-brand-gold/40 p-6 sm:p-7 shadow-[0_0_50px_rgba(234,179,8,0.2)] text-white space-y-5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-brand-gold/15 border border-brand-gold/30 flex items-center justify-center text-brand-gold shadow-lg shadow-brand-gold/10 flex-shrink-0">
+                  <Target size={24} className="animate-pulse" />
+                </div>
+                <div>
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold uppercase tracking-wider">
+                    🎯 Requisito del 80% superado ({noticeModalData.completedCount}/{noticeModalData.totalCount})
+                  </span>
+                  <h4 className="text-lg sm:text-xl font-extrabold text-white mt-1">
+                    ¿Deseas continuar o completar la práctica al 100%?
+                  </h4>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-2.5 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                <p>
+                  ¡Excelente avance! Ya has resuelto correctamente <strong className="text-emerald-400 font-bold">{noticeModalData.completedCount} de {noticeModalData.totalCount} ejercicios</strong> ({noticeModalData.progressPercent}%), cumpliendo el umbral mínimo pedagógico para avanzar.
+                </p>
+                <p className="text-zinc-400">
+                  Sin embargo, aún te {noticeModalData.remaining === 1 ? 'queda' : 'quedan'} <strong className="text-brand-gold font-bold">{noticeModalData.remaining} {noticeModalData.remaining === 1 ? 'ejercicio pendiente' : 'ejercicios pendientes'}</strong>. Resolver todos los desafíos garantizará la fijación total de las estructuras gramaticales en tu memoria a largo plazo.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowIncompleteNoticeModal(false);
+                    if (!isPracticeSlide && hasBoardExercise) {
+                      const firstIncompleteIdx = boardExerciseList.findIndex((_, idx) => !boardEvaluations[idx]?.is_correct);
+                      if (firstIncompleteIdx !== -1) {
+                        setSelectedExerciseIdx(firstIncompleteIdx);
+                        setEvaluation(boardEvaluations[firstIncompleteIdx] || null);
+                      }
+                    }
+                  }}
+                  className="w-full sm:flex-1 px-5 py-3 rounded-2xl bg-gradient-to-r from-brand-accent via-indigo-500 to-brand-cyan hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-[0_0_25px_rgba(108,99,255,0.4)] flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Sparkles size={16} />
+                  <span>Completar práctica al 100% 🎯</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowIncompleteNoticeModal(false);
+                    executeAdvanceSlide();
+                  }}
+                  className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-zinc-300 hover:text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <span>Avanzar al siguiente slide</span>
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* 🎬 After Effects Style Kinetic Dynamic Subtitles (Tutor Speech Synchronized) */}
       {showDynamicSubtitles && (

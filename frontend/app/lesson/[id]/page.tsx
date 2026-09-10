@@ -3409,14 +3409,22 @@ export default function LessonPage() {
   const lineRevealTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cinemaNextSlideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioFinishedNaturallyRef = useRef(false);
+  const mainRecognitionRef = useRef<any>(null);
   const itemRecognitionRef = useRef<any>(null);
   const itemSilenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exerciseSilenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isCancelledRef = useRef<boolean>(false);
+  const loadAbortControllerRef = useRef<AbortController | null>(null);
 
   const stopCurrentAudio = () => {
     audioSessionIdRef.current += 1;
     stopTutorVoice();
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (_) {}
+    }
     if (audioTimerRef.current) {
       clearInterval(audioTimerRef.current);
       audioTimerRef.current = null;
@@ -3427,6 +3435,20 @@ export default function LessonPage() {
         currentAudioRef.current.currentTime = 0;
       } catch (e) {}
       currentAudioRef.current = null;
+    }
+    if (mainRecognitionRef.current) {
+      try { mainRecognitionRef.current.stop(); } catch (_) {}
+    }
+    if (itemRecognitionRef.current) {
+      try { itemRecognitionRef.current.stop(); } catch (_) {}
+    }
+    if (itemSilenceTimerRef.current) {
+      clearTimeout(itemSilenceTimerRef.current);
+      itemSilenceTimerRef.current = null;
+    }
+    if (exerciseSilenceTimerRef.current) {
+      clearTimeout(exerciseSilenceTimerRef.current);
+      exerciseSilenceTimerRef.current = null;
     }
     setTutorState('idle');
     setAudioProgress(0);
@@ -3441,6 +3463,61 @@ export default function LessonPage() {
     }
   };
 
+  const cleanupAllLessonActivity = useCallback(() => {
+    isCancelledRef.current = true;
+    if (loadAbortControllerRef.current) {
+      try {
+        loadAbortControllerRef.current.abort();
+      } catch (_) {}
+    }
+    stopCurrentAudio();
+    stopTutorVoice();
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (_) {}
+    }
+    if (mainRecognitionRef.current) {
+      try { mainRecognitionRef.current.stop(); } catch (_) {}
+    }
+    if (itemRecognitionRef.current) {
+      try { itemRecognitionRef.current.stop(); } catch (_) {}
+    }
+  }, []);
+
+  const handleCancelAndReturnToDashboard = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    cleanupAllLessonActivity();
+    toast('Creación de clase cancelada', { icon: '⏹️' });
+    router.replace('/dashboard');
+  };
+
+  // 🛑 Silence any dangling speech immediately on mount, and kill speech on reload/unload
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (_) {}
+    }
+    stopTutorVoice();
+
+    const handleUnload = () => {
+      cleanupAllLessonActivity();
+    };
+
+    window.addEventListener('beforeunload', handleUnload, { capture: true });
+    window.addEventListener('pagehide', handleUnload, { capture: true });
+
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload, { capture: true });
+      window.removeEventListener('pagehide', handleUnload, { capture: true });
+      cleanupAllLessonActivity();
+    };
+  }, [cleanupAllLessonActivity]);
+
   const hasFetchedRef = useRef(false);
 
   // 1. Fetch or Generate Lesson Script + Pre-generate Slide 0 completely before revealing UI
@@ -3448,6 +3525,8 @@ export default function LessonPage() {
     async function loadOrCreateLesson() {
       if (hasFetchedRef.current) return;
       hasFetchedRef.current = true;
+
+      loadAbortControllerRef.current = new AbortController();
 
       setLoadingLesson(true);
       setLoadingStage('Diseñando guion didáctico y plan pedagógico...');
@@ -3463,7 +3542,9 @@ export default function LessonPage() {
 
         if (lessonId && lessonId !== 'new' && !lessonId.startsWith('a1') && !lessonId.startsWith('a2') && !lessonId.startsWith('b1') && !lessonId.startsWith('b2')) {
           try {
+            if (isCancelledRef.current) return;
             const existing = await api.getLesson(lessonId);
+            if (isCancelledRef.current) return;
             const isTopicMismatch = Boolean(
               topicParam &&
               existing?.topic &&
@@ -3472,10 +3553,10 @@ export default function LessonPage() {
 
             if (existing && existing.script && existing.script.phases && !isTopicMismatch) {
               data = {
-                id: existing.id || lessonId,
-                title: existing.topic || topicParam,
-                sublevel: existing.sublevel || sublevelParam,
-                phases: existing.script.phases || [],
+                 id: existing.id || lessonId,
+                 title: existing.topic || topicParam,
+                 sublevel: existing.sublevel || sublevelParam,
+                 phases: existing.script.phases || [],
               };
             }
           } catch (e) {
@@ -3483,9 +3564,12 @@ export default function LessonPage() {
           }
         }
 
+        if (isCancelledRef.current) return;
+
         if (!data) {
           try {
-            const genRes = await api.generateAdaptiveLesson(sublevelParam, classIndexParam, topicParam);
+            const genRes = await api.generateAdaptiveLesson(sublevelParam, classIndexParam, topicParam, loadAbortControllerRef.current?.signal);
+            if (isCancelledRef.current) return;
             data = {
               id: genRes.lesson_id || lessonId,
               title: topicParam,
@@ -3499,12 +3583,16 @@ export default function LessonPage() {
               const newUrl = `/lesson/${genRes.lesson_id}?topic=${encodeURIComponent(topicParam)}&sublevel=${encodeURIComponent(sublevelParam)}&class_index=${classIndexParam}`;
               window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
             }
-          } catch (genErr) {
+          } catch (genErr: any) {
+            if (isCancelledRef.current || genErr?.name === 'AbortError') return;
             console.warn('generateAdaptiveLesson failed, activating rich offline lesson fallback:', genErr);
           }
         }
 
+        if (isCancelledRef.current) return;
+
         if (!data || !data.phases || data.phases.length === 0) {
+          if (isCancelledRef.current) return;
           data = buildFrontendOfflineLesson(topicParam || 'English Practice', sublevelParam || 'A1.1', lessonId || `fallback-${Date.now()}`);
         }
 
@@ -3977,6 +4065,7 @@ export default function LessonPage() {
           data.phases = cleanExplanationPhases;
         }
 
+        if (isCancelledRef.current) return;
         setLesson(data);
 
         // 🎨 Pre-generate & preload Phase 0's image with MiniMax image-01 so the lesson NEVER starts without it
@@ -3984,9 +4073,13 @@ export default function LessonPage() {
         const initialImageUrl = await fetchPhaseImage(0, topicParam, data.phases[0]);
         console.log('🎨 Phase 0 MiniMax image ready:', initialImageUrl);
 
+        if (isCancelledRef.current) return;
+
         // Preload image in browser before revealing UI so it appears immediately with 0 delay
         setLoadingStage('Precargando pizarra interactiva...');
         await preloadImage(initialImageUrl, 5000).catch(() => {});
+
+        if (isCancelledRef.current) return;
 
         setImageLoading(false);
         setLoadingLesson(false);
@@ -3994,8 +4087,10 @@ export default function LessonPage() {
         // 🚀 NON-BLOCKING BACKGROUND WORKER: Sequentially pre-generate remaining slide images with MiniMax
         (async () => {
           for (let i = 1; i < data.phases.length; i++) {
+            if (isCancelledRef.current) return;
             try {
               await new Promise(r => setTimeout(r, 1200));
+              if (isCancelledRef.current) return;
               await fetchPhaseImage(i, topicParam, data.phases[i]);
             } catch (err: any) {
               console.warn(`Background image generation for slide ${i} failed:`, err);
@@ -4004,6 +4099,7 @@ export default function LessonPage() {
         })();
 
       } catch (err: any) {
+        if (isCancelledRef.current || err?.name === 'AbortError') return;
         console.error('Failed to load lesson:', err);
         toast.error('Error al conectar con el servidor.');
         setLoadingLesson(false);
@@ -4335,8 +4431,6 @@ export default function LessonPage() {
   };
 
   // 3b. Main Task Voice Recording (Challenge / Exercise Microphone)
-  const mainRecognitionRef = useRef<any>(null);
-
   const startVoiceRecording = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -4768,9 +4862,9 @@ export default function LessonPage() {
   if (loadingLesson) {
     return (
       <div className="min-h-screen bg-brand-dark flex flex-col items-center justify-center text-white p-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(108,99,255,0.15),_transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(108,99,255,0.15),_transparent_70%)] pointer-events-none" />
         <div className="relative mb-6">
-          <div className="w-20 h-20 rounded-full bg-brand-accent/20 border-2 border-brand-accent flex items-center justify-center animate-ping absolute inset-0" />
+          <div className="w-20 h-20 rounded-full bg-brand-accent/20 border-2 border-brand-accent flex items-center justify-center animate-ping absolute inset-0 pointer-events-none" />
           <div className="w-20 h-20 rounded-full bg-brand-surface border-2 border-brand-cyan flex items-center justify-center relative z-10 shadow-xl shadow-brand-cyan/20">
             <Sparkles className="w-9 h-9 text-brand-cyan animate-pulse" />
           </div>
@@ -4782,13 +4876,14 @@ export default function LessonPage() {
         <p className="text-brand-text-secondary text-xs max-w-sm text-center leading-relaxed mb-6">
           Lección adaptativa para <strong className="text-white">{topicParam}</strong> ({sublevelParam}).
         </p>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm border border-white/20 transition-all shadow-lg hover:scale-105"
+        <button
+          type="button"
+          onClick={handleCancelAndReturnToDashboard}
+          className="relative z-20 cursor-pointer pointer-events-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm border border-white/20 transition-all shadow-lg hover:scale-105 active:scale-95"
         >
           <ArrowLeft size={16} />
           <span>Volver al Dashboard</span>
-        </Link>
+        </button>
       </div>
     );
   }
@@ -5132,7 +5227,8 @@ export default function LessonPage() {
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <Link
               href="/dashboard"
-              className="flex items-center gap-1.5 text-brand-text-secondary hover:text-white transition-colors text-xs sm:text-sm font-semibold flex-shrink-0 group"
+              onClick={() => cleanupAllLessonActivity()}
+              className="flex items-center gap-1.5 text-brand-text-secondary hover:text-white transition-colors text-xs sm:text-sm font-semibold flex-shrink-0 group cursor-pointer"
               title="Volver al Mapa"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />

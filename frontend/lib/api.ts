@@ -27,6 +27,9 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 1
     });
   } catch (err: any) {
     clearTimeout(timeoutId);
+    if (options.signal?.aborted || err?.name === 'AbortError') {
+      throw err;
+    }
     if (retries > 0) {
       await new Promise((r) => setTimeout(r, 2000));
       return fetchWithAuth(url, options, retries - 1);
@@ -146,10 +149,11 @@ export const api = {
   },
 
   // ─── Adaptive Curriculum & Phonetics ─────────────
-  generateAdaptiveLesson: (sublevel: string, class_index = 1, topic?: string) =>
+  generateAdaptiveLesson: (sublevel: string, class_index = 1, topic?: string, signal?: AbortSignal) =>
     fetchWithAuth('/lesson/generate-adaptive', {
       method: 'POST',
       body: JSON.stringify({ sublevel, class_index, topic }),
+      signal,
     }),
 
   getPhoneticBoard: () => fetchWithAuth('/phonetics/board'),
@@ -333,6 +337,7 @@ export function setSavedPreferredVoice(voiceId: string): void {
 
 // Global audio handle & state for linear serialization
 let activeAudioElement: HTMLAudioElement | null = null;
+let activeSpeechAdapter: { pause: () => void } | null = null;
 let currentResolveHandler: (() => void) | null = null;
 let cachedVoices: SpeechSynthesisVoice[] = [];
 let voicesLoadedPromise: Promise<SpeechSynthesisVoice[]> | null = null;
@@ -465,6 +470,12 @@ export function stopTutorVoice() {
     activeAudioElement = null;
   }
   detachAudioElement(null);
+  if (activeSpeechAdapter) {
+    try {
+      activeSpeechAdapter.pause();
+    } catch (_) {}
+    activeSpeechAdapter = null;
+  }
   if (typeof window !== 'undefined' && window.speechSynthesis) {
     try {
       window.speechSynthesis.cancel();
@@ -548,12 +559,14 @@ function createBrowserSpeechAudioAdapter(text: string, voiceId?: string) {
           if (bestVoice) utterance.voice = bestVoice;
 
           utterance.onend = () => {
+            if (activeSpeechAdapter === adapter) activeSpeechAdapter = null;
             if (timer) clearInterval(timer);
             adapter.currentTime = adapter.duration;
             adapter.ended = true;
             adapter.onended?.();
           };
           utterance.onerror = () => {
+            if (activeSpeechAdapter === adapter) activeSpeechAdapter = null;
             if (timer) clearInterval(timer);
             adapter.ended = true;
             adapter.onerror?.();
@@ -573,10 +586,12 @@ function createBrowserSpeechAudioAdapter(text: string, voiceId?: string) {
             }
           }, 50);
         } catch (_) {
+          if (activeSpeechAdapter === adapter) activeSpeechAdapter = null;
           adapter.ended = true;
           adapter.onended?.();
         }
       } else {
+        if (activeSpeechAdapter === adapter) activeSpeechAdapter = null;
         adapter.ended = true;
         adapter.onended?.();
       }
@@ -584,6 +599,7 @@ function createBrowserSpeechAudioAdapter(text: string, voiceId?: string) {
     pause: () => {
       isPaused = true;
       adapter.paused = true;
+      if (activeSpeechAdapter === adapter) activeSpeechAdapter = null;
       if (timer) clearInterval(timer);
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         try {
@@ -593,8 +609,41 @@ function createBrowserSpeechAudioAdapter(text: string, voiceId?: string) {
     }
   };
 
+  activeSpeechAdapter = adapter;
   adapter.play();
   return adapter;
+}
+
+// ─── Global Silence Helpers & Listeners ──────────────────────────────────────
+export function cancelAllSpeechAndAudio() {
+  stopTutorVoice();
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch (_) {}
+  }
+}
+
+if (typeof window !== 'undefined') {
+  try {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  } catch (_) {}
+
+  const handleGlobalSilence = () => {
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    } catch (_) {}
+    try {
+      stopTutorVoice();
+    } catch (_) {}
+  };
+
+  window.addEventListener('beforeunload', handleGlobalSilence, { capture: true });
+  window.addEventListener('pagehide', handleGlobalSilence, { capture: true });
 }
 
 // Standard playTTS (immediate audio start for Tutor speech with preferred voice)

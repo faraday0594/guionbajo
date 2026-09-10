@@ -1087,16 +1087,45 @@ const RELATIVE_CLAUSES_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0
 </svg>`;
 
 export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
-  if (phase?.diagram_svg && typeof phase.diagram_svg === 'string' && phase.diagram_svg.includes('<svg')) {
-    return phase.diagram_svg;
-  }
   const phaseNum = phase?.phase_number || phase?.phase_index || 1;
   if (phaseNum > 4) return null;
 
   const lowTop = (topic || '').toLowerCase();
   const pName = String(phase?.phase_name || '').toLowerCase();
   const pBoard = typeof phase?.board_content === 'string' ? phase.board_content.toLowerCase() : '';
-  const combined = `${lowTop} ${pName} ${pBoard}`;
+  const pSpeech = typeof phase?.tutor_says === 'string'
+    ? phase.tutor_says.toLowerCase()
+    : (typeof phase?.tutor_says?.text === 'string' ? phase.tutor_says.text.toLowerCase() : '');
+  const combined = `${lowTop} ${pName} ${pBoard} ${pSpeech}`;
+
+  // 0. Questions & Negatives (Do / Does, don't / doesn't, El reflector DO/DOES) - Priority check
+  const isQn =
+    combined.includes('questions & negatives') ||
+    combined.includes('questions and negatives') ||
+    combined.includes('do / does') ||
+    combined.includes('do/does') ||
+    combined.includes("don't / doesn't") ||
+    combined.includes("don't") ||
+    combined.includes("doesn't") ||
+    combined.includes('do and does') ||
+    combined.includes('reflector') ||
+    combined.includes('preguntas') ||
+    combined.includes('negación') ||
+    combined.includes('negacion') ||
+    combined.includes('negativas') ||
+    (combined.includes('negative') && combined.includes('question')) ||
+    (combined.includes('auxiliar') && (combined.includes('do') || combined.includes('does')));
+
+  if (isQn) {
+    return DO_DOES_QUESTIONS_NEGATIVES_SVG;
+  }
+
+  // If cached diagram_svg exists and is valid (not mismatched third-person rule on a question slide)
+  if (phase?.diagram_svg && typeof phase.diagram_svg === 'string' && phase.diagram_svg.includes('<svg')) {
+    if (!phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || (!isQn && !combined.includes('reflector') && !combined.includes('do/does'))) {
+      return phase.diagram_svg;
+    }
+  }
 
   // 0. Modals of Deduction & Probability (Certainty Scale)
   if (
@@ -1163,20 +1192,7 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return THERE_IS_THERE_ARE_SVG;
   }
 
-  // 5. Questions & Negatives (Do / Does, don't / doesn't)
-  if (
-    combined.includes('questions & negatives') ||
-    combined.includes('questions and negatives') ||
-    combined.includes('do / does') ||
-    combined.includes("don't / doesn't") ||
-    combined.includes('do and does') ||
-    (combined.includes('negative') && combined.includes('question')) ||
-    (combined.includes('auxiliar') && (combined.includes('do') || combined.includes('does')))
-  ) {
-    return DO_DOES_QUESTIONS_NEGATIVES_SVG;
-  }
-
-  // 6. Past Continuous & Interrupted Actions
+  // 5. Past Continuous & Interrupted Actions
   if (
     combined.includes('past continuous') ||
     combined.includes('interrupted') ||
@@ -1187,12 +1203,15 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return PAST_CONTINUOUS_TIMELINE_SVG;
   }
 
-  // 7. Third-Person Singular Verb Rules (-s / -es / -ies) for Daily Routines (Affirmative Only)
+  // 6. Third-Person Singular Verb Rules (-s / -es / -ies) for Daily Routines (Affirmative Only)
   if (
+    !isQn &&
     !combined.includes('question') &&
     !combined.includes('negative') &&
     !combined.includes('do / does') &&
+    !combined.includes('do/does') &&
     !combined.includes("don't") &&
+    !combined.includes('reflector') &&
     (combined.includes('third person') ||
      combined.includes('tercera persona') ||
      combined.includes('la magia de la -s') ||
@@ -1432,6 +1451,13 @@ export function getPhaseVoiceChunks(phase: any, topic: string): VoiceChunk[] {
   const hasGrammar = Boolean(phase?.grammar_structure || phase?.key_structure);
   const hasDiagram = Boolean(phase?.diagram_svg);
   const hasPhonetics = Boolean(phase?.phonetic_focus || phase?.is_phonetic_bonus);
+  const hasExamples = Boolean(
+    (phase?.examples && phase.examples.length > 0) ||
+    (phase?.sample_sentences && phase.sample_sentences.length > 0) ||
+    (phase?.target_audio_items && phase.target_audio_items.length > 0) ||
+    (phase?.key_sentences && phase.key_sentences.length > 0) ||
+    (phase?.board_content && typeof phase.board_content === 'string' && phase.board_content.toLowerCase().includes('ejemplo'))
+  );
 
   const chunks: VoiceChunk[] = [];
 
@@ -1469,10 +1495,16 @@ export function getPhaseVoiceChunks(phase: any, topic: string): VoiceChunk[] {
     });
   }
 
-  // Chunk 3: Board Concepts / Examples
-  if (remaining.length > 0 && (!hasExercises || remaining.length >= 2)) {
-    const chunk3Speech = hasExercises && remaining.length >= 2 ? remaining[0] : remaining.join(' ');
-    remaining = hasExercises && remaining.length >= 2 ? remaining.slice(1) : [];
+  // Chunk 3: Board Concepts / Examples (Ensure examples always get dedicated chunk if present)
+  if (remaining.length > 0 || hasExamples) {
+    let chunk3Speech = 'Observa los ejemplos y patrones en la pizarra para fijar la estructura.';
+    if (remaining.length > 0 && (!hasExercises || remaining.length >= 2)) {
+      chunk3Speech = hasExercises && remaining.length >= 2 ? remaining[0] : remaining.join(' ');
+      remaining = hasExercises && remaining.length >= 2 ? remaining.slice(1) : [];
+    } else if (remaining.length > 0) {
+      chunk3Speech = remaining[0];
+      remaining = remaining.slice(1);
+    }
 
     chunks.push({
       chunk_id: `chunk-${chunks.length + 1}`,
@@ -4034,20 +4066,17 @@ export default function LessonPage() {
     if (!chunk || !chunk.tutor_says) return;
 
     setCurrentChunkIdx(chunkIndex);
-    setActiveStepIdx(chunkIndex);
-    setRevealedStepCount(prev => Math.max(prev, chunkIndex + 1));
-    setRevealedTargets(prev => {
-      const next = new Set(prev);
-      next.add(chunk.reveal_target);
-      if (chunk.reveal_target === 'grammar') next.add('board_concepts');
-      if (chunkIndex > 0) next.add('board_concepts');
-      return next;
-    });
-
     setCurrentSpeakingText(chunk.tutor_says);
     stopCurrentAudio();
     const thisSessionId = audioSessionIdRef.current;
     setAudioProgress(0);
+
+    // If chunkIndex is 0 (initial image reveal), set revealed count to 1 immediately so image is visible
+    if (chunkIndex === 0) {
+      setActiveStepIdx(0);
+      setRevealedStepCount(1);
+      setRevealedTargets(new Set(['image']));
+    }
 
     setTutorState('thinking');
     try {
@@ -4059,6 +4088,17 @@ export default function LessonPage() {
 
       currentAudioRef.current = audio;
       setTutorState('speaking');
+
+      // 🎯 Synchronize element reveal to the EXACT moment speech begins:
+      setActiveStepIdx(chunkIndex);
+      setRevealedStepCount(prev => Math.max(prev, chunkIndex + 1));
+      setRevealedTargets(prev => {
+        const next = new Set(prev);
+        next.add(chunk.reveal_target);
+        if (chunk.reveal_target === 'grammar') next.add('board_concepts');
+        if (chunkIndex > 0) next.add('board_concepts');
+        return next;
+      });
 
       if (audioTimerRef.current) clearInterval(audioTimerRef.current);
       audioTimerRef.current = setInterval(() => {

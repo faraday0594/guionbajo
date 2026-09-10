@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Volume2,
@@ -256,23 +256,53 @@ export default function TimelineVisualRenderer({
   const isHookOnly = timeline.length === 1;
   const isChalk = theme === 'chalk';
 
+  // Animation state for the hero image: starts centered large on step 0, then docks to the left
+  const [isHeroCentered, setIsHeroCentered] = useState<boolean>(() => {
+    return !isFullBoardRevealed && revealedStepCount <= 1 && activeStepIdx === 0 && !isHookOnly;
+  });
+
+  useEffect(() => {
+    if (isFullBoardRevealed || revealedStepCount > 1 || activeStepIdx > 0 || isHookOnly) {
+      setIsHeroCentered(false);
+      return;
+    }
+
+    // Step 0: start centered large, then after 2.4s glide smoothly to docked position
+    setIsHeroCentered(true);
+    const timer = setTimeout(() => {
+      setIsHeroCentered(false);
+    }, 2400);
+
+    return () => clearTimeout(timer);
+  }, [activeStepIdx, revealedStepCount, isFullBoardRevealed, imageUrl, isHookOnly]);
+
+  const isStep2Revealed = Boolean(isFullBoardRevealed || revealedStepCount >= 2 || activeStepIdx >= 1);
+
   // Extract non-image steps that have been revealed so far
   const revealedRightSteps = timeline.slice(1, isFullBoardRevealed ? timeline.length : revealedStepCount);
 
   return (
     <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       {/* ═══════════════════════════════════════════════════════════════════════
-          🖼️ PERSISTENT HERO IMAGE (Centered on Hook; Left-docked on Concepts)
+          🖼️ PERSISTENT HERO IMAGE (Centered on Hook / Step 1; Left-docked on Concepts)
           ═══════════════════════════════════════════════════════════════════════ */}
       <div
-        className={`w-full transition-all duration-500 ${
-          isHookOnly
-            ? 'lg:col-span-12 max-w-2xl mx-auto'
+        className={`w-full transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          isHookOnly || isHeroCentered
+            ? 'lg:col-span-12 max-w-2xl sm:max-w-3xl mx-auto flex flex-col gap-3'
             : 'lg:col-span-5 flex flex-col gap-3 lg:sticky lg:top-4'
         }`}
       >
-        <div
-          className={`relative rounded-3xl overflow-hidden shadow-2xl border transition-all duration-300 ${
+        <motion.div
+          layout
+          initial={{ x: -100, opacity: 0, scale: 0.88 }}
+          animate={{ x: 0, opacity: 1, scale: 1 }}
+          transition={{
+            layout: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+            duration: 0.6,
+            ease: [0.22, 1, 0.36, 1]
+          }}
+          className={`relative rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500 ${
             activeStepIdx === 0 && isPlaying
               ? 'ring-4 ring-brand-cyan/60 shadow-[0_0_50px_rgba(0,212,255,0.4)] border-brand-cyan'
               : 'border-white/15 bg-black/40'
@@ -281,7 +311,7 @@ export default function TimelineVisualRenderer({
           {/* Top image status badge */}
           <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-lg">
             <span className={`w-2 h-2 rounded-full ${activeStepIdx === 0 && isPlaying ? 'bg-brand-cyan animate-ping' : 'bg-brand-gold'}`} />
-            <span>{isHookOnly ? '🌟 Situación Principal' : '🖼️ Contexto Visual'}</span>
+            <span>{isHookOnly ? '🌟 Situación Principal' : isHeroCentered ? '✨ Enfoque Inicial' : '🖼️ Contexto Visual'}</span>
           </div>
 
           {/* Top right quick actions */}
@@ -310,7 +340,11 @@ export default function TimelineVisualRenderer({
           </div>
 
           {/* Stable Image Display (Clean aspect ratio to prevent sudden zoom distortions) */}
-          <div className={`w-full overflow-hidden bg-black/60 flex items-center justify-center ${isHookOnly ? 'aspect-[16/10] sm:aspect-video min-h-[300px]' : 'aspect-[16/10] min-h-[220px]'}`}>
+          <div className={`w-full overflow-hidden bg-black/60 flex items-center justify-center transition-all duration-700 ${
+            isHookOnly || isHeroCentered
+              ? 'aspect-[16/10] sm:aspect-video min-h-[280px] sm:min-h-[350px]'
+              : 'aspect-[16/10] min-h-[220px]'
+          }`}>
             {imageLoading ? (
               <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
                 <div className="w-10 h-10 border-4 border-brand-cyan border-t-transparent rounded-full animate-spin shadow-lg" />
@@ -347,11 +381,16 @@ export default function TimelineVisualRenderer({
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
 
-        {/* 🌡️ FREQUENCY SCALE / CONCEPT TABLE (Under Hero Image) */}
-        {!isHookOnly && activeFrequencyScale && activeFrequencyScale.length > 0 && (
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-950/40 via-black/75 to-black/90 border border-purple-500/30 shadow-xl backdrop-blur-md space-y-3">
+        {/* 🌡️ FREQUENCY SCALE / CONCEPT TABLE (Under Hero Image - Revealed on Step 2+) */}
+        {!isHookOnly && isStep2Revealed && activeFrequencyScale && activeFrequencyScale.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="p-4 rounded-2xl bg-gradient-to-br from-purple-950/40 via-black/75 to-black/90 border border-purple-500/30 shadow-xl backdrop-blur-md space-y-3"
+          >
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/40">
@@ -418,12 +457,17 @@ export default function TimelineVisualRenderer({
                 );
               })}
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* 📊 DIDACTIC SVG DIAGRAM (Enlarged + Zoom Button - Only if no Frequency Scale) */}
-        {!isHookOnly && (!activeFrequencyScale || activeFrequencyScale.length === 0) && activeDiagramSvg && (
-          <div className="p-4 rounded-2xl bg-black/70 border border-cyan-500/30 shadow-2xl backdrop-blur-md space-y-3">
+        {/* 📊 DIDACTIC SVG DIAGRAM (Enlarged + Zoom Button - Revealed on Step 2+ Only if no Frequency Scale) */}
+        {!isHookOnly && isStep2Revealed && (!activeFrequencyScale || activeFrequencyScale.length === 0) && activeDiagramSvg && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="p-4 rounded-2xl bg-black/70 border border-cyan-500/30 shadow-2xl backdrop-blur-md space-y-3"
+          >
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
@@ -446,7 +490,7 @@ export default function TimelineVisualRenderer({
               className="w-full flex items-center justify-center overflow-hidden rounded-xl [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-h-[380px] transition-transform"
               dangerouslySetInnerHTML={{ __html: activeDiagramSvg }}
             />
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -454,8 +498,14 @@ export default function TimelineVisualRenderer({
           📖 DYNAMIC SEQUENTIAL TEACHING FEED (Appears on Chunk 2+)
           ═══════════════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
-        {!isHookOnly && (
-          <div className="lg:col-span-7 flex flex-col gap-4 w-full">
+        {!isHookOnly && isStep2Revealed && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-7 flex flex-col gap-4 w-full"
+          >
             {revealedRightSteps.map((step, idx) => {
               const currentStepNumber = step.step_index;
               const isStepActive = activeStepIdx + 1 === currentStepNumber && isPlaying;
@@ -1310,7 +1360,7 @@ export default function TimelineVisualRenderer({
                 </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

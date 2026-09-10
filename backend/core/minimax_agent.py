@@ -321,6 +321,202 @@ def clean_json_response(raw: str) -> dict:
                 raise
 
 
+DO_DOES_QUESTIONS_NEGATIVES_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgQN" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowQN" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgQN)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MAPA CONCEPTUAL: DO / DOES &amp; DON'T / DOESN'T</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Los motores auxiliares del Present Simple en Negaciones y Preguntas</text>
+
+  <!-- Left Card: NEGACIONES (don't / doesn't) -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="305" height="180" rx="12" fill="rgba(239,68,68,0.1)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#b91c1c"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. NEGACIONES: DON'T / DOESN'T</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• I / You / We / They ➔ <tspan fill="#f87171" font-weight="bold">don't</tspan> + Verbo Base</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#f87171" font-weight="bold">don't work</tspan> on Sundays."</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">• He / She / It ➔ <tspan fill="#f87171" font-weight="bold">doesn't</tspan> + Verbo Base</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"She <tspan fill="#f87171" font-weight="bold">doesn't work</tspan> here." <tspan fill="#94a3b8">(¡Sin -s!)</tspan></text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">❌ Nunca digas: "She doesn't works"</text>
+  </g>
+
+  <!-- Right Card: PREGUNTAS (Do / Does) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="305" height="180" rx="12" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. PREGUNTAS: DO / DOES ?</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• <tspan fill="#38bdf8" font-weight="bold">Do</tspan> + you / they + Verbo Base ?</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"<tspan fill="#38bdf8" font-weight="bold">Do you live</tspan> in Spain?"</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">• <tspan fill="#c084fc" font-weight="bold">Does</tspan> + he / she / it + Verbo Base ?</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"<tspan fill="#c084fc" font-weight="bold">Does she work</tspan> here?" <tspan fill="#94a3b8">(¡Sin -s!)</tspan></text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#7dd3fc">Respuestas: "Yes, I do" / "No, she doesn't"</text>
+  </g>
+
+  <!-- Bottom Golden Rule Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="80" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="28" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      💡 REGLA DE ORO: DO / DOES ABSORBEN LA CONJUGACIÓN
+    </text>
+    <text x="315" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#e2e8f0">
+      En preguntas y negaciones, el verbo principal va <tspan fill="#34d399" font-weight="bold">SIEMPRE en forma base</tspan> (sin -s / sin -es).
+    </text>
+  </g>
+</svg>"""
+
+SECOND_CONDITIONAL_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgCond" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowCond" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgCond)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">SECOND CONDITIONAL: LA PUERTA A MUNDOS HIPOTÉTICOS</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Situación Irreal en el Presente / Futuro Imaginario (Condición ➔ Resultado)</text>
+
+  <!-- Left Card: REALITY / HYPOTHETICAL CONDITION -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. IF CLAUSE (CONDICIÓN HIPOTÉTICA)</text>
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• If + Sujeto + Past Simple:</text>
+    <text x="30" y="92" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"If I <tspan fill="#38bdf8" font-weight="bold">won</tspan> the lottery..."</text>
+    <text x="30" y="112" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"If she <tspan fill="#38bdf8" font-weight="bold">were</tspan> here..."</text>
+    <text x="20" y="142" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#94a3b8">🔑 El pasado actúa como distancia irreal:</text>
+    <text x="30" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">• No ocurrió en el pasado; es un escenario imaginario hoy.</text>
+  </g>
+
+  <!-- Right Card: IMAGINARY RESULT (Main Clause) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(168,85,247,0.10)" stroke="#a855f7" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#7e22ce"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. MAIN CLAUSE (RESULTADO IMAGINARIO)</text>
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">• Sujeto + WOULD / COULD + Verbo Base:</text>
+    <text x="30" y="92" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"...I <tspan fill="#c084fc" font-weight="bold">would travel</tspan> the world."</text>
+    <text x="30" y="112" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"...she <tspan fill="#c084fc" font-weight="bold">could help</tspan> us."</text>
+    <text x="20" y="142" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#d8b4fe">💡 Consecuencia lógica imaginaria:</text>
+    <text x="30" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">• 'Would' crea el resultado hipotético del dilema.</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      FÓRMULA NUCLEAR: <tspan fill="#38bdf8">[ If + Past Simple ]</tspan> + <tspan fill="#f59e0b">,</tspan> + <tspan fill="#c084fc">[ would / could + Verbo Base ]</tspan>
+    </text>
+    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      "If I <tspan fill="#38bdf8" font-weight="bold">had</tspan> more free time, I <tspan fill="#c084fc" font-weight="bold">would learn</tspan> French."
+    </text>
+    <text x="315" y="68" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">
+      Inversión sin coma: "I would learn French <tspan fill="#38bdf8">if I had</tspan> more free time."
+    </text>
+  </g>
+</svg>"""
+
+MODALS_OF_DEDUCTION_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgMod" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowMod" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgMod)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MODALS OF DEDUCTION: ESCALA DE CERTEZA LÓGICA</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Nivel de evidencia y convicción del hablante (Certeza Absoluta ➔ Imposibilidad)</text>
+
+  <g transform="translate(30, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(16,185,129,0.12)" stroke="#10b981" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#059669"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">MUST (~95% Certeza)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#34d399">Lógica casi segura:</text>
+    <text x="15" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"She <tspan fill="#34d399" font-weight="bold">must be</tspan> tired."</text>
+    <text x="15" y="108" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">(Trabajó 12 horas)</text>
+    <text x="15" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"He <tspan fill="#34d399" font-weight="bold">must have left</tspan>."</text>
+    <text x="100" y="165" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#6ee7b7">Deducción afirmativa</text>
+  </g>
+
+  <g transform="translate(250, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#d97706"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">MIGHT / COULD (~50%)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#fbbf24">Posibilidad abierta:</text>
+    <text x="15" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"It <tspan fill="#fbbf24" font-weight="bold">might rain</tspan> later."</text>
+    <text x="15" y="108" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">(Hay nubes grises)</text>
+    <text x="15" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"They <tspan fill="#fbbf24" font-weight="bold">could have lost</tspan>."</text>
+    <text x="100" y="165" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#fde68a">No hay certeza total</text>
+  </g>
+
+  <g transform="translate(470, 75)">
+    <rect x="0" y="0" width="200" height="180" rx="12" fill="rgba(239,68,68,0.12)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="10" y="12" width="180" height="26" rx="6" fill="#dc2626"/>
+    <text x="100" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">CAN'T (~0% Imposible)</text>
+    <text x="15" y="65" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#f87171">Lógicamente imposible:</text>
+    <text x="15" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"It <tspan fill="#f87171" font-weight="bold">can't be</tspan> true!"</text>
+    <text x="15" y="108" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">(Es contradictorio)</text>
+    <text x="15" y="132" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"She <tspan fill="#f87171" font-weight="bold">can't have said</tspan> that."</text>
+    <text x="100" y="165" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#fca5a5">Deducción negativa</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(30, 275)">
+    <rect x="0" y="0" width="640" height="80" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="320" y="28" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      PASADO: <tspan fill="#38bdf8">[ Sujeto ]</tspan> + <tspan fill="#fbbf24">[ must / might / can't ]</tspan> + <tspan fill="#34d399">[ HAVE + V3 (Participio) ]</tspan>
+    </text>
+    <text x="320" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#e2e8f0">
+      Ejemplo: "She <tspan fill="#34d399" font-weight="bold">must have left</tspan> her keys at home." (Conclusión lógica sobre el pasado)
+    </text>
+  </g>
+</svg>"""
+
+RELATIVE_CLAUSES_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgRel" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowRel" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgRel)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">RELATIVE CLAUSES: EL PUENTE CONECTOR DE ORACIONES</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Fusión de 2 oraciones en 1 sola sin repetir el sujeto (Who / Which / That)</text>
+
+  <!-- Left Box: Sentences 1 & 2 -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="280" height="185" rx="12" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="15" y="15" width="250" height="28" rx="6" fill="#b91c1c"/>
+    <text x="140" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">ORACIONES SEPARADAS (REPETITIVO)</text>
+    <text x="15" y="75" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">1. "I met a <tspan fill="#38bdf8" font-weight="bold">woman</tspan>."</text>
+    <text x="15" y="105" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">2. "<tspan fill="#ef4444" font-weight="bold">She</tspan> can speak six languages."</text>
+    <text x="15" y="145" font-family="system-ui, sans-serif" font-size="11" fill="#fca5a5">❌ Problema:</text>
+    <text x="15" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">El pronombre 'She' repite a 'woman'.</text>
+  </g>
+
+  <!-- Right Box: Merged Sentence -->
+  <g transform="translate(385, 75)">
+    <rect x="0" y="0" width="280" height="185" rx="12" fill="rgba(168,85,247,0.10)" stroke="#a855f7" stroke-width="1.5"/>
+    <rect x="15" y="15" width="250" height="28" rx="6" fill="#7e22ce"/>
+    <text x="140" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">ORACIÓN CON RELATIVE CLAUSE</text>
+    <text x="15" y="75" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#34d399">✓ Fusión Fluida con WHO / THAT:</text>
+    <text x="15" y="100" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">"I met a <tspan fill="#38bdf8" font-weight="bold">woman</tspan> <tspan fill="#34d399" font-weight="bold">WHO</tspan> speaks six languages."</text>
+    <text x="15" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">• <tspan fill="#38bdf8" font-weight="bold">WHO</tspan> para personas</text>
+    <text x="15" y="158" font-family="system-ui, sans-serif" font-size="10" fill="#fbbf24">WHICH para cosas / objetos</text>
+    <text x="15" y="175" font-family="system-ui, sans-serif" font-size="10" fill="#34d399">• <tspan fill="#34d399" font-weight="bold">THAT</tspan> para ambos en estilo informal</text>
+  </g>
+
+  <!-- Bottom Formula Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      FÓRMULA: <tspan fill="#38bdf8">[ Sustantivo / Antecedente ]</tspan> + <tspan fill="#34d399">[ who / which / that ]</tspan> + <tspan fill="#c084fc">[ Cláusula Relativa ]</tspan>
+    </text>
+    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Ejemplo: "The <tspan fill="#38bdf8">hotel</tspan> <tspan fill="#34d399">which</tspan> <tspan fill="#c084fc">we booked</tspan> was near the beach."
+    </text>
+  </g>
+</svg>"""
+
+
 class TutorAgent:
     """
     MiniMax M3 powered AI Tutor Agent.
@@ -476,23 +672,33 @@ class TutorAgent:
         """Resolves or generates a rich didactic vector SVG diagram for temporal/frequency/spatial topics."""
         combined_text = f"{topic} {p.get('phase_name', '')} {p.get('board_content', '')} {p.get('tutor_says', '')}".lower()
         low_top = topic.lower()
-        is_pp = "present perfect" in low_top or "perfect vs past" in low_top
-        is_third_person = any(w in combined_text for w in ["third person", "tercera persona", "-s", "-es", "-ies", "he/she/it", "la magia de la -s", "works", "watches", "studies"])
-        is_qn = any(w in low_top for w in ["questions & negatives", "questions and negatives", "do / does", "don't / doesn't", "do and does", "auxiliares do y does"])
+        is_pp = "present perfect" in low_top or "perfect vs past" in low_top or "present perfect" in combined_text
+        
+        # 1. Questions & Negatives detection (Do/Does, don't/doesn't, preguntas, negaciones, reflector)
+        is_qn = any(w in combined_text for w in [
+            "questions & negatives", "questions and negatives", "do / does", "do/does", 
+            "don't / doesn't", "don't/doesn't", "do and does", "reflector", "preguntas", 
+            "pregunta", "negaciones", "negación", "auxiliar do", "auxiliar does", 
+            "auxiliares do", "auxiliares do y does", "does he", "does she", "do you", 
+            "don't work", "doesn't work", "do or does", "do y does", "el reflector do/does",
+            "el reflector do / does"
+        ])
+        
+        # 2. Third person singular affirmative (ONLY when NOT questions/negatives)
+        is_third_person = not is_qn and any(w in combined_text for w in [
+            "third person", "tercera persona", "-s", "-es", "-ies", "la magia de la -s", "terminación -s"
+        ]) and any(w in combined_text for w in ["works", "watches", "studies", "regla general", "lives", "sleeps", "drinks", "affirmative", "afirmativ"])
         
         diag = p.get("diagram_svg")
-        if (is_qn or is_pp) and diag and ("REGLAS DE TERCERA PERSONA" in str(diag) or "FREQUENCY ADVERBS" in str(diag) or "THERE IS" in str(diag)):
-            diag = None
-
         if diag and isinstance(diag, str):
             raw_svg = diag.strip()
             raw_svg = re.sub(r'<think>.*?</think>', '', raw_svg, flags=re.DOTALL).strip()
-            # If the saved SVG is mismatched (e.g. Frequency Adverbs saved on third-person or routines)
-            if is_third_person and ("FREQUENCY ADVERBS" in raw_svg or "ALWAYS" in raw_svg):
-                diag = None  # Invalidate mismatched frequency diagram
-            elif is_qn and ("REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg):
+            # If the saved SVG is mismatched (e.g. Third Person rules saved on DO/DOES question/negation slide)
+            if is_qn and ("REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg or "THERE IS" in raw_svg):
+                diag = None  # Invalidate mismatched third person / frequency diagram
+            elif is_third_person and ("FREQUENCY ADVERBS" in raw_svg or "ALWAYS" in raw_svg or "DO / DOES" in raw_svg):
                 diag = None
-            elif is_pp and ("THERE IS" in raw_svg or "REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg):
+            elif is_pp and ("THERE IS" in raw_svg or "REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg or "DO / DOES" in raw_svg):
                 diag = None
             else:
                 svg_match = re.search(r'(<svg[\s\S]*?</svg>)', raw_svg, re.IGNORECASE)
@@ -505,6 +711,22 @@ class TutorAgent:
         # Only inject smart diagram on conceptual/foundation phases (phases 1, 2, 3 or 4)
         if phase_num not in (1, 2, 3, 4):
             return None
+
+        # 0. Questions & Negatives (Do / Does, don't / doesn't, reflector)
+        if is_qn:
+            return DO_DOES_QUESTIONS_NEGATIVES_SVG
+
+        # 0.1. Modals of Deduction & Probability
+        if any(w in combined_text for w in ["deduction", "modal verbs", "modals of deduction", "must / might / can", "certainty scale", "must have", "can't have"]):
+            return MODALS_OF_DEDUCTION_SVG
+
+        # 0.2. Second Conditional (Hypothetical condition & result)
+        if any(w in combined_text for w in ["second conditional", "segundo condicional", "hypothetical", "irreal", "if clause", "if i won"]):
+            return SECOND_CONDITIONAL_SVG
+
+        # 0.3. Relative Clauses (The Bridge Connector)
+        if any(w in combined_text for w in ["relative clause", "relative clauses", "cláusula relativa", "who / which / that", "who/which/that", "defining relative"]):
+            return RELATIVE_CLAUSES_SVG
 
         # 0. Present Perfect vs Past Simple (The Bridge Metaphor)
         if is_pp or any(w in combined_text for w in ["the bridge metaphor", "finished vs unfinished", "present perfect bridge", "past simple bridge"]):
@@ -3255,13 +3477,26 @@ class TutorAgent:
                 "highlight_target": highlight_type
             })
 
+        # Check if phase contains examples or target phrases
+        has_examples = bool(
+            p.get("target_audio_items") or 
+            ("•" in str(p.get("board_content") or "")) or 
+            ("ejemplo" in str(p.get("board_content") or "").lower())
+        )
+
         # ── Chunk 3: Board Concepts, Examples & Deconstruction ──
-        if remaining and (not has_task or len(remaining) >= 2):
-            chunk3_speech = remaining[0] if has_task and len(remaining) >= 2 else " ".join(remaining)
-            if has_task and len(remaining) >= 2:
+        if remaining or has_examples:
+            if remaining and (not has_task or len(remaining) >= 2):
+                chunk3_speech = remaining[0] if has_task and len(remaining) >= 2 else " ".join(remaining)
+                if has_task and len(remaining) >= 2:
+                    remaining = remaining[1:]
+                else:
+                    remaining = []
+            elif remaining:
+                chunk3_speech = remaining[0]
                 remaining = remaining[1:]
             else:
-                remaining = []
+                chunk3_speech = "Analicemos ahora los ejemplos prácticos y cómo se transforma la oración en la pizarra."
 
             chunks.append({
                 "chunk_id": f"chunk-{len(chunks)+1}",

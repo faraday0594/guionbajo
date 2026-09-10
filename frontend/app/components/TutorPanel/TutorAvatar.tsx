@@ -19,6 +19,7 @@ export interface TutorAvatarProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   audioElement?: HTMLAudioElement | null;
+  crtLabel?: string;
 }
 
 interface EmotionSegment {
@@ -117,9 +118,10 @@ export default function TutorAvatar({
   text = '',
   audioProgress = 0,
   emotion: explicitEmotion,
-  size = 'md',
+  size = 'md', // callers can use lg for hero sections
   className = '',
   audioElement,
+  crtLabel,
 }: TutorAvatarProps) {
   // El avatar está en modo speaking si el estado es speaking y el progreso no ha concluido
   const isSpeaking = state === 'speaking' && (audioProgress === undefined || audioProgress < 99);
@@ -328,6 +330,8 @@ export default function TutorAvatar({
                 className={`${styles.shutter} ${styles.shutterTop} ${
                   currentEmotion === 'angry'
                     ? `${styles.angryShutterTop} ${i === 0 ? styles.angryShutterLeft : styles.angryShutterRight}`
+                    : state === 'idle' && currentEmotion === 'neutral'
+                    ? `${styles.idleBlink} ${i === 1 ? styles.shutterRight : ''}`
                     : ''
                 }`}
               />
@@ -344,6 +348,8 @@ export default function TutorAvatar({
                       ? styles.thinkingPupil
                       : currentEmotion === 'nervous'
                       ? styles.nervousPupil
+                      : state === 'idle' && currentEmotion === 'neutral'
+                      ? styles.idleLook
                       : ''
                   }`}
                 />
@@ -402,10 +408,42 @@ export default function TutorAvatar({
 
       {/* ── Torso / Pantalla CRT abombada ── */}
       <div className={styles.robotBody}>
-        <div className={styles.crtMonitor}>
+        
+        {/* Brazos Mecánicos */}
+        {['left', 'right'].map((side) => {
+          const isLeft = side === 'left';
+          const armClass = isLeft ? styles.armLeft : styles.armRight;
+          let animClass = '';
+          if (currentEmotion === 'happy' || currentEmotion === 'victory') {
+            animClass = isLeft ? styles.armCelebrateLeft : styles.armCelebrateRight;
+          } else if (isMouthArticulating) {
+            animClass = isLeft ? styles.armSpeakingLeft : styles.armSpeakingRight;
+          }
+          return (
+            <div key={side} className={`${styles.robotArm} ${armClass} ${animClass}`}>
+              <div className={styles.armUpper} />
+              <div className={styles.armJoint} />
+              <div className={styles.armForearm} />
+            </div>
+          );
+        })}
+
+        <div className={`${styles.crtMonitor} ${styles.crtFlicker}`}>
           <div className={styles.crtScanlines} />
           <div className={styles.crtContent} style={{ color: crtColor }}>
-            {crtGlyph}
+            {state === 'speaking' ? (
+              <div className={styles.eqContainer}>
+                <div className={styles.eqBar} />
+                <div className={styles.eqBar} />
+                <div className={styles.eqBar} />
+              </div>
+            ) : state === 'thinking' ? (
+              <span className={styles.loadingDots} />
+            ) : state === 'listening' ? (
+              <span className={styles.pulseRec}>●REC</span>
+            ) : (
+              crtLabel || crtGlyph
+            )}
           </div>
         </div>
 

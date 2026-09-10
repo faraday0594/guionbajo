@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Sparkles, Brain, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
+import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 
 export default function LandingPage() {
   return (
@@ -13,7 +14,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between p-6 max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-2">
-          <Brain className="w-8 h-8 text-brand-cyan" />
+          <TutorAvatar size="sm" emotion="happy" />
           <span className="font-outfit text-2xl font-bold tracking-tight text-white">Guionbajo</span>
         </div>
         <div className="flex gap-4">
@@ -38,6 +39,15 @@ export default function LandingPage() {
             <Sparkles className="w-4 h-4 text-brand-gold" />
             <span className="text-sm font-medium text-brand-text-secondary">AI-Powered English Learning</span>
           </div>
+          
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mb-6"
+          >
+            <TutorAvatar size="lg" emotion="happy" />
+          </motion.div>
           
           <h1 className="text-5xl md:text-7xl font-outfit font-extrabold tracking-tight mb-8">
             Master English with <br className="hidden md:block" />

@@ -9,6 +9,7 @@ import { Settings, Lock, Play, CheckCircle2, Flame, Award, Loader2, Sparkles, Bo
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
+import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 
 interface Module {
   id?: string;
@@ -398,6 +399,9 @@ export default function DashboardPage() {
           <>
             {/* 🚀 Hero Next-Action CTA: 1-Click Instant Launch */}
             <div className="mb-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-brand-accent/30 via-indigo-900/40 to-brand-cyan/20 border border-brand-cyan/40 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 group">
+              <div className="flex-shrink-0 relative z-10 hidden md:block">
+                <TutorAvatar size="md" emotion="happy" />
+              </div>
               <div className="space-y-2 relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-bold uppercase tracking-wider">
                   <Sparkles size={13} className="animate-spin text-brand-cyan" />

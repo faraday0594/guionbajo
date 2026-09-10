@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
 import { setToken } from '@/lib/auth';
-import { Eye, EyeOff, Brain, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 
 const LANGUAGES = [
   { value: 'es', label: 'Español' },
@@ -128,7 +129,7 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Brain className="w-8 h-8 text-brand-cyan" />
+            <TutorAvatar size="sm" emotion="happy" />
             <span className="font-outfit text-xl font-bold text-white">Guionbajo</span>
           </div>
           <h1 className="text-2xl font-outfit font-bold text-white mb-1">Crear Cuenta</h1>

@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { sfx } from '@/lib/soundEffects';
 import { Brain, Map, ArrowRight, Sparkles, CheckCircle2, Loader2, Award, Volume2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 
 interface DiagnosisQuestion {
   id: number;
@@ -114,6 +115,10 @@ export default function OnboardingPage() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-brand-cyan/30 text-brand-cyan text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-4 h-4 text-brand-cyan animate-pulse" />
             <span>Bienvenido a Guionbajo AI</span>
+          </div>
+
+          <div className="flex justify-center mb-4">
+            <TutorAvatar size="lg" emotion="happy" />
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-outfit font-extrabold tracking-tight">
@@ -255,8 +260,8 @@ export default function OnboardingPage() {
       {/* ─── PASO 3: Nivel Asignado y Entrada al Mapa ─────────────────────────────── */}
       {step === 3 && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-6 max-w-xl mx-auto">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-500/30 to-brand-cyan/20 border border-emerald-400/50 text-emerald-400 mb-2 shadow-2xl shadow-emerald-500/20">
-            <Award className="w-12 h-12 animate-bounce" />
+          <div className="mb-2">
+            <TutorAvatar size="lg" emotion="victory" />
           </div>
 
           <div className="space-y-2">

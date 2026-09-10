@@ -1,4 +1,4 @@
-/* ══ TutorAvatar.module.css — Robot GuionBajo Retro-Futurista ════════════ */
+﻿/* â•â• TutorAvatar.module.css â€” Robot GuionBajo Retro-Futurista â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .avatarWrapper {
   position: relative;
@@ -15,7 +15,7 @@
   50%      { transform: translateY(-5px); }
 }
 
-/* ── Chorro de Vapor (Angry) ─────────────────────────────────────────── */
+/* â”€â”€ Chorro de Vapor (Angry) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .steamContainer {
   position: absolute;
   top: 10px;
@@ -49,7 +49,7 @@
   100% { transform: scale(1.5) translateY(-10px); opacity: 0.95; }
 }
 
-/* ── Cabeza del Robot ───────────────────────────────────────────────── */
+/* â”€â”€ Cabeza del Robot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .robotHead {
   position: relative;
   background: linear-gradient(145deg, #374151 0%, #1f2937 60%, #111827 100%);
@@ -60,7 +60,7 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.2);
-  transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  transition: background 0.4s, border-color 0.4s, box-shadow 0.4s;
   z-index: 10;
 }
 
@@ -68,12 +68,12 @@
   transition: none !important;
 }
 
-/* Tamaños de Cabeza */
+/* TamaÃ±os de Cabeza */
 .sizeSm .robotHead { width: 68px; height: 60px; border-radius: 12px; gap: 4px; }
 .sizeMd .robotHead { width: 100px; height: 86px; border-radius: 16px; gap: 6px; }
 .sizeLg .robotHead { width: 136px; height: 118px; border-radius: 20px; gap: 8px; }
 
-/* Inclinación de cabeza */
+/* InclinaciÃ³n de cabeza */
 .tiltThinking { transform: rotate(-7deg) translateY(-2px); }
 .tiltNervous  { transform: rotate(5deg) translateY(-1px); }
 .tiltHappy    { transform: translateY(-2px); }
@@ -119,7 +119,7 @@
   box-shadow: 0 0 3px #00D4FF;
 }
 
-/* ── Antena con Bulbo de Vacío ───────────────────────────────────────── */
+/* â”€â”€ Antena con Bulbo de VacÃ­o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .robotAntenna {
   position: absolute;
   top: -24px;
@@ -178,7 +178,7 @@
   to   { box-shadow: 0 0 16px 7px rgba(0,212,255,0.95); border-color: #fff; }
 }
 
-/* ── Ojos y Párpados Mecánicos ───────────────────────────────────────── */
+/* â”€â”€ Ojos y PÃ¡rpados MecÃ¡nicos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .robotEyes {
   display: flex;
   gap: 12px;
@@ -207,7 +207,7 @@
   width: 100%;
   background: linear-gradient(180deg, #475569, #1e293b);
   border-radius: 2px;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.35s ease;
   z-index: 3;
 }
 .shutterTop    { top: 0; height: 0%; border-bottom: 1px solid #64748b; }
@@ -227,7 +227,7 @@
   background: #00D4FF;
   border-radius: 50%;
   box-shadow: 0 0 8px 3px rgba(0,212,255,0.75);
-  transition: all 0.25s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .sizeSm .pupil { width: 8px; height: 8px; }
 .sizeMd .pupil { width: 11px; height: 11px; }
@@ -244,7 +244,7 @@
   opacity: 0.85;
 }
 
-/* ── Párpados por Emoción ── */
+/* â”€â”€ PÃ¡rpados por EmociÃ³n â”€â”€ */
 .happyShutterBottom {
   height: 48% !important;
   border-radius: 50% 50% 0 0;
@@ -288,7 +288,7 @@
   50%      { transform: scale(0.6) translate(1px, -1px); }
 }
 
-/* ── Boca: Dientes Bender / Cursor Terminal '_' ─────────────────────── */
+/* â”€â”€ Boca: Dientes Bender / Cursor Terminal '_' â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .mouthFrame {
   background: #090d14;
   border-radius: 6px;
@@ -355,7 +355,7 @@
 .sizeMd .toothBar { width: 6px; }
 .sizeLg .toothBar { width: 8px; }
 
-/* ── Torso / Pantalla CRT ───────────────────────────────────────────── */
+/* â”€â”€ Torso / Pantalla CRT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .robotBody {
   background: linear-gradient(145deg, #374151 0%, #1f2937 60%, #111827 100%);
   border: 2px solid #4b5563;
@@ -406,7 +406,7 @@
 .sizeMd .crtContent { font-size: 0.8rem; }
 .sizeLg .crtContent { font-size: 0.95rem; }
 
-/* ── Micropropulsor Magnético ───────────────────────────────────────── */
+/* â”€â”€ Micropropulsor MagnÃ©tico â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .hoverThruster {
   position: absolute;
   bottom: -8px;
@@ -447,15 +447,149 @@
   100% { transform: scaleX(1.15) scaleY(1.15); opacity: 1; }
 }
 
-/* ── Bordes de Cabeza por Emoción ───────────────────────────────────── */
-.headHappy    { border-color: #00E676 !important; box-shadow: 0 4px 22px rgba(0,230,118,0.4) !important; }
-.headThinking { border-color: #6C63FF !important; box-shadow: 0 4px 22px rgba(108,99,255,0.4) !important; }
-.headAngry    { border-color: #FF5252 !important; box-shadow: 0 4px 24px rgba(255,82,82,0.55) !important; animation: angryVibe 0.12s infinite; }
-.headNervous  { border-color: #FFB627 !important; box-shadow: 0 4px 20px rgba(255,182,39,0.4) !important; }
-.headVictory  { border-color: #FFB627 !important; box-shadow: 0 6px 28px rgba(255,182,39,0.6) !important; }
+/* â”€â”€ Bordes de Cabeza por EmociÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.headHappy    { border-color: #00E676; box-shadow: 0 4px 22px rgba(0,230,118,0.4); }
+.headThinking { border-color: #6C63FF; box-shadow: 0 4px 22px rgba(108,99,255,0.4); }
+.headAngry    { border-color: #FF5252; box-shadow: 0 4px 24px rgba(255,82,82,0.55); animation: angryVibe 0.12s infinite; }
+.headNervous  { border-color: #FFB627; box-shadow: 0 4px 20px rgba(255,182,39,0.4); }
+.headVictory  { border-color: #FFB627; box-shadow: 0 6px 28px rgba(255,182,39,0.6); }
 
 @keyframes angryVibe {
   0%, 100% { transform: translate(0, 0); }
   25%      { transform: translate(-2px, 2px); }
   75%      { transform: translate(2px, -2px); }
+}
+
+/* -- Animaciones de Inactividad (Idle) -------------------------------- */
+.idleBlink {
+  animation: idleBlink 4s infinite;
+}
+.shutterRight.idleBlink {
+  animation-delay: 0.1s; /* Ligero desfase para mayor naturalidad */
+}
+@keyframes idleBlink {
+  0%, 94%, 100% { height: 0%; }
+  97% { height: 100%; }
+}
+
+.idleLook {
+  animation: idleLookAround 8s infinite ease-in-out;
+}
+@keyframes idleLookAround {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(1px, -1px); }
+  40% { transform: translate(-1px, 1px); }
+  60% { transform: translate(2px, 0px); }
+  80% { transform: translate(-1px, -1px); }
+}
+
+/* -- Brazos Mecánicos ------------------------------------------------- */
+.robotArm {
+  position: absolute;
+  top: 15%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: top center;
+  transition: transform 0.4s ease;
+  z-index: -1;
+}
+.armLeft { left: -12px; transform: rotate(15deg); }
+.armRight { right: -12px; transform: rotate(-15deg); }
+
+.armUpper {
+  background: linear-gradient(90deg, #4b5563, #374151);
+  border: 1px solid #1f2937;
+  border-radius: 2px;
+}
+.armJoint {
+  background: #1f2937;
+  border: 1px solid #111827;
+  border-radius: 50%;
+}
+.armForearm {
+  background: linear-gradient(90deg, #374151, #1f2937);
+  border: 1px solid #111827;
+  border-radius: 0 0 4px 4px;
+}
+
+/* Tamaños de Brazos */
+.sizeSm .armLeft { left: -8px; }
+.sizeSm .armRight { right: -8px; }
+.sizeSm .armUpper { width: 4px; height: 10px; }
+.sizeSm .armJoint { width: 6px; height: 6px; }
+.sizeSm .armForearm { width: 5px; height: 12px; }
+
+.sizeMd .armUpper { width: 6px; height: 14px; }
+.sizeMd .armJoint { width: 8px; height: 8px; }
+.sizeMd .armForearm { width: 7px; height: 16px; }
+
+.sizeLg .armLeft { left: -16px; }
+.sizeLg .armRight { right: -16px; }
+.sizeLg .armUpper { width: 8px; height: 18px; }
+.sizeLg .armJoint { width: 10px; height: 10px; }
+.sizeLg .armForearm { width: 9px; height: 22px; }
+
+/* Animaciones de Brazos */
+.armSpeakingLeft { animation: armGesticulateLeft 2s infinite alternate ease-in-out; }
+.armSpeakingRight { animation: armGesticulateRight 2.3s infinite alternate ease-in-out; }
+
+@keyframes armGesticulateLeft {
+  0% { transform: rotate(15deg); }
+  100% { transform: rotate(35deg) translateY(-2px); }
+}
+@keyframes armGesticulateRight {
+  0% { transform: rotate(-15deg); }
+  100% { transform: rotate(-40deg) translateY(-3px); }
+}
+
+.armCelebrateLeft { transform: rotate(140deg) translateY(-10px) !important; }
+.armCelebrateRight { transform: rotate(-140deg) translateY(-10px) !important; }
+
+/* -- Animaciones del Monitor CRT -------------------------------------- */
+.crtFlicker {
+  animation: crtFlickerAnim 0.15s infinite alternate;
+}
+@keyframes crtFlickerAnim {
+  0% { opacity: 0.9; }
+  100% { opacity: 1; }
+}
+
+.eqContainer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  height: 60%;
+}
+.eqBar {
+  width: 4px;
+  background-color: currentColor;
+  animation: eqBounce 0.5s infinite alternate ease-in-out;
+}
+.eqBar:nth-child(2) { animation-delay: 0.15s; }
+.eqBar:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes eqBounce {
+  0% { height: 20%; }
+  100% { height: 100%; }
+}
+
+.loadingDots {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: dotsWidth 1.5s infinite steps(4, end);
+}
+@keyframes dotsWidth {
+  0% { width: 0px; }
+  100% { width: 1.5em; } 
+}
+
+.pulseRec {
+  animation: pulseRecAnim 1s infinite alternate;
+}
+@keyframes pulseRecAnim {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
 }

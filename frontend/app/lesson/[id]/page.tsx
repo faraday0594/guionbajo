@@ -44,6 +44,7 @@ import {
   Subtitles,
   Gamepad2,
   Layers,
+  Lock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -3080,6 +3081,11 @@ export default function LessonPage() {
   const [revealedTargets, setRevealedTargets] = useState<Set<string>>(new Set(['image']));
   const [selectedExerciseIdx, setSelectedExerciseIdx] = useState<number>(0);
   const [selectedChallengeOption, setSelectedChallengeOption] = useState<string | null>(null);
+  const [practiceProgress, setPracticeProgress] = useState<{
+    correctCount: number;
+    totalCount: number;
+    isUnlocked: boolean;
+  }>({ correctCount: 0, totalCount: 0, isUnlocked: false });
 
   // 🎨 Consolidated View Modes: 'board' (Pizarra Interactiva), 'timeline' (Flujo Didáctico), 'reading' (Práctica de Lectura), or 'games' (Game Arena)
   const [viewMode, setViewMode] = useState<'board' | 'timeline' | 'reading' | 'games'>('board');
@@ -4749,6 +4755,20 @@ export default function LessonPage() {
   };
 
   const handleNextSlide = async () => {
+    const currentP = lesson?.phases?.[currentPhaseIdx];
+    const isCurPractice = Boolean(currentP?.is_practice_slide || currentP?.interaction_type === 'quiz');
+
+    // 🛡️ Block advancing if 80% threshold of exercises is not yet achieved
+    if (isCurPractice && practiceProgress.totalCount > 0 && !practiceProgress.isUnlocked) {
+      const minReq = Math.ceil(practiceProgress.totalCount * 0.8);
+      sfx.playMistake();
+      toast.error(
+        `🔒 Debes resolver al menos ${minReq} de los ${practiceProgress.totalCount} ejercicios (80%) para continuar.`,
+        { id: 'practice-lock-guard', duration: 4000 }
+      );
+      return;
+    }
+
     sfx.playPop();
     stopCurrentAudio();
     stopTutorVoice();
@@ -5636,6 +5656,9 @@ export default function LessonPage() {
                         ? "Bonus de Pronunciación 🌟"
                         : "Pasar a la Práctica de Lectura 📖"
                     }
+                    onProgressChange={(correct, total, isUnlocked) => {
+                      setPracticeProgress({ correctCount: correct, totalCount: total, isUnlocked });
+                    }}
                   />
                 </motion.div>
               ) : isPhoneticBonus ? (
@@ -6087,7 +6110,16 @@ export default function LessonPage() {
                   return (
                     <button
                       key={idx}
-                      onClick={() => setCurrentPhaseIdx(idx)}
+                      onClick={() => {
+                        const isCurPractice = Boolean(lesson?.phases?.[currentPhaseIdx]?.is_practice_slide || lesson?.phases?.[currentPhaseIdx]?.interaction_type === 'quiz');
+                        if (isCurPractice && idx > currentPhaseIdx && practiceProgress.totalCount > 0 && !practiceProgress.isUnlocked) {
+                          const minReq = Math.ceil(practiceProgress.totalCount * 0.8);
+                          sfx.playMistake();
+                          toast.error(`🔒 Completa al menos el 80% de los ejercicios (${minReq} de ${practiceProgress.totalCount}) para desbloquear los siguientes slides.`);
+                          return;
+                        }
+                        setCurrentPhaseIdx(idx);
+                      }}
                       title={`Fase ${idx + 1}`}
                       className="relative overflow-hidden rounded-full transition-all duration-500 focus:outline-none group"
                       style={{
@@ -6156,17 +6188,36 @@ export default function LessonPage() {
               </button>
 
               <motion.button
+                type="button"
                 onClick={handleNextSlide}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                className="px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-brand-accent to-indigo-600 hover:from-brand-accent/90 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(108,99,255,0.4)] hover:shadow-[0_0_30px_rgba(108,99,255,0.6)] flex items-center justify-center gap-1 sm:gap-1.5"
+                whileHover={isPracticeSlide && !practiceProgress.isUnlocked ? {} : { scale: 1.04 }}
+                whileTap={isPracticeSlide && !practiceProgress.isUnlocked ? {} : { scale: 0.97 }}
+                className={`px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1 sm:gap-1.5 ${
+                  isPracticeSlide && !practiceProgress.isUnlocked
+                    ? 'bg-zinc-800 text-zinc-500 border border-zinc-700/60 cursor-not-allowed opacity-75'
+                    : 'bg-gradient-to-r from-brand-accent to-indigo-600 hover:from-brand-accent/90 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(108,99,255,0.4)] hover:shadow-[0_0_30px_rgba(108,99,255,0.6)] cursor-pointer'
+                }`}
+                title={
+                  isPracticeSlide && !practiceProgress.isUnlocked
+                    ? `Bloqueado: Requiere al menos el 80% de los ejercicios correctos`
+                    : 'Avanzar al siguiente slide'
+                }
               >
-                <span>
-                  {currentPhaseIdx < (lesson?.phases?.length || 1) - 1
-                    ? 'Siguiente →'
-                    : '📖 Lectura'}
-                </span>
-                <ChevronRight size={16} />
+                {isPracticeSlide && !practiceProgress.isUnlocked ? (
+                  <>
+                    <Lock size={14} className="text-amber-400" />
+                    <span>Bloqueado (80%)</span>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      {currentPhaseIdx < (lesson?.phases?.length || 1) - 1
+                        ? 'Siguiente →'
+                        : '📖 Lectura'}
+                    </span>
+                    <ChevronRight size={16} />
+                  </>
+                )}
               </motion.button>
             </div>
           </footer>

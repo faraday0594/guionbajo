@@ -13,7 +13,11 @@ import {
   ChevronRight,
   ChevronLeft,
   Send,
-  Square
+  Square,
+  Lock,
+  Target,
+  ArrowRight,
+  AlertCircle,
 } from 'lucide-react';
 import { playEnglishAudio, api } from '@/lib/api';
 import { sfx } from '@/lib/soundEffects';
@@ -43,6 +47,7 @@ interface InteractiveExerciseStageProps {
   onFetchExerciseImage: (prompt: string, promptKey: string) => Promise<string>;
   onNextSlide: () => void;
   nextSlideLabel?: string;
+  onProgressChange?: (correctCount: number, totalCount: number, isUnlocked: boolean) => void;
 }
 
 export default function InteractiveExerciseStage({
@@ -55,7 +60,8 @@ export default function InteractiveExerciseStage({
   generatingImages,
   onFetchExerciseImage,
   onNextSlide,
-  nextSlideLabel = "Pasar a la Práctica de Lectura 📖"
+  nextSlideLabel = "Pasar a la Práctica de Lectura 📖",
+  onProgressChange,
 }: InteractiveExerciseStageProps) {
   const [currentExIdx, setCurrentExIdx] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
@@ -352,7 +358,45 @@ export default function InteractiveExerciseStage({
     }
   };
 
+  const totalExercises = exercises.length;
+  const minRequired = Math.ceil(totalExercises * 0.8);
   const completedCount = Object.keys(evaluatedItems).filter(k => evaluatedItems[k]?.isCorrect).length;
+  const is80PercentMet = completedCount >= minRequired;
+  const isAllCompleted = completedCount === totalExercises;
+  const remainingTo80 = Math.max(0, minRequired - completedCount);
+  const remainingToAll = Math.max(0, totalExercises - completedCount);
+  const progressPercent = totalExercises > 0 ? Math.round((completedCount / totalExercises) * 100) : 0;
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+
+  useEffect(() => {
+    onProgressChange?.(completedCount, totalExercises, is80PercentMet);
+  }, [completedCount, totalExercises, is80PercentMet, onProgressChange]);
+
+  const handleNextClick = () => {
+    if (!is80PercentMet) {
+      sfx.playMistake();
+      toast.error(
+        `🔒 Práctica bloqueada: Debes resolver al menos ${remainingTo80} ejercicio${remainingTo80 > 1 ? 's' : ''} más correctamente (${minRequired} de ${totalExercises} para alcanzar el 80%).`,
+        { id: 'practice-locked-toast', duration: 4500 }
+      );
+      return;
+    }
+
+    if (!isAllCompleted) {
+      setShowIncompleteModal(true);
+      return;
+    }
+
+    onNextSlide();
+  };
+
+  const handleFocusFirstIncomplete = () => {
+    setShowIncompleteModal(false);
+    const firstIncompleteIdx = exercises.findIndex(ex => !evaluatedItems[ex.id]?.isCorrect);
+    if (firstIncompleteIdx !== -1) {
+      setCurrentExIdx(firstIncompleteIdx);
+    }
+  };
 
   // Build full spoken sentence
   const fullSentenceSpoken = currentEx.sentence
@@ -685,21 +729,123 @@ export default function InteractiveExerciseStage({
 
       {/* Bottom Footer Action Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10 relative z-10 flex-shrink-0">
-        <div className="text-xs text-white/70">
-          🎯 <strong className="text-brand-gold">Progreso:</strong> {completedCount} de {exercises.length} desafíos completados.
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="text-white/70">🎯 <strong>Progreso:</strong></span>
+            <span className={`font-bold ${is80PercentMet ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {completedCount} de {totalExercises} completados ({progressPercent}%)
+            </span>
+          </div>
+          <span className="text-zinc-500 text-[11px]">
+            {is80PercentMet ? (
+              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                <CheckCircle2 size={12} className="inline" />
+                Mínimo del 80% superado ({completedCount}/{totalExercises})
+              </span>
+            ) : (
+              <span className="text-amber-400/90 font-medium flex items-center gap-1">
+                <Lock size={12} className="inline" />
+                Requiere 80% (mín. {minRequired} de {totalExercises} correctos • faltan {remainingTo80})
+              </span>
+            )}
+          </span>
         </div>
 
         <motion.button
           type="button"
-          onClick={onNextSlide}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full sm:w-auto px-7 py-3 rounded-2xl bg-gradient-to-r from-brand-gold via-amber-400 to-brand-cyan text-black font-extrabold text-sm shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:shadow-[0_0_40px_rgba(251,191,36,0.6)] flex items-center justify-center gap-2 transition-all cursor-pointer"
+          onClick={handleNextClick}
+          whileHover={is80PercentMet ? { scale: 1.03 } : { scale: 1.01 }}
+          whileTap={is80PercentMet ? { scale: 0.97 } : {}}
+          className={`w-full sm:w-auto px-7 py-3 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2.5 transition-all shadow-lg ${
+            is80PercentMet
+              ? 'bg-gradient-to-r from-brand-gold via-amber-400 to-brand-cyan text-black shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:shadow-[0_0_40px_rgba(251,191,36,0.7)] cursor-pointer'
+              : 'bg-zinc-800/90 text-zinc-400 border border-zinc-700/60 cursor-not-allowed opacity-80'
+          }`}
+          title={
+            is80PercentMet
+              ? (isAllCompleted ? 'Práctica completada al 100%. Avanzar al siguiente paso.' : 'Avanzar al siguiente paso (80% superado).')
+              : `Bloqueado: Requiere al menos ${minRequired} de ${totalExercises} ejercicios correctos (80%)`
+          }
         >
-          <span>{nextSlideLabel}</span>
-          <ChevronRight size={18} />
+          {is80PercentMet ? (
+            <>
+              <span>{nextSlideLabel}</span>
+              <ChevronRight size={18} />
+            </>
+          ) : (
+            <>
+              <Lock size={15} className="text-amber-400 animate-pulse" />
+              <span>Bloqueado ({completedCount}/{minRequired} para 80%)</span>
+            </>
+          )}
         </motion.button>
       </div>
+
+      {/* 🌟 Confirmation Modal: When 80% is met but some exercises remain incomplete */}
+      <AnimatePresence>
+        {showIncompleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 15 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="relative w-full max-w-lg rounded-3xl bg-gradient-to-b from-[#13192f] via-[#0d1222] to-[#080c18] border border-brand-cyan/40 p-6 sm:p-8 shadow-[0_0_60px_rgba(0,212,255,0.25)] text-white space-y-5"
+            >
+              {/* Header Badge & Title */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-brand-gold/15 border border-brand-gold/30 flex items-center justify-center text-brand-gold shadow-lg shadow-brand-gold/10 flex-shrink-0">
+                  <Target size={24} className="animate-pulse" />
+                </div>
+                <div>
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold uppercase tracking-wider">
+                    🎯 Requisito del 80% superado ({completedCount}/{totalExercises})
+                  </span>
+                  <h4 className="text-lg sm:text-xl font-outfit font-extrabold text-white mt-1">
+                    ¿Deseas continuar o completar la práctica al 100%?
+                  </h4>
+                </div>
+              </div>
+
+              {/* Engaging Pedagogical Notice */}
+              <div className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-2.5 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                <p>
+                  ¡Excelente avance! Ya has resuelto correctamente <strong className="text-emerald-400 font-bold">{completedCount} de {totalExercises} ejercicios</strong> ({progressPercent}%), cumpliendo el umbral mínimo pedagógico para avanzar.
+                </p>
+                <p className="text-zinc-400">
+                  Sin embargo, aún te {remainingToAll === 1 ? 'queda' : 'quedan'} <strong className="text-brand-gold font-bold">{remainingToAll} {remainingToAll === 1 ? 'ejercicio pendiente' : 'ejercicios pendientes'}</strong>. Resolver todos los desafíos garantizará la fijación total de las estructuras gramaticales y el vocabulario en tu memoria a largo plazo.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                {/* Primary Button: Complete remaining */}
+                <button
+                  type="button"
+                  onClick={handleFocusFirstIncomplete}
+                  className="w-full sm:flex-1 px-5 py-3 rounded-2xl bg-gradient-to-r from-brand-accent via-indigo-500 to-brand-cyan hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-[0_0_25px_rgba(108,99,255,0.4)] flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Sparkles size={16} />
+                  <span>Completar práctica al 100% 🎯</span>
+                </button>
+
+                {/* Secondary Button: Proceed anyway */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowIncompleteModal(false);
+                    onNextSlide();
+                  }}
+                  className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-zinc-300 hover:text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <span>Avanzar al siguiente slide</span>
+                  <ArrowRight size={15} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

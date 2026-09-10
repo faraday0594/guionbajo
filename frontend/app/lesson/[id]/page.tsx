@@ -3087,6 +3087,15 @@ export default function LessonPage() {
     isUnlocked: boolean;
   }>({ correctCount: 0, totalCount: 0, isUnlocked: false });
 
+  const handlePracticeProgressChange = useCallback((correct: number, total: number, isUnlocked: boolean) => {
+    setPracticeProgress(prev => {
+      if (prev.correctCount === correct && prev.totalCount === total && prev.isUnlocked === isUnlocked) {
+        return prev;
+      }
+      return { correctCount: correct, totalCount: total, isUnlocked };
+    });
+  }, []);
+
   // 🎨 Consolidated View Modes: 'board' (Pizarra Interactiva), 'timeline' (Flujo Didáctico), 'reading' (Práctica de Lectura), or 'games' (Game Arena)
   const [viewMode, setViewMode] = useState<'board' | 'timeline' | 'reading' | 'games'>('board');
   const [isImageZoomed, setIsImageZoomed] = useState(false);
@@ -3520,9 +3529,10 @@ export default function LessonPage() {
     return () => {
       window.removeEventListener('beforeunload', handleUnload, { capture: true });
       window.removeEventListener('pagehide', handleUnload, { capture: true });
-      cleanupAllLessonActivity();
+      stopCurrentAudio();
+      stopTutorVoice();
     };
-  }, [cleanupAllLessonActivity]);
+  }, []);
 
   const hasFetchedRef = useRef(false);
 
@@ -3532,6 +3542,7 @@ export default function LessonPage() {
       if (hasFetchedRef.current) return;
       hasFetchedRef.current = true;
 
+      isCancelledRef.current = false;
       loadAbortControllerRef.current = new AbortController();
 
       setLoadingLesson(true);
@@ -3590,7 +3601,7 @@ export default function LessonPage() {
               window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
             }
           } catch (genErr: any) {
-            if (isCancelledRef.current || genErr?.name === 'AbortError') return;
+            if (isCancelledRef.current) return;
             console.warn('generateAdaptiveLesson failed, activating rich offline lesson fallback:', genErr);
           }
         }
@@ -3610,14 +3621,13 @@ export default function LessonPage() {
           let existingBonusPhase: any = null;
 
           allPhases.forEach((p: any, pIdx: number) => {
-            // Check for phonetic bonus phase
+            // Check for phonetic bonus phase strictly at the end of the lesson
             const isPh = Boolean(
               p.is_phonetic_bonus ||
-              p.phonetic_focus ||
-              p.phase_name?.toLowerCase().includes('fonét') ||
-              p.phase_name?.toLowerCase().includes('bonus de pronunciación')
+              (p.phonetic_focus && p.phonetic_focus.symbols && Array.isArray(p.phonetic_focus.symbols) && p.phonetic_focus.symbols.length > 0) ||
+              (p.phase_name && (p.phase_name.toLowerCase().includes('fonét') || p.phase_name.toLowerCase().includes('bonus de pronunciación')))
             );
-            if (isPh) {
+            if (isPh && pIdx >= allPhases.length - 2) {
               existingBonusPhase = p;
               return;
             }
@@ -3644,15 +3654,16 @@ export default function LessonPage() {
               });
             }
 
-            // If it was already a dedicated practice slide, don't duplicate it in explanation phases
+            // If it was already a dedicated practice slide at the end, don't duplicate it in explanation phases
             if (p.is_practice_slide || (p.interaction_type === 'quiz' && pIdx >= allPhases.length - 2)) {
               return;
             }
 
             // Clean conceptual explanation phase
-            p.is_practice_slide = false;
-            p.exercises = [];
-            cleanExplanationPhases.push(p);
+            cleanExplanationPhases.push({
+              ...p,
+              is_practice_slide: false,
+            });
           });
 
           // Topic-specific authentic 8-exercise bank
@@ -4068,7 +4079,9 @@ export default function LessonPage() {
             cleanExplanationPhases.push(existingBonusPhase);
           }
 
-          data.phases = cleanExplanationPhases;
+          if (cleanExplanationPhases.length >= 2) {
+            data.phases = cleanExplanationPhases;
+          }
         }
 
         if (isCancelledRef.current) return;
@@ -5656,9 +5669,7 @@ export default function LessonPage() {
                         ? "Bonus de Pronunciación 🌟"
                         : "Pasar a la Práctica de Lectura 📖"
                     }
-                    onProgressChange={(correct, total, isUnlocked) => {
-                      setPracticeProgress({ correctCount: correct, totalCount: total, isUnlocked });
-                    }}
+                    onProgressChange={handlePracticeProgressChange}
                   />
                 </motion.div>
               ) : isPhoneticBonus ? (

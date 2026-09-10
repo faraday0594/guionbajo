@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect } from 'react';
 import { stopTutorVoice } from '@/lib/api';
@@ -35,19 +35,9 @@ export function AudioSupervisor() {
     window.addEventListener('beforeunload', handleTerminateSpeech, { capture: true });
     window.addEventListener('pagehide', handleTerminateSpeech, { capture: true });
 
-    // 3. Tab visibility changes (e.g. switching tabs or closing)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        handleTerminateSpeech();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
       window.removeEventListener('beforeunload', handleTerminateSpeech, { capture: true });
       window.removeEventListener('pagehide', handleTerminateSpeech, { capture: true });
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      handleTerminateSpeech();
     };
   }, []);
 

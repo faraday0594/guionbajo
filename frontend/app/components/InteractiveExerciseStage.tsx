@@ -367,10 +367,14 @@ export default function InteractiveExerciseStage({
   const remainingToAll = Math.max(0, totalExercises - completedCount);
   const progressPercent = totalExercises > 0 ? Math.round((completedCount / totalExercises) * 100) : 0;
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const onProgressChangeRef = useRef(onProgressChange);
+  useEffect(() => {
+    onProgressChangeRef.current = onProgressChange;
+  }, [onProgressChange]);
 
   useEffect(() => {
-    onProgressChange?.(completedCount, totalExercises, is80PercentMet);
-  }, [completedCount, totalExercises, is80PercentMet, onProgressChange]);
+    onProgressChangeRef.current?.(completedCount, totalExercises, is80PercentMet);
+  }, [completedCount, totalExercises, is80PercentMet]);
 
   const handleNextClick = () => {
     if (!is80PercentMet) {

@@ -243,6 +243,9 @@ export default function TimelineVisualRenderer({
   const [isDiagramZoomed, setIsDiagramZoomed] = useState(false);
   const [isScaleZoomed, setIsScaleZoomed] = useState(false);
 
+  // Mobile Tab State (Only used on < lg screens to toggle between Board/Explanations and Didactic Diagram)
+  const [mobileTab, setMobileTab] = useState<'board' | 'diagram'>('board');
+
   // Resolve any active frequency scale from props or timeline steps
   const activeFrequencyScale = frequencyScale || 
     timeline.find(s => s.payload?.frequency_scale && s.payload.frequency_scale.length > 0)?.payload?.frequency_scale ||
@@ -252,6 +255,10 @@ export default function TimelineVisualRenderer({
   const activeDiagramSvg = diagramSvg ||
     timeline.find(s => s.payload?.svg)?.payload?.svg ||
     null;
+
+  const hasVisualDiagram = Boolean(
+    activeDiagramSvg || (activeFrequencyScale && activeFrequencyScale.length > 0)
+  );
 
   const isHookOnly = timeline.length === 1;
   const isChalk = theme === 'chalk';
@@ -282,7 +289,37 @@ export default function TimelineVisualRenderer({
   const revealedRightSteps = timeline.slice(1, isFullBoardRevealed ? timeline.length : revealedStepCount);
 
   return (
-    <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+    <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
+      {/* 📱 MOBILE VIEW TAB SWITCHER (Only visible on < lg screens when Step 2+ is revealed with diagram) */}
+      {!isHookOnly && isStep2Revealed && hasVisualDiagram && (
+        <div className="lg:hidden col-span-1 flex items-center p-1 rounded-2xl bg-black/70 border border-white/15 backdrop-blur-md gap-1 w-full shadow-xl">
+          <button
+            type="button"
+            onClick={() => setMobileTab('board')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              mobileTab === 'board'
+                ? 'bg-brand-accent text-white shadow-[0_0_15px_rgba(108,99,255,0.4)]'
+                : 'text-white/70 hover:text-white'
+            }`}
+          >
+            <BookOpen size={14} />
+            <span>Pizarra &amp; Explicación</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('diagram')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              mobileTab === 'diagram'
+                ? 'bg-cyan-500 text-black font-extrabold shadow-[0_0_15px_rgba(0,212,255,0.4)]'
+                : 'text-white/70 hover:text-white'
+            }`}
+          >
+            <Sparkles size={14} />
+            <span>Esquema {activeFrequencyScale && activeFrequencyScale.length > 0 ? 'Frecuencia' : 'Didáctico'}</span>
+          </button>
+        </div>
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════════
           🖼️ PERSISTENT HERO IMAGE (Centered on Hook / Step 1; Left-docked on Concepts)
           ═══════════════════════════════════════════════════════════════════════ */}
@@ -302,7 +339,9 @@ export default function TimelineVisualRenderer({
             duration: 0.6,
             ease: [0.22, 1, 0.36, 1]
           }}
-          className={`relative rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500 ${
+          className={`relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500 ${
+            !isHookOnly && isStep2Revealed && mobileTab === 'diagram' ? 'hidden lg:block' : 'block'
+          } ${
             activeStepIdx === 0 && isPlaying
               ? 'ring-4 ring-brand-cyan/60 shadow-[0_0_50px_rgba(0,212,255,0.4)] border-brand-cyan'
               : 'border-white/15 bg-black/40'
@@ -342,8 +381,8 @@ export default function TimelineVisualRenderer({
           {/* Stable Image Display (Clean aspect ratio to prevent sudden zoom distortions) */}
           <div className={`w-full overflow-hidden bg-black/60 flex items-center justify-center transition-all duration-700 ${
             isHookOnly || isHeroCentered
-              ? 'aspect-[16/10] sm:aspect-video min-h-[280px] sm:min-h-[350px]'
-              : 'aspect-[16/10] min-h-[220px]'
+              ? 'aspect-[16/10] sm:aspect-video min-h-[200px] sm:min-h-[350px] max-h-[280px] sm:max-h-[420px]'
+              : 'aspect-[16/9] sm:aspect-[16/10] min-h-[160px] sm:min-h-[220px] max-h-[190px] sm:max-h-[260px]'
           }`}>
             {imageLoading ? (
               <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
@@ -383,13 +422,27 @@ export default function TimelineVisualRenderer({
           )}
         </motion.div>
 
+        {/* Mobile quick button to view diagram when on board tab */}
+        {!isHookOnly && isStep2Revealed && hasVisualDiagram && mobileTab === 'board' && (
+          <button
+            type="button"
+            onClick={() => setMobileTab('diagram')}
+            className="lg:hidden w-full py-2 px-3.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.98]"
+          >
+            <Sparkles size={14} />
+            <span>Ver Esquema Didáctico {activeFrequencyScale ? '(Termómetro)' : '(Mapa)'} 📊</span>
+          </button>
+        )}
+
         {/* 🌡️ FREQUENCY SCALE / CONCEPT TABLE (Under Hero Image - Revealed on Step 2+) */}
         {!isHookOnly && isStep2Revealed && activeFrequencyScale && activeFrequencyScale.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="p-4 rounded-2xl bg-gradient-to-br from-purple-950/40 via-black/75 to-black/90 border border-purple-500/30 shadow-xl backdrop-blur-md space-y-3"
+            className={`p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-purple-950/40 via-black/75 to-black/90 border border-purple-500/30 shadow-xl backdrop-blur-md space-y-3 ${
+              mobileTab === 'diagram' ? 'block' : 'hidden lg:block'
+            }`}
           >
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
@@ -457,6 +510,18 @@ export default function TimelineVisualRenderer({
                 );
               })}
             </div>
+
+            {/* Mobile return to board button */}
+            <div className="lg:hidden pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setMobileTab('board')}
+                className="w-full py-2 px-3 rounded-xl bg-brand-accent/20 hover:bg-brand-accent/30 border border-brand-accent/40 text-brand-cyan text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              >
+                <BookOpen size={13} />
+                <span>Volver a la Pizarra y Fórmulas 📝</span>
+              </button>
+            </div>
           </motion.div>
         )}
 
@@ -466,7 +531,9 @@ export default function TimelineVisualRenderer({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="p-4 rounded-2xl bg-black/70 border border-cyan-500/30 shadow-2xl backdrop-blur-md space-y-3"
+            className={`p-3.5 sm:p-4 rounded-2xl bg-black/70 border border-cyan-500/30 shadow-2xl backdrop-blur-md space-y-3 ${
+              mobileTab === 'diagram' ? 'block' : 'hidden lg:block'
+            }`}
           >
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
@@ -490,6 +557,18 @@ export default function TimelineVisualRenderer({
               className="w-full flex items-center justify-center overflow-hidden rounded-xl [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-h-[380px] transition-transform"
               dangerouslySetInnerHTML={{ __html: activeDiagramSvg }}
             />
+
+            {/* Mobile return to board button */}
+            <div className="lg:hidden pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setMobileTab('board')}
+                className="w-full py-2 px-3 rounded-xl bg-brand-accent/20 hover:bg-brand-accent/30 border border-brand-accent/40 text-brand-cyan text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              >
+                <BookOpen size={13} />
+                <span>Volver a la Pizarra y Fórmulas 📝</span>
+              </button>
+            </div>
           </motion.div>
         )}
       </div>
@@ -504,7 +583,9 @@ export default function TimelineVisualRenderer({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:col-span-7 flex flex-col gap-4 w-full"
+            className={`lg:col-span-7 flex-col gap-3.5 sm:gap-4 w-full ${
+              mobileTab === 'board' ? 'flex' : 'hidden lg:flex'
+            }`}
           >
             {revealedRightSteps.map((step, idx) => {
               const currentStepNumber = step.step_index;
@@ -528,7 +609,7 @@ export default function TimelineVisualRenderer({
                       ────────────────────────────────────────────────────────── */}
                   {step.visual_action === 'show_grammar_formula' && (
                     <div
-                      className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                      className={`p-3.5 sm:p-5 rounded-2xl border transition-all ${
                         isChalk
                           ? 'bg-black/70 border-yellow-400/30 text-white font-chalk'
                           : 'bg-brand-surface/60 border-yellow-500/30 text-white shadow-xl backdrop-blur-md'
@@ -553,7 +634,7 @@ export default function TimelineVisualRenderer({
 
                       {/* Visual Wagon / Formula Token Chips */}
                       {p.formula_tokens && p.formula_tokens.length > 0 ? (
-                        <div className="flex items-center gap-2 flex-wrap py-3 overflow-x-auto">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap py-2.5 sm:py-3 overflow-x-auto custom-scrollbar">
                           {p.formula_tokens.map((token, tIdx) => {
                             const style = getTokenClasses(token.color);
                             const roleText = token.role || token.label || `Elemento ${tIdx + 1}`;
@@ -561,17 +642,17 @@ export default function TimelineVisualRenderer({
                             return (
                               <React.Fragment key={tIdx}>
                                 <div
-                                  className={`flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border font-mono shadow-md ${style.bg}`}
+                                  className={`flex flex-col items-center justify-center px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border font-mono shadow-md ${style.bg}`}
                                 >
-                                  <span className="text-[10px] uppercase font-bold tracking-wider opacity-85">
+                                  <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider opacity-85 text-center">
                                     {roleText}
                                   </span>
-                                  <span className="text-xs sm:text-sm font-bold text-white mt-0.5">
+                                  <span className="text-xs sm:text-sm font-bold text-white mt-0.5 text-center">
                                     {patternText}
                                   </span>
                                 </div>
                                 {tIdx < p.formula_tokens!.length - 1 && (
-                                  <span className="text-sm font-extrabold text-brand-gold font-mono px-0.5">
+                                  <span className="text-xs sm:text-sm font-extrabold text-brand-gold font-mono px-0.5">
                                     +
                                   </span>
                                 )}
@@ -599,7 +680,7 @@ export default function TimelineVisualRenderer({
                       ────────────────────────────────────────────────────────── */}
                   {step.visual_action === 'show_example_sentence' && (
                     <div
-                      className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                      className={`p-3.5 sm:p-5 rounded-2xl border transition-all ${
                         isChalk
                           ? 'bg-black/70 border-emerald-400/30 text-white font-chalk'
                           : 'bg-brand-surface/60 border-emerald-500/30 text-white shadow-xl backdrop-blur-md'
@@ -1118,7 +1199,7 @@ export default function TimelineVisualRenderer({
                       D. DUEL / CONTRAST CARD
                       ────────────────────────────────────────────────────────── */}
                   {step.visual_action === 'show_duel_contrast' && p.contrast && (
-                    <div className="p-4 sm:p-5 rounded-2xl bg-black/60 border border-amber-500/30 text-white shadow-xl backdrop-blur-md space-y-3">
+                    <div className="p-3.5 sm:p-5 rounded-2xl bg-black/60 border border-amber-500/30 text-white shadow-xl backdrop-blur-md space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-white/10">
                         <div className="flex items-center gap-2">
                           <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40">
@@ -1129,7 +1210,7 @@ export default function TimelineVisualRenderer({
                           </h3>
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                         <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-200">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 block mb-1">
                             ❌ Incorrecto:
@@ -1160,7 +1241,7 @@ export default function TimelineVisualRenderer({
                       E. INTERACTIVE PRACTICE CHALLENGE
                       ────────────────────────────────────────────────────────── */}
                   {step.visual_action === 'show_challenge' && (
-                    <div className="p-4 sm:p-5 rounded-2xl bg-black/60 border border-brand-gold/40 text-white shadow-2xl backdrop-blur-md space-y-4">
+                    <div className="p-3.5 sm:p-5 rounded-2xl bg-black/60 border border-brand-gold/40 text-white shadow-2xl backdrop-blur-md space-y-3.5 sm:space-y-4">
                       <div className="flex items-center justify-between pb-2 border-b border-white/10">
                         <div className="flex items-center gap-2">
                           <span className="p-1.5 rounded-lg bg-brand-gold/20 text-brand-gold border border-brand-gold/40">

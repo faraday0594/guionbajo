@@ -366,7 +366,7 @@ function extractBoardLines(content: any): string[] {
 // ─── HELPER: Board Theme Classes ─────────────────────────────────────────────
 function getBoardThemeClass(theme?: string): string {
   // Always enforce the authentic green chalkboard as the universal primary container
-  return 'board-chalkboard-green chalk-stage rounded-3xl p-5 sm:p-7 shadow-2xl flex-1 flex flex-col transition-all';
+  return 'board-chalkboard-green chalk-stage rounded-2xl sm:rounded-3xl shadow-2xl flex-1 flex flex-col transition-all';
 }
 
 // ─── HELPER: Number Word Normalization for Speech Recognition ─────────────────
@@ -5125,39 +5125,69 @@ export default function LessonPage() {
         />
       </div>
 
-      {/* 🌟 Top Header Bar with Consolidated 2-View Switcher */}
-      <header className="px-4 sm:px-6 py-3 border-b border-brand-border/60 flex items-center justify-between glass z-20 gap-2">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-brand-text-secondary hover:text-white transition-colors text-xs sm:text-sm font-semibold flex-shrink-0 group"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-          <span className="hidden sm:inline">Volver al Mapa</span>
-        </Link>
+      {/* 🌟 Top Header Bar with Consolidated Responsive Switcher */}
+      <header className="px-3 sm:px-6 py-2 sm:py-3 border-b border-brand-border/60 flex flex-col sm:flex-row sm:items-center justify-between glass z-20 gap-2 sm:gap-4">
+        {/* Mobile Top Line / Desktop Left Side */}
+        <div className="flex items-center justify-between w-full sm:w-auto gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-1.5 text-brand-text-secondary hover:text-white transition-colors text-xs sm:text-sm font-semibold flex-shrink-0 group"
+              title="Volver al Mapa"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="hidden md:inline">Volver</span>
+            </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3 truncate">
-          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan flex-shrink-0">
-            {sublevelParam}
-          </span>
-          <h1 className="font-outfit font-bold text-sm sm:text-base text-white truncate max-w-[140px] sm:max-w-xs md:max-w-md">
-            {topicParam}
-          </h1>
+            <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan flex-shrink-0">
+              {sublevelParam}
+            </span>
+            <h1 className="font-outfit font-bold text-xs sm:text-base text-white truncate max-w-[150px] sm:max-w-xs md:max-w-md">
+              {topicParam}
+            </h1>
+          </div>
+
+          {/* Mobile-only utilities group */}
+          <div className="flex items-center gap-1.5 sm:hidden flex-shrink-0">
+            <button
+              onClick={() => setShowDynamicSubtitles(!showDynamicSubtitles)}
+              className={`p-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                showDynamicSubtitles
+                  ? 'bg-yellow-400/20 text-yellow-300 border-yellow-400/40 shadow-sm'
+                  : 'glass text-brand-text-muted hover:text-white border-brand-border'
+              }`}
+              title="Subtítulos dinámicos"
+            >
+              <Subtitles size={13} className={showDynamicSubtitles && tutorState === 'speaking' ? 'animate-pulse text-yellow-300' : ''} />
+            </button>
+
+            <button
+              onClick={() => setShowPhoneticModal(true)}
+              className="p-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 text-xs font-semibold transition-all shadow-sm"
+              title="44 Fonemas"
+            >
+              <Mic size={13} className="text-emerald-400" />
+            </button>
+
+            <span className="text-[10px] font-bold text-brand-cyan bg-brand-cyan/10 px-2 py-1 rounded-xl border border-brand-cyan/30">
+              {currentPhaseIdx + 1}/{lesson?.phases?.length || 1}
+            </span>
+          </div>
         </div>
 
-        {/* Header Controls: Clean 2-Mode Segmented Selector + Tutor Avatar */}
-        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-          {/* Segmented View Switcher: Pizarra Interactiva vs Ejercicios vs Flujo vs Lectura vs Juegos */}
-          <div className="flex items-center p-1 rounded-2xl bg-brand-surface/90 border border-brand-border text-xs gap-1 shadow-inner overflow-x-auto max-w-full">
+        {/* Mobile Bottom Line / Desktop Right Side */}
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-3 w-full sm:w-auto overflow-x-auto custom-scrollbar pb-0.5 sm:pb-0">
+          {/* Segmented View Switcher */}
+          <div className="flex items-center p-0.5 sm:p-1 rounded-2xl bg-brand-surface/90 border border-brand-border text-xs gap-0.5 sm:gap-1 shadow-inner flex-nowrap flex-shrink-0">
             <button
               onClick={() => {
                 stopCurrentAudio();
                 setViewMode('board');
-                // If currently on practice slide and user clicks Pizarra, go to slide 1
                 if (isPracticeSlide) {
                   setCurrentPhaseIdx(0);
                 }
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all font-semibold text-xs ${
                 viewMode === 'board' && !isPracticeSlide
                   ? 'bg-gradient-to-r from-brand-accent to-indigo-600 text-white shadow-md shadow-brand-accent/25'
                   : 'text-brand-text-muted hover:text-white'
@@ -5177,15 +5207,15 @@ export default function LessonPage() {
                   setCurrentPhaseIdx(practiceIdx);
                 }
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all font-semibold text-xs ${
                 viewMode === 'board' && isPracticeSlide
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-black font-extrabold shadow-md shadow-amber-500/25'
                   : 'text-brand-text-muted hover:text-amber-400'
               }`}
-              title="Sección de Ejercicios y Desafío Práctico"
+              title="Ejercicios y Desafío Práctico"
             >
               <Sparkles size={13} className={viewMode === 'board' && isPracticeSlide ? 'text-black animate-spin' : 'text-amber-400'} />
-              <span>Ejercicios 🎯</span>
+              <span>Quiz 🎯</span>
             </button>
 
             <button
@@ -5193,7 +5223,7 @@ export default function LessonPage() {
                 stopCurrentAudio();
                 setViewMode('timeline');
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all font-semibold text-xs ${
                 viewMode === 'timeline'
                   ? 'bg-gradient-to-r from-brand-cyan to-blue-600 text-white shadow-md shadow-brand-cyan/25'
                   : 'text-brand-text-muted hover:text-white'
@@ -5209,12 +5239,12 @@ export default function LessonPage() {
                 stopCurrentAudio();
                 setViewMode('reading');
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all font-semibold text-xs ${
                 viewMode === 'reading'
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25'
                   : 'text-brand-text-muted hover:text-white'
               }`}
-              title="Práctica de Lectura con Fonética IPA"
+              title="Lectura con Fonética IPA"
             >
               <BookOpen size={13} className={viewMode === 'reading' ? 'text-yellow-300 animate-pulse' : ''} />
               <span>Lectura 📖</span>
@@ -5225,7 +5255,7 @@ export default function LessonPage() {
                 stopCurrentAudio();
                 setViewMode('games');
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all font-semibold ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all font-semibold text-xs ${
                 viewMode === 'games'
                   ? 'bg-gradient-to-r from-brand-accent to-brand-cyan text-white shadow-md shadow-brand-accent/25'
                   : 'text-brand-text-muted hover:text-white'
@@ -5237,85 +5267,88 @@ export default function LessonPage() {
             </button>
           </div>
 
-          {/* Subtitles ON/OFF Toggle Button */}
-          <button
-            onClick={() => setShowDynamicSubtitles(!showDynamicSubtitles)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
-              showDynamicSubtitles
-                ? 'bg-yellow-400/20 text-yellow-300 border-yellow-400/40 shadow-[0_0_12px_rgba(253,224,71,0.2)]'
-                : 'glass text-brand-text-muted hover:text-white border-brand-border'
-            }`}
-            title={showDynamicSubtitles ? 'Desactivar subtítulos dinámicos' : 'Activar subtítulos dinámicos'}
-          >
-            <Subtitles size={13} className={showDynamicSubtitles && tutorState === 'speaking' ? 'animate-pulse text-yellow-300' : ''} />
-            <span className="hidden sm:inline">{showDynamicSubtitles ? 'Subtítulos ON' : 'Subtítulos OFF'}</span>
-          </button>
+          {/* Desktop-only utilities */}
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+            {/* Subtitles ON/OFF Toggle Button */}
+            <button
+              onClick={() => setShowDynamicSubtitles(!showDynamicSubtitles)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                showDynamicSubtitles
+                  ? 'bg-yellow-400/20 text-yellow-300 border-yellow-400/40 shadow-[0_0_12px_rgba(253,224,71,0.2)]'
+                  : 'glass text-brand-text-muted hover:text-white border-brand-border'
+              }`}
+              title={showDynamicSubtitles ? 'Desactivar subtítulos dinámicos' : 'Activar subtítulos dinámicos'}
+            >
+              <Subtitles size={13} className={showDynamicSubtitles && tutorState === 'speaking' ? 'animate-pulse text-yellow-300' : ''} />
+              <span>{showDynamicSubtitles ? 'Subtítulos ON' : 'Subtítulos OFF'}</span>
+            </button>
 
-          {/* Phonetic Board Modal Toggle Button */}
-          <button
-            onClick={() => setShowPhoneticModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 text-xs font-semibold transition-all shadow-sm"
-            title="Abrir Tablero de Fonemas (44 sonidos con audio)"
-          >
-            <Mic size={13} className="text-emerald-400" />
-            <span className="hidden sm:inline">44 Fonemas</span>
-          </button>
+            {/* Phonetic Board Modal Toggle Button */}
+            <button
+              onClick={() => setShowPhoneticModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 text-xs font-semibold transition-all shadow-sm"
+              title="Abrir Tablero de Fonemas (44 sonidos con audio)"
+            >
+              <Mic size={13} className="text-emerald-400" />
+              <span>44 Fonemas</span>
+            </button>
 
-          {/* Live Waveform & Tutor State */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-surface/80 border border-brand-border text-xs">
-            <AnimatePresence>
-              {tutorState === 'speaking' && (
-                <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  className="flex items-end gap-[2px] overflow-hidden"
-                  style={{ height: '16px' }}
-                >
-                  {[4, 11, 6, 15, 8, 13, 5, 12, 7, 10].map((h, i) => (
-                    <motion.div
-                      key={i}
-                      className="w-[2px] rounded-full bg-brand-cyan"
-                      animate={{ scaleY: [0.2, 1, 0.2] }}
-                      transition={{
-                        duration: 0.55 + (i % 3) * 0.12,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                        delay: i * 0.055,
-                      }}
-                      style={{ height: `${h}px`, originY: '100%' }}
-                    />
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <TutorAvatar
-              state={tutorState}
-              text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
-              audioProgress={audioProgress}
-              size="sm"
-              audioElement={currentAudioRef.current}
-            />
-            <span className="text-brand-text-secondary font-medium">
-              {tutorState === 'speaking'
-                ? 'Explicando...'
-                : tutorState === 'thinking'
-                ? 'Pensando...'
-                : tutorState === 'listening'
-                ? 'Escuchando...'
-                : 'Listo'}
+            {/* Live Waveform & Tutor State */}
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-surface/80 border border-brand-border text-xs">
+              <AnimatePresence>
+                {tutorState === 'speaking' && (
+                  <motion.div
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    className="flex items-end gap-[2px] overflow-hidden"
+                    style={{ height: '16px' }}
+                  >
+                    {[4, 11, 6, 15, 8, 13, 5, 12, 7, 10].map((h, i) => (
+                      <motion.div
+                        key={i}
+                        className="w-[2px] rounded-full bg-brand-cyan"
+                        animate={{ scaleY: [0.2, 1, 0.2] }}
+                        transition={{
+                          duration: 0.55 + (i % 3) * 0.12,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                          delay: i * 0.055,
+                        }}
+                        style={{ height: `${h}px`, originY: '100%' }}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <TutorAvatar
+                state={tutorState}
+                text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
+                audioProgress={audioProgress}
+                size="sm"
+                audioElement={currentAudioRef.current}
+              />
+              <span className="text-brand-text-secondary font-medium">
+                {tutorState === 'speaking'
+                  ? 'Explicando...'
+                  : tutorState === 'thinking'
+                  ? 'Pensando...'
+                  : tutorState === 'listening'
+                  ? 'Escuchando...'
+                  : 'Listo'}
+              </span>
+            </div>
+
+            {/* Phase Badge */}
+            <span className="text-xs font-bold text-brand-cyan bg-brand-cyan/10 px-2.5 py-1 rounded-xl border border-brand-cyan/30">
+              {currentPhaseIdx + 1} / {lesson?.phases?.length || 1}
             </span>
           </div>
-
-          {/* Phase Badge */}
-          <span className="text-xs font-bold text-brand-cyan bg-brand-cyan/10 px-2.5 py-1 rounded-xl border border-brand-cyan/30">
-            {currentPhaseIdx + 1} / {lesson?.phases?.length || 1}
-          </span>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-y-auto p-3 sm:p-5 md:p-6 max-w-7xl mx-auto w-full gap-5 relative z-10 custom-scrollbar">
+      <div className="flex-1 flex flex-col overflow-y-auto p-2.5 sm:p-5 md:p-6 max-w-7xl mx-auto w-full gap-4 sm:gap-5 relative z-10 custom-scrollbar">
         <AnimatePresence mode="wait">
           <motion.div
             key={`${currentPhaseIdx}-${viewMode}`}
@@ -5548,28 +5581,28 @@ export default function LessonPage() {
                   </div>
                 </motion.div>
               ) : (
-                <div className={`${getBoardThemeClass(phase.board_theme)} p-5 sm:p-7 space-y-5 relative`}>
+                <div className={`${getBoardThemeClass(phase.board_theme)} p-3.5 sm:p-6 md:p-7 space-y-4 sm:space-y-5 relative`}>
                 
                 {/* Board Header Bar - Ultra-compact & clean */}
                 <div id="storyboard-target-title" className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-white/10 z-10">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="p-2 rounded-xl bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan flex-shrink-0">
-                      <BookOpen size={18} />
+                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <div className="p-1.5 sm:p-2 rounded-xl bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan flex-shrink-0">
+                      <BookOpen size={16} className="sm:w-[18px] sm:h-[18px]" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-cyan block">Pizarra de Estudio</span>
-                      <h2 className="text-sm sm:text-base md:text-lg font-bold font-chalk text-white truncate">
+                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-brand-cyan block">Pizarra de Estudio</span>
+                      <h2 className="text-xs sm:text-base md:text-lg font-bold font-chalk text-white truncate max-w-[170px] sm:max-w-none">
                         {renderTextContent(phase.phase_name)}
                       </h2>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                     {/* Botón Principal: Escuchar / Pausar */}
                     <button
                       type="button"
                       onClick={handleTogglePlay}
-                      className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shadow-md ${
+                      className={`px-2.5 sm:px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-md ${
                         tutorState === 'speaking'
                           ? 'bg-brand-accent text-white border-brand-accent shadow-[0_0_15px_rgba(108,99,255,0.4)]'
                           : 'glass hover:bg-brand-surface border-brand-border text-brand-cyan hover:text-white'
@@ -5938,20 +5971,20 @@ export default function LessonPage() {
 
         {/* 🌟 Bottom Slide Navigation Footer */}
         {viewMode !== 'games' && viewMode !== 'reading' && (
-          <footer className="flex items-center justify-between gap-4 pt-3 border-t border-brand-border/60">
+          <footer className="flex items-center justify-between gap-2 sm:gap-4 pt-2.5 sm:pt-3 border-t border-brand-border/60">
             <button
               onClick={handlePrevSlide}
               disabled={currentPhaseIdx === 0}
-              className="px-4 py-2.5 glass hover:bg-brand-surface border border-brand-border text-white text-xs sm:text-sm font-semibold rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="px-3 sm:px-4 py-2 sm:py-2.5 glass hover:bg-brand-surface border border-brand-border text-white text-xs sm:text-sm font-semibold rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-1.5 flex-shrink-0"
             >
               <ChevronLeft size={16} />
-              <span>Anterior</span>
+              <span className="hidden sm:inline">Anterior</span>
             </button>
 
             {/* Center: Instagram Stories-style Phase Progress Rail */}
-            <div className="flex flex-col items-center gap-2 flex-1">
+            <div className="flex flex-col items-center gap-1 sm:gap-2 flex-1 min-w-0">
               {/* Phase Pill Rail */}
-              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center">
                 {lesson?.phases?.map((_: any, idx: number) => {
                   const isActive = idx === currentPhaseIdx;
                   const isPast = idx < currentPhaseIdx;
@@ -5962,8 +5995,8 @@ export default function LessonPage() {
                       title={`Fase ${idx + 1}`}
                       className="relative overflow-hidden rounded-full transition-all duration-500 focus:outline-none group"
                       style={{
-                        width: isActive ? '40px' : '10px',
-                        height: '10px',
+                        width: isActive ? '32px' : '8px',
+                        height: '8px',
                       }}
                     >
                       {/* Background track */}
@@ -5990,13 +6023,13 @@ export default function LessonPage() {
                 })}
               </div>
               {/* Phase label */}
-              <span className="text-[10px] text-brand-text-muted font-mono">
+              <span className="text-[9px] sm:text-[10px] text-brand-text-muted font-mono truncate">
                 Fase {currentPhaseIdx + 1} de {lesson?.phases?.length || 1}
               </span>
             </div>
 
             {/* Right: Modo Cine + Fonemas + Siguiente */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => setShowPhoneticModal(true)}
@@ -6030,12 +6063,12 @@ export default function LessonPage() {
                 onClick={handleNextSlide}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
-                className="px-6 py-2.5 bg-gradient-to-r from-brand-accent to-indigo-600 hover:from-brand-accent/90 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(108,99,255,0.4)] hover:shadow-[0_0_30px_rgba(108,99,255,0.6)] flex items-center justify-center gap-1.5"
+                className="px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-brand-accent to-indigo-600 hover:from-brand-accent/90 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(108,99,255,0.4)] hover:shadow-[0_0_30px_rgba(108,99,255,0.6)] flex items-center justify-center gap-1 sm:gap-1.5"
               >
                 <span>
                   {currentPhaseIdx < (lesson?.phases?.length || 1) - 1
                     ? 'Siguiente →'
-                    : '📖 Práctica de Lectura'}
+                    : '📖 Lectura'}
                 </span>
                 <ChevronRight size={16} />
               </motion.button>

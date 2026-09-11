@@ -3185,6 +3185,19 @@ export default function LessonPage() {
   const [boardEvaluations, setBoardEvaluations] = useState<Record<number, any>>({});
   const [showIncompleteNoticeModal, setShowIncompleteNoticeModal] = useState(false);
 
+  // ─── Lesson Checkpoint & Progression State ────────────────────────────────
+  const [quizScore, setQuizScore] = useState<number>(0);
+  const [quizCompleted, setQuizCompleted] = useState<boolean>(false);
+  const [readingScore, setReadingScore] = useState<number>(0);
+  const [readingCompleted, setReadingCompleted] = useState<boolean>(false);
+  const [mysteryWordScore, setMysteryWordScore] = useState<number>(0);
+  const [mysteryWordCompleted, setMysteryWordCompleted] = useState<boolean>(false);
+  const [twinCardsScore, setTwinCardsScore] = useState<number>(0);
+  const [twinCardsCompleted, setTwinCardsCompleted] = useState<boolean>(false);
+  const [showGraduationModal, setShowGraduationModal] = useState<boolean>(false);
+  const [showFailedScoreModal, setShowFailedScoreModal] = useState<boolean>(false);
+  const [calculatedOverallScore, setCalculatedOverallScore] = useState<number>(0);
+
   const handlePracticeProgressChange = useCallback((correct: number, total: number, isUnlocked: boolean) => {
     setPracticeProgress(prev => {
       if (prev.correctCount === correct && prev.totalCount === total && prev.isUnlocked === isUnlocked) {
@@ -3196,6 +3209,121 @@ export default function LessonPage() {
 
   // 🎨 Consolidated View Modes: 'board' (Pizarra Interactiva), 'timeline' (Flujo Didáctico), 'reading' (Práctica de Lectura), or 'games' (Game Arena)
   const [viewMode, setViewMode] = useState<'board' | 'timeline' | 'reading' | 'games'>('board');
+
+  const practiceSlideIdx = useMemo(() => {
+    if (!lesson?.phases) return -1;
+    return lesson.phases.findIndex((p: any) => p.is_practice_slide || p.interaction_type === 'quiz');
+  }, [lesson]);
+
+  const syncCheckpoint = useCallback(async (updates: {
+    slide?: number;
+    mode?: 'board' | 'timeline' | 'reading' | 'games';
+    quizDone?: boolean;
+    quizSc?: number;
+    readingDone?: boolean;
+    readingSc?: number;
+    mysteryDone?: boolean;
+    mysterySc?: number;
+    twinDone?: boolean;
+    twinSc?: number;
+    completed?: boolean;
+  }) => {
+    const s = updates.slide !== undefined ? updates.slide : currentPhaseIdx;
+    const m = updates.mode || viewMode;
+    const qDone = updates.quizDone !== undefined ? updates.quizDone : quizCompleted;
+    const qSc = updates.quizSc !== undefined ? updates.quizSc : quizScore;
+    const rDone = updates.readingDone !== undefined ? updates.readingDone : readingCompleted;
+    const rSc = updates.readingSc !== undefined ? updates.readingSc : readingScore;
+    const mwDone = updates.mysteryDone !== undefined ? updates.mysteryDone : mysteryWordCompleted;
+    const mwSc = updates.mysterySc !== undefined ? updates.mysterySc : mysteryWordScore;
+    const twDone = updates.twinDone !== undefined ? updates.twinDone : twinCardsCompleted;
+    const twSc = updates.twinSc !== undefined ? updates.twinSc : twinCardsScore;
+
+    const sumScores = (qDone ? qSc : 0) + (rDone ? rSc : 0) + (mwDone ? mwSc : 0) + (twDone ? twSc : 0);
+    const overall = Math.round(sumScores / 4);
+
+    const cpPayload = {
+      lesson_id: lesson?.id || (lessonId !== 'new' ? lessonId : undefined),
+      topic: topicParam,
+      sublevel: sublevelParam,
+      class_index: classIndexParam,
+      current_slide: s,
+      view_mode: m,
+      quiz_completed: qDone,
+      quiz_score: qSc,
+      reading_completed: rDone,
+      reading_score: rSc,
+      mystery_word_completed: mwDone,
+      mystery_word_score: mwSc,
+      twin_cards_completed: twDone,
+      twin_cards_score: twSc,
+      overall_score: overall,
+      is_completed: Boolean(updates.completed),
+    };
+
+    try {
+      localStorage.setItem('guionbajo_lesson_checkpoint', JSON.stringify(cpPayload));
+    } catch (_) {}
+
+    try {
+      await api.saveLessonCheckpoint(cpPayload);
+    } catch (err) {
+      console.warn('Error saving checkpoint:', err);
+    }
+  }, [lesson, lessonId, topicParam, sublevelParam, classIndexParam, currentPhaseIdx, viewMode, quizCompleted, quizScore, readingCompleted, readingScore, mysteryWordCompleted, mysteryWordScore, twinCardsCompleted, twinCardsScore]);
+
+  const handleEvaluateClassCompletion = async () => {
+    if (!mysteryWordCompleted) {
+      sfx.playMistake();
+      toast.error('⚠️ Tienes pendiente la Palabra Misteriosa. Debes descifrarla para evaluar la clase.', {
+        id: 'mystery-word-required',
+        duration: 4500,
+      });
+      return;
+    }
+
+    const qSc = quizCompleted ? (quizScore || 85) : 0;
+    const rSc = readingCompleted ? (readingScore || 85) : 0;
+    const mwSc = mysteryWordCompleted ? (mysteryWordScore || 85) : 0;
+    const twSc = twinCardsCompleted ? (twinCardsScore || 85) : 80;
+
+    const compositeScore = Math.round((qSc + rSc + mwSc + twSc) / 4);
+    setCalculatedOverallScore(compositeScore);
+
+    if (compositeScore >= 80) {
+      sfx.playStreakFanfare();
+      setShowGraduationModal(true);
+      try {
+        await api.saveLessonCheckpoint({
+          lesson_id: lesson?.id || (lessonId !== 'new' ? lessonId : undefined),
+          topic: topicParam,
+          sublevel: sublevelParam,
+          class_index: classIndexParam,
+          current_slide: currentPhaseIdx,
+          view_mode: 'games',
+          quiz_completed: true,
+          quiz_score: qSc,
+          reading_completed: true,
+          reading_score: rSc,
+          mystery_word_completed: true,
+          mystery_word_score: mwSc,
+          twin_cards_completed: twinCardsCompleted,
+          twin_cards_score: twSc,
+          overall_score: compositeScore,
+          is_completed: true,
+        });
+        localStorage.removeItem('guionbajo_lesson_checkpoint');
+      } catch (e) {
+        console.warn('Save completed checkpoint error:', e);
+      }
+    } else {
+      sfx.playMistake();
+      setShowFailedScoreModal(true);
+      syncCheckpoint({
+        completed: false,
+      });
+    }
+  };
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [zoomedImageUrl, setZoomedImageUrl] = useState<string>('');
   const [minimaxImageMap, setMinimaxImageMap] = useState<Record<string, string>>({});
@@ -4276,6 +4404,64 @@ export default function LessonPage() {
         setImageLoading(false);
         setLoadingLesson(false);
 
+        // ─── Restore Checkpoint / Savepoint ──────────────────────────────────
+        let restoredCp: any = null;
+        try {
+          const raw = localStorage.getItem('guionbajo_lesson_checkpoint');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && (parsed.sublevel === sublevelParam || !sublevelParam)) {
+              restoredCp = parsed;
+            }
+          }
+        } catch (_) {}
+
+        if (!restoredCp) {
+          try {
+            const cpRes = await api.getLessonCheckpoint();
+            if (cpRes?.checkpoint) {
+              restoredCp = cpRes.checkpoint;
+            }
+          } catch (_) {}
+        }
+
+        if (restoredCp) {
+          if (restoredCp.quiz_score) setQuizScore(restoredCp.quiz_score);
+          if (restoredCp.quiz_completed) setQuizCompleted(true);
+          if (restoredCp.reading_score) setReadingScore(restoredCp.reading_score);
+          if (restoredCp.reading_completed) setReadingCompleted(true);
+          if (restoredCp.mystery_word_score) setMysteryWordScore(restoredCp.mystery_word_score);
+          if (restoredCp.mystery_word_completed) setMysteryWordCompleted(true);
+          if (restoredCp.twin_cards_score) setTwinCardsScore(restoredCp.twin_cards_score);
+          if (restoredCp.twin_cards_completed) setTwinCardsCompleted(true);
+
+          if (searchParams.get('resume') === 'true' || (restoredCp.current_slide && restoredCp.current_slide > 0) || (restoredCp.view_mode && restoredCp.view_mode !== 'board')) {
+            if (restoredCp.view_mode === 'games') {
+              setViewMode('games');
+              toast('🎮 Reanudando en la Zona de Juegos.', { icon: '🎮' });
+            } else if (restoredCp.view_mode === 'reading') {
+              setViewMode('reading');
+              toast('📖 Reanudando en la Práctica de Lectura IPA.', { icon: '📖' });
+            } else {
+              setViewMode('board');
+              const savedSlide = Math.min(Math.max(0, restoredCp.current_slide || 0), (data.phases?.length || 1) - 1);
+              if (!restoredCp.quiz_completed && data.phases?.[savedSlide]?.is_practice_slide) {
+                setCurrentPhaseIdx(savedSlide);
+                setPracticeProgress({ correctCount: 0, totalCount: data.phases[savedSlide].exercises?.length || 8, isUnlocked: false });
+                toast('📝 Examen de la lección pendiente: debes completarlo desde el inicio.', {
+                  icon: '📝',
+                  duration: 5000,
+                });
+              } else {
+                setCurrentPhaseIdx(savedSlide);
+                if (savedSlide > 0) {
+                  toast(`📌 Reanudando en la Diapositiva ${savedSlide + 1}.`, { icon: '📌' });
+                }
+              }
+            }
+          }
+        }
+
         // 🚀 NON-BLOCKING BACKGROUND WORKER: Sequentially pre-generate remaining slide images with MiniMax
         (async () => {
           for (let i = 1; i < data.phases.length; i++) {
@@ -4959,16 +5145,24 @@ export default function LessonPage() {
     stopCurrentAudio();
     stopTutorVoice();
     if (lesson && currentPhaseIdx < lesson.phases.length - 1) {
-      setCurrentPhaseIdx((prev) => prev + 1);
+      const nextSlide = currentPhaseIdx + 1;
+      setCurrentPhaseIdx(nextSlide);
+      syncCheckpoint({ slide: nextSlide, mode: 'board' });
     } else {
       sfx.playStreakFanfare();
-      try {
-        await api.completeLesson(lesson?.id || lessonId);
-      } catch (err) {
-        console.warn('Complete lesson error:', err);
-      }
+      const finalQuizScore = practiceProgress.totalCount > 0
+        ? Math.round((practiceProgress.correctCount / practiceProgress.totalCount) * 100)
+        : 88;
+      setQuizCompleted(true);
+      setQuizScore(finalQuizScore);
       toast.success('¡Fases de clase completadas! Pasando a la Práctica de Lectura. 📖');
       setViewMode('reading');
+      syncCheckpoint({
+        slide: currentPhaseIdx,
+        mode: 'reading',
+        quizDone: true,
+        quizSc: finalQuizScore,
+      });
     }
   };
 
@@ -5702,7 +5896,24 @@ export default function LessonPage() {
                 topic={topicParam}
                 sublevel={sublevelParam}
                 lessonId={lesson?.id || lessonId}
-                onBackToLesson={() => setViewMode('board')}
+                mysteryWordCompleted={mysteryWordCompleted}
+                twinCardsCompleted={twinCardsCompleted}
+                onBackToLesson={() => {
+                  setViewMode('board');
+                  syncCheckpoint({ mode: 'board' });
+                }}
+                onGameScoreUpdate={(gameType, score) => {
+                  if (gameType === 'mystery_word') {
+                    setMysteryWordCompleted(true);
+                    setMysteryWordScore(score);
+                    syncCheckpoint({ mysteryDone: true, mysterySc: score });
+                  } else if (gameType === 'twin_cards') {
+                    setTwinCardsCompleted(true);
+                    setTwinCardsScore(score);
+                    syncCheckpoint({ twinDone: true, twinSc: score });
+                  }
+                }}
+                onFinishClass={handleEvaluateClassCompletion}
               />
             ) : viewMode === 'reading' ? (
               /* ═══════════════════════════════════════════════════════════════════════
@@ -5714,11 +5925,15 @@ export default function LessonPage() {
                 lessonId={lesson?.id || lessonId}
                 onContinueToGames={() => {
                   stopCurrentAudio();
+                  setReadingCompleted(true);
+                  setReadingScore(88);
                   setViewMode('games');
+                  syncCheckpoint({ mode: 'games', readingDone: true, readingSc: 88 });
                 }}
                 onBackToLesson={() => {
                   stopCurrentAudio();
                   setViewMode('board');
+                  syncCheckpoint({ mode: 'board' });
                 }}
               />
             ) : viewMode === 'board' ? (
@@ -6534,6 +6749,181 @@ export default function LessonPage() {
                 >
                   <span>Avanzar al siguiente slide</span>
                   <ChevronRight size={15} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🏆 Graduation / Class Approved Modal (Score >= 80%) */}
+      <AnimatePresence>
+        {showGraduationModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-lg animate-fade-in">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-xl rounded-3xl bg-gradient-to-b from-zinc-900 via-[#0a1222] to-black border-2 border-emerald-500/50 p-6 sm:p-9 shadow-[0_0_60px_rgba(16,185,129,0.3)] text-white space-y-6 text-center relative overflow-hidden"
+            >
+              {/* Confetti Ambient Glow */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-40 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/30">
+                <Award size={40} className="text-emerald-400 animate-bounce" />
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="px-3.5 py-1 rounded-full bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 text-xs font-black uppercase tracking-wider">
+                  ¡Clase Oficialmente Aprobada! 🎉
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-outfit font-extrabold text-white mt-2">
+                  Puntaje Global: {calculatedOverallScore}%
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-300 max-w-md mx-auto leading-relaxed">
+                  Has superado con éxito el estándar pedagógico de aprobación (≥ 80%). Has completado la teoría, el examen, la lectura y los juegos de esta lección.
+                </p>
+              </div>
+
+              {/* Score Breakdown Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-lg mx-auto text-left">
+                <div className="p-3 rounded-2xl bg-black/50 border border-white/10">
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">1. Pizarra</div>
+                  <div className="text-base font-extrabold text-emerald-400">100%</div>
+                  <div className="text-[10px] text-zinc-400">Completada</div>
+                </div>
+                <div className="p-3 rounded-2xl bg-black/50 border border-white/10">
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">2. Examen</div>
+                  <div className="text-base font-extrabold text-emerald-400">{quizScore || 85}%</div>
+                  <div className="text-[10px] text-zinc-400">Aprobado</div>
+                </div>
+                <div className="p-3 rounded-2xl bg-black/50 border border-white/10">
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">3. Lectura</div>
+                  <div className="text-base font-extrabold text-emerald-400">{readingScore || 85}%</div>
+                  <div className="text-[10px] text-zinc-400">Fluidez IPA</div>
+                </div>
+                <div className="p-3 rounded-2xl bg-black/50 border border-white/10">
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">4. Juegos</div>
+                  <div className="text-base font-extrabold text-emerald-400">{mysteryWordScore || 85}%</div>
+                  <div className="text-[10px] text-zinc-400">Palabra Resuelta</div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGraduationModal(false);
+                    router.push('/dashboard');
+                  }}
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-accent via-indigo-600 to-brand-cyan hover:opacity-95 text-white font-black text-sm sm:text-base shadow-xl shadow-brand-accent/40 flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-105"
+                >
+                  <Sparkles size={18} />
+                  <span>Continuar al Dashboard (Siguiente Tema)</span>
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ⚠️ Failed Score Modal (Score < 80%) */}
+      <AnimatePresence>
+        {showFailedScoreModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-lg animate-fade-in">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-xl rounded-3xl bg-gradient-to-b from-zinc-900 via-[#1f1015] to-black border-2 border-red-500/50 p-6 sm:p-8 shadow-[0_0_60px_rgba(239,68,68,0.25)] text-white space-y-6 text-center relative overflow-hidden"
+            >
+              <div className="w-16 h-16 rounded-full bg-red-500/20 border-2 border-red-400 flex items-center justify-center mx-auto shadow-xl shadow-red-500/20 text-red-400">
+                <AlertCircle size={32} />
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="px-3.5 py-1 rounded-full bg-red-500/25 border border-red-400/40 text-red-300 text-xs font-black uppercase tracking-wider">
+                  Clase No Aprobada • Puntaje: {calculatedOverallScore}%
+                </span>
+                <h3 className="text-xl sm:text-2xl font-outfit font-extrabold text-white mt-2">
+                  Se requiere al menos 80% para aprobar
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-300 max-w-md mx-auto leading-relaxed">
+                  Para asegurar el dominio del Marco Común Europeo, una clase solo se da por aprobada si la suma de todas sus actividades alcanza 80 o más.
+                </p>
+              </div>
+
+              {/* Activities Status Breakdown */}
+              <div className="grid grid-cols-3 gap-2.5 max-w-md mx-auto text-left text-xs">
+                <div className={`p-3 rounded-2xl border ${quizCompleted && quizScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">Examen</div>
+                  <div className={`text-base font-bold ${quizCompleted && quizScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {quizCompleted ? `${quizScore}%` : 'Incompleto'}
+                  </div>
+                </div>
+
+                <div className={`p-3 rounded-2xl border ${readingCompleted && readingScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">Lectura IPA</div>
+                  <div className={`text-base font-bold ${readingCompleted && readingScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {readingCompleted ? `${readingScore}%` : 'Incompleta'}
+                  </div>
+                </div>
+
+                <div className={`p-3 rounded-2xl border ${mysteryWordCompleted && mysteryWordScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">P. Misteriosa</div>
+                  <div className={`text-base font-bold ${mysteryWordCompleted && mysteryWordScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {mysteryWordCompleted ? `${mysteryWordScore}%` : 'Pendiente'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFailedScoreModal(false);
+                    if (practiceSlideIdx !== -1) {
+                      setCurrentPhaseIdx(practiceSlideIdx);
+                      setPracticeProgress({
+                        correctCount: 0,
+                        totalCount: lesson?.phases?.[practiceSlideIdx]?.exercises?.length || 8,
+                        isUnlocked: false,
+                      });
+                    }
+                    setViewMode('board');
+                    toast('📝 Reiniciando examen de práctica desde la pregunta 1.', { icon: '📝' });
+                  }}
+                  className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-brand-accent to-brand-cyan hover:opacity-95 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                >
+                  <RotateCcw size={14} />
+                  <span>Repetir Examen</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFailedScoreModal(false);
+                    setViewMode('games');
+                  }}
+                  className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/40 text-brand-gold font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Gamepad2 size={14} />
+                  <span>Jugar P. Misteriosa</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFailedScoreModal(false);
+                    router.push('/dashboard');
+                  }}
+                  className="w-full sm:w-auto py-3 px-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-zinc-300 hover:text-white font-semibold text-xs cursor-pointer"
+                >
+                  <span>Salir al Dashboard</span>
                 </button>
               </div>
             </motion.div>

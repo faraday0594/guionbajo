@@ -31,6 +31,10 @@ interface GameArenaProps {
   sublevel: string;
   lessonId?: string;
   onBackToLesson?: () => void;
+  mysteryWordCompleted?: boolean;
+  twinCardsCompleted?: boolean;
+  onGameScoreUpdate?: (gameType: 'mystery_word' | 'twin_cards', score: number) => void;
+  onFinishClass?: () => void;
 }
 
 export default function GameArena({
@@ -38,6 +42,10 @@ export default function GameArena({
   sublevel,
   lessonId,
   onBackToLesson,
+  mysteryWordCompleted = false,
+  twinCardsCompleted = false,
+  onGameScoreUpdate,
+  onFinishClass,
 }: GameArenaProps) {
   const router = useRouter();
   // Starts on the Game Hub Lobby panel so the user chooses their game first
@@ -298,6 +306,10 @@ export default function GameArena({
       setEarnedXp(40);
     }
 
+    if (onGameScoreUpdate) {
+      onGameScoreUpdate('mystery_word', res.score);
+    }
+
     setShowReviewModal(true);
   };
 
@@ -326,6 +338,10 @@ export default function GameArena({
     } catch (e) {
       console.warn('Submit score error:', e);
       setEarnedXp(45);
+    }
+
+    if (onGameScoreUpdate) {
+      onGameScoreUpdate('twin_cards', res.score);
     }
 
     setShowReviewModal(true);
@@ -497,9 +513,16 @@ export default function GameArena({
                 <div className="w-14 h-14 rounded-2xl bg-brand-accent/20 border border-brand-accent/40 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
                   🎴
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-[10px] font-extrabold uppercase tracking-wider">
-                  Memoria & Reflejos
-                </span>
+                {twinCardsCompleted ? (
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                    <CheckCircle2 size={11} />
+                    Completado
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-[10px] font-extrabold uppercase tracking-wider">
+                    Memoria & Reflejos
+                  </span>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -552,9 +575,16 @@ export default function GameArena({
                 <div className="w-14 h-14 rounded-2xl bg-brand-gold/20 border border-brand-gold/40 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
                   🔍
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-brand-gold/20 border border-brand-gold/40 text-brand-gold text-[10px] font-extrabold uppercase tracking-wider">
-                  Vocabulario & Pistas
-                </span>
+                {mysteryWordCompleted ? (
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                    <CheckCircle2 size={11} />
+                    Completado
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-full bg-amber-500/25 border border-amber-400/40 text-amber-200 text-[10px] font-extrabold uppercase tracking-wider animate-pulse">
+                    ⚠️ Pendiente de completar
+                  </span>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -590,6 +620,29 @@ export default function GameArena({
             </div>
           </motion.div>
         </div>
+
+        {/* 🏆 Banner de Evaluación y Aprobación de la Clase */}
+        {onFinishClass && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-brand-surface/40 border border-brand-border/60">
+            <div className="space-y-1 text-center sm:text-left">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2 justify-center sm:justify-start">
+                <Award size={16} className="text-brand-gold" />
+                <span>¿Completaste tus desafíos didácticos?</span>
+              </h4>
+              <p className="text-xs text-brand-text-secondary">
+                Se requiere un promedio general de <strong className="text-brand-gold">80% o más</strong> combinando examen, lectura y juegos para aprobar la clase y avanzar.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onFinishClass}
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-accent to-brand-cyan text-white font-bold text-xs flex items-center gap-2 shadow-xl hover:scale-105 transition-all flex-shrink-0 cursor-pointer"
+            >
+              <span>Finalizar Clase y Evaluar</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
       </div>
     );
   }

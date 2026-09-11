@@ -26,12 +26,18 @@ async def get_progress_stats(current_user: User = Depends(get_current_user), db:
     
     if not profile:
         return {}
-        
+
+    k_map = dict(profile.knowledge_map or {})
+    active_cp = k_map.get("active_checkpoint")
+    current_class_idx = k_map.get("current_class_index", 1)
+
     return {
         "total_xp": profile.total_xp,
         "streak_days": profile.streak_days,
         "current_level": profile.current_level,
-        "current_sublevel": profile.current_sublevel
+        "current_sublevel": profile.current_sublevel,
+        "current_class_index": current_class_idx,
+        "active_checkpoint": active_cp,
     }
 
 @router.post("/level")

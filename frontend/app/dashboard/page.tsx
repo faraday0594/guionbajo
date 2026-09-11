@@ -215,41 +215,52 @@ export default function DashboardPage() {
     streak_days: 0,
   });
 
-  // Selected stage tab (A1, A2, B1, B2) and active sublevel pill
-  const [activeStage, setActiveStage] = useState('A1');
-  const [activeSublevel, setActiveSublevel] = useState('A1.1');
-  const [updatingLevel, setUpdatingLevel] = useState(false);
+  const [currentClassIndex, setCurrentClassIndex] = useState(1);
+  const [activeCheckpoint, setActiveCheckpoint] = useState<any>(null);
 
   useEffect(() => {
     async function loadDashboard() {
-      // Guard: don't hit the API if there's no token
       if (!getToken()) {
         router.replace('/login');
         return;
       }
       try {
-        const [me, stats] = await Promise.all([
+        const [me, stats, checkpointRes] = await Promise.all([
           api.getMe().catch(() => null),
           api.getStats().catch(() => null),
+          api.getLessonCheckpoint().catch(() => null),
         ]);
 
         if (me) {
           setUserStats(prev => ({ ...prev, name: me.name || prev.name }));
         }
 
-        if (stats && stats.current_sublevel) {
-          const userSublevel = stats.current_sublevel || 'A1.1';
-          const userStage = userSublevel.split('.')[0] || 'A1';
-          setUserStats(prev => ({
-            ...prev,
-            current_level: userStage,
-            current_sublevel: userSublevel,
-            total_xp: stats.total_xp ?? prev.total_xp,
-            streak_days: stats.streak_days ?? prev.streak_days,
-          }));
-          setActiveStage(userStage);
-          setActiveSublevel(userSublevel);
+        const userSublevel = stats?.current_sublevel || 'A1.1';
+        const userStage = userSublevel.split('.')[0] || 'A1';
+        const classIdx = stats?.current_class_index || checkpointRes?.current_class_index || 1;
+
+        setUserStats(prev => ({
+          ...prev,
+          current_level: userStage,
+          current_sublevel: userSublevel,
+          total_xp: stats?.total_xp ?? prev.total_xp,
+          streak_days: stats?.streak_days ?? prev.streak_days,
+        }));
+        setCurrentClassIndex(classIdx);
+
+        let cp = checkpointRes?.checkpoint || stats?.active_checkpoint || null;
+        if (!cp && typeof window !== 'undefined') {
+          try {
+            const saved = localStorage.getItem('guionbajo_lesson_checkpoint');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (parsed && (!parsed.sublevel || parsed.sublevel === userSublevel)) {
+                cp = parsed;
+              }
+            }
+          } catch (_) {}
         }
+        setActiveCheckpoint(cp);
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
       } finally {
@@ -262,39 +273,16 @@ export default function DashboardPage() {
 
   const [dashboardTab, setDashboardTab] = useState<'curriculum' | 'phonetics'>('curriculum');
 
-  const handleStageSelect = (stage: string) => {
-    setActiveStage(stage);
-    const firstSublevel = SUBLEVEL_MAP[stage]?.[0] || 'A1.1';
-    setActiveSublevel(firstSublevel);
-  };
+  const handleLaunchMission = () => {
+    const pensum = CEFR_PENSUM[userStats.current_sublevel] || CEFR_PENSUM['A1.1'];
+    const activeMod = pensum.modules[currentClassIndex - 1] || pensum.modules[0];
+    const topic = activeCheckpoint?.topic || activeMod.topic || activeMod.title;
+    const sublevel = userStats.current_sublevel;
+    const classIdx = currentClassIndex;
+    const lessonId = activeCheckpoint?.lesson_id || 'new';
 
-  const handleSublevelSelect = (sublevel: string) => {
-    setActiveSublevel(sublevel);
-  };
-
-  const handleSaveAsCurrentLevel = async () => {
-    setUpdatingLevel(true);
-    try {
-      await api.updateLevel(activeSublevel);
-      setUserStats(prev => ({
-        ...prev,
-        current_sublevel: activeSublevel,
-        current_level: activeSublevel.split('.')[0],
-      }));
-      toast.success(`¡Nivel actualizado a ${activeSublevel}! Tu ruta se guardó.`);
-    } catch (err) {
-      toast.error('Error al actualizar el nivel');
-    } finally {
-      setUpdatingLevel(false);
-    }
-  };
-
-  const handleLaunchModule = (mod: Module, index: number) => {
-    const topic = mod.topic || mod.title;
-    const sublevel = activeSublevel;
-    const classIdx = mod.class_index || index + 1;
-    toast.success(`Iniciando Clase ${classIdx}: "${topic}" (${sublevel})`);
-    router.push(`/lesson/new?topic=${encodeURIComponent(topic)}&sublevel=${encodeURIComponent(sublevel)}&class_index=${classIdx}`);
+    toast.success(`Continuando Clase ${classIdx}: "${topic}" (${sublevel})`);
+    router.push(`/lesson/${lessonId}?topic=${encodeURIComponent(topic)}&sublevel=${encodeURIComponent(sublevel)}&class_index=${classIdx}&resume=true`);
   };
 
   const handleLogout = () => {
@@ -312,8 +300,9 @@ export default function DashboardPage() {
     );
   }
 
-  const currentPensum = CEFR_PENSUM[activeSublevel] || CEFR_PENSUM['A1.1'];
-  const isCurrentActiveUserLevel = userStats.current_sublevel === activeSublevel;
+  const currentPensum = CEFR_PENSUM[userStats.current_sublevel] || CEFR_PENSUM['A1.1'];
+  const activeModule = currentPensum.modules[currentClassIndex - 1] || currentPensum.modules[0];
+  const activeTopic = activeCheckpoint?.topic || activeModule?.topic || activeModule?.title || 'Daily Workout';
 
   return (
     <div className="min-h-screen bg-brand-dark flex flex-col md:flex-row text-white">
@@ -377,7 +366,7 @@ export default function DashboardPage() {
             }`}
           >
             <BookOpen size={16} className={dashboardTab === 'curriculum' ? 'text-brand-cyan' : ''} />
-            <span>Ruta de Aprendizaje (4 Subniveles × 4 Clases)</span>
+            <span>Tu Clase del Día (Ruta Personalizada)</span>
           </button>
 
           <button
@@ -397,167 +386,222 @@ export default function DashboardPage() {
           <PhoneticBoard />
         ) : (
           <>
-            {/* 🚀 Hero Next-Action CTA: 1-Click Instant Launch */}
-            <div className="mb-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-brand-accent/30 via-indigo-900/40 to-brand-cyan/20 border border-brand-cyan/40 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 group">
-              <div className="flex-shrink-0 relative z-10 hidden md:block">
-                <TutorAvatar size="md" emotion="happy" />
-              </div>
-              <div className="space-y-2 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-bold uppercase tracking-wider">
-                  <Sparkles size={13} className="animate-spin text-brand-cyan" />
-                  <span>Tu Misión de Hoy • Nivel {activeSublevel}</span>
+            {/* 🚀 Hero Next-Action CTA: 1-Click Instant Launch & Savepoint Resume */}
+            <div className="mb-8 p-6 sm:p-10 rounded-3xl bg-gradient-to-r from-brand-accent/25 via-indigo-950/60 to-brand-cyan/20 border border-brand-cyan/40 shadow-2xl relative overflow-hidden flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 group">
+              {/* Ambient Glows */}
+              <div className="absolute -top-24 -left-24 w-72 h-72 bg-brand-cyan/15 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-brand-accent/20 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex items-start sm:items-center gap-6 relative z-10">
+                <div className="flex-shrink-0 hidden sm:block">
+                  <TutorAvatar size="md" emotion="happy" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-outfit font-extrabold text-white">
-                  {currentPensum.modules[0]?.title || 'Daily Workout'}
-                </h2>
-                <p className="text-xs sm:text-sm text-brand-text-secondary max-w-xl">
-                  {currentPensum.modules[0]?.description || 'Aprende estructuras clave, fonética y juegos interactivos en 5 minutos.'}
-                </p>
-              </div>
 
-              <button
-                onClick={() => handleLaunchModule(currentPensum.modules[0], 0)}
-                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-brand-accent to-brand-cyan text-white font-black text-sm shadow-xl shadow-brand-accent/40 hover:scale-105 transition-all flex items-center gap-3 relative z-10 flex-shrink-0 cursor-pointer"
-              >
-                <Play size={18} className="fill-current text-white" />
-                <span>CONTINUAR CLASE (5 MIN)</span>
-                <ChevronRight size={18} />
-              </button>
-            </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-bold uppercase tracking-wider">
+                      <Sparkles size={13} className="animate-spin text-brand-cyan" />
+                      <span>Tu Misión de Hoy • Nivel {userStats.current_sublevel} • Clase {currentClassIndex} de 4</span>
+                    </div>
 
-            {/* Level Selector Header */}
-            <section className="glass p-6 rounded-3xl border border-brand-accent/30 mb-8 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-brand-cyan text-xs font-bold uppercase tracking-wider mb-1">
-                <Layers size={14} />
-                <span>Selector de Nivel & Pensum Profesional</span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-outfit font-bold text-white">
-                Elige tu Nivel de Partida o Tema de Interés
-              </h2>
-              <p className="text-xs sm:text-sm text-brand-text-secondary">
-                Puedes explorar y tomar lecciones de cualquier nivel del Marco Común Europeo (A1 a B2).
-              </p>
-            </div>
-
-            {!isCurrentActiveUserLevel && (
-              <button
-                onClick={handleSaveAsCurrentLevel}
-                disabled={updatingLevel}
-                className="px-4 py-2.5 bg-brand-accent hover:bg-brand-accent/90 text-white text-xs font-bold rounded-xl transition-all glow-accent flex items-center justify-center gap-2 shadow-lg flex-shrink-0"
-              >
-                {updatingLevel ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                <span>Fijar {activeSublevel} como mi Nivel Principal</span>
-              </button>
-            )}
-          </div>
-
-          {/* Main Stage Tabs (A1, A2, B1, B2) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-            {STAGES.map(stage => {
-              const isActive = activeStage === stage;
-              return (
-                <button
-                  key={stage}
-                  onClick={() => handleStageSelect(stage)}
-                  className={`py-3 px-4 rounded-2xl border text-sm font-bold transition-all flex flex-col items-center gap-0.5 ${
-                    isActive
-                      ? 'bg-brand-accent border-brand-cyan text-white shadow-lg shadow-brand-accent/30'
-                      : 'bg-brand-surface/60 border-brand-border text-brand-text-muted hover:text-white hover:bg-brand-surface'
-                  }`}
-                >
-                  <span className="text-base">{stage}</span>
-                  <span className="text-[10px] font-normal opacity-80">
-                    {stage === 'A1' ? 'Principiante' : stage === 'A2' ? 'Elemental' : stage === 'B1' ? 'Intermedio' : 'Fluidez B2'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Sublevel Pills (e.g. A1.1, A1.2, A1.3, A1.4) */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
-            {SUBLEVEL_MAP[activeStage]?.map(sub => {
-              const isPillActive = activeSublevel === sub;
-              const isUserCurrent = userStats.current_sublevel === sub;
-              return (
-                <button
-                  key={sub}
-                  onClick={() => handleSublevelSelect(sub)}
-                  className={`px-4 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 ${
-                    isPillActive
-                      ? 'bg-brand-cyan text-brand-dark border-brand-cyan shadow-md font-extrabold'
-                      : 'bg-brand-surface/40 border-brand-border text-brand-text-secondary hover:text-white'
-                  }`}
-                >
-                  <span>{sub}</span>
-                  {isUserCurrent && (
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-brand-dark text-brand-cyan font-bold">
-                      ACTUAL
+                    <span className="text-[11px] font-semibold text-brand-gold bg-brand-gold/15 px-2.5 py-0.5 rounded-lg border border-brand-gold/30">
+                      {activeModule.focus || 'Enfoque Curricular'}
                     </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                  </div>
 
-        {/* Current Active Sublevel Syllabus Title */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <span className="text-xs font-bold text-brand-gold uppercase tracking-wider block mb-1">
-              Pensum Oficial — {currentPensum.badge}
-            </span>
-            <h3 className="text-xl font-outfit font-bold text-white">
-              {currentPensum.title}
-            </h3>
-          </div>
-          <span className="text-xs text-brand-text-muted font-mono hidden sm:inline">
-            4 Módulos Estructurados
-          </span>
-        </div>
+                  <h2 className="text-2xl sm:text-4xl font-outfit font-extrabold text-white tracking-tight">
+                    {activeTopic}
+                  </h2>
 
-        {/* Modules Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {currentPensum.modules.map((mod, idx) => (
-            <motion.div
-              key={mod.id || idx}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              className="glass p-6 rounded-3xl border border-brand-border/60 hover:border-brand-cyan/40 transition-all flex flex-col justify-between space-y-4 group shadow-xl bg-brand-surface/30"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-brand-accent/20 border border-brand-accent/30 text-brand-cyan">
-                    {activeSublevel} — Clase {idx + 1}{idx === 3 ? ' (Evaluación / Capstone)' : ''}
-                  </span>
-                  <span className="text-[11px] font-semibold text-brand-gold bg-brand-gold/10 px-2 py-0.5 rounded-lg border border-brand-gold/20">
-                    {mod.focus}
-                  </span>
+                  <p className="text-xs sm:text-sm text-brand-text-secondary max-w-2xl leading-relaxed">
+                    {activeModule.description || 'Aprende estructuras clave, discriminación fonética, lectura con IPA y juegos en 5 minutos.'}
+                  </p>
+
+                  {/* 📍 Checkpoint Timeline Status Bar (4 Etapas de la Clase) */}
+                  <div className="pt-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-2xl">
+                      {/* Etapa 1: Pizarra Didáctica */}
+                      <div className={`p-2.5 rounded-xl border text-xs transition-all ${
+                        activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed
+                          ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300 shadow-sm'
+                          : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                      }`}>
+                        <div className="font-bold flex items-center justify-between gap-1 mb-0.5">
+                          <span>1. Pizarra</span>
+                          {activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed ? (
+                            <CheckCircle2 size={13} className="text-emerald-400" />
+                          ) : (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-accent/30 text-brand-cyan">Activa</span>
+                          )}
+                        </div>
+                        <div className="text-[11px] opacity-85 truncate">
+                          {activeCheckpoint?.current_slide ? `Diapositiva ${activeCheckpoint.current_slide + 1}` : 'Explicación'}
+                        </div>
+                      </div>
+
+                      {/* Etapa 2: Examen Teórico */}
+                      <div className={`p-2.5 rounded-xl border text-xs transition-all ${
+                        activeCheckpoint?.quiz_completed
+                          ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                          : activeCheckpoint && activeCheckpoint.current_slide >= 2
+                            ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                            : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                      }`}>
+                        <div className="font-bold flex items-center justify-between gap-1 mb-0.5">
+                          <span>2. Examen</span>
+                          {activeCheckpoint?.quiz_completed ? (
+                            <CheckCircle2 size={13} className="text-emerald-400" />
+                          ) : activeCheckpoint && activeCheckpoint.current_slide >= 2 ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Repetir</span>
+                          ) : null}
+                        </div>
+                        <div className="text-[11px] opacity-85 truncate">
+                          {activeCheckpoint?.quiz_completed
+                            ? `${activeCheckpoint.quiz_score || 80}% pts`
+                            : activeCheckpoint && activeCheckpoint.current_slide >= 2
+                              ? 'Pendiente de repetir'
+                              : 'Práctica Quiz'}
+                        </div>
+                      </div>
+
+                      {/* Etapa 3: Lectura IPA */}
+                      <div className={`p-2.5 rounded-xl border text-xs transition-all ${
+                        activeCheckpoint?.reading_completed
+                          ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                          : activeCheckpoint?.view_mode === 'reading'
+                            ? 'bg-brand-cyan/20 border-brand-cyan/50 text-brand-cyan'
+                            : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                      }`}>
+                        <div className="font-bold flex items-center justify-between gap-1 mb-0.5">
+                          <span>3. Lectura IPA</span>
+                          {activeCheckpoint?.reading_completed ? (
+                            <CheckCircle2 size={13} className="text-emerald-400" />
+                          ) : null}
+                        </div>
+                        <div className="text-[11px] opacity-85 truncate">
+                          {activeCheckpoint?.reading_completed
+                            ? `${activeCheckpoint.reading_score || 85}% pts`
+                            : '3 Escenas Visuales'}
+                        </div>
+                      </div>
+
+                      {/* Etapa 4: Zona de Juegos */}
+                      <div className={`p-2.5 rounded-xl border text-xs transition-all ${
+                        activeCheckpoint?.mystery_word_completed
+                          ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                          : activeCheckpoint?.view_mode === 'games'
+                            ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                            : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                      }`}>
+                        <div className="font-bold flex items-center justify-between gap-1 mb-0.5">
+                          <span>4. Juegos</span>
+                          {activeCheckpoint?.mystery_word_completed ? (
+                            <CheckCircle2 size={13} className="text-emerald-400" />
+                          ) : activeCheckpoint?.view_mode === 'games' ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Pendiente</span>
+                          ) : null}
+                        </div>
+                        <div className="text-[11px] opacity-85 truncate">
+                          {activeCheckpoint?.mystery_word_completed
+                            ? 'Palabra Resuelta'
+                            : 'Palabra Misteriosa'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Overall Score Status Alert */}
+                    {activeCheckpoint && (
+                      <div className="mt-3 flex items-center gap-2 text-xs py-1.5 px-3 rounded-xl bg-black/40 border border-white/10 max-w-fit">
+                        <Activity size={13} className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-400' : 'text-amber-400'} />
+                        <span className="text-brand-text-secondary">Puntaje Global Actual:</span>
+                        <strong className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-300' : 'text-amber-300'}>
+                          {activeCheckpoint.overall_score || 0}%
+                        </strong>
+                        <span className="text-[10px] text-brand-text-muted">
+                          (Se requiere ≥ 80% para aprobar y avanzar de tema)
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                <h4 className="text-lg font-outfit font-bold text-white group-hover:text-brand-cyan transition-colors">
-                  {mod.title}
-                </h4>
-
-                <p className="text-xs text-brand-text-secondary leading-relaxed font-mono">
-                  {mod.description}
-                </p>
               </div>
 
+              {/* 🚀 Main Launch CTA Button */}
               <button
-                onClick={() => handleLaunchModule(mod, idx)}
-                className="w-full py-3 bg-brand-accent hover:bg-brand-accent/90 text-white text-xs font-bold rounded-xl transition-all glow-accent flex items-center justify-center gap-2 group-hover:scale-[1.02]"
+                onClick={handleLaunchMission}
+                className="w-full lg:w-auto px-8 py-5 rounded-2xl bg-gradient-to-r from-brand-accent via-indigo-600 to-brand-cyan text-white font-black text-sm sm:text-base shadow-2xl shadow-brand-accent/40 hover:scale-105 hover:shadow-brand-cyan/40 transition-all flex items-center justify-center gap-3 relative z-10 flex-shrink-0 cursor-pointer"
               >
-                <Play size={14} className="fill-current" />
-                <span>Iniciar Clase {idx + 1} con Guionbajo</span>
-                <ChevronRight size={14} />
+                <Play size={20} className="fill-current text-white" />
+                <span>
+                  {activeCheckpoint ? 'CONTINUAR CLASE (5 MIN)' : `INICIAR CLASE ${currentClassIndex} (5 MIN)`}
+                </span>
+                <ChevronRight size={20} />
               </button>
-            </motion.div>
-          ))}
-        </div>
+            </div>
+
+            {/* 🌟 Focused Overview of Today's Lesson */}
+            <div className="glass p-6 sm:p-8 rounded-3xl border border-brand-border/60 bg-brand-surface/20 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-border/40 pb-4">
+                <div>
+                  <span className="text-xs font-bold text-brand-cyan uppercase tracking-wider block mb-0.5">
+                    Plan Pedagógico Diario
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-outfit font-bold text-white">
+                    Estructura Didáctica de la Clase {currentClassIndex} ({userStats.current_sublevel})
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-3 py-1 rounded-full bg-brand-surface border border-brand-border text-brand-text-muted">
+                    Marco Común Europeo {userStats.current_level}
+                  </span>
+                  <span className="text-xs px-3 py-1 rounded-full bg-brand-gold/10 border border-brand-gold/30 text-brand-gold font-semibold">
+                    Aprobación: 80% o más
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl bg-brand-surface/40 border border-brand-border/60 space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan flex items-center justify-center font-bold text-xs">
+                    01
+                  </div>
+                  <h4 className="font-bold text-sm text-white">Pizarra & Storyboard</h4>
+                  <p className="text-xs text-brand-text-secondary leading-relaxed">
+                    Explicación paso a paso con el avatar nativo, fórmulas gramaticales y audio sincronizado palabra por palabra.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-brand-surface/40 border border-brand-border/60 space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-brand-accent/20 border border-brand-accent/40 text-brand-accent flex items-center justify-center font-bold text-xs">
+                    02
+                  </div>
+                  <h4 className="font-bold text-sm text-white">Examen de Práctica</h4>
+                  <p className="text-xs text-brand-text-secondary leading-relaxed">
+                    Desafíos orales y de opción múltiple. Si sales a mitad de examen, deberás repetirlo para garantizar el aprendizaje.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-brand-surface/40 border border-brand-border/60 space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                    03
+                  </div>
+                  <h4 className="font-bold text-sm text-white">Lectura con IPA</h4>
+                  <p className="text-xs text-brand-text-secondary leading-relaxed">
+                    3 escenas ilustradas con transcripción fonética palabra por palabra y evaluación de pronunciación por voz.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-brand-surface/40 border border-brand-border/60 space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 flex items-center justify-center font-bold text-xs">
+                    04
+                  </div>
+                  <h4 className="font-bold text-sm text-white">Zona de Juegos</h4>
+                  <p className="text-xs text-brand-text-secondary leading-relaxed">
+                    Palabra Misteriosa y Twin Cards para fijar vocabulario en memoria de largo plazo antes de aprobar la lección.
+                  </p>
+                </div>
+              </div>
+            </div>
           </>
         )}
       </main>

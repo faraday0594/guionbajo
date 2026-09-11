@@ -182,6 +182,31 @@ export const api = {
 
   getCurrentLesson: () => fetchWithAuth('/lesson/current'),
 
+  saveLessonCheckpoint: (data: {
+    lesson_id?: string;
+    topic: string;
+    sublevel: string;
+    class_index?: number;
+    current_slide: number;
+    view_mode: 'board' | 'timeline' | 'reading' | 'games';
+    quiz_completed?: boolean;
+    quiz_score?: number;
+    reading_completed?: boolean;
+    reading_score?: number;
+    mystery_word_completed?: boolean;
+    mystery_word_score?: number;
+    twin_cards_completed?: boolean;
+    twin_cards_score?: number;
+    overall_score?: number;
+    is_completed?: boolean;
+  }) =>
+    fetchWithAuth('/lesson/checkpoint', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getLessonCheckpoint: () => fetchWithAuth('/lesson/checkpoint'),
+
   // ─── Educational Games (Mystery Word & Twin Cards) ─
   generateGames: (topic: string, sublevel: string, lesson_id?: string, game_type = 'all', pair_count = 6) =>
     fetchWithAuth('/games/generate', {

@@ -12,7 +12,9 @@ from core.adaptive_engine import AdaptiveEngine
 from core.curriculum_graph import CURRICULUM_GRAPH, get_sublevel_info, get_class_node
 import logging
 import asyncio
+from datetime import datetime
 from typing import Optional, Dict, Any
+from core.minimax_agent import TutorAgent, LEVEL_SEQUENCE
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/lesson", tags=["lesson"])
@@ -22,6 +24,25 @@ class AdaptiveLessonGenerateRequest(BaseModel):
     sublevel: Optional[str] = None
     class_index: Optional[int] = 1
     topic: Optional[str] = None
+
+
+class LessonCheckpointRequest(BaseModel):
+    lesson_id: Optional[str] = None
+    topic: str
+    sublevel: str
+    class_index: Optional[int] = 1
+    current_slide: int = 0
+    view_mode: str = "board"  # 'board' | 'timeline' | 'reading' | 'games'
+    quiz_completed: bool = False
+    quiz_score: int = 0
+    reading_completed: bool = False
+    reading_score: int = 0
+    mystery_word_completed: bool = False
+    mystery_word_score: int = 0
+    twin_cards_completed: bool = False
+    twin_cards_score: int = 0
+    overall_score: int = 0
+    is_completed: bool = False
 
 
 @router.post("/generate-adaptive")
@@ -155,6 +176,135 @@ async def current_lesson(
             "sublevel": lesson.sublevel,
             "phases_completed": lesson.phases_completed,
         }
+    }
+
+
+@router.post("/checkpoint")
+async def save_lesson_checkpoint(
+    req: LessonCheckpointRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    prof_result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+    profile = prof_result.scalars().first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Perfil de estudiante no encontrado")
+
+    checkpoint_data = {
+        "lesson_id": req.lesson_id,
+        "topic": req.topic,
+        "sublevel": req.sublevel,
+        "class_index": req.class_index or 1,
+        "current_slide": req.current_slide,
+        "view_mode": req.view_mode,
+        "quiz_completed": req.quiz_completed,
+        "quiz_score": req.quiz_score,
+        "reading_completed": req.reading_completed,
+        "reading_score": req.reading_score,
+        "mystery_word_completed": req.mystery_word_completed,
+        "mystery_word_score": req.mystery_word_score,
+        "twin_cards_completed": req.twin_cards_completed,
+        "twin_cards_score": req.twin_cards_score,
+        "overall_score": req.overall_score,
+        "is_completed": req.is_completed,
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+
+    k_map = dict(profile.knowledge_map or {})
+    current_class_idx = req.class_index or 1
+
+    # Strict CEFR completion logic: only pass if overall_score >= 80
+    if req.is_completed and req.overall_score >= 80:
+        # Mark class as completed
+        xp_earned = max(35, req.overall_score // 2)
+        profile.total_xp = (profile.total_xp or 0) + xp_earned
+
+        # Update Knowledge Map for Topic
+        topic_stat = k_map.get(req.topic, {})
+        k_map[req.topic] = AdaptiveEngine.update_knowledge_node(
+            current_data=topic_stat,
+            is_correct=True,
+            is_productive_speaking=True
+        )
+
+        # Advance class index or sublevel
+        if current_class_idx < 4:
+            next_class_idx = current_class_idx + 1
+            next_sublevel = req.sublevel
+        else:
+            # Advance to next sublevel if available
+            cur_sub = req.sublevel
+            idx = LEVEL_SEQUENCE.index(cur_sub) if cur_sub in LEVEL_SEQUENCE else 0
+            if idx + 1 < len(LEVEL_SEQUENCE):
+                next_sublevel = LEVEL_SEQUENCE[idx + 1]
+            else:
+                next_sublevel = cur_sub
+            next_class_idx = 1
+            profile.current_sublevel = next_sublevel
+            profile.current_level = next_sublevel.split(".")[0]
+
+        k_map["current_class_index"] = next_class_idx
+        # Clear in-progress checkpoint since class was successfully passed
+        k_map["active_checkpoint"] = None
+        profile.knowledge_map = k_map
+
+        # Update LessonHistory if lesson_id
+        if req.lesson_id and not req.lesson_id.startswith("gen-"):
+            lh_res = await db.execute(
+                select(LessonHistory).where(
+                    LessonHistory.id == req.lesson_id,
+                    LessonHistory.user_id == current_user.id
+                )
+            )
+            lh = lh_res.scalars().first()
+            if lh:
+                lh.overall_score = req.overall_score
+                lh.phases_completed = 6
+
+        await db.commit()
+        return {
+            "status": "approved",
+            "passed": True,
+            "overall_score": req.overall_score,
+            "next_class_index": next_class_idx,
+            "next_sublevel": next_sublevel,
+            "message": "¡Felicitaciones! Has aprobado la clase con un puntaje de 80 o más."
+        }
+
+    # If not finished or score < 80, persist savepoint
+    k_map["active_checkpoint"] = checkpoint_data
+    k_map["current_class_index"] = current_class_idx
+    profile.knowledge_map = k_map
+
+    await db.commit()
+    return {
+        "status": "saved",
+        "passed": False,
+        "overall_score": req.overall_score,
+        "current_class_index": current_class_idx,
+        "current_sublevel": profile.current_sublevel or req.sublevel,
+        "message": "Punto de guardado actualizado." if not req.is_completed else "Puntaje insuficiente (< 80%). Debes repetir actividades para aprobar la clase."
+    }
+
+
+@router.get("/checkpoint")
+async def get_lesson_checkpoint(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    prof_result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+    profile = prof_result.scalars().first()
+    if not profile:
+        return {"checkpoint": None, "current_sublevel": "A1.1", "current_class_index": 1}
+
+    k_map = dict(profile.knowledge_map or {})
+    active_cp = k_map.get("active_checkpoint")
+    current_class_idx = k_map.get("current_class_index", 1)
+
+    return {
+        "checkpoint": active_cp,
+        "current_sublevel": profile.current_sublevel or "A1.1",
+        "current_class_index": current_class_idx,
     }
 
 

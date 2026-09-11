@@ -101,6 +101,13 @@ export default function TwinCardsGame({
   const hasSpokenWelcomeRef = useRef<boolean>(false);
   const totalPairsCountRef = useRef<number>(6);
 
+  // Exact real-time score tracking refs to eliminate off-by-one / stale speech announcements
+  const studentScoreRef = useRef<number>(0);
+  const aiScoreRef = useRef<number>(0);
+  const studentPairsCountRef = useRef<number>(0);
+  const aiPairsCountRef = useRef<number>(0);
+  const hasAnnouncedFinalFourRef = useRef<boolean>(false);
+
   // UI state
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [tutorMessage, setTutorMessage] = useState('¡Tu turno! Voltea dos cartas para encontrar la pareja.');
@@ -122,6 +129,12 @@ export default function TwinCardsGame({
     isVoiceActiveRef.current = false;
     matchedPairIdsRef.current.clear();
     twinAiMemoryRef.current.clear();
+
+    studentScoreRef.current = 0;
+    aiScoreRef.current = 0;
+    studentPairsCountRef.current = 0;
+    aiPairsCountRef.current = 0;
+    hasAnnouncedFinalFourRef.current = false;
 
     setMatchedPairIds(new Set());
     setFlippedCardIndices([]);
@@ -312,12 +325,50 @@ export default function TwinCardsGame({
     }
   };
 
+  // ─── 4-CARDS FINAL CLIMAX ANNOUNCEMENT ──────────────────────────────────────
+  const announceFinalFourClimax = async () => {
+    if (hasAnnouncedFinalFourRef.current || isGameOverRef.current) return;
+    hasAnnouncedFinalFourRef.current = true;
+
+    const sPairs = studentPairsCountRef.current;
+    const aPairs = aiPairsCountRef.current;
+
+    let contextualComment = '';
+    if (aPairs > sPairs) {
+      const diff = aPairs - sPairs;
+      if (diff === 1) {
+        contextualComment = 'Si encuentras la siguiente pareja, ¡me ganas la partida! Pero si la encuentro yo, ¡me aseguro la victoria!';
+      } else if (diff === 2) {
+        contextualComment = '¡Con estos dos puntos puedes empatarme el juego! ¿Lograrás la remontada?';
+      } else {
+        contextualComment = '¡Aún puedes sumar dos parejas y acortar distancia!';
+      }
+    } else if (sPairs > aPairs) {
+      const diff = sPairs - aPairs;
+      if (diff === 1) {
+        contextualComment = 'Vas ganando por una, ¡pero si la saco yo te puedo dar vuelta al marcador!';
+      } else if (diff === 2) {
+        contextualComment = '¡Si haces la pareja sellas tu victoria! Pero cuidado, que si la hago yo te empato.';
+      } else {
+        contextualComment = '¡Llevas una gran ventaja! Con esta jugada puedes coronar la partida.';
+      }
+    } else {
+      contextualComment = `¡Estamos empatados ${sPairs} a ${aPairs}! Quien encuentre esta pareja se lleva la victoria definitiva por ${sPairs + 2} a ${aPairs}.`;
+    }
+
+    const climaxSpeech = `¡Atención! Quedan solo 4 cartas en el tablero. Quien haga la siguiente pareja se llevará automáticamente la última y ganará doble puntuación. ${contextualComment}`;
+    await playVoiceMessage(climaxSpeech, 'es');
+  };
+
   const handleTurnTimeout = async () => {
     if (isGameOverRef.current) return;
     setFlippedCardIndices([]);
     setStreak(0);
     await playVoiceMessage('¡Tiempo agotado! Mi turno de buscar en el tablero.');
     if (!isGameOverRef.current) {
+      if (totalPairsCountRef.current - matchedPairIdsRef.current.size === 2 && !hasAnnouncedFinalFourRef.current) {
+        await announceFinalFourClimax();
+      }
       triggerAiTurn();
     }
   };
@@ -331,9 +382,80 @@ export default function TwinCardsGame({
     }
 
     const isPair = card1.pairId === card2.pairId && card1.side !== card2.side;
+    const unmatchedPairsBefore = totalPairsCountRef.current - matchedPairIdsRef.current.size;
 
     if (isPair) {
-      // Synchronous update of ref
+      const wasFinalFourMatch = unmatchedPairsBefore === 2;
+
+      if (wasFinalFourMatch) {
+        // Double pair resolution: finding this pair automatically resolves the 1 remaining pair (the last 2 cards)!
+        const remainingCards = cards.filter(
+          (c) => c.pairId !== card1.pairId && !matchedPairIdsRef.current.has(c.pairId)
+        );
+        const otherPairId = remainingCards.length > 0 ? remainingCards[0].pairId : null;
+        const otherPairObj = otherPairId ? pairs.find((p) => p.pair_id === otherPairId) || null : null;
+
+        // Synchronously add BOTH pairs to ref
+        matchedPairIdsRef.current.add(card1.pairId);
+        if (otherPairId) {
+          matchedPairIdsRef.current.add(otherPairId);
+        }
+        setMatchedPairIds(new Set(matchedPairIdsRef.current));
+
+        const matchedPairObj = pairs.find((p) => p.pair_id === card1.pairId) || null;
+        setLastMatchedPair(matchedPairObj);
+
+        if (player === 'student') {
+          const newStreak = streak + 2;
+          setStreak(newStreak);
+          if (newStreak > maxStreak) setMaxStreak(newStreak);
+
+          studentPairsCountRef.current += 2;
+          setStudentPairsCount(studentPairsCountRef.current);
+
+          const gainedPoints = 300 + (newStreak > 1 ? (newStreak - 1) * 75 : 0);
+          studentScoreRef.current += gainedPoints;
+          setStudentScore(studentScoreRef.current);
+
+          const doubleMsg = `¡Doble pareja conseguida! Encontraste "${card1.text}" y "${card2.text}", y te llevas automáticamente la última pareja: "${otherPairObj?.card_a.text || ''}" y "${otherPairObj?.card_b.text || ''}". ¡Dos puntos en una sola jugada!`;
+          await playVoiceMessage(doubleMsg, 'es');
+
+          if (!isGameOverRef.current) {
+            await new Promise((r) => setTimeout(r, 250));
+            await playVoiceMessage(card1.audio_phrase, 'en');
+            if (otherPairObj?.audio_phrase) {
+              await new Promise((r) => setTimeout(r, 300));
+              await playVoiceMessage(otherPairObj.audio_phrase, 'en');
+            }
+          }
+        } else {
+          setStreak(0);
+          aiPairsCountRef.current += 2;
+          setAiPairsCount(aiPairsCountRef.current);
+
+          aiScoreRef.current += 300;
+          setAiScore(aiScoreRef.current);
+
+          const aiDoubleCelebration = `¡Doble pareja para mí! Encontré "${card1.text}" y "${card2.text}", y me llevo también la última pareja: "${otherPairObj?.card_a.text || ''}" y "${otherPairObj?.card_b.text || ''}". ¡Dos puntos de un solo intento!`;
+          await playVoiceMessage(aiDoubleCelebration, 'es');
+
+          if (!isGameOverRef.current) {
+            await new Promise((r) => setTimeout(r, 250));
+            await playVoiceMessage(card1.audio_phrase, 'en');
+            if (otherPairObj?.audio_phrase) {
+              await new Promise((r) => setTimeout(r, 300));
+              await playVoiceMessage(otherPairObj.audio_phrase, 'en');
+            }
+          }
+        }
+
+        setFlippedCardIndices([]);
+        isEvaluatingRef.current = false;
+        await handleGameOver(studentPairsCountRef.current, aiPairsCountRef.current);
+        return;
+      }
+
+      // Normal single pair match
       matchedPairIdsRef.current.add(card1.pairId);
       setMatchedPairIds(new Set(matchedPairIdsRef.current));
 
@@ -345,9 +467,12 @@ export default function TwinCardsGame({
         setStreak(newStreak);
         if (newStreak > maxStreak) setMaxStreak(newStreak);
 
+        studentPairsCountRef.current += 1;
+        setStudentPairsCount(studentPairsCountRef.current);
+
         const gainedPoints = 150 + (newStreak > 1 ? (newStreak - 1) * 50 : 0);
-        setStudentScore((prev) => prev + gainedPoints);
-        setStudentPairsCount((prev) => prev + 1);
+        studentScoreRef.current += gainedPoints;
+        setStudentScore(studentScoreRef.current);
 
         // Strict linear sequence: 1st announcement -> 2nd English audio
         const phraseMsg = `¡Correcto! Encontraste "${card1.text}" y "${card2.text}". Escucha la pronunciación:`;
@@ -358,8 +483,11 @@ export default function TwinCardsGame({
         }
       } else {
         setStreak(0);
-        setAiScore((prev) => prev + 150);
-        setAiPairsCount((prev) => prev + 1);
+        aiPairsCountRef.current += 1;
+        setAiPairsCount(aiPairsCountRef.current);
+
+        aiScoreRef.current += 150;
+        setAiScore(aiScoreRef.current);
 
         const aiCelebration = `¡Punto para mí! Encontré la pareja: "${card1.text}" y "${card2.text}".`;
         await playVoiceMessage(aiCelebration, 'es');
@@ -372,10 +500,17 @@ export default function TwinCardsGame({
       setFlippedCardIndices([]);
       isEvaluatingRef.current = false;
 
+      const remainingPairsNow = totalPairsCountRef.current - matchedPairIdsRef.current.size;
+
       // Check Victory Condition
-      if (matchedPairIdsRef.current.size >= totalPairsCountRef.current) {
-        handleGameOver();
+      if (remainingPairsNow <= 0) {
+        await handleGameOver(studentPairsCountRef.current, aiPairsCountRef.current);
         return;
+      }
+
+      // If exactly 2 pairs (4 cards) remain, trigger the dramatic climax announcement!
+      if (remainingPairsNow === 2 && !hasAnnouncedFinalFourRef.current) {
+        await announceFinalFourClimax();
       }
 
       // Next turn
@@ -402,6 +537,11 @@ export default function TwinCardsGame({
       if (isGameOverRef.current) {
         isEvaluatingRef.current = false;
         return;
+      }
+
+      const remainingPairsNow = totalPairsCountRef.current - matchedPairIdsRef.current.size;
+      if (remainingPairsNow === 2 && !hasAnnouncedFinalFourRef.current) {
+        await announceFinalFourClimax();
       }
 
       if (player === 'student') {
@@ -549,21 +689,26 @@ export default function TwinCardsGame({
 
   // ─── GAME OVER HANDLER ──────────────────────────────────────────────────────
 
-  const handleGameOver = async () => {
+  const handleGameOver = async (finalStudentPairs?: number, finalAiPairs?: number) => {
     if (isGameOverRef.current) return;
     isGameOverRef.current = true;
     setIsGameOver(true);
     stopQuestionTimer();
     if (aiTurnTimeoutRef.current) {
       clearTimeout(aiTurnTimeoutRef.current);
+      aiTurnTimeoutRef.current = null;
     }
 
-    const studentWon = studentPairsCount >= aiPairsCount;
+    const sPairs = finalStudentPairs !== undefined ? finalStudentPairs : studentPairsCountRef.current;
+    const aPairs = finalAiPairs !== undefined ? finalAiPairs : aiPairsCountRef.current;
+
     let endMsg = '';
-    if (studentWon) {
-      endMsg = `¡Felicidades! Has completado el tablero con ${studentPairsCount} parejas frente a mis ${aiPairsCount}. ¡Excelente memoria y vocabulario!`;
+    if (sPairs > aPairs) {
+      endMsg = `¡Felicidades! Has ganado la partida con ${sPairs} parejas frente a mis ${aPairs}. ¡Excelente memoria y vocabulario!`;
+    } else if (sPairs === aPairs) {
+      endMsg = `¡Gran partida! Hemos quedado en empate con ${sPairs} parejas cada uno. ¡Demostraste una memoria impecable!`;
     } else {
-      endMsg = `¡Bien jugado! Esta vez encontré ${aiPairsCount} parejas y tú ${studentPairsCount}. ¡Revisemos las cartas para dominar los conceptos!`;
+      endMsg = `¡Bien jugado! Esta vez gané yo con ${aPairs} parejas frente a tus ${sPairs}. ¡Revisemos las cartas para dominar los conceptos!`;
     }
 
     await playVoiceMessage(endMsg);
@@ -670,6 +815,23 @@ export default function TwinCardsGame({
           />
         </div>
 
+        {/* High-Stakes Final 4 Cards Banner */}
+        {cards.length > 0 && totalPairsCountRef.current - matchedPairIds.size === 2 && !isGameOver && (
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-brand-gold/25 to-amber-500/20 border border-brand-gold/60 text-brand-gold text-xs font-bold shadow-lg shadow-brand-gold/15"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles size={15} className="animate-spin text-amber-300 flex-shrink-0" />
+              <span>⚡ ¡ÚLTIMAS 4 CARTAS! Quien acierte gana DOBLE PUNTO (2 parejas)</span>
+            </div>
+            <span className="px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-extrabold uppercase font-mono tracking-wider shadow-sm flex-shrink-0">
+              Jugada Decisiva
+            </span>
+          </motion.div>
+        )}
+
         <div className="bg-brand-surface/70 px-4 py-2.5 rounded-xl border border-brand-cyan/20 text-xs text-brand-text-secondary flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-1">
             <Volume2 size={15} className={`text-brand-cyan flex-shrink-0 ${isSpeaking ? 'animate-pulse text-brand-gold' : ''}`} />
@@ -764,15 +926,25 @@ export default function TwinCardsGame({
             className="p-6 rounded-3xl glass border-2 border-brand-accent shadow-[0_0_50px_rgba(108,99,255,0.4)] flex flex-col md:flex-row items-center justify-between gap-6"
           >
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-brand-accent/20 border border-brand-accent/40 flex items-center justify-center text-3xl shadow-xl">
-                🏆
+              <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center text-3xl shadow-xl ${
+                studentPairsCount > aiPairsCount
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                  : studentPairsCount === aiPairsCount
+                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                  : 'bg-purple-500/20 text-purple-400 border-purple-500/40'
+              }`}>
+                {studentPairsCount > aiPairsCount ? '🏆' : studentPairsCount === aiPairsCount ? '🤝' : '💡'}
               </div>
               <div className="space-y-1">
                 <h3 className="text-xl font-outfit font-extrabold text-white">
-                  ¡Partida de Cartas Gemelas Finalizada!
+                  {studentPairsCount > aiPairsCount
+                    ? '¡Victoria! Has Ganado la Partida'
+                    : studentPairsCount === aiPairsCount
+                    ? '¡Partida Reñida! Empate Técnico'
+                    : '¡Buen Intento! Sigue Practicando'}
                 </h3>
                 <p className="text-xs text-brand-text-secondary">
-                  Tu puntuación: <strong className="text-brand-gold">{studentScore} pts</strong> ({studentPairsCount} parejas) | Guionbajo: <strong>{aiScore} pts</strong> ({aiPairsCount} parejas)
+                  Tu puntuación: <strong className="text-brand-gold">{studentScore} pts</strong> ({studentPairsCount} parejas) &mdash; Guionbajo: <strong className="text-purple-300">{aiScore} pts</strong> ({aiPairsCount} parejas)
                 </p>
               </div>
             </div>
@@ -791,9 +963,9 @@ export default function TwinCardsGame({
                 type="button"
                 onClick={() => {
                   onFinishGame({
-                    score: studentScore,
-                    studentPairsCount,
-                    aiPairsCount,
+                    score: studentScoreRef.current,
+                    studentPairsCount: studentPairsCountRef.current,
+                    aiPairsCount: aiPairsCountRef.current,
                     maxStreak,
                     difficulty,
                     pairs,

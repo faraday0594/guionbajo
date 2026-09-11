@@ -95,6 +95,52 @@ function playErrorSound() {
   } catch (_) { /* Audio API no disponible */ }
 }
 
+function playElectricZapSound() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(360, now);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.16);
+    gain.gain.setValueAtTime(0.09, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.18);
+  } catch (_) { /* Audio API no disponible */ }
+}
+
+function playBubbleSound(count = 5) {
+  try {
+    const ctx = getAudioCtx();
+    const baseTime = ctx.currentTime;
+    for (let i = 0; i < count; i++) {
+      const startTime = baseTime + i * 0.11 + Math.random() * 0.04;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+
+      const startFreq = 260 + Math.random() * 150;
+      const endFreq = startFreq + 300 + Math.random() * 320;
+
+      osc.frequency.setValueAtTime(startFreq, startTime);
+      osc.frequency.exponentialRampToValueAtTime(endFreq, startTime + 0.075);
+
+      gain.gain.setValueAtTime(0.12, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.095);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.1);
+    }
+  } catch (_) { /* Audio API no disponible */ }
+}
+
 function playWinSound() {
   try {
     const ctx = getAudioCtx();
@@ -140,18 +186,17 @@ const BUBBLES = [
   { size: 3,  left: '42%', bottom: '15%', duration: '3s',   delay: '1s' },
 ];
 
-// ── Tank Water & Submersion Calibration ─────────────────────────
-// Calibrated so that each mistake level submerges the next anatomical milestone:
-// 0: Dry hover above water (0%)
-// 1: Thruster submerged in water (35%)
-// 2: Lower torso submerged (50%)
-// 3: CRT screen submerged (65%)
-// 4: Neck and chin submerged (78%)
-// 5: Mouth and eyes submerged, bubbles erupt (89%)
-// 6: Fully submerged / drowned (100%)
-const WATER_LEVELS_PCT = [0, 35, 50, 65, 78, 89, 100];
-const ROBOT_SINK_Y_PX = [0, 12, 24, 38, 52, 66, 80];
-const ROBOT_SINK_Y_PX_SM = [0, 6, 12, 19, 26, 33, 40];
+// ── Tank Water & Submersion Calibration (Strict User Specification) ────
+// 0: Dry (0%) - Guionbajo feliz, flotando tranquilo
+// 1: Agua un poco abajo de Guionbajo (24%) - Se ve un poco preocupado
+// 2: Agua casi a la mitad de su tamaño (44%) - Más preocupado
+// 3: Sube más el agua (62%) - Muy preocupado, rayos de corto circuito
+// 4: Tapado hasta el cuello (78%) - Desesperado, rayos, mueve manos sumergidas
+// 5: Tapado por completo (92%) - Burbujas continuas, sonido burbujas, mueve manos, NO habla
+// 6: Totalmente tapado / tanque 100% - Drowned X_X, inerte al fondo, NO habla
+const WATER_LEVELS_PCT = [0, 24, 44, 62, 78, 92, 100];
+const ROBOT_SINK_Y_PX = [0, 6, 16, 28, 42, 60, 78];
+const ROBOT_SINK_Y_PX_SM = [0, 4, 10, 18, 26, 38, 48];
 
 interface GuionbajoTankState {
   emotion: TutorEmotion;
@@ -194,7 +239,7 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
     case 1:
       return {
         emotion: 'thinking',
-        crtLabel: '? ?',
+        crtLabel: '?!',
         crtColor: '#00D4FF',
         sparkBulb: false,
         drowned: false,
@@ -202,7 +247,7 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
     case 2:
       return {
         emotion: 'nervous',
-        crtLabel: '! !',
+        crtLabel: 'WARN',
         crtColor: '#FFB627',
         sparkBulb: false,
         drowned: false,
@@ -210,9 +255,9 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
     case 3:
       return {
         emotion: 'nervous',
-        crtLabel: 'WARN',
+        crtLabel: 'ERR!',
         crtColor: '#FB923C',
-        sparkBulb: false,
+        sparkBulb: true,
         drowned: false,
       };
     case 4:
@@ -226,8 +271,8 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
     case 5:
       return {
         emotion: 'angry',
-        crtLabel: 'HELP',
-        crtColor: '#FFFFFF',
+        crtLabel: '*GLUB*',
+        crtColor: '#00D4FF',
         sparkBulb: true,
         drowned: false,
       };
@@ -296,18 +341,20 @@ export default function MysteryWordGame({
   const robotState = getGuionbajoState(mistakes, isWon, gameOver);
   const isDanger = mistakes >= 4;
 
-  // ── 1. Speak helper — FIX #2: timeout fallback ──────────────
+  // ── 1. Speak helper — Generous word-scaled safety net ────────
   const speakTutor = useCallback(async (text: string) => {
     if (!text || !isComponentMountedRef.current) return;
     speechAbortControllerRef.current = false;
     setTutorSpeaking(true);
     setTutorSpeechText(text);
 
-    // Safety net: always unlock keyboard after 12 seconds max
+    // Safety net: scale timeout to words count so long speech is never cut off
+    const words = text.split(/\s+/).filter(Boolean).length;
+    const safetyMs = Math.max(words * 750, 18000);
     if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
     speechTimeoutRef.current = setTimeout(() => {
       if (isComponentMountedRef.current) setTutorSpeaking(false);
-    }, 12000);
+    }, safetyMs);
 
     try {
       await playTutorVoice(text, 'es');
@@ -318,6 +365,19 @@ export default function MysteryWordGame({
       if (isComponentMountedRef.current) setTutorSpeaking(false);
     }
   }, []);
+
+  // Periodic bubble sound effect while completely submerged on error 5
+  useEffect(() => {
+    if (mistakes === 5 && !gameOver && !isWon) {
+      playBubbleSound(5);
+      const interval = setInterval(() => {
+        if (isComponentMountedRef.current) {
+          playBubbleSound(4);
+        }
+      }, 2400);
+      return () => clearInterval(interval);
+    }
+  }, [mistakes, gameOver, isWon]);
 
   // Skip ongoing voice
   const handleSkipVoice = () => {
@@ -446,7 +506,6 @@ export default function MysteryWordGame({
   const handleGameWin = useCallback(async (finalScore: number) => {
     setIsWon(true);
     setGameOver(true);
-    // FIX #3: single setScore here, removed the redundant one in handleLetterClick
     setScore(finalScore);
     setConfettiParticles(generateConfetti(22));
     playWinSound();
@@ -454,13 +513,16 @@ export default function MysteryWordGame({
     await speakTutor(winMsg);
   }, [targetWord, speakTutor]);
 
-  // ── 9. Loss handler ──────────────────────────────────────────
+  // ── 9. Loss handler — Guionbajo is drowned under water: NO SPEECH ───
   const handleGameOver = useCallback(async () => {
     setGameOver(true);
     setIsWon(false);
-    const lossMsg = `¡El tanque se ha llenado! La palabra misteriosa era "${targetWord}". ¡Revisemos las pistas para consolidar el aprendizaje!`;
-    await speakTutor(lossMsg);
-  }, [targetWord, speakTutor]);
+    stopTutorVoice();
+    setTutorSpeaking(false);
+    // Underwater: Guionbajo is submerged and cannot speak inside the tank
+    setTutorSpeechText(`¡Tanque lleno! La palabra misteriosa era "${targetWord}".`);
+    playBubbleSound(8);
+  }, [targetWord]);
 
   // ── 10. Letter click — FIX #1: wrapped in useCallback ───────
   const handleLetterClick = useCallback(async (letter: string) => {
@@ -484,7 +546,6 @@ export default function MysteryWordGame({
       setStreak(newStreak);
       if (newStreak > maxStreak) setMaxStreak(newStreak);
 
-      // FIX #3: only accumulate here, pass final to handleGameWin
       const pointsEarned = 100 + (newStreak > 1 ? (newStreak - 1) * 50 : 0);
       const updatedScore = score + pointsEarned;
 
@@ -504,10 +565,20 @@ export default function MysteryWordGame({
       triggerScare();
       triggerSplash();
 
+      if (newMistakes === 3 || newMistakes === 4) {
+        playElectricZapSound();
+      } else if (newMistakes === 5) {
+        playBubbleSound(7);
+      }
+
       if (newMistakes >= MAX_MISTAKES) {
         await handleGameOver();
+      } else if (newMistakes === 5) {
+        // Error 5: Guionbajo is submerged under water. He CANNOT speak!
+        stopTutorVoice();
+        setTutorSpeaking(false);
+        setTutorSpeechText('¡Glub glub glub...! (Guionbajo está bajo el agua y no puede hablar)');
       } else {
-        // FIX #4: pass current unlockedTier explicitly to avoid stale closure
         await unlockClueTier(newMistakes, unlockedTier);
       }
     }
@@ -658,6 +729,8 @@ export default function MysteryWordGame({
                     sparkBulb={robotState.sparkBulb}
                     drowned={robotState.drowned}
                     state={tutorSpeaking ? 'speaking' : 'idle'}
+                    panickedArms={mistakes >= 4 && !robotState.drowned}
+                    shortCircuit={mistakes >= 3 && !robotState.drowned}
                   />
 
                   {/* Mouth Bubbles Emitter (mistakes >= 5) */}
@@ -667,8 +740,40 @@ export default function MysteryWordGame({
                       <span className="mouth-bubble" style={{ width: 5, height: 5, left: 2, animationDelay: '0.4s' }} />
                     </div>
                   )}
+
+                  {/* Continuous Underwater Bubble Stream (mistakes >= 5) */}
+                  {mistakes >= 5 && !robotState.drowned && (
+                    <div className="absolute top-[20px] left-1/2 -translate-x-1/2 pointer-events-none w-10 h-20">
+                      <span className="bubble-stream-particle" style={{ width: 8, height: 8, left: '25%', bottom: '10px', animationDelay: '0s' }} />
+                      <span className="bubble-stream-particle" style={{ width: 6, height: 6, left: '55%', bottom: '15px', animationDelay: '0.4s' }} />
+                      <span className="bubble-stream-particle" style={{ width: 10, height: 10, left: '40%', bottom: '5px', animationDelay: '0.8s' }} />
+                      <span className="bubble-stream-particle" style={{ width: 5, height: 5, left: '70%', bottom: '20px', animationDelay: '1.1s' }} />
+                    </div>
+                  )}
                 </div>
               </motion.div>
+
+              {/* Electric Short Circuit Sparks (mistakes >= 3 && !drowned) */}
+              {mistakes >= 3 && !robotState.drowned && (
+                <div className="absolute inset-0 pointer-events-none z-25 overflow-hidden">
+                  <svg className="w-full h-full" viewBox="0 0 120 160">
+                    <path
+                      d="M 35,45 L 48,60 L 42,65 L 56,85 L 50,88 L 62,105"
+                      stroke="#00D4FF"
+                      strokeWidth="2"
+                      fill="none"
+                      className="electric-arc-path-1"
+                    />
+                    <path
+                      d="M 85,42 L 72,58 L 78,63 L 64,82 L 70,85 L 58,100"
+                      stroke="#FFD700"
+                      strokeWidth="1.8"
+                      fill="none"
+                      className="electric-arc-path-2"
+                    />
+                  </svg>
+                </div>
+              )}
 
               {/* Dynamic Rising Water (In Front of Guionbajo) */}
               <motion.div
@@ -676,32 +781,16 @@ export default function MysteryWordGame({
                 animate={{ height: `${currentWaterPct}%` }}
                 transition={{ type: 'spring', damping: 20, stiffness: 85 }}
               >
-                {/* Visible translucent water gradient */}
+                {/* Visible translucent water gradient - Clean aquatic blue, NO color changes */}
                 <div
-                  className={`absolute inset-0 transition-colors duration-700 ${
-                    mistakes >= 5
-                      ? 'bg-gradient-to-t from-red-950/95 via-rose-600/80 to-rose-400/85'
-                      : mistakes >= 3
-                      ? 'bg-gradient-to-t from-amber-950/95 via-amber-600/80 to-yellow-300/85'
-                      : 'bg-gradient-to-t from-blue-950/95 via-sky-600/80 to-cyan-300/85'
-                  }`}
+                  className="absolute inset-0 bg-gradient-to-t from-blue-950/95 via-sky-600/80 to-cyan-300/85 transition-opacity duration-500"
                   style={{
-                    boxShadow: mistakes >= 5
-                      ? 'inset 0 6px 20px rgba(239, 68, 68, 0.6)'
-                      : mistakes >= 3
-                      ? 'inset 0 6px 20px rgba(245, 158, 11, 0.5)'
-                      : 'inset 0 6px 20px rgba(6, 182, 212, 0.5)'
+                    boxShadow: 'inset 0 6px 20px rgba(6, 182, 212, 0.55)'
                   }}
                 />
 
                 {/* Surface wave crest */}
-                <div className={`absolute top-0 left-0 right-0 h-1 water-surface-glow z-30 transition-colors duration-500 ${
-                  mistakes >= 5
-                    ? 'bg-gradient-to-r from-red-400 via-white to-red-400 shadow-[0_0_10px_#EF4444]'
-                    : mistakes >= 3
-                    ? 'bg-gradient-to-r from-amber-400 via-white to-amber-400 shadow-[0_0_10px_#F59E0B]'
-                    : 'bg-gradient-to-r from-cyan-400 via-white to-cyan-400 shadow-[0_0_10px_#00D4FF]'
-                }`} />
+                <div className="absolute top-0 left-0 right-0 h-1 water-surface-glow z-30 bg-gradient-to-r from-cyan-400 via-white to-cyan-400 shadow-[0_0_10px_#00D4FF]" />
 
                 {/* Wave SVGs */}
                 <div className="absolute -top-4 left-0 w-[200%] h-6 opacity-75 animate-wave-motion">
@@ -985,6 +1074,8 @@ export default function MysteryWordGame({
                     drowned={robotState.drowned}
                     state={tutorSpeaking ? 'speaking' : 'idle'}
                     text={tutorSpeechText}
+                    panickedArms={mistakes >= 4 && !robotState.drowned}
+                    shortCircuit={mistakes >= 3 && !robotState.drowned}
                   />
 
                   {/* Mouth Bubbles Emitter (mistakes >= 5) */}
@@ -995,8 +1086,47 @@ export default function MysteryWordGame({
                       <span className="mouth-bubble" style={{ width: 10, height: 10, left: -1, animationDelay: '0.85s' }} />
                     </div>
                   )}
+
+                  {/* Continuous Underwater Bubble Stream (mistakes >= 5) */}
+                  {mistakes >= 5 && !robotState.drowned && (
+                    <div className="absolute top-[30px] left-1/2 -translate-x-1/2 pointer-events-none w-16 h-28">
+                      <span className="bubble-stream-particle" style={{ width: 10, height: 10, left: '20%', bottom: '15px', animationDelay: '0s' }} />
+                      <span className="bubble-stream-particle" style={{ width: 8, height: 8, left: '60%', bottom: '25px', animationDelay: '0.35s' }} />
+                      <span className="bubble-stream-particle" style={{ width: 14, height: 14, left: '42%', bottom: '10px', animationDelay: '0.7s' }} />
+                      <span className="bubble-stream-particle" style={{ width: 7, height: 7, left: '75%', bottom: '30px', animationDelay: '1.05s' }} />
+                    </div>
+                  )}
                 </div>
               </motion.div>
+
+              {/* Electric Short Circuit Sparks (mistakes >= 3 && !drowned) */}
+              {mistakes >= 3 && !robotState.drowned && (
+                <div className="absolute inset-0 pointer-events-none z-25 overflow-hidden">
+                  <svg className="w-full h-full" viewBox="0 0 200 280">
+                    <path
+                      d="M 50,85 L 68,110 L 60,118 L 82,150 L 74,155 L 95,190"
+                      stroke="#00D4FF"
+                      strokeWidth="2.5"
+                      fill="none"
+                      className="electric-arc-path-1"
+                    />
+                    <path
+                      d="M 150,80 L 132,108 L 140,115 L 118,148 L 126,152 L 105,185"
+                      stroke="#FFD700"
+                      strokeWidth="2.2"
+                      fill="none"
+                      className="electric-arc-path-2"
+                    />
+                    <path
+                      d="M 90,45 L 108,68 L 100,74 L 115,100"
+                      stroke="#FFFFFF"
+                      strokeWidth="2"
+                      fill="none"
+                      className="electric-arc-path-1"
+                    />
+                  </svg>
+                </div>
+              )}
 
               {/* Dynamic Rising Water (In Front of Guionbajo) */}
               <motion.div
@@ -1004,32 +1134,16 @@ export default function MysteryWordGame({
                 animate={{ height: `${currentWaterPct}%` }}
                 transition={{ type: 'spring', damping: 20, stiffness: 85 }}
               >
-                {/* Visible translucent water gradient */}
+                {/* Visible translucent water gradient - Clean aquatic blue, NO color changes */}
                 <div
-                  className={`absolute inset-0 transition-colors duration-700 ${
-                    mistakes >= 5
-                      ? 'bg-gradient-to-t from-red-950/95 via-rose-600/80 to-rose-400/85'
-                      : mistakes >= 3
-                      ? 'bg-gradient-to-t from-amber-950/95 via-amber-600/80 to-yellow-300/85'
-                      : 'bg-gradient-to-t from-blue-950/95 via-sky-600/80 to-cyan-300/85'
-                  }`}
+                  className="absolute inset-0 bg-gradient-to-t from-blue-950/95 via-sky-600/80 to-cyan-300/85 transition-opacity duration-500"
                   style={{
-                    boxShadow: mistakes >= 5
-                      ? 'inset 0 10px 30px rgba(239, 68, 68, 0.6), 0 -8px 25px rgba(239, 68, 68, 0.7)'
-                      : mistakes >= 3
-                      ? 'inset 0 10px 30px rgba(245, 158, 11, 0.5), 0 -8px 20px rgba(245, 158, 11, 0.6)'
-                      : 'inset 0 10px 30px rgba(6, 182, 212, 0.5), 0 -8px 20px rgba(6, 182, 212, 0.55)'
+                    boxShadow: 'inset 0 10px 30px rgba(6, 182, 212, 0.55), 0 -8px 25px rgba(6, 182, 212, 0.6)'
                   }}
                 />
 
                 {/* Glowing Water Surface Wave Crest */}
-                <div className={`absolute top-0 left-0 right-0 h-1.5 water-surface-glow z-30 transition-colors duration-500 ${
-                  mistakes >= 5
-                    ? 'bg-gradient-to-r from-red-400 via-white to-red-400 shadow-[0_0_15px_#EF4444]'
-                    : mistakes >= 3
-                    ? 'bg-gradient-to-r from-amber-400 via-white to-amber-400 shadow-[0_0_15px_#F59E0B]'
-                    : 'bg-gradient-to-r from-cyan-400 via-white to-cyan-400 shadow-[0_0_15px_#00D4FF]'
-                }`} />
+                <div className="absolute top-0 left-0 right-0 h-1.5 water-surface-glow z-30 bg-gradient-to-r from-cyan-400 via-white to-cyan-400 shadow-[0_0_15px_#00D4FF]" />
 
                 {/* Splash drop on water rise */}
                 {showSplash && (
@@ -1316,8 +1430,8 @@ export default function MysteryWordGame({
           </div>
         </div>
 
-        {/* Row 2: Desktop Virtual Keyboard */}
-        <div className="p-5 rounded-3xl glass border border-brand-border/60 flex flex-col items-center gap-3 shadow-2xl">
+        {/* Row 2: Desktop Virtual Keyboard (Balanced 3-Row Horizontal Layout) */}
+        <div className="p-5 rounded-3xl glass border border-brand-border/60 flex flex-col items-center gap-3.5 shadow-2xl">
           <div className="flex items-center justify-between w-full max-w-2xl px-2">
             <span className="text-xs font-bold text-brand-text-muted uppercase">
               {tutorSpeaking ? '⏳ Escucha al tutor...' : '🎯 Selecciona una letra'}
@@ -1325,34 +1439,99 @@ export default function MysteryWordGame({
             <span className="text-xs text-brand-cyan font-medium">Puedes usar tu teclado físico</span>
           </div>
 
-          <div className="grid grid-cols-13 gap-2 w-full max-w-3xl justify-center">
-            {ALPHABET.map((letter) => {
-              const isGuessed = guessedLetters.has(letter);
-              const isCorrect = isGuessed && targetWord.includes(letter);
-              const isWrong = isGuessed && !targetWord.includes(letter);
+          <div className="flex flex-col gap-2 w-full max-w-2xl items-center">
+            {/* Row 1: A - I */}
+            <div className="flex justify-center gap-2 w-full">
+              {ALPHABET.slice(0, 9).map((letter) => {
+                const isGuessed = guessedLetters.has(letter);
+                const isCorrect = isGuessed && targetWord.includes(letter);
+                const isWrong = isGuessed && !targetWord.includes(letter);
 
-              return (
-                <motion.button
-                  key={letter}
-                  type="button"
-                  disabled={isGuessed || gameOver || tutorSpeaking}
-                  onClick={() => handleLetterClick(letter)}
-                  whileTap={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 0.88 } : {}}
-                  whileHover={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 1.1, y: -2 } : {}}
-                  className={`h-11 sm:h-12 rounded-xl font-outfit text-sm sm:text-base font-extrabold transition-colors duration-150 flex items-center justify-center shadow-md ${
-                    isCorrect
-                      ? 'bg-emerald-500 text-white shadow-emerald-500/30 scale-95'
-                      : isWrong
-                      ? 'bg-slate-800 text-white/20 border border-white/5 cursor-not-allowed opacity-40'
-                      : tutorSpeaking
-                      ? 'bg-brand-surface/50 text-white/40 border border-white/10 cursor-not-allowed'
-                      : 'bg-brand-surface text-white border border-brand-border/60 hover:border-brand-cyan hover:bg-brand-surface/80'
-                  }`}
-                >
-                  {letter}
-                </motion.button>
-              );
-            })}
+                return (
+                  <motion.button
+                    key={letter}
+                    type="button"
+                    disabled={isGuessed || gameOver || tutorSpeaking}
+                    onClick={() => handleLetterClick(letter)}
+                    whileTap={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 0.88 } : {}}
+                    whileHover={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 1.08, y: -2 } : {}}
+                    className={`w-11 sm:w-12 h-11 sm:h-12 rounded-xl font-outfit text-sm sm:text-base font-extrabold transition-colors duration-150 flex items-center justify-center shadow-md ${
+                      isCorrect
+                        ? 'bg-emerald-500 text-white shadow-emerald-500/30 scale-95'
+                        : isWrong
+                        ? 'bg-slate-800 text-white/20 border border-white/5 cursor-not-allowed opacity-40'
+                        : tutorSpeaking
+                        ? 'bg-brand-surface/50 text-white/40 border border-white/10 cursor-not-allowed'
+                        : 'bg-brand-surface text-white border border-brand-border/60 hover:border-brand-cyan hover:bg-brand-surface/80 active:scale-95'
+                    }`}
+                  >
+                    {letter}
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* Row 2: J - R */}
+            <div className="flex justify-center gap-2 w-full">
+              {ALPHABET.slice(9, 18).map((letter) => {
+                const isGuessed = guessedLetters.has(letter);
+                const isCorrect = isGuessed && targetWord.includes(letter);
+                const isWrong = isGuessed && !targetWord.includes(letter);
+
+                return (
+                  <motion.button
+                    key={letter}
+                    type="button"
+                    disabled={isGuessed || gameOver || tutorSpeaking}
+                    onClick={() => handleLetterClick(letter)}
+                    whileTap={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 0.88 } : {}}
+                    whileHover={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 1.08, y: -2 } : {}}
+                    className={`w-11 sm:w-12 h-11 sm:h-12 rounded-xl font-outfit text-sm sm:text-base font-extrabold transition-colors duration-150 flex items-center justify-center shadow-md ${
+                      isCorrect
+                        ? 'bg-emerald-500 text-white shadow-emerald-500/30 scale-95'
+                        : isWrong
+                        ? 'bg-slate-800 text-white/20 border border-white/5 cursor-not-allowed opacity-40'
+                        : tutorSpeaking
+                        ? 'bg-brand-surface/50 text-white/40 border border-white/10 cursor-not-allowed'
+                        : 'bg-brand-surface text-white border border-brand-border/60 hover:border-brand-cyan hover:bg-brand-surface/80 active:scale-95'
+                    }`}
+                  >
+                    {letter}
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* Row 3: S - Z */}
+            <div className="flex justify-center gap-2 w-full">
+              {ALPHABET.slice(18).map((letter) => {
+                const isGuessed = guessedLetters.has(letter);
+                const isCorrect = isGuessed && targetWord.includes(letter);
+                const isWrong = isGuessed && !targetWord.includes(letter);
+
+                return (
+                  <motion.button
+                    key={letter}
+                    type="button"
+                    disabled={isGuessed || gameOver || tutorSpeaking}
+                    onClick={() => handleLetterClick(letter)}
+                    whileTap={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 0.88 } : {}}
+                    whileHover={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 1.08, y: -2 } : {}}
+                    className={`w-11 sm:w-12 h-11 sm:h-12 rounded-xl font-outfit text-sm sm:text-base font-extrabold transition-colors duration-150 flex items-center justify-center shadow-md ${
+                      isCorrect
+                        ? 'bg-emerald-500 text-white shadow-emerald-500/30 scale-95'
+                        : isWrong
+                        ? 'bg-slate-800 text-white/20 border border-white/5 cursor-not-allowed opacity-40'
+                        : tutorSpeaking
+                        ? 'bg-brand-surface/50 text-white/40 border border-white/10 cursor-not-allowed'
+                        : 'bg-brand-surface text-white border border-brand-border/60 hover:border-brand-cyan hover:bg-brand-surface/80 active:scale-95'
+                    }`}
+                  >
+                    {letter}
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

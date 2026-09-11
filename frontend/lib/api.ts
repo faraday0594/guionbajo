@@ -338,6 +338,7 @@ export function setSavedPreferredVoice(voiceId: string): void {
 // Global audio handle & state for linear serialization
 let activeAudioElement: HTMLAudioElement | null = null;
 let activeSpeechAdapter: { pause: () => void } | null = null;
+let activeUtterance: SpeechSynthesisUtterance | null = null;
 let currentResolveHandler: (() => void) | null = null;
 let cachedVoices: SpeechSynthesisVoice[] = [];
 let voicesLoadedPromise: Promise<SpeechSynthesisVoice[]> | null = null;
@@ -475,6 +476,9 @@ export function stopTutorVoice() {
       activeSpeechAdapter.pause();
     } catch (_) {}
     activeSpeechAdapter = null;
+  }
+  if (activeUtterance) {
+    activeUtterance = null;
   }
   if (typeof window !== 'undefined' && window.speechSynthesis) {
     try {
@@ -874,7 +878,8 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
       try {
         window.speechSynthesis.cancel();
         await ensureBrowserVoices();
-        const utterance = new SpeechSynthesisUtterance(text.trim());
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        activeUtterance = utterance;
         utterance.lang = isEng ? 'en-US' : 'es-MX';
         utterance.rate = isEng ? 0.9 : 1.0;
         utterance.pitch = 1.0;
@@ -882,8 +887,14 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
         const bestVoice = getBestBrowserVoice(isEng ? 'en' : 'es', targetVoice);
         if (bestVoice) utterance.voice = bestVoice;
 
-        utterance.onend = () => cleanupAndResolve();
-        utterance.onerror = () => cleanupAndResolve();
+        utterance.onend = () => {
+          if (activeUtterance === utterance) activeUtterance = null;
+          cleanupAndResolve();
+        };
+        utterance.onerror = () => {
+          if (activeUtterance === utterance) activeUtterance = null;
+          cleanupAndResolve();
+        };
 
         window.speechSynthesis.speak(utterance);
       } catch (err) {
@@ -893,7 +904,7 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
 
     (async () => {
       try {
-        const blob = await api.synthesize(text, targetVoice);
+        const blob = await api.synthesize(speechText, targetVoice);
         if (!blob || blob.size === 0 || finished) {
           if (!finished) fallbackToBrowserSpeech();
           return;

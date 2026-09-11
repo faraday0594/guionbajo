@@ -549,6 +549,24 @@
 .armCelebrateLeft { transform: rotate(140deg) translateY(-10px) !important; }
 .armCelebrateRight { transform: rotate(-140deg) translateY(-10px) !important; }
 
+/* Brazos en Pánico Desesperado (Manos agitándose sumergidas) */
+.armPanicLeft {
+  animation: armPanicAnimLeft 0.16s infinite alternate ease-in-out !important;
+}
+.armPanicRight {
+  animation: armPanicAnimRight 0.18s infinite alternate ease-in-out !important;
+}
+
+@keyframes armPanicAnimLeft {
+  0%   { transform: rotate(15deg) translateY(0); }
+  100% { transform: rotate(95deg) translateY(-8px); }
+}
+
+@keyframes armPanicAnimRight {
+  0%   { transform: rotate(-15deg) translateY(0); }
+  100% { transform: rotate(-95deg) translateY(-8px); }
+}
+
 /* -- Animaciones del Monitor CRT -------------------------------------- */
 .crtFlicker {
   animation: crtFlickerAnim 0.15s infinite alternate;

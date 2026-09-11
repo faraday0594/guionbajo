@@ -656,3 +656,61 @@ input:focus, textarea:focus, select:focus {
 .anim-pop-in {
   animation: popInBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
+
+/* ─── ELECTRIC SHORT CIRCUIT & BUBBLE STREAM ANIMATIONS ─── */
+@keyframes electricArcFlicker1 {
+  0%, 100% { opacity: 0; transform: scale(0.95); }
+  8%, 14% { opacity: 1; transform: scale(1.05) rotate(1deg); filter: drop-shadow(0 0 6px #00D4FF); }
+  22% { opacity: 0; }
+  35%, 42% { opacity: 1; transform: scale(1.03) rotate(-2deg); filter: drop-shadow(0 0 8px #FFD700); }
+  50% { opacity: 0; }
+  68%, 76% { opacity: 1; transform: scale(1.06) rotate(2deg); filter: drop-shadow(0 0 10px #FFFFFF); }
+  82% { opacity: 0; }
+}
+
+@keyframes electricArcFlicker2 {
+  0%, 100% { opacity: 0; }
+  18%, 26% { opacity: 1; transform: scale(1.08) rotate(-1deg); filter: drop-shadow(0 0 7px #FFD700); }
+  34% { opacity: 0; }
+  52%, 60% { opacity: 1; transform: scale(1.04) rotate(2deg); filter: drop-shadow(0 0 9px #00D4FF); }
+  72% { opacity: 0; }
+  88%, 94% { opacity: 1; transform: scale(1.05) rotate(-1deg); filter: drop-shadow(0 0 8px #FFFFFF); }
+}
+
+.electric-arc-path-1 {
+  animation: electricArcFlicker1 0.4s infinite steps(1);
+}
+
+.electric-arc-path-2 {
+  animation: electricArcFlicker2 0.35s infinite steps(1);
+}
+
+@keyframes bubbleStreamRise {
+  0% {
+    transform: translateY(0) scale(0.4) translateX(0);
+    opacity: 0.2;
+  }
+  30% {
+    opacity: 0.9;
+    transform: translateY(-20px) scale(0.7) translateX(-3px);
+  }
+  70% {
+    opacity: 0.85;
+    transform: translateY(-50px) scale(1) translateX(3px);
+  }
+  100% {
+    transform: translateY(-80px) scale(1.2) translateX(-1px);
+    opacity: 0;
+  }
+}
+
+.bubble-stream-particle {
+  position: absolute;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.95) 0%, rgba(0, 212, 255, 0.6) 45%, rgba(14, 165, 233, 0.2) 100%);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.6);
+  pointer-events: none;
+  animation: bubbleStreamRise 1.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+

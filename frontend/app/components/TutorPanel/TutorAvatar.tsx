@@ -23,6 +23,8 @@ export interface TutorAvatarProps {
   crtColor?: string;
   sparkBulb?: boolean;
   drowned?: boolean;
+  panickedArms?: boolean;
+  shortCircuit?: boolean;
 }
 
 interface EmotionSegment {
@@ -128,6 +130,8 @@ export default function TutorAvatar({
   crtColor: explicitCrtColor,
   sparkBulb = false,
   drowned = false,
+  panickedArms = false,
+  shortCircuit = false,
 }: TutorAvatarProps) {
   // El avatar está en modo speaking si el estado es speaking y el progreso no ha concluido
   const isSpeaking = state === 'speaking' && (audioProgress === undefined || audioProgress < 99);
@@ -324,7 +328,7 @@ export default function TutorAvatar({
           <div
             className={`${styles.vacuumBulb} ${
               !drowned && (isSpeaking || state === 'listening') ? styles.bulbActive : ''
-            } ${!drowned && (currentEmotion === 'thinking' || state === 'thinking' || sparkBulb) ? styles.bulbSpark : ''}`}
+            } ${!drowned && (currentEmotion === 'thinking' || state === 'thinking' || sparkBulb || shortCircuit) ? styles.bulbSpark : ''}`}
           >
             <div className={styles.bulbFilament} />
           </div>
@@ -431,7 +435,9 @@ export default function TutorAvatar({
           const isLeft = side === 'left';
           const armClass = isLeft ? styles.armLeft : styles.armRight;
           let animClass = '';
-          if (currentEmotion === 'happy' || currentEmotion === 'victory') {
+          if (panickedArms && !drowned) {
+            animClass = isLeft ? styles.armPanicLeft : styles.armPanicRight;
+          } else if (currentEmotion === 'happy' || currentEmotion === 'victory') {
             animClass = isLeft ? styles.armCelebrateLeft : styles.armCelebrateRight;
           } else if (isMouthArticulating) {
             animClass = isLeft ? styles.armSpeakingLeft : styles.armSpeakingRight;

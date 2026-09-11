@@ -286,6 +286,8 @@ export default function MysteryWordGame({
   const speechAbortControllerRef = useRef<boolean>(false);
   /** FIX #2: timeout ID to force-unlock teclado si la voz falla */
   const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isGeneratingImageRef = useRef(false);
+  const preGeneratedWordRef = useRef<string | null>(null);
 
   // ── Derived values ───────────────────────────────────────────
   const currentWaterPct = isWon ? 0 : WATER_LEVELS_PCT[Math.min(mistakes, 6)];
@@ -370,6 +372,10 @@ export default function MysteryWordGame({
 
   // ── 6. Image generator (tier 3) with MiniMax ──────────────────
   const generateIllustration = useCallback(async (promptOverride?: string) => {
+    if (isGeneratingImageRef.current && !promptOverride) return;
+    isGeneratingImageRef.current = true;
+    setLoadingAiImage(true);
+
     let rawPrompt = promptOverride || data.image_prompt || '';
     if (!rawPrompt && data.clue_definition) {
       rawPrompt = `Pedagogical conceptual illustration representing: ${data.clue_definition}`;
@@ -387,7 +393,6 @@ export default function MysteryWordGame({
       rawPrompt.replace(/no text.*$/i, '').trim() +
       ', 2D vector flat educational illustration, clean vector art, vibrant colors, strictly no text, no letters, no words, no writing, no labels, 1:1 aspect ratio';
 
-    setLoadingAiImage(true);
     try {
       const res = await api.generateImage(prompt, '1:1');
       const imgUrl = res?.url || res?.image_url;
@@ -397,9 +402,19 @@ export default function MysteryWordGame({
     } catch (e) {
       console.warn('MiniMax image gen error for clue:', e);
     } finally {
+      isGeneratingImageRef.current = false;
       if (isComponentMountedRef.current) setLoadingAiImage(false);
     }
   }, [data.image_prompt, data.clue_definition, data.target_word, data.category, topic]);
+
+  // Pre-generate MiniMax clue image silently in the background as soon as target_word is set
+  useEffect(() => {
+    if (data?.target_word && preGeneratedWordRef.current !== data.target_word) {
+      preGeneratedWordRef.current = data.target_word;
+      setAiImageUrl(null);
+      generateIllustration();
+    }
+  }, [data?.target_word, generateIllustration]);
 
   // ── 7. Clue tier unlocker ────────────────────────────────────
   const unlockClueTier = useCallback(async (tier: number, currentUnlocked: number) => {
@@ -407,8 +422,8 @@ export default function MysteryWordGame({
       setUnlockedTier(tier);
       setMobileSelectedTier(tier);
 
-      // Tier 3: Fetch AI Illustration with MiniMax
-      if (tier >= 3 && !aiImageUrl && !loadingAiImage) {
+      // Tier 3: Fetch AI Illustration with MiniMax if not already ready/generating
+      if (tier >= 3 && !aiImageUrl && !isGeneratingImageRef.current) {
         generateIllustration();
       }
 
@@ -425,7 +440,7 @@ export default function MysteryWordGame({
 
       await speakTutor(speech);
     }
-  }, [aiImageUrl, loadingAiImage, data, speakTutor, generateIllustration]);
+  }, [aiImageUrl, data, speakTutor, generateIllustration]);
 
   // ── 8. Win handler ───────────────────────────────────────────
   const handleGameWin = useCallback(async (finalScore: number) => {
@@ -772,6 +787,9 @@ export default function MysteryWordGame({
                       >
                         <Icon size={10} />
                         <span>{t.label}</span>
+                        {t.tier === 3 && aiImageUrl && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Ilustración lista" />
+                        )}
                         {isUnlocked && <CheckCircle2 size={8} className={isSelected ? 'text-black' : 'text-emerald-400'} />}
                       </button>
                     );
@@ -800,43 +818,76 @@ export default function MysteryWordGame({
 
                 {mobileSelectedTier === 3 && (
                   unlockedTier >= 3 ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full">
                       {aiImageUrl ? (
                         <button
                           type="button"
                           onClick={() => setExpandedImage(aiImageUrl)}
-                          className="relative group flex-shrink-0"
-                          title="Toca para ampliar"
+                          className="relative group flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden border-2 border-amber-400/70 shadow-md active:scale-95 transition-transform bg-black/40 flex items-center justify-center cursor-pointer"
+                          title="Toca para ampliar pista visual"
                         >
                           <img
                             src={aiImageUrl}
                             alt="Pista MiniMax"
-                            className="w-13 h-13 rounded-lg object-cover border border-amber-400/50 shadow-sm"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
-                          <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center text-amber-200 rounded-b-lg">
-                            Ver
-                          </span>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex items-end justify-center pb-0.5">
+                            <span className="text-[8px] font-black text-amber-300 flex items-center gap-0.5">
+                              <Maximize2 size={7} /> Ver
+                            </span>
+                          </div>
                         </button>
                       ) : loadingAiImage ? (
-                        <div className="w-13 h-13 rounded-lg bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-[9px] text-amber-300 animate-pulse text-center p-1">
-                          Creando...
+                        <div className="w-12 h-12 flex-shrink-0 rounded-xl bg-amber-500/20 border border-amber-400/40 flex flex-col items-center justify-center text-[8px] text-amber-300 animate-pulse text-center p-0.5">
+                          <Sparkles size={12} className="animate-spin mb-0.5 text-amber-400" />
+                          <span>Creando</span>
                         </div>
                       ) : (
                         <button
                           type="button"
                           onClick={() => generateIllustration()}
-                          className="px-2 py-1 rounded-lg bg-amber-500/25 border border-amber-400/50 text-[10px] font-bold text-amber-300 flex items-center gap-1 hover:bg-amber-500/40"
+                          className="px-2 py-1 rounded-xl bg-amber-500/25 border border-amber-400/50 text-[10px] font-bold text-amber-300 flex items-center gap-1 hover:bg-amber-500/40 active:scale-95"
                         >
                           <Sparkles size={11} />
-                          <span>MiniMax</span>
+                          <span>Generar</span>
                         </button>
                       )}
-                      <p className="text-[10px] text-amber-100/90 leading-tight line-clamp-3 flex-1">
-                        {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración didáctica conceptual.'}
-                      </p>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-amber-300 flex items-center gap-1">
+                            <Sparkles size={10} className="text-amber-400" />
+                            Pista MiniMax
+                          </span>
+                          {aiImageUrl && (
+                            <span className="text-[8px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-200 border border-amber-400/30 font-semibold">
+                              Lista
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-amber-100/80 leading-tight line-clamp-2 mt-0.5">
+                          {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración didáctica conceptual.'}
+                        </p>
+                        {aiImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedImage(aiImageUrl)}
+                            className="text-[9px] text-cyan-300 hover:text-cyan-200 font-semibold text-left flex items-center gap-1 mt-0.5"
+                          >
+                            <span>🔍 Toca para ver en grande</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-[10px] text-white/35 italic">3º fallo desbloquea ilustración MiniMax.</p>
+                    <div className="flex items-center gap-1.5 text-white/40">
+                      <Lock size={12} />
+                      <p className="text-[10px] italic">3º fallo desbloquea ilustración MiniMax.</p>
+                      {loadingAiImage && (
+                        <span className="text-[9px] text-amber-400/70 ml-auto animate-pulse">
+                          (Preparando...)
+                        </span>
+                      )}
+                    </div>
                   )
                 )}
 
@@ -1313,34 +1364,55 @@ export default function MysteryWordGame({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
             onClick={() => setExpandedImage(null)}
           >
             <motion.div
-              initial={{ scale: 0.85 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.85 }}
-              className="relative max-w-md w-full bg-slate-900 border border-amber-400/40 rounded-3xl p-4 flex flex-col items-center gap-3 shadow-2xl"
+              initial={{ scale: 0.88, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.88, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative max-w-sm sm:max-w-md w-full max-h-[92vh] bg-slate-900/95 border-2 border-amber-400/50 rounded-3xl p-4 sm:p-5 flex flex-col items-center gap-3 shadow-[0_0_50px_rgba(251,191,36,0.25)] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between w-full pb-1 border-b border-white/10">
+                <span className="text-xs sm:text-sm font-extrabold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <ImageIcon size={16} className="text-amber-400" />
+                  <span>Pista Visual (MiniMax IA)</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setExpandedImage(null)}
+                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all"
+                  aria-label="Cerrar vista grande"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Contained Responsive Image */}
+              <div className="w-full flex items-center justify-center bg-black/40 rounded-2xl overflow-hidden border border-white/10 p-1">
+                <img
+                  src={expandedImage}
+                  alt="Ilustración didáctica generada con MiniMax"
+                  className="w-full max-h-[46vh] sm:max-h-[56vh] object-contain rounded-xl shadow-lg"
+                />
+              </div>
+
+              {/* Clue Prompt Context */}
+              <p className="text-xs text-amber-100/80 text-center italic px-1">
+                {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración didáctica conceptual.'}
+              </p>
+
+              {/* Action Button: Volver al juego */}
               <button
                 type="button"
                 onClick={() => setExpandedImage(null)}
-                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-98 text-black font-extrabold text-xs sm:text-sm transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <X size={18} />
+                <span>Volver al Juego y Adivinar</span>
               </button>
-              <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                <ImageIcon size={16} /> Pista Visual (MiniMax IA)
-              </span>
-              <img
-                src={expandedImage}
-                alt="Ilustración didáctica generada"
-                className="w-full aspect-square object-cover rounded-2xl border border-white/10 shadow-lg"
-              />
-              <p className="text-xs text-white/70 text-center italic">
-                {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración didáctica conceptual.'}
-              </p>
             </motion.div>
           </motion.div>
         )}

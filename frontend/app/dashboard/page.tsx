@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
+import JourneyVisualStage from '@/app/components/dashboard/JourneyVisualStage';
 
 interface Module {
   id?: string;
@@ -386,157 +387,126 @@ export default function DashboardPage() {
           <PhoneticBoard />
         ) : (
           <>
-            {/* 🚀 Hero Next-Action CTA: 1-Click Instant Launch & Savepoint Resume */}
-            <div className="mb-8 p-6 sm:p-10 rounded-3xl bg-gradient-to-r from-brand-accent/25 via-indigo-950/60 to-brand-cyan/20 border border-brand-cyan/40 shadow-2xl relative overflow-hidden flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 group">
-              {/* Ambient Glows */}
-              <div className="absolute -top-24 -left-24 w-72 h-72 bg-brand-cyan/15 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-brand-accent/20 rounded-full blur-3xl pointer-events-none" />
+            {/* 🌌 Cyberpunk 3D Perspective Journey & GPS Radar Stage */}
+            <JourneyVisualStage
+              sublevel={userStats.current_sublevel}
+              classIndex={currentClassIndex}
+              activeCheckpoint={activeCheckpoint}
+              onLaunchClass={handleLaunchMission}
+            />
 
-              <div className="flex items-start sm:items-center gap-6 relative z-10">
-                <div className="flex-shrink-0 hidden sm:block">
-                  <TutorAvatar size="md" emotion="happy" />
+            {/* 📍 Checkpoint Timeline Status Bar (4 Etapas de la Clase Actual) */}
+            <div className="mb-8 p-6 rounded-3xl glass border border-brand-accent/30 shadow-xl bg-brand-surface/30 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-border/40 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-brand-cyan animate-pulse" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    Estado en Vivo de tu Clase • {userStats.current_sublevel} Clase {currentClassIndex}
+                  </span>
                 </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-bold uppercase tracking-wider">
-                      <Sparkles size={13} className="animate-spin text-brand-cyan" />
-                      <span>Tu Misión de Hoy • Nivel {userStats.current_sublevel} • Clase {currentClassIndex} de 4</span>
-                    </div>
-
-                    <span className="text-[11px] font-semibold text-brand-gold bg-brand-gold/15 px-2.5 py-0.5 rounded-lg border border-brand-gold/30">
-                      {activeModule.focus || 'Enfoque Curricular'}
+                {activeCheckpoint && (
+                  <div className="flex items-center gap-2 text-xs py-1 px-3 rounded-xl bg-black/40 border border-white/10">
+                    <Activity size={13} className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-400' : 'text-amber-400'} />
+                    <span className="text-brand-text-secondary">Puntaje Global:</span>
+                    <strong className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-300' : 'text-amber-300'}>
+                      {activeCheckpoint.overall_score || 0}%
+                    </strong>
+                    <span className="text-[10px] text-brand-text-muted">
+                      (Requiere ≥ 80% para aprobar)
                     </span>
                   </div>
+                )}
+              </div>
 
-                  <h2 className="text-2xl sm:text-4xl font-outfit font-extrabold text-white tracking-tight">
-                    {activeTopic}
-                  </h2>
-
-                  <p className="text-xs sm:text-sm text-brand-text-secondary max-w-2xl leading-relaxed">
-                    {activeModule.description || 'Aprende estructuras clave, discriminación fonética, lectura con IPA y juegos en 5 minutos.'}
-                  </p>
-
-                  {/* 📍 Checkpoint Timeline Status Bar (4 Etapas de la Clase) */}
-                  <div className="pt-2">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-2xl">
-                      {/* Etapa 1: Pizarra Didáctica */}
-                      <div className={`p-2.5 rounded-xl border text-xs transition-all ${
-                        activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed
-                          ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300 shadow-sm'
-                          : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
-                      }`}>
-                        <div className="font-bold flex items-center justify-between gap-1 mb-0.5">
-                          <span>1. Pizarra</span>
-                          {activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed ? (
-                            <CheckCircle2 size={13} className="text-emerald-400" />
-                          ) : (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-accent/30 text-brand-cyan">Activa</span>
-                          )}
-                        </div>
-                        <div className="text-[11px] opacity-85 truncate">
-                          {activeCheckpoint?.current_slide ? `Diapositiva ${activeCheckpoint.current_slide + 1}` : 'Explicación'}
-                        </div>
-                      </div>
-
-                      {/* Etapa 2: Examen Teórico */}
-                      <div className={`p-2.5 rounded-xl border text-xs transition-all ${
-                        activeCheckpoint?.quiz_completed
-                          ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
-                          : activeCheckpoint && activeCheckpoint.current_slide >= 2
-                            ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
-                            : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
-                      }`}>
-                        <div className="font-bold flex items-center justify-between gap-1 mb-0.5">
-                          <span>2. Examen</span>
-                          {activeCheckpoint?.quiz_completed ? (
-                            <CheckCircle2 size={13} className="text-emerald-400" />
-                          ) : activeCheckpoint && activeCheckpoint.current_slide >= 2 ? (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Repetir</span>
-                          ) : null}
-                        </div>
-                        <div className="text-[11px] opacity-85 truncate">
-                          {activeCheckpoint?.quiz_completed
-                            ? `${activeCheckpoint.quiz_score || 80}% pts`
-                            : activeCheckpoint && activeCheckpoint.current_slide >= 2
-                              ? 'Pendiente de repetir'
-                              : 'Práctica Quiz'}
-                        </div>
-                      </div>
-
-                      {/* Etapa 3: Lectura IPA */}
-                      <div className={`p-2.5 rounded-xl border text-xs transition-all ${
-                        activeCheckpoint?.reading_completed
-                          ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
-                          : activeCheckpoint?.view_mode === 'reading'
-                            ? 'bg-brand-cyan/20 border-brand-cyan/50 text-brand-cyan'
-                            : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
-                      }`}>
-                        <div className="font-bold flex items-center justify-between gap-1 mb-0.5">
-                          <span>3. Lectura IPA</span>
-                          {activeCheckpoint?.reading_completed ? (
-                            <CheckCircle2 size={13} className="text-emerald-400" />
-                          ) : null}
-                        </div>
-                        <div className="text-[11px] opacity-85 truncate">
-                          {activeCheckpoint?.reading_completed
-                            ? `${activeCheckpoint.reading_score || 85}% pts`
-                            : '3 Escenas Visuales'}
-                        </div>
-                      </div>
-
-                      {/* Etapa 4: Zona de Juegos */}
-                      <div className={`p-2.5 rounded-xl border text-xs transition-all ${
-                        activeCheckpoint?.mystery_word_completed
-                          ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
-                          : activeCheckpoint?.view_mode === 'games'
-                            ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
-                            : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
-                      }`}>
-                        <div className="font-bold flex items-center justify-between gap-1 mb-0.5">
-                          <span>4. Juegos</span>
-                          {activeCheckpoint?.mystery_word_completed ? (
-                            <CheckCircle2 size={13} className="text-emerald-400" />
-                          ) : activeCheckpoint?.view_mode === 'games' ? (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Pendiente</span>
-                          ) : null}
-                        </div>
-                        <div className="text-[11px] opacity-85 truncate">
-                          {activeCheckpoint?.mystery_word_completed
-                            ? 'Palabra Resuelta'
-                            : 'Palabra Misteriosa'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Overall Score Status Alert */}
-                    {activeCheckpoint && (
-                      <div className="mt-3 flex items-center gap-2 text-xs py-1.5 px-3 rounded-xl bg-black/40 border border-white/10 max-w-fit">
-                        <Activity size={13} className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-400' : 'text-amber-400'} />
-                        <span className="text-brand-text-secondary">Puntaje Global Actual:</span>
-                        <strong className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-300' : 'text-amber-300'}>
-                          {activeCheckpoint.overall_score || 0}%
-                        </strong>
-                        <span className="text-[10px] text-brand-text-muted">
-                          (Se requiere ≥ 80% para aprobar y avanzar de tema)
-                        </span>
-                      </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {/* Etapa 1: Pizarra Didáctica */}
+                <div className={`p-3 rounded-2xl border text-xs transition-all ${
+                  activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed
+                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300 shadow-sm'
+                    : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                }`}>
+                  <div className="font-bold flex items-center justify-between gap-1 mb-1">
+                    <span>1. Pizarra</span>
+                    {activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed ? (
+                      <CheckCircle2 size={14} className="text-emerald-400" />
+                    ) : (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-accent/30 text-brand-cyan">Activa</span>
                     )}
+                  </div>
+                  <div className="text-[11px] opacity-85 truncate">
+                    {activeCheckpoint?.current_slide ? `Diapositiva ${activeCheckpoint.current_slide + 1}` : 'Explicación'}
+                  </div>
+                </div>
+
+                {/* Etapa 2: Examen Teórico */}
+                <div className={`p-3 rounded-2xl border text-xs transition-all ${
+                  activeCheckpoint?.quiz_completed
+                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                    : activeCheckpoint && activeCheckpoint.current_slide >= 2
+                      ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                      : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                }`}>
+                  <div className="font-bold flex items-center justify-between gap-1 mb-1">
+                    <span>2. Examen</span>
+                    {activeCheckpoint?.quiz_completed ? (
+                      <CheckCircle2 size={14} className="text-emerald-400" />
+                    ) : activeCheckpoint && activeCheckpoint.current_slide >= 2 ? (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Repetir</span>
+                    ) : null}
+                  </div>
+                  <div className="text-[11px] opacity-85 truncate">
+                    {activeCheckpoint?.quiz_completed
+                      ? `${activeCheckpoint.quiz_score || 80}% pts`
+                      : activeCheckpoint && activeCheckpoint.current_slide >= 2
+                        ? 'Pendiente de repetir'
+                        : 'Práctica Quiz'}
+                  </div>
+                </div>
+
+                {/* Etapa 3: Lectura IPA */}
+                <div className={`p-3 rounded-2xl border text-xs transition-all ${
+                  activeCheckpoint?.reading_completed
+                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                    : activeCheckpoint?.view_mode === 'reading'
+                      ? 'bg-brand-cyan/20 border-brand-cyan/50 text-brand-cyan'
+                      : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                }`}>
+                  <div className="font-bold flex items-center justify-between gap-1 mb-1">
+                    <span>3. Lectura IPA</span>
+                    {activeCheckpoint?.reading_completed ? (
+                      <CheckCircle2 size={14} className="text-emerald-400" />
+                    ) : null}
+                  </div>
+                  <div className="text-[11px] opacity-85 truncate">
+                    {activeCheckpoint?.reading_completed
+                      ? `${activeCheckpoint.reading_score || 85}% pts`
+                      : '3 Escenas Visuales'}
+                  </div>
+                </div>
+
+                {/* Etapa 4: Zona de Juegos */}
+                <div className={`p-3 rounded-2xl border text-xs transition-all ${
+                  activeCheckpoint?.mystery_word_completed
+                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                    : activeCheckpoint?.view_mode === 'games'
+                      ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                      : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                }`}>
+                  <div className="font-bold flex items-center justify-between gap-1 mb-1">
+                    <span>4. Juegos</span>
+                    {activeCheckpoint?.mystery_word_completed ? (
+                      <CheckCircle2 size={14} className="text-emerald-400" />
+                    ) : activeCheckpoint?.view_mode === 'games' ? (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Pendiente</span>
+                    ) : null}
+                  </div>
+                  <div className="text-[11px] opacity-85 truncate">
+                    {activeCheckpoint?.mystery_word_completed
+                      ? 'Palabra Resuelta'
+                      : 'Palabra Misteriosa'}
                   </div>
                 </div>
               </div>
-
-              {/* 🚀 Main Launch CTA Button */}
-              <button
-                onClick={handleLaunchMission}
-                className="w-full lg:w-auto px-8 py-5 rounded-2xl bg-gradient-to-r from-brand-accent via-indigo-600 to-brand-cyan text-white font-black text-sm sm:text-base shadow-2xl shadow-brand-accent/40 hover:scale-105 hover:shadow-brand-cyan/40 transition-all flex items-center justify-center gap-3 relative z-10 flex-shrink-0 cursor-pointer"
-              >
-                <Play size={20} className="fill-current text-white" />
-                <span>
-                  {activeCheckpoint ? 'CONTINUAR CLASE (5 MIN)' : `INICIAR CLASE ${currentClassIndex} (5 MIN)`}
-                </span>
-                <ChevronRight size={20} />
-              </button>
             </div>
 
             {/* 🌟 Focused Overview of Today's Lesson */}

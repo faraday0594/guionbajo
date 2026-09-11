@@ -3,8 +3,10 @@ Guionbajo — Comprehensive CEFR & Phonetics Diagnosis Engine
 Generates and evaluates an 80-question comprehensive exam:
 - 60 Curricular Questions (6 level bands x 10 questions)
 - 20 Phonetic Questions (10 Pure Audio + 10 Highlighted Word)
+Supports dynamic option randomization and full/partial exam evaluation.
 """
 import json
+import random
 import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
@@ -25,14 +27,25 @@ class DiagnosisEngine:
         self.question_map = {q["id"]: q for q in self.all_questions}
 
     async def generate_exam(self) -> list:
-        """Return all 80 questions (60 curricular + 20 phonetic)."""
-        logger.info(f"Delivering full 80-question diagnosis exam (60 curricular + 20 phonetic)")
-        return self.all_questions
+        """
+        Return all 80 questions with randomized options positions.
+        Ensures that correct answers are never fixed to option A.
+        """
+        logger.info("Delivering 80-question diagnosis exam with randomized options order")
+        shuffled_questions = []
+        for q in self.all_questions:
+            q_copy = dict(q)
+            opts = list(q.get("options", []))
+            random.shuffle(opts)
+            q_copy["options"] = opts
+            shuffled_questions.append(q_copy)
+        return shuffled_questions
 
     async def evaluate_exam(self, questions: list, answers: list) -> dict:
         """
         Comprehensive evaluation of curricular and phonetic performance.
-        Determines exact CEFR sublevel (A1.1 -> B2.4) and calculates phonetic mastery profile.
+        Supports both partial evaluation (if student finishes early) and full 80-question evaluation.
+        Determines exact CEFR sublevel (A1.1 -> B2.4) and populates initial phonetic mastery.
         """
         # Build answer map by question_id
         ans_map = {}
@@ -71,57 +84,78 @@ class DiagnosisEngine:
                 curricular_results.append(item)
 
         # ─── 1. EVALUATE CURRICULAR PERFORMANCE ───────────────────────
-        band_stats = {b: {"total": 0, "correct": 0} for b in range(1, 7)}
+        attempted_curricular = [item for item in curricular_results if item["user_answer"]]
+        total_attempted_curr = len(attempted_curricular)
+
+        band_stats = {b: {"attempted": 0, "correct": 0, "total_bank": 10} for b in range(1, 7)}
         for item in curricular_results:
             b = item.get("band", 1)
             if b in band_stats:
-                band_stats[b]["total"] += 1
-                if item["is_correct"]:
-                    band_stats[b]["correct"] += 1
+                if item["user_answer"]:
+                    band_stats[b]["attempted"] += 1
+                    if item["is_correct"]:
+                        band_stats[b]["correct"] += 1
 
-        curr_correct = sum(1 for item in curricular_results if item["is_correct"])
-        curr_total = max(len(curricular_results), 1)
-        curr_pct = (curr_correct / curr_total) * 100.0
+        curr_correct = sum(1 for item in attempted_curricular if item["is_correct"])
 
-        # CEFR level calculation based on progressive mastery
-        b1_pct = (band_stats[1]["correct"] / max(band_stats[1]["total"], 1)) * 100
-        b2_pct = (band_stats[2]["correct"] / max(band_stats[2]["total"], 1)) * 100
-        b3_pct = (band_stats[3]["correct"] / max(band_stats[3]["total"], 1)) * 100
-        b4_pct = (band_stats[4]["correct"] / max(band_stats[4]["total"], 1)) * 100
-        b5_pct = (band_stats[5]["correct"] / max(band_stats[5]["total"], 1)) * 100
-        b6_pct = (band_stats[6]["correct"] / max(band_stats[6]["total"], 1)) * 100
+        def get_band_pct(b):
+            att = band_stats[b]["attempted"]
+            return (band_stats[b]["correct"] / att) * 100.0 if att > 0 else 0.0
 
-        # Determine sublevel progressively based on highest consolidated mastery
-        if b1_pct < 60:
+        b1_pct = get_band_pct(1)
+        b2_pct = get_band_pct(2)
+        b3_pct = get_band_pct(3)
+        b4_pct = get_band_pct(4)
+        b5_pct = get_band_pct(5)
+        b6_pct = get_band_pct(6)
+
+        # Determine level based on demonstrated progressive mastery
+        if total_attempted_curr == 0:
             assigned_level = "A1.1"
-        elif b1_pct < 85:
+        elif band_stats[1]["attempted"] > 0 and b1_pct < 60:
+            assigned_level = "A1.1"
+        elif band_stats[1]["attempted"] > 0 and b1_pct < 85 and band_stats[2]["attempted"] == 0:
             assigned_level = "A1.2"
-        elif b2_pct < 60:
+        elif band_stats[2]["attempted"] > 0 and b2_pct < 60:
             assigned_level = "A1.3"
-        elif b2_pct < 85:
+        elif band_stats[2]["attempted"] > 0 and b2_pct < 85 and band_stats[3]["attempted"] == 0:
             assigned_level = "A1.4"
-        elif b3_pct < 60:
+        elif band_stats[3]["attempted"] > 0 and b3_pct < 60:
             assigned_level = "A2.1"
-        elif b3_pct < 85:
+        elif band_stats[3]["attempted"] > 0 and b3_pct < 85 and band_stats[4]["attempted"] == 0:
             assigned_level = "A2.2"
-        elif b4_pct < 60:
+        elif band_stats[4]["attempted"] > 0 and b4_pct < 60:
             assigned_level = "A2.3"
-        elif b4_pct < 85:
+        elif band_stats[4]["attempted"] > 0 and b4_pct < 85 and band_stats[5]["attempted"] == 0:
             assigned_level = "A2.4"
-        elif b5_pct < 60:
+        elif band_stats[5]["attempted"] > 0 and b5_pct < 60:
             assigned_level = "B1.1"
-        elif b5_pct < 85:
+        elif band_stats[5]["attempted"] > 0 and b5_pct < 85 and band_stats[6]["attempted"] == 0:
             assigned_level = "B1.2"
-        elif b6_pct < 50:
+        elif band_stats[6]["attempted"] > 0 and b6_pct < 50:
             assigned_level = "B1.3"
-        elif b6_pct < 70:
+        elif band_stats[6]["attempted"] > 0 and b6_pct < 70:
             assigned_level = "B1.4"
-        elif b6_pct < 85:
+        elif band_stats[6]["attempted"] > 0 and b6_pct < 85:
             assigned_level = "B2.1"
-        elif b6_pct < 95:
+        elif band_stats[6]["attempted"] > 0 and b6_pct < 95:
             assigned_level = "B2.2"
-        else:
+        elif band_stats[6]["attempted"] > 0 and b6_pct >= 95:
             assigned_level = "B2.4"
+        else:
+            # Fallback based on highest attempted band with good performance
+            if band_stats[6]["attempted"] > 0 and b6_pct >= 60:
+                assigned_level = "B2.1"
+            elif band_stats[5]["attempted"] > 0 and b5_pct >= 60:
+                assigned_level = "B1.2"
+            elif band_stats[4]["attempted"] > 0 and b4_pct >= 60:
+                assigned_level = "A2.4"
+            elif band_stats[3]["attempted"] > 0 and b3_pct >= 60:
+                assigned_level = "A2.2"
+            elif band_stats[2]["attempted"] > 0 and b2_pct >= 60:
+                assigned_level = "A1.4"
+            else:
+                assigned_level = "A1.2" if b1_pct >= 70 else "A1.1"
 
         # CEFR score breakdown (approximate 0-100 per stage)
         score_by_level = {
@@ -132,16 +166,17 @@ class DiagnosisEngine:
         }
 
         # ─── 2. EVALUATE PHONETIC PERFORMANCE ─────────────────────────
-        phonetic_correct = sum(1 for item in phonetic_results if item["is_correct"])
-        phonetic_total = max(len(phonetic_results), 1)
-        phonetic_pct = round((phonetic_correct / phonetic_total) * 100.0, 1)
+        attempted_phonetic = [item for item in phonetic_results if item["user_answer"]]
+        total_attempted_phon = len(attempted_phonetic)
+        phonetic_correct = sum(1 for item in attempted_phonetic if item["is_correct"])
+        phonetic_pct = round((phonetic_correct / max(total_attempted_phon, 1)) * 100.0, 1) if total_attempted_phon > 0 else 0.0
 
         now_iso = datetime.now(timezone.utc).isoformat()
         phonetics_mastery_dict = {}
         mastered_phonemes = []
         weak_phonemes = []
 
-        for item in phonetic_results:
+        for item in attempted_phonetic:
             sym = item.get("phoneme_symbol")
             if not sym:
                 continue
@@ -162,7 +197,7 @@ class DiagnosisEngine:
         # Strengths and weaknesses extraction
         strong_areas = []
         weak_areas = []
-        for item in curricular_results:
+        for item in attempted_curricular:
             topic = item["topic"]
             if item["is_correct"]:
                 if topic not in strong_areas and len(strong_areas) < 4:
@@ -172,8 +207,8 @@ class DiagnosisEngine:
                     weak_areas.append(topic)
 
         agent_reasoning = (
-            f"Diagnóstico Integral completado: {curr_correct}/{curr_total} aciertos curriculares ({curr_pct:.0f}%) "
-            f"y {phonetic_correct}/{phonetic_total} aciertos fonéticos ({phonetic_pct:.0f}%). "
+            f"Diagnóstico completado con {total_attempted_curr} respuestas curriculares ({curr_correct} aciertos) "
+            f"y {total_attempted_phon} pruebas fonéticas ({phonetic_correct} aciertos). "
             f"Nivel asignado: {assigned_level}. "
             f"Se identificaron {len(mastered_phonemes)} fonemas dominados y {len(weak_phonemes)} fonemas para reforzar."
         )
@@ -191,13 +226,13 @@ class DiagnosisEngine:
             "weak_areas": weak_areas,
             "agent_reasoning": agent_reasoning,
             "recommendation": recommendation,
-            "confidence": 0.92,
+            "confidence": 0.92 if total_attempted_curr >= 20 else 0.75,
             "phonetic_mastery_pct": phonetic_pct,
             "phonetic_breakdown": {
                 "correct": phonetic_correct,
-                "total": phonetic_total,
-                "pure_sound_correct": sum(1 for p in phonetic_results if p.get("type") == "phonetic_sound" and p["is_correct"]),
-                "word_highlight_correct": sum(1 for p in phonetic_results if p.get("type") == "phonetic_word" and p["is_correct"]),
+                "total": total_attempted_phon,
+                "pure_sound_correct": sum(1 for p in attempted_phonetic if p.get("type") == "phonetic_sound" and p["is_correct"]),
+                "word_highlight_correct": sum(1 for p in attempted_phonetic if p.get("type") == "phonetic_word" and p["is_correct"]),
             },
             "mastered_phonemes": mastered_phonemes,
             "weak_phonemes": weak_phonemes,

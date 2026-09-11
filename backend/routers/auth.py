@@ -6,6 +6,7 @@ from auth.dependencies import get_current_user
 from database import get_db
 from models.user import User, StudentProfile
 from schemas.auth import UserCreate, UserLogin, Token, UserResponse
+from core.minimax_agent import TutorAgent
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -24,11 +25,19 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     db.add(new_user)
     await db.flush()
     
-    profile = StudentProfile(user_id=new_user.id)
+    agent = TutorAgent()
+    default_lmap = agent._fallback_learning_map("A1.1")
+
+    profile = StudentProfile(
+        user_id=new_user.id,
+        current_level="A1",
+        current_sublevel="A1.1",
+        learning_map=default_lmap,
+    )
     db.add(profile)
     await db.commit()
     await db.refresh(new_user)
-    
+
     return new_user
 
 @router.post("/login", response_model=Token)

@@ -20,7 +20,9 @@ import {
   VolumeX,
   RotateCcw,
   Check,
-  Headphones
+  Headphones,
+  Save,
+  LogOut
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
@@ -161,22 +163,66 @@ export default function OnboardingPage() {
         setTimeout(() => handlePlayTargetWord(nextQ.target_word), 400);
       }
     } else {
-      // Completed all 80 questions!
-      setEvaluatingTest(true);
-      try {
-        const result = await api.completeDiagnosis(newAnswers, questions);
-        setDiagResult(result);
-        const level = result?.assigned_level || 'A2.1';
-        setAssignedLevel(level);
-        clearSavedProgress();
-      } catch (err) {
-        console.error('Diagnosis evaluation error:', err);
-        setAssignedLevel('A2.1');
-      } finally {
-        setEvaluatingTest(false);
-        sfx.playStreakFanfare();
-        setStep(3);
-      }
+      // Completed all questions
+      await submitEvaluation(newAnswers);
+    }
+  };
+
+  // Submit evaluation (works for full or partial test)
+  const submitEvaluation = async (answersToSubmit: Array<{ question_id: number; answer: string }>) => {
+    setEvaluatingTest(true);
+    try {
+      const result = await api.completeDiagnosis(answersToSubmit, questions);
+      setDiagResult(result);
+      const level = result?.assigned_level || 'A1.2';
+      setAssignedLevel(level);
+      clearSavedProgress();
+      sfx.playStreakFanfare();
+      setStep(3);
+    } catch (err) {
+      console.error('Diagnosis evaluation error:', err);
+      setAssignedLevel('A1.2');
+      setStep(3);
+    } finally {
+      setEvaluatingTest(false);
+    }
+  };
+
+  // Finish early with whatever has been answered
+  const handleFinishEarly = async () => {
+    if (answers.length < 5) {
+      toast('Responde al menos 5 preguntas para estimar tu nivel, o puedes guardar y salir.', { icon: 'ℹ️' });
+      return;
+    }
+    sfx.playPop();
+    await submitEvaluation(answers);
+  };
+
+  // Save progress and go to Dashboard directly
+  const handleSaveAndExit = async () => {
+    sfx.playPop();
+    saveProgress(answers, currentQIdx);
+    try {
+      // Ensure student profile has at least default A1.1 or assigned level in database
+      await api.skipDiagnosis(assignedLevel || 'A1.1').catch(() => null);
+    } catch (_) {}
+    toast.success('¡Progreso guardado! Tu cuenta está 100% activa en el Dashboard.');
+    router.push('/dashboard');
+  };
+
+  // Direct skip to A1.1
+  const handleDirectStartA1 = async () => {
+    sfx.playPop();
+    setLoading(true);
+    try {
+      await api.skipDiagnosis('A1.1');
+      clearSavedProgress();
+      toast.success('¡Iniciando tu curso en Nivel A1.1!');
+      router.push('/dashboard');
+    } catch (_) {
+      router.push('/dashboard');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -270,10 +316,10 @@ export default function OnboardingPage() {
               </div>
               <h3 className="text-xl font-bold mb-1.5 text-white">Examen Diagnóstico Integral</h3>
               <p className="text-xs text-brand-text-secondary leading-relaxed">
-                60 preguntas curriculares divididas por temas + 20 preguntas fonéticas interactivas con audio Oxford y palabras resaltadas.
+                60 preguntas curriculares por temas + 20 pruebas fonéticas interactivas con audio Oxford y palabras resaltadas.
               </p>
               <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-brand-cyan">
-                <span>Comenzar examen integral</span>
+                <span>Comenzar examen</span>
                 <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
               </span>
             </button>
@@ -302,14 +348,31 @@ export default function OnboardingPage() {
               </span>
             </button>
           </div>
+
+          {/* Direct quick start notification */}
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-brand-text-secondary">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+              <CheckCircle2 size={14} /> Cuenta creada y guardada con éxito
+            </span>
+            <span className="hidden sm:inline text-zinc-600">•</span>
+            <button
+              type="button"
+              onClick={handleDirectStartA1}
+              disabled={loading}
+              className="text-brand-cyan hover:underline font-bold inline-flex items-center gap-1 cursor-pointer"
+            >
+              <span>Omitir examen y comenzar directamente en Nivel A1.1</span>
+              <ArrowRight size={12} />
+            </button>
+          </div>
         </motion.div>
       )}
 
       {/* ─── PASO 2: Examen Diagnóstico Integral de 80 Preguntas ─────────────────────── */}
       {step === 2 && (
         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto w-full space-y-6">
-          {/* Header Bar: Phase & Progress */}
-          <div className="glass p-4 rounded-2xl border border-white/10 flex items-center justify-between gap-4">
+          {/* Header Bar: Phase, Progress & Action Controls */}
+          <div className="glass p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${
@@ -340,11 +403,37 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            <div className="text-right flex-shrink-0">
-              <span className="text-lg font-outfit font-black text-white">
-                {currentQIdx + 1} <span className="text-xs text-brand-text-muted font-normal">/ {questions.length || 80}</span>
-              </span>
-              <div className="text-[10px] font-bold text-brand-cyan">{progressPct}% completado</div>
+            {/* Quick Actions (Save & Exit / Finish Early) */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="text-left sm:text-right mr-2">
+                <span className="text-base font-outfit font-black text-white">
+                  {currentQIdx + 1} <span className="text-xs text-brand-text-muted font-normal">/ {questions.length || 80}</span>
+                </span>
+                <div className="text-[10px] font-bold text-brand-cyan">{progressPct}%</div>
+              </div>
+
+              {answers.length >= 5 && (
+                <button
+                  type="button"
+                  onClick={handleFinishEarly}
+                  disabled={evaluatingTest}
+                  className="px-2.5 py-1.5 rounded-xl bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/50 text-brand-gold text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                  title="Evaluar y asignar nivel con las respuestas actuales"
+                >
+                  <Sparkles size={12} />
+                  <span>Evaluar ({answers.length})</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSaveAndExit}
+                className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                title="Guardar y continuar más tarde en el Dashboard"
+              >
+                <Save size={12} className="text-brand-cyan" />
+                <span className="hidden sm:inline">Guardar y Salir</span>
+              </button>
             </div>
           </div>
 
@@ -367,7 +456,7 @@ export default function OnboardingPage() {
               <Loader2 className="w-12 h-12 text-brand-cyan animate-spin mx-auto" />
               <h3 className="text-xl font-bold font-outfit text-white">Analizando tu Perfil Lingüístico & Fonético...</h3>
               <p className="text-xs text-brand-text-secondary max-w-md mx-auto leading-relaxed">
-                El motor pedagógico está cruzando tus 60 respuestas curriculares con tus 20 pruebas de discriminación auditiva para asignar tu nivel exacto del CEFR y configurar tu tablero de fonemas.
+                El motor pedagógico está procesando tus respuestas ({answers.length} completadas) para calcular tu nivel CEFR exacto y configurar tu tablero de fonemas inicial.
               </p>
             </div>
           ) : currentQ ? (
@@ -442,7 +531,7 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* ─── OPCIONES DE RESPUESTA ──────────────────────────────────── */}
+              {/* ─── OPCIONES DE RESPUESTA (POSICIÓN ALEATORIA) ─────────────── */}
               <div className={`grid gap-3 ${isPhoneticsSection ? 'grid-cols-2' : 'grid-cols-1'}`}>
                 {currentQ.options.map((opt, oIdx) => {
                   const isSelected = currentAnswer === opt;
@@ -470,19 +559,46 @@ export default function OnboardingPage() {
                 })}
               </div>
 
-              {/* Navigation Back */}
-              {currentQIdx > 0 && (
-                <div className="pt-2 flex justify-start">
+              {/* ─── BARRA INFERIOR DE ACCIONES ────────────────────────────── */}
+              <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div>
+                  {currentQIdx > 0 && (
+                    <button
+                      type="button"
+                      onClick={handlePrevQuestion}
+                      className="inline-flex items-center gap-1 text-xs text-brand-text-muted hover:text-white transition-colors py-1 px-2 rounded-lg hover:bg-white/5"
+                    >
+                      <ArrowLeft size={13} />
+                      <span>Pregunta anterior</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {answers.length >= 5 ? (
+                    <button
+                      type="button"
+                      onClick={handleFinishEarly}
+                      className="text-brand-gold hover:underline font-semibold text-xs inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles size={12} />
+                      <span>Terminar ahora ({answers.length} respuestas)</span>
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-brand-text-muted">
+                      {answers.length}/5 mín. para evaluar ahora
+                    </span>
+                  )}
+
                   <button
                     type="button"
-                    onClick={handlePrevQuestion}
-                    className="inline-flex items-center gap-1 text-xs text-brand-text-muted hover:text-white transition-colors"
+                    onClick={handleSaveAndExit}
+                    className="text-brand-cyan hover:underline font-semibold text-xs cursor-pointer"
                   >
-                    <ArrowLeft size={13} />
-                    <span>Pregunta anterior</span>
+                    Salir al Dashboard
                   </button>
                 </div>
-              )}
+              </div>
             </div>
           ) : null}
         </motion.div>
@@ -523,7 +639,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="text-xs text-brand-text-muted hover:text-white transition-colors inline-flex items-center gap-1"
+              className="text-xs text-brand-text-muted hover:text-white transition-colors inline-flex items-center gap-1 cursor-pointer"
             >
               <ArrowLeft size={13} />
               <span>Volver a las opciones</span>
@@ -540,7 +656,7 @@ export default function OnboardingPage() {
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-bold text-brand-cyan uppercase tracking-wider">¡Diagnóstico Integral Completado!</span>
+            <span className="text-xs font-bold text-brand-cyan uppercase tracking-wider">¡Diagnóstico Guardado & Completado!</span>
             <h2 className="text-3xl sm:text-4xl font-outfit font-extrabold text-white">
               Tu Nivel Inicial es <span className="text-gradient font-black">{assignedLevel}</span>
             </h2>
@@ -557,7 +673,7 @@ export default function OnboardingPage() {
                 <span>Perfil de Laboratorio Fonético</span>
               </div>
               <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-extrabold text-xs">
-                {diagResult?.phonetic_mastery_pct ?? 85}% Precisión Auditiva
+                {diagResult?.phonetic_mastery_pct ?? 80}% Precisión Auditiva
               </span>
             </div>
 
@@ -588,7 +704,7 @@ export default function OnboardingPage() {
 
             {/* Resumen Curricular */}
             <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-brand-text-muted">
-              <span>Currículum evaluado: <strong>60 Preguntas</strong></span>
+              <span>Respuestas evaluadas: <strong>{answers.length || 80} Preguntas</strong></span>
               <span>Reconocimiento: <strong className="text-emerald-400">Groq Whisper Activo</strong></span>
               <span>Recompensa: <strong className="text-brand-gold">+100 XP</strong></span>
             </div>

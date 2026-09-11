@@ -113,30 +113,54 @@ function playElectricZapSound() {
   } catch (_) { /* Audio API no disponible */ }
 }
 
-function playBubbleSound(count = 5) {
+function playBubbleSound(count = 6) {
   try {
     const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
     const baseTime = ctx.currentTime;
     for (let i = 0; i < count; i++) {
-      const startTime = baseTime + i * 0.11 + Math.random() * 0.04;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
+      const startTime = baseTime + i * 0.085 + Math.random() * 0.03;
+      const duration = 0.11 + Math.random() * 0.04;
 
-      const startFreq = 260 + Math.random() * 150;
-      const endFreq = startFreq + 300 + Math.random() * 320;
+      // 1. Primary bubble cavity oscillator (sine sweep rising rapidly)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
 
-      osc.frequency.setValueAtTime(startFreq, startTime);
-      osc.frequency.exponentialRampToValueAtTime(endFreq, startTime + 0.075);
+      const startFreq = 340 + Math.random() * 160;
+      const endFreq = startFreq + 600 + Math.random() * 450;
 
-      gain.gain.setValueAtTime(0.12, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.095);
+      osc1.frequency.setValueAtTime(startFreq, startTime);
+      osc1.frequency.exponentialRampToValueAtTime(endFreq, startTime + duration * 0.85);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain1.gain.setValueAtTime(0.001, startTime);
+      gain1.gain.linearRampToValueAtTime(0.42, startTime + 0.015);
+      gain1.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
-      osc.start(startTime);
-      osc.stop(startTime + 0.1);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(startTime);
+      osc1.stop(startTime + duration + 0.02);
+
+      // 2. Secondary resonant plop sub-oscillator (adds acoustic liquid body)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'triangle';
+
+      const subStartFreq = 180 + Math.random() * 50;
+      osc2.frequency.setValueAtTime(subStartFreq, startTime);
+      osc2.frequency.exponentialRampToValueAtTime(subStartFreq * 0.6, startTime + duration * 0.6);
+
+      gain2.gain.setValueAtTime(0.001, startTime);
+      gain2.gain.linearRampToValueAtTime(0.24, startTime + 0.012);
+      gain2.gain.exponentialRampToValueAtTime(0.001, startTime + duration * 0.7);
+
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(startTime);
+      osc2.stop(startTime + duration + 0.02);
     }
   } catch (_) { /* Audio API no disponible */ }
 }
@@ -188,15 +212,15 @@ const BUBBLES = [
 
 // ── Tank Water & Submersion Calibration (Strict User Specification) ────
 // 0: Dry (0%) - Guionbajo feliz, flotando tranquilo
-// 1: Agua un poco abajo de Guionbajo (24%) - Se ve un poco preocupado
-// 2: Agua casi a la mitad de su tamaño (44%) - Más preocupado
-// 3: Sube más el agua (62%) - Muy preocupado, rayos de corto circuito
-// 4: Tapado hasta el cuello (78%) - Desesperado, rayos, mueve manos sumergidas
-// 5: Tapado por completo (92%) - Burbujas continuas, sonido burbujas, mueve manos, NO habla
+// 1: Agua un poco abajo de Guionbajo (18%) - Se ve un poco preocupado
+// 2: Agua casi a la mitad de su tamaño (30%) - Más preocupado
+// 3: Sube más el agua (40%) - Muy preocupado, rayos de corto circuito
+// 4: Tapado hasta el cuello, justo antes de la boca (49%) - Desesperado, rayos, manos sumergidas
+// 5: Tapado por completo (88%) - Burbujas continuas, sonido burbujas, sumergido total, NO habla
 // 6: Totalmente tapado / tanque 100% - Drowned X_X, inerte al fondo, NO habla
-const WATER_LEVELS_PCT = [0, 24, 44, 62, 78, 92, 100];
-const ROBOT_SINK_Y_PX = [0, 6, 16, 28, 42, 60, 78];
-const ROBOT_SINK_Y_PX_SM = [0, 4, 10, 18, 26, 38, 48];
+const WATER_LEVELS_PCT = [0, 18, 30, 40, 49, 88, 100];
+const ROBOT_SINK_Y_PX = [0, 1, 2, 3, 5, 14, 42];
+const ROBOT_SINK_Y_PX_SM = [0, 0, 1, 2, 3, 8, 24];
 
 interface GuionbajoTankState {
   emotion: TutorEmotion;
@@ -309,6 +333,7 @@ export default function MysteryWordGame({
   const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
   const [loadingAiImage, setLoadingAiImage] = useState(false);
   const [mobileSelectedTier, setMobileSelectedTier] = useState<number>(1);
+  const [selectedDesktopTier, setSelectedDesktopTier] = useState<number>(1);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
   // ── New improvement states ───────────────────────────────────
@@ -334,6 +359,11 @@ export default function MysteryWordGame({
   const isGeneratingImageRef = useRef(false);
   const preGeneratedWordRef = useRef<string | null>(null);
 
+  const mistakesRef = useRef(mistakes);
+  mistakesRef.current = mistakes;
+  const gameOverRef = useRef(gameOver);
+  gameOverRef.current = gameOver;
+
   // ── Derived values ───────────────────────────────────────────
   const currentWaterPct = isWon ? 0 : WATER_LEVELS_PCT[Math.min(mistakes, 6)];
   const currentSinkY = isWon ? -20 : ROBOT_SINK_Y_PX[Math.min(mistakes, 6)];
@@ -341,9 +371,9 @@ export default function MysteryWordGame({
   const robotState = getGuionbajoState(mistakes, isWon, gameOver);
   const isDanger = mistakes >= 4;
 
-  // ── 1. Speak helper — Generous word-scaled safety net ────────
+  // ── 1. Speak helper — Muted underwater (mistakes >= 5 || gameOver) ────────
   const speakTutor = useCallback(async (text: string) => {
-    if (!text || !isComponentMountedRef.current) return;
+    if (!text || !isComponentMountedRef.current || mistakesRef.current >= 5 || gameOverRef.current) return;
     speechAbortControllerRef.current = false;
     setTutorSpeaking(true);
     setTutorSpeechText(text);
@@ -430,7 +460,7 @@ export default function MysteryWordGame({
     }, 800);
   }, []);
 
-  // ── 6. Image generator (tier 3) with MiniMax ──────────────────
+  // ── 6. Image generator (tier 3) ──────────────────────────────
   const generateIllustration = useCallback(async (promptOverride?: string) => {
     if (isGeneratingImageRef.current && !promptOverride) return;
     isGeneratingImageRef.current = true;
@@ -481,8 +511,9 @@ export default function MysteryWordGame({
     if (tier > currentUnlocked && tier <= 4) {
       setUnlockedTier(tier);
       setMobileSelectedTier(tier);
+      setSelectedDesktopTier(tier);
 
-      // Tier 3: Fetch AI Illustration with MiniMax if not already ready/generating
+      // Tier 3: Fetch AI Illustration if not already ready/generating
       if (tier >= 3 && !aiImageUrl && !isGeneratingImageRef.current) {
         generateIllustration();
       }
@@ -493,7 +524,7 @@ export default function MysteryWordGame({
       } else if (tier === 2) {
         speech = `Segunda pista: Observa los sinónimos y familia léxica en pantalla.`;
       } else if (tier === 3) {
-        speech = `Tercera pista: Observa la ilustración visual creada con MiniMax para ti.`;
+        speech = `Tercera pista: Observa la ilustración visual que preparé para ti.`;
       } else {
         speech = `Pista de auxilio final: ${data.clue_first_letter}`;
       }
@@ -855,7 +886,7 @@ export default function MysteryWordGame({
                   {[
                     { tier: 1, label: 'Def', icon: BookOpen },
                     { tier: 2, label: 'Sin', icon: Layers },
-                    { tier: 3, label: 'IA', icon: ImageIcon },
+                    { tier: 3, label: 'Img', icon: ImageIcon },
                     { tier: 4, label: '1ª', icon: HelpCircle },
                   ].map((t) => {
                     const isUnlocked = unlockedTier >= t.tier;
@@ -917,7 +948,7 @@ export default function MysteryWordGame({
                         >
                           <img
                             src={aiImageUrl}
-                            alt="Pista MiniMax"
+                            alt="Ilustración didáctica"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex items-end justify-center pb-0.5">
@@ -945,7 +976,7 @@ export default function MysteryWordGame({
                         <div className="flex items-center gap-1">
                           <span className="text-[10px] font-bold text-amber-300 flex items-center gap-1">
                             <Sparkles size={10} className="text-amber-400" />
-                            Pista MiniMax
+                            Ilustración Visual
                           </span>
                           {aiImageUrl && (
                             <span className="text-[8px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-200 border border-amber-400/30 font-semibold">
@@ -954,7 +985,7 @@ export default function MysteryWordGame({
                           )}
                         </div>
                         <p className="text-[10px] text-amber-100/80 leading-tight line-clamp-2 mt-0.5">
-                          {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración didáctica conceptual.'}
+                          Observa los elementos de la escena para identificar la palabra oculta.
                         </p>
                         {aiImageUrl && (
                           <button
@@ -970,7 +1001,7 @@ export default function MysteryWordGame({
                   ) : (
                     <div className="flex items-center gap-1.5 text-white/40">
                       <Lock size={12} />
-                      <p className="text-[10px] italic">3º fallo desbloquea ilustración MiniMax.</p>
+                      <p className="text-[10px] italic">3º fallo desbloquea ilustración visual.</p>
                       {loadingAiImage && (
                         <span className="text-[9px] text-amber-400/70 ml-auto animate-pulse">
                           (Preparando...)
@@ -1072,8 +1103,8 @@ export default function MysteryWordGame({
                     crtColor={robotState.crtColor}
                     sparkBulb={robotState.sparkBulb}
                     drowned={robotState.drowned}
-                    state={tutorSpeaking ? 'speaking' : 'idle'}
-                    text={tutorSpeechText}
+                    state={mistakes >= 5 || robotState.drowned ? 'idle' : (tutorSpeaking ? 'speaking' : 'idle')}
+                    text={mistakes >= 5 || robotState.drowned ? '' : tutorSpeechText}
                     panickedArms={mistakes >= 4 && !robotState.drowned}
                     shortCircuit={mistakes >= 3 && !robotState.drowned}
                   />
@@ -1154,21 +1185,21 @@ export default function MysteryWordGame({
                 )}
 
                 {/* Wave 1 */}
-                <div className="absolute -top-6 left-0 w-[200%] h-8 opacity-75 animate-wave-motion">
+                <div className="absolute -top-3.5 left-0 w-[200%] h-6 opacity-75 animate-wave-motion">
                   <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-cyan-300">
                     <path d="M0,0 C150,90 350,-40 500,50 C650,140 900,10 1200,40 L1200,120 L0,120 Z" />
                   </svg>
                 </div>
 
                 {/* Wave 2 */}
-                <div className="absolute -top-4 left-0 w-[200%] h-8 opacity-45 animate-wave-reverse">
+                <div className="absolute -top-2.5 left-0 w-[200%] h-5 opacity-45 animate-wave-reverse">
                   <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-blue-200">
                     <path d="M0,0 C200,70 400,-20 600,60 C800,120 1000,20 1200,50 L1200,120 L0,120 Z" />
                   </svg>
                 </div>
 
                 {/* Wave 3 */}
-                <div className="absolute -top-2 left-0 w-[200%] h-6 opacity-25 animate-wave-motion-slow">
+                <div className="absolute -top-1.5 left-0 w-[200%] h-4 opacity-25 animate-wave-motion-slow">
                   <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-white">
                     <path d="M0,20 C300,80 600,-10 900,50 C1050,80 1150,40 1200,30 L1200,120 L0,120 Z" />
                   </svg>
@@ -1211,15 +1242,28 @@ export default function MysteryWordGame({
             </div>
           </div>
 
-          {/* 2. Word Tiles & 4-Tier Clue System */}
-          <div className="col-span-7 flex flex-col gap-5">
-            {/* Letter Tiles */}
-            <div className="p-6 rounded-3xl glass border border-brand-border/60 flex flex-col items-center gap-4 shadow-2xl">
-              <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
-                Palabra Oculta ({targetWord.length} Letras)
-              </span>
+          {/* 2. Word Tiles & Fixed-Height Tabbed Clue System */}
+          <div className="col-span-7 flex flex-col gap-4">
+            {/* Letter Tiles Card */}
+            <div className="p-4 sm:p-5 rounded-3xl glass border border-brand-border/60 flex flex-col items-center gap-2.5 shadow-2xl">
+              <div className="flex items-center justify-between w-full px-1">
+                <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
+                  Palabra Oculta ({targetWord.length} Letras)
+                </span>
+                {(isWon || gameOver) && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => playWordAudio(targetWord)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-brand-cyan/20 border border-brand-cyan/50 text-brand-cyan hover:bg-brand-cyan/30 font-bold text-xs transition-all hover:scale-105 cursor-pointer"
+                  >
+                    <Volume2 size={13} />
+                    <span>Pronunciación</span>
+                  </motion.button>
+                )}
+              </div>
 
-              <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 py-2">
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 py-1">
                 {targetWord.split('').map((letter, idx) => {
                   const isGuessed = guessedLetters.has(letter) || gameOver;
                   const isFlashing = flashLetter === letter;
@@ -1230,7 +1274,7 @@ export default function MysteryWordGame({
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: idx * 0.04 }}
-                        className={`w-11 h-14 sm:w-13 sm:h-16 rounded-2xl flex items-center justify-center font-outfit text-2xl sm:text-3xl font-extrabold border-2 transition-all duration-300 shadow-lg ${
+                        className={`w-10 h-13 sm:w-11 sm:h-14 rounded-2xl flex items-center justify-center font-outfit text-xl sm:text-2xl font-extrabold border-2 transition-all duration-300 shadow-lg ${
                           isFlashing
                             ? 'bg-emerald-500/30 border-emerald-300 text-emerald-200 tile-correct-flash'
                             : isGuessed
@@ -1269,162 +1313,201 @@ export default function MysteryWordGame({
                   );
                 })}
               </div>
-
-              {(isWon || gameOver) && (
-                <motion.button
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={() => playWordAudio(targetWord)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-cyan/20 border border-brand-cyan/50 text-brand-cyan hover:bg-brand-cyan/30 font-semibold text-xs transition-all hover:scale-105"
-                >
-                  <Volume2 size={15} />
-                  <span>Escuchar Pronunciación en Inglés</span>
-                </motion.button>
-              )}
             </div>
 
-            {/* 4-Tier Clue System */}
-            <div className="p-5 rounded-3xl glass border border-brand-border/60 flex flex-col gap-3.5 shadow-xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Lightbulb size={18} className="text-brand-gold animate-pulse" />
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                    Pistas Desbloqueadas ({unlockedTier}/4)
-                  </h3>
+            {/* Desktop Fixed-Height Tabbed Clue System (Zero Overflow, Never Pushes Keyboard) */}
+            <div className="p-4 sm:p-5 rounded-3xl glass border border-brand-border/60 flex flex-col justify-between shadow-xl h-[235px]">
+              {/* Clue Tab Bar */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1 mr-1">
+                    <Lightbulb size={15} className="text-brand-gold animate-pulse" />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider hidden xl:inline">
+                      Pistas
+                    </span>
+                  </div>
+                  {[
+                    { tier: 1, label: '1. Definición', icon: BookOpen },
+                    { tier: 2, label: '2. Sinónimos', icon: Layers },
+                    { tier: 3, label: '3. Ilustración', icon: ImageIcon },
+                    { tier: 4, label: '4. Letra Inicial', icon: HelpCircle },
+                  ].map((t) => {
+                    const isUnlocked = unlockedTier >= t.tier;
+                    const isSelected = selectedDesktopTier === t.tier;
+                    const Icon = t.icon;
+                    return (
+                      <button
+                        key={t.tier}
+                        type="button"
+                        onClick={() => setSelectedDesktopTier(t.tier)}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-brand-cyan text-black shadow-md shadow-brand-cyan/25'
+                            : isUnlocked
+                            ? 'bg-white/10 text-white hover:bg-white/20'
+                            : 'bg-black/25 text-white/35 hover:bg-black/35'
+                        }`}
+                      >
+                        <Icon size={12} />
+                        <span>{t.label}</span>
+                        {t.tier === 3 && aiImageUrl && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Ilustración lista" />
+                        )}
+                        {isUnlocked && (
+                          <CheckCircle2 size={11} className={isSelected ? 'text-black' : 'text-emerald-400'} />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-                <span className="text-[11px] text-brand-text-muted font-medium">
-                  Se revelan automáticamente al equivocarte
+                <span className="text-[11px] font-mono text-brand-cyan font-bold flex-shrink-0">
+                  {unlockedTier}/4
                 </span>
               </div>
 
-              <div className="space-y-2.5">
-                {/* Tier 1 */}
-                <div className={`p-3.5 rounded-2xl border transition-all ${
-                  unlockedTier >= 1
-                    ? 'bg-blue-500/15 border-blue-500/50 text-blue-100 shadow-lg shadow-blue-500/10'
-                    : 'bg-brand-surface/30 border-white/5 opacity-50'
-                }`}>
-                  <div className="flex items-center justify-between text-xs font-bold mb-1">
-                    <span className="flex items-center gap-1.5">
-                      <BookOpen size={14} className={unlockedTier >= 1 ? 'text-blue-400' : 'text-white/30'} />
-                      1. Definición Pedagógica
-                    </span>
-                    {unlockedTier >= 1 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">1º Fallo</span>}
-                  </div>
-                  {unlockedTier >= 1 ? (
-                    <p className="text-xs leading-relaxed text-blue-200">{data.clue_definition}</p>
+              {/* Active Clue Content */}
+              <div className="flex-1 flex flex-col justify-center py-2 min-h-0 overflow-y-auto">
+                {selectedDesktopTier === 1 && (
+                  unlockedTier >= 1 ? (
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-blue-300 uppercase tracking-wider">
+                        Definición Pedagógica
+                      </span>
+                      <p className="text-sm leading-relaxed text-blue-100 font-medium line-clamp-3">
+                        {data.clue_definition}
+                      </p>
+                    </div>
                   ) : (
-                    <p className="text-xs text-white/30 italic">Comete un fallo para desbloquear la definición.</p>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2 text-white/40">
+                      <Lock size={16} />
+                      <p className="text-xs italic">Comete tu 1º error para desbloquear la definición pedagógica.</p>
+                    </div>
+                  )
+                )}
 
-                {/* Tier 2 */}
-                <div className={`p-3.5 rounded-2xl border transition-all ${
-                  unlockedTier >= 2
-                    ? 'bg-purple-500/15 border-purple-500/50 text-purple-100 shadow-lg shadow-purple-500/10'
-                    : 'bg-brand-surface/30 border-white/5 opacity-50'
-                }`}>
-                  <div className="flex items-center justify-between text-xs font-bold mb-1">
-                    <span className="flex items-center gap-1.5">
-                      <Layers size={14} className={unlockedTier >= 2 ? 'text-purple-400' : 'text-white/30'} />
-                      2. Sinónimos & Familia Léxica
-                    </span>
-                    {unlockedTier >= 2 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">2º Fallo</span>}
-                  </div>
-                  {unlockedTier >= 2 ? (
-                    <p className="text-xs leading-relaxed text-purple-200">{data.clue_synonym}</p>
+                {selectedDesktopTier === 2 && (
+                  unlockedTier >= 2 ? (
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-purple-300 uppercase tracking-wider">
+                        Sinónimos & Familia Léxica
+                      </span>
+                      <p className="text-sm leading-relaxed text-purple-100 font-medium line-clamp-3">
+                        {data.clue_synonym}
+                      </p>
+                    </div>
                   ) : (
-                    <p className="text-xs text-white/30 italic">Revelará la familia léxica y colocaciones.</p>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2 text-white/40">
+                      <Lock size={16} />
+                      <p className="text-xs italic">Comete tu 2º error para revelar los sinónimos y colocaciones.</p>
+                    </div>
+                  )
+                )}
 
-                {/* Tier 3: MiniMax Illustration */}
-                <div className={`p-3.5 rounded-2xl border transition-all ${
-                  unlockedTier >= 3
-                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-100 shadow-lg shadow-amber-500/10'
-                    : 'bg-brand-surface/30 border-white/5 opacity-50'
-                }`}>
-                  <div className="flex items-center justify-between text-xs font-bold mb-1">
-                    <span className="flex items-center gap-1.5">
-                      <ImageIcon size={14} className={unlockedTier >= 3 ? 'text-amber-400' : 'text-white/30'} />
-                      3. Ilustración Visual Didáctica (MiniMax IA)
-                    </span>
-                    {unlockedTier >= 3 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">3º Fallo</span>}
-                  </div>
-                  {unlockedTier >= 3 ? (
-                    <div className="mt-2 flex flex-col sm:flex-row items-center gap-3">
+                {selectedDesktopTier === 3 && (
+                  unlockedTier >= 3 ? (
+                    <div className="flex items-center gap-4">
                       {aiImageUrl ? (
                         <div className="relative group flex-shrink-0">
-                          <img
-                            src={aiImageUrl}
-                            alt="Pista visual de la palabra misteriosa"
-                            className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-xl border border-amber-400/40 shadow-md cursor-pointer group-hover:scale-105 transition-transform"
-                            onClick={() => setExpandedImage(aiImageUrl)}
-                          />
                           <button
                             type="button"
                             onClick={() => setExpandedImage(aiImageUrl)}
-                            className="absolute bottom-1 right-1 p-1 rounded-md bg-black/60 text-white/80 hover:text-white text-[10px]"
-                            title="Ampliar imagen"
+                            className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-amber-400/60 shadow-lg cursor-pointer active:scale-95 transition-transform bg-black/40 block"
+                            title="Ampliar ilustración"
                           >
-                            <Maximize2 size={12} />
+                            <img
+                              src={aiImageUrl}
+                              alt="Ilustración didáctica"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-center pb-1">
+                              <span className="text-[9px] font-extrabold text-amber-300 flex items-center gap-1">
+                                <Maximize2 size={9} /> Ver
+                              </span>
+                            </div>
                           </button>
                         </div>
                       ) : loadingAiImage ? (
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-amber-500/20 flex flex-col items-center justify-center text-xs text-amber-300 animate-pulse border border-amber-400/30 text-center p-2">
-                          <Sparkles size={18} className="animate-spin mb-1 text-amber-400" />
-                          <span>Generando con MiniMax...</span>
+                        <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex flex-col items-center justify-center text-[10px] text-amber-300 animate-pulse text-center p-2 flex-shrink-0">
+                          <Sparkles size={16} className="animate-spin mb-1 text-amber-400" />
+                          <span>Generando...</span>
                         </div>
                       ) : (
                         <button
                           type="button"
                           onClick={() => generateIllustration()}
-                          className="px-4 py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 text-xs font-bold transition-all flex flex-col items-center gap-1.5"
+                          className="px-3.5 py-2.5 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 text-xs font-bold transition-all flex flex-col items-center gap-1 flex-shrink-0"
                         >
-                          <Sparkles size={18} />
-                          <span>Generar Ilustración MiniMax</span>
+                          <Sparkles size={16} />
+                          <span>Generar Ilustración</span>
                         </button>
                       )}
-                      <div className="flex-1 space-y-1 text-left">
-                        <p className="text-xs text-amber-200/90 leading-relaxed">
-                          {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración visual del concepto sin texto.'}
+
+                      <div className="flex-1 space-y-1 min-w-0">
+                        <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <ImageIcon size={13} />
+                          <span>Ilustración Visual Didáctica</span>
+                        </span>
+                        <p className="text-xs text-amber-100/90 leading-relaxed font-medium">
+                          Observa los elementos de la escena para identificar la palabra oculta.
                         </p>
                         {aiImageUrl && (
-                          <button
-                            type="button"
-                            onClick={() => generateIllustration()}
-                            className="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-200 underline pt-1"
-                          >
-                            <RefreshCw size={11} />
-                            <span>Regenerar imagen</span>
-                          </button>
+                          <div className="flex items-center gap-3 pt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedImage(aiImageUrl)}
+                              className="text-xs text-cyan-300 hover:text-cyan-200 font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Maximize2 size={12} />
+                              <span>Ver en tamaño grande</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => generateIllustration()}
+                              className="inline-flex items-center gap-1 text-xs text-amber-400/80 hover:text-amber-200 underline cursor-pointer"
+                            >
+                              <RefreshCw size={11} />
+                              <span>Nueva imagen</span>
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-white/30 italic">Desbloqueará una ilustración didáctica creada con MiniMax.</p>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2 text-white/40">
+                      <Lock size={16} />
+                      <p className="text-xs italic">Comete tu 3º error para desbloquear una ilustración visual didáctica.</p>
+                      {loadingAiImage && (
+                        <span className="text-[11px] text-amber-400/70 ml-auto animate-pulse">
+                          (Preparando ilustración en segundo plano...)
+                        </span>
+                      )}
+                    </div>
+                  )
+                )}
 
-                {/* Tier 4 */}
-                <div className={`p-3.5 rounded-2xl border transition-all ${
-                  unlockedTier >= 4
-                    ? 'bg-rose-500/15 border-rose-500/50 text-rose-100 shadow-lg shadow-rose-500/10'
-                    : 'bg-brand-surface/30 border-white/5 opacity-50'
-                }`}>
-                  <div className="flex items-center justify-between text-xs font-bold mb-1">
-                    <span className="flex items-center gap-1.5">
-                      <HelpCircle size={14} className={unlockedTier >= 4 ? 'text-rose-400' : 'text-white/30'} />
-                      4. Pista de Auxilio Final
-                    </span>
-                    {unlockedTier >= 4 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">4º Fallo</span>}
-                  </div>
-                  {unlockedTier >= 4 ? (
-                    <p className="text-xs font-bold leading-relaxed text-rose-200">{data.clue_first_letter}</p>
+                {selectedDesktopTier === 4 && (
+                  unlockedTier >= 4 ? (
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-rose-300 uppercase tracking-wider">
+                        Pista de Auxilio Final
+                      </span>
+                      <p className="text-sm font-bold leading-relaxed text-rose-100">
+                        {data.clue_first_letter}
+                      </p>
+                    </div>
                   ) : (
-                    <p className="text-xs text-white/30 italic">Último salvavidas con la letra inicial.</p>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2 text-white/40">
+                      <Lock size={16} />
+                      <p className="text-xs italic">Comete tu 4º error para revelar el último salvavidas con la letra inicial.</p>
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Clue Footer */}
+              <div className="border-t border-white/5 pt-1.5 flex items-center justify-between text-[10px] text-white/40">
+                <span>Las pistas se revelan automáticamente cuando te equivocas</span>
+                <span>Fallos: {mistakes}/{MAX_MISTAKES}</span>
               </div>
             </div>
           </div>
@@ -1558,12 +1641,12 @@ export default function MysteryWordGame({
               <div className="flex items-center justify-between w-full pb-1 border-b border-white/10">
                 <span className="text-xs sm:text-sm font-extrabold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
                   <ImageIcon size={16} className="text-amber-400" />
-                  <span>Pista Visual (MiniMax IA)</span>
+                  <span>Ilustración Visual Didáctica</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setExpandedImage(null)}
-                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all"
+                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all cursor-pointer"
                   aria-label="Cerrar vista grande"
                 >
                   <X size={18} />
@@ -1574,14 +1657,14 @@ export default function MysteryWordGame({
               <div className="w-full flex items-center justify-center bg-black/40 rounded-2xl overflow-hidden border border-white/10 p-1">
                 <img
                   src={expandedImage}
-                  alt="Ilustración didáctica generada con MiniMax"
+                  alt="Ilustración didáctica de la palabra misteriosa"
                   className="w-full max-h-[46vh] sm:max-h-[56vh] object-contain rounded-xl shadow-lg"
                 />
               </div>
 
-              {/* Clue Prompt Context */}
-              <p className="text-xs text-amber-100/80 text-center italic px-1">
-                {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración didáctica conceptual.'}
+              {/* Clue Context */}
+              <p className="text-xs text-amber-100/90 text-center font-medium px-1">
+                Observa los detalles de la escena para descubrir la palabra en inglés.
               </p>
 
               {/* Action Button: Volver al juego */}

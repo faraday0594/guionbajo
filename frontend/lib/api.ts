@@ -204,6 +204,13 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  // ─── MiniMax Image Generation ─────────────────────
+  generateImage: (prompt: string, aspect_ratio = '1:1') =>
+    fetchWithAuth('/image/generate', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, aspect_ratio }),
+    }),
+
   // ─── Interactive POV Conversational Quest (Visual Novel) ─
   generateQuest: (topic: string, sublevel: string, lesson_id?: string) =>
     fetchWithAuth('/quests/generate', {
@@ -283,13 +290,6 @@ export const api = {
   },
 
   getVoices: () => fetchWithAuth('/tts/voices'),
-
-  // ─── Image Generation (MiniMax image-01) ─────────
-  generateImage: (prompt: string, aspect_ratio = '16:9') =>
-    fetchWithAuth('/image/generate', {
-      method: 'POST',
-      body: JSON.stringify({ prompt, aspect_ratio }),
-    }),
 
   // ─── Settings ────────────────────────────────────
   getSettings: () => fetchWithAuth('/settings/'),

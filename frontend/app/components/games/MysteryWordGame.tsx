@@ -17,8 +17,12 @@ import {
   BookOpen,
   FastForward,
   Play,
+  Lock,
+  RefreshCw,
+  X,
+  Maximize2,
 } from 'lucide-react';
-import { playTutorVoice, stopTutorVoice, playEnglishAudio } from '@/lib/api';
+import { playTutorVoice, stopTutorVoice, playEnglishAudio, api } from '@/lib/api';
 import TutorAvatar, { TutorEmotion } from '@/app/components/TutorPanel/TutorAvatar';
 
 export interface MysteryWordData {
@@ -139,14 +143,15 @@ const BUBBLES = [
 // ── Tank Water & Submersion Calibration ─────────────────────────
 // Calibrated so that each mistake level submerges the next anatomical milestone:
 // 0: Dry hover above water (0%)
-// 1: Thruster enters water (28%)
-// 2: Lower torso submerged (45%)
-// 3: CRT screen and arms submerged (60%)
-// 4: Neck and chin submerged (75%)
-// 5: Mouth submerged, bubbles erupt (88%)
+// 1: Thruster submerged in water (35%)
+// 2: Lower torso submerged (50%)
+// 3: CRT screen submerged (65%)
+// 4: Neck and chin submerged (78%)
+// 5: Mouth and eyes submerged, bubbles erupt (89%)
 // 6: Fully submerged / drowned (100%)
-const WATER_LEVELS_PCT = [0, 28, 45, 60, 75, 88, 100];
-const ROBOT_SINK_Y_PX = [0, 14, 28, 44, 62, 78, 95];
+const WATER_LEVELS_PCT = [0, 35, 50, 65, 78, 89, 100];
+const ROBOT_SINK_Y_PX = [0, 12, 24, 38, 52, 66, 80];
+const ROBOT_SINK_Y_PX_SM = [0, 6, 12, 19, 26, 33, 40];
 
 interface GuionbajoTankState {
   emotion: TutorEmotion;
@@ -154,7 +159,6 @@ interface GuionbajoTankState {
   crtColor?: string;
   sparkBulb: boolean;
   drowned: boolean;
-  meterText: string;
 }
 
 function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean): GuionbajoTankState {
@@ -165,7 +169,6 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
       crtColor: '#FFD700',
       sparkBulb: false,
       drowned: false,
-      meterText: '¡SALVADO! SISTEMA SEGURO',
     };
   }
 
@@ -176,7 +179,6 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
       crtColor: '#EF4444',
       sparkBulb: false,
       drowned: true,
-      meterText: 'NIVEL 6: ¡DESBORDE TOTAL!',
     };
   }
 
@@ -188,7 +190,6 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
         crtColor: '#00E676',
         sparkBulb: false,
         drowned: false,
-        meterText: 'NIVEL 0: ESTABLE',
       };
     case 1:
       return {
@@ -197,7 +198,6 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
         crtColor: '#00D4FF',
         sparkBulb: false,
         drowned: false,
-        meterText: 'NIVEL 1: ALERTA LEVE',
       };
     case 2:
       return {
@@ -206,7 +206,6 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
         crtColor: '#FFB627',
         sparkBulb: false,
         drowned: false,
-        meterText: 'NIVEL 2: INESTABLE',
       };
     case 3:
       return {
@@ -215,7 +214,6 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
         crtColor: '#FB923C',
         sparkBulb: false,
         drowned: false,
-        meterText: 'NIVEL 3: ADVERTENCIA',
       };
     case 4:
       return {
@@ -224,7 +222,6 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
         crtColor: '#FF5252',
         sparkBulb: true,
         drowned: false,
-        meterText: 'NIVEL 4: PELIGRO ALTO',
       };
     case 5:
       return {
@@ -233,7 +230,6 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
         crtColor: '#FFFFFF',
         sparkBulb: true,
         drowned: false,
-        meterText: 'NIVEL 5: ¡CRÍTICO!',
       };
     default:
       return {
@@ -242,7 +238,6 @@ function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean):
         crtColor: '#EF4444',
         sparkBulb: false,
         drowned: true,
-        meterText: 'NIVEL 6: ¡DESBORDE!',
       };
   }
 }
@@ -268,6 +263,8 @@ export default function MysteryWordGame({
   const [isShaking, setIsShaking] = useState(false);
   const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
   const [loadingAiImage, setLoadingAiImage] = useState(false);
+  const [mobileSelectedTier, setMobileSelectedTier] = useState<number>(1);
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
   // ── New improvement states ───────────────────────────────────
   /** Letter that just flashed green — cleared after animation */
@@ -293,6 +290,7 @@ export default function MysteryWordGame({
   // ── Derived values ───────────────────────────────────────────
   const currentWaterPct = isWon ? 0 : WATER_LEVELS_PCT[Math.min(mistakes, 6)];
   const currentSinkY = isWon ? -20 : ROBOT_SINK_Y_PX[Math.min(mistakes, 6)];
+  const currentSinkYMobile = isWon ? -12 : ROBOT_SINK_Y_PX_SM[Math.min(mistakes, 6)];
   const robotState = getGuionbajoState(mistakes, isWon, gameOver);
   const isDanger = mistakes >= 4;
 
@@ -370,14 +368,48 @@ export default function MysteryWordGame({
     }, 800);
   }, []);
 
-  // ── 6. Clue tier unlocker ────────────────────────────────────
+  // ── 6. Image generator (tier 3) with MiniMax ──────────────────
+  const generateIllustration = useCallback(async (promptOverride?: string) => {
+    let rawPrompt = promptOverride || data.image_prompt || '';
+    if (!rawPrompt && data.clue_definition) {
+      rawPrompt = `Pedagogical conceptual illustration representing: ${data.clue_definition}`;
+    } else if (!rawPrompt) {
+      rawPrompt = `Educational illustration representing a vocabulary concept in ${data.category || topic}`;
+    }
+
+    // Strictly mask secret target word so it never appears in image prompt or generated visual
+    if (data.target_word) {
+      const escaped = data.target_word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      rawPrompt = rawPrompt.replace(new RegExp(escaped, 'gi'), 'the secret item');
+    }
+
+    const prompt =
+      rawPrompt.replace(/no text.*$/i, '').trim() +
+      ', 2D vector flat educational illustration, clean vector art, vibrant colors, strictly no text, no letters, no words, no writing, no labels, 1:1 aspect ratio';
+
+    setLoadingAiImage(true);
+    try {
+      const res = await api.generateImage(prompt, '1:1');
+      const imgUrl = res?.url || res?.image_url;
+      if (imgUrl && isComponentMountedRef.current) {
+        setAiImageUrl(imgUrl);
+      }
+    } catch (e) {
+      console.warn('MiniMax image gen error for clue:', e);
+    } finally {
+      if (isComponentMountedRef.current) setLoadingAiImage(false);
+    }
+  }, [data.image_prompt, data.clue_definition, data.target_word, data.category, topic]);
+
+  // ── 7. Clue tier unlocker ────────────────────────────────────
   const unlockClueTier = useCallback(async (tier: number, currentUnlocked: number) => {
     if (tier > currentUnlocked && tier <= 4) {
       setUnlockedTier(tier);
+      setMobileSelectedTier(tier);
 
-      // Tier 3: Fetch AI Illustration
-      if (tier >= 3 && !aiImageUrl && !loadingAiImage && data.image_prompt) {
-        generateIllustration(data.image_prompt);
+      // Tier 3: Fetch AI Illustration with MiniMax
+      if (tier >= 3 && !aiImageUrl && !loadingAiImage) {
+        generateIllustration();
       }
 
       let speech = '';
@@ -386,36 +418,14 @@ export default function MysteryWordGame({
       } else if (tier === 2) {
         speech = `Segunda pista: Observa los sinónimos y familia léxica en pantalla.`;
       } else if (tier === 3) {
-        speech = `Tercera pista: Observa la ilustración visual que acabo de crear para ti.`;
+        speech = `Tercera pista: Observa la ilustración visual creada con MiniMax para ti.`;
       } else {
         speech = `Pista de auxilio final: ${data.clue_first_letter}`;
       }
 
       await speakTutor(speech);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiImageUrl, loadingAiImage, data, speakTutor]);
-
-  // ── 7. Image generator (tier 3) ──────────────────────────────
-  const generateIllustration = async (prompt: string) => {
-    setLoadingAiImage(true);
-    try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${API_BASE}/image/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, aspect_ratio: '1:1' }),
-      });
-      const json = await res.json();
-      if (json.success && json.url && isComponentMountedRef.current) {
-        setAiImageUrl(json.url);
-      }
-    } catch (e) {
-      console.warn('AI image gen error for clue:', e);
-    } finally {
-      if (isComponentMountedRef.current) setLoadingAiImage(false);
-    }
-  };
+  }, [aiImageUrl, loadingAiImage, data, speakTutor, generateIllustration]);
 
   // ── 8. Win handler ───────────────────────────────────────────
   const handleGameWin = useCallback(async (finalScore: number) => {
@@ -511,72 +521,66 @@ export default function MysteryWordGame({
   };
 
 
-  // ── Framer animate values for water ─────────────────────────
-  // FIX VISUAL: background moved into `animate` so Framer interpolates color
-  const waterColors = isDanger
-    ? { background: 'linear-gradient(180deg, rgba(239,68,68,0.75) 0%, rgba(185,28,28,0.95) 100%)' }
-    : { background: 'linear-gradient(180deg, rgba(0,212,255,0.65) 0%, rgba(108,99,255,0.9) 100%)' };
-
   // ── RENDER ───────────────────────────────────────────────────
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 text-white pb-10">
+    <div className="w-full max-w-5xl mx-auto flex flex-col gap-4 sm:gap-6 text-white pb-10">
 
       {/* ── Top HUD: Category, Topic, Score, Streak ── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl glass border border-brand-border/60 shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-cyan to-brand-accent flex items-center justify-center shadow-lg shadow-brand-cyan/20">
-            <Sparkles size={20} className="text-white animate-pulse" />
+      <div className="flex items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl glass border border-brand-border/60 shadow-xl">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-brand-cyan to-brand-accent flex items-center justify-center shadow-lg shadow-brand-cyan/20 flex-shrink-0">
+            <Sparkles size={18} className="text-white animate-pulse" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-cyan">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-brand-cyan truncate max-w-[140px] sm:max-w-none">
                 {data.category || 'Palabra Misteriosa'}
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-brand-surface text-brand-text-muted text-[10px] font-mono border border-white/10">
+              <span className="px-1.5 py-0.5 rounded-md bg-brand-surface text-brand-text-muted text-[9px] sm:text-[10px] font-mono border border-white/10">
                 {sublevel}
               </span>
             </div>
-            <h2 className="text-lg font-outfit font-extrabold text-white">Mystery Word Tank</h2>
+            <h2 className="text-sm sm:text-lg font-outfit font-extrabold text-white truncate">Mystery Word Tank</h2>
           </div>
         </div>
 
         {/* Score & Streak */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           <motion.div
             key={score}
             initial={{ scale: 1.25, color: '#FFD700' }}
             animate={{ scale: 1, color: '#FFB627' }}
             transition={{ duration: 0.35 }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-surface/80 border border-brand-gold/30 text-brand-gold"
+            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-brand-surface/80 border border-brand-gold/30 text-brand-gold"
           >
-            <Award size={16} />
-            <span className="text-sm font-extrabold font-mono">{score} pts</span>
+            <Award size={14} />
+            <span className="text-xs sm:text-sm font-extrabold font-mono">{score} pts</span>
           </motion.div>
 
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all ${
+          <div className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border transition-all ${
             streak > 1
               ? 'bg-amber-500/20 border-amber-500/60 text-amber-300 flame-streak'
               : 'bg-brand-surface/60 border-white/10 text-brand-text-muted'
           }`}>
-            <Flame size={16} className={streak > 1 ? 'text-amber-400 animate-bounce' : ''} />
-            <span className="text-xs font-bold">Racha: x{streak}</span>
+            <Flame size={14} className={streak > 1 ? 'text-amber-400 animate-bounce' : ''} />
+            <span className="text-[11px] sm:text-xs font-bold">x{streak}</span>
           </div>
         </div>
       </div>
 
       {/* ── Tutor Speaking Banner ── */}
-      <div className="p-3.5 sm:p-4 rounded-2xl glass border border-brand-cyan/30 flex items-center justify-between gap-3 shadow-lg">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+      <div className="p-2.5 sm:p-3.5 rounded-2xl glass border border-brand-cyan/30 flex items-center justify-between gap-2.5 shadow-lg">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
             tutorSpeaking ? 'bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40' : 'bg-brand-surface text-brand-text-muted'
           }`}>
-            <Volume2 size={16} className={tutorSpeaking ? 'animate-pulse text-brand-gold' : ''} />
+            <Volume2 size={15} className={tutorSpeaking ? 'animate-pulse text-brand-gold' : ''} />
           </div>
-          <div className="truncate">
-            <div className="text-[10px] uppercase font-bold text-brand-cyan">
-              {tutorSpeaking ? 'Tutor Explicando en Vivo' : 'Tutor en Espera'}
+          <div className="truncate min-w-0">
+            <div className="text-[9px] sm:text-[10px] uppercase font-bold text-brand-cyan">
+              {tutorSpeaking ? 'Tutor Guionbajo Hablando' : 'Tutor en Espera'}
             </div>
-            <p className="text-xs text-white/90 italic truncate">{tutorSpeechText}</p>
+            <p className="text-[11px] sm:text-xs text-white/90 italic truncate">{tutorSpeechText}</p>
           </div>
         </div>
 
@@ -584,421 +588,763 @@ export default function MysteryWordGame({
           <button
             type="button"
             onClick={handleSkipVoice}
-            className="px-3 py-1.5 rounded-xl bg-brand-surface hover:bg-brand-accent text-white text-xs font-bold transition-all border border-white/15 flex items-center gap-1.5 flex-shrink-0"
-            title="Saltar voz y habilitar teclado inmediatamente"
+            className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-brand-surface hover:bg-brand-accent text-white text-[11px] sm:text-xs font-bold transition-all border border-white/15 flex items-center gap-1 flex-shrink-0"
+            title="Saltar voz y habilitar teclado"
           >
-            <FastForward size={13} />
-            <span>Saltar Voz</span>
+            <FastForward size={12} />
+            <span>Saltar</span>
           </button>
         )}
       </div>
 
-      {/* ── Main Arena ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* ── MOBILE VIEW (< lg): Zero-scroll compact layout ── */}
+      <div className="flex lg:hidden flex-col gap-2.5 w-full">
+        {/* Row 1: Side-by-Side Tank (Left) + Word & Active Clue Card (Right) */}
+        <div className="flex items-stretch gap-2.5 w-full">
 
-        {/* ── 1. Reactive Water Tank ── */}
-        <div className="lg:col-span-5 flex flex-col items-center">
-          <div
-            ref={tankRef}
-            className={`relative w-full max-w-[280px] h-[360px] rounded-3xl overflow-hidden border-4 transition-all duration-500 flex flex-col justify-end bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 shadow-2xl ${
-              isDanger ? 'tank-danger-glow border-red-500' : 'border-brand-cyan/40'
-            } ${isShaking ? 'tank-shake' : ''}`}
-          >
-            {/* ── Layer 1: Background Infrastructure (Pipes, Depth Grid) ── */}
-            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#6C63FF_1px,transparent_1px)] [background-size:16px_16px]" />
-            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none" />
-
-            {/* ── Layer 2: Robot Guionbajo (TutorAvatar) with progressive sinking & reactions ── */}
-            <motion.div
-              className="absolute inset-x-0 top-7 flex flex-col items-center justify-start pointer-events-none z-10"
-              animate={
-                isScared
-                  ? {
-                      y: currentSinkY - 14,
-                      scale: 1.12,
-                      rotate: [-2, 3, -3, 2, 0],
-                    }
-                  : isWon
-                  ? {
-                      y: currentSinkY,
-                      scale: 1.08,
-                      rotate: 0,
-                    }
-                  : mistakes >= 5
-                  ? {
-                      y: [currentSinkY - 2, currentSinkY + 3, currentSinkY - 2],
-                      rotate: [-2.5, 2.5, -2.5],
-                    }
-                  : mistakes >= 3
-                  ? {
-                      y: [currentSinkY - 1.5, currentSinkY + 2, currentSinkY - 1.5],
-                      rotate: [-1.5, 1.5, -1.5],
-                    }
-                  : {
-                      y: [currentSinkY - 2, currentSinkY + 2, currentSinkY - 2],
-                      rotate: 0,
-                    }
-              }
-              transition={
-                isScared
-                  ? { duration: 0.55, ease: 'easeOut' }
-                  : isWon
-                  ? { duration: 0.8, type: 'spring' }
-                  : { duration: mistakes >= 4 ? 0.35 : 2.4, repeat: Infinity, ease: 'easeInOut' }
-              }
+          {/* Left: Compact Tank (Zero Text Inside) */}
+          <div className="w-[118px] sm:w-[135px] flex-shrink-0 flex flex-col items-center justify-between">
+            <div
+              className={`relative w-full h-[175px] rounded-2xl overflow-hidden border-2 transition-all duration-500 flex flex-col justify-end bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 shadow-xl ${
+                isDanger ? 'tank-danger-glow border-red-500' : 'border-brand-cyan/40'
+              } ${isShaking ? 'tank-shake' : ''}`}
             >
-              <div className="relative">
-                <TutorAvatar
-                  size="md"
-                  emotion={robotState.emotion}
-                  crtLabel={robotState.crtLabel}
-                  crtColor={robotState.crtColor}
-                  sparkBulb={robotState.sparkBulb}
-                  drowned={robotState.drowned}
-                  state={tutorSpeaking ? 'speaking' : 'idle'}
-                  text={tutorSpeechText}
-                />
+              {/* Background grid */}
+              <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#6C63FF_1px,transparent_1px)] [background-size:12px_12px]" />
 
-                {/* Mouth Bubbles Emitter (activates when mouth is submerged: mistakes >= 5) */}
-                {mistakes >= 5 && !robotState.drowned && (
-                  <div className="absolute top-[70px] left-1/2 -translate-x-1/2 pointer-events-none">
-                    <span className="mouth-bubble" style={{ width: 8, height: 8, left: -5, animationDelay: '0s' }} />
-                    <span className="mouth-bubble" style={{ width: 6, height: 6, left: 3, animationDelay: '0.4s' }} />
-                    <span className="mouth-bubble" style={{ width: 10, height: 10, left: -1, animationDelay: '0.85s' }} />
-                  </div>
-                )}
-              </div>
-            </motion.div>
+              {/* Guionbajo TutorAvatar (size="sm") with progressive sinking */}
+              <motion.div
+                className="absolute inset-x-0 top-[42px] flex flex-col items-center justify-start pointer-events-none z-10"
+                animate={
+                  isScared
+                    ? { y: currentSinkYMobile - 8, scale: 1.1, rotate: [-2, 3, -3, 2, 0] }
+                    : isWon
+                    ? { y: currentSinkYMobile, scale: 1.05, rotate: 0 }
+                    : mistakes >= 5
+                    ? { y: [currentSinkYMobile - 1.5, currentSinkYMobile + 2, currentSinkYMobile - 1.5], rotate: [-2, 2, -2] }
+                    : mistakes >= 3
+                    ? { y: [currentSinkYMobile - 1, currentSinkYMobile + 1.5, currentSinkYMobile - 1], rotate: [-1, 1, -1] }
+                    : { y: [currentSinkYMobile - 1, currentSinkYMobile + 1, currentSinkYMobile - 1], rotate: 0 }
+                }
+                transition={
+                  isScared
+                    ? { duration: 0.55, ease: 'easeOut' }
+                    : isWon
+                    ? { duration: 0.8, type: 'spring' }
+                    : { duration: mistakes >= 4 ? 0.35 : 2.4, repeat: Infinity, ease: 'easeInOut' }
+                }
+              >
+                <div className="relative scale-90">
+                  <TutorAvatar
+                    size="sm"
+                    emotion={robotState.emotion}
+                    crtLabel={robotState.crtLabel}
+                    crtColor={robotState.crtColor}
+                    sparkBulb={robotState.sparkBulb}
+                    drowned={robotState.drowned}
+                    state={tutorSpeaking ? 'speaking' : 'idle'}
+                  />
 
-            {/* ── Layer 3: Dynamic Rising Water (In Front of Guionbajo!) ── */}
-            <motion.div
-              className="absolute bottom-0 left-0 right-0 w-full z-20 overflow-hidden pointer-events-none"
-              animate={{
-                height: `${currentWaterPct}%`,
-                ...waterColors,
-              }}
-              style={{
-                backdropFilter: currentWaterPct > 0 ? 'blur(1.5px)' : 'none',
-                WebkitBackdropFilter: currentWaterPct > 0 ? 'blur(1.5px)' : 'none',
-              }}
-              transition={{ type: 'spring', damping: 20, stiffness: 85, background: { duration: 0.8 } }}
-            >
-              {/* Glowing Water Surface Wave Crest (Top edge line of the water) */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-white to-cyan-400 shadow-[0_0_12px_#00D4FF] water-surface-glow z-30" />
+                  {/* Mouth Bubbles Emitter (mistakes >= 5) */}
+                  {mistakes >= 5 && !robotState.drowned && (
+                    <div className="absolute top-[44px] left-1/2 -translate-x-1/2 pointer-events-none">
+                      <span className="mouth-bubble" style={{ width: 6, height: 6, left: -4, animationDelay: '0s' }} />
+                      <span className="mouth-bubble" style={{ width: 5, height: 5, left: 2, animationDelay: '0.4s' }} />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
 
-              {/* Splash particle on level rise */}
-              {showSplash && (
-                <span
-                  className="splash-drop"
-                  style={{ width: 12, height: 12, left: `${35 + Math.random() * 30}%` }}
-                />
-              )}
-
-              {/* Wave 1 — left to right */}
-              <div className="absolute -top-6 left-0 w-[200%] h-8 opacity-75 animate-wave-motion">
-                <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-cyan-300">
-                  <path d="M0,0 C150,90 350,-40 500,50 C650,140 900,10 1200,40 L1200,120 L0,120 Z" />
-                </svg>
-              </div>
-
-              {/* Wave 2 — right to left (counter-wave) */}
-              <div className="absolute -top-4 left-0 w-[200%] h-8 opacity-45 animate-wave-reverse">
-                <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-blue-200">
-                  <path d="M0,0 C200,70 400,-20 600,60 C800,120 1000,20 1200,50 L1200,120 L0,120 Z" />
-                </svg>
-              </div>
-
-              {/* Wave 3 — slow baseline */}
-              <div className="absolute -top-2 left-0 w-[200%] h-6 opacity-25 animate-wave-motion-slow">
-                <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-white">
-                  <path d="M0,20 C300,80 600,-10 900,50 C1050,80 1150,40 1200,30 L1200,120 L0,120 Z" />
-                </svg>
-              </div>
-
-              {/* Underwater Bubbles */}
-              {currentWaterPct > 10 && BUBBLES.map((b, i) => (
-                <span
-                  key={i}
-                  className="bubble"
+              {/* Dynamic Rising Water (In Front of Guionbajo) */}
+              <motion.div
+                className="absolute bottom-0 left-0 right-0 w-full z-20 overflow-hidden pointer-events-none"
+                animate={{ height: `${currentWaterPct}%` }}
+                transition={{ type: 'spring', damping: 20, stiffness: 85 }}
+              >
+                {/* Visible translucent water gradient */}
+                <div
+                  className={`absolute inset-0 transition-colors duration-700 ${
+                    mistakes >= 5
+                      ? 'bg-gradient-to-t from-red-950/95 via-rose-600/80 to-rose-400/85'
+                      : mistakes >= 3
+                      ? 'bg-gradient-to-t from-amber-950/95 via-amber-600/80 to-yellow-300/85'
+                      : 'bg-gradient-to-t from-blue-950/95 via-sky-600/80 to-cyan-300/85'
+                  }`}
                   style={{
-                    width: b.size,
-                    height: b.size,
-                    left: b.left,
-                    bottom: b.bottom,
-                    '--bubble-duration': b.duration,
-                    '--bubble-delay': b.delay,
-                  } as React.CSSProperties}
+                    boxShadow: mistakes >= 5
+                      ? 'inset 0 6px 20px rgba(239, 68, 68, 0.6)'
+                      : mistakes >= 3
+                      ? 'inset 0 6px 20px rgba(245, 158, 11, 0.5)'
+                      : 'inset 0 6px 20px rgba(6, 182, 212, 0.5)'
+                  }}
+                />
+
+                {/* Surface wave crest */}
+                <div className={`absolute top-0 left-0 right-0 h-1 water-surface-glow z-30 transition-colors duration-500 ${
+                  mistakes >= 5
+                    ? 'bg-gradient-to-r from-red-400 via-white to-red-400 shadow-[0_0_10px_#EF4444]'
+                    : mistakes >= 3
+                    ? 'bg-gradient-to-r from-amber-400 via-white to-amber-400 shadow-[0_0_10px_#F59E0B]'
+                    : 'bg-gradient-to-r from-cyan-400 via-white to-cyan-400 shadow-[0_0_10px_#00D4FF]'
+                }`} />
+
+                {/* Wave SVGs */}
+                <div className="absolute -top-4 left-0 w-[200%] h-6 opacity-75 animate-wave-motion">
+                  <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-cyan-300">
+                    <path d="M0,0 C150,90 350,-40 500,50 C650,140 900,10 1200,40 L1200,120 L0,120 Z" />
+                  </svg>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Error indicator capsules outside tank */}
+            <div className="mt-1.5 flex items-center justify-center gap-1 w-full">
+              {Array.from({ length: MAX_MISTAKES }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i < mistakes
+                      ? i >= 4
+                        ? 'w-3.5 bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]'
+                        : i >= 2
+                        ? 'w-3.5 bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                        : 'w-3.5 bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]'
+                      : 'w-1.5 bg-white/20'
+                  }`}
                 />
               ))}
-
-              {/* Water level percentage text */}
-              <div className="w-full h-full flex items-end justify-center pb-3 relative">
-                <span className="text-3xl font-extrabold font-mono text-white/20 select-none">
-                  {Math.round(currentWaterPct)}%
-                </span>
-              </div>
-            </motion.div>
-
-            {/* ── Layer 4: Glass measurements overlay & Danger Meter ── */}
-            <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between p-3.5">
-              <div className="flex justify-between items-center text-[10px] font-mono font-bold">
-                <span className={isDanger ? 'text-red-400 animate-pulse' : 'text-brand-cyan'}>
-                  {robotState.meterText}
-                </span>
-                <span className={isDanger ? 'text-red-400 font-extrabold' : 'text-brand-cyan/80'}>
-                  {mistakes}/{MAX_MISTAKES} FALLOS
-                </span>
-              </div>
-
-              <div className="w-full space-y-7 border-l-2 border-dashed border-white/20 pl-2">
-                <div className="text-[9px] font-mono text-red-400/80 font-bold">- NIVEL 6 (DESBORDE / AHOGADO)</div>
-                <div className="text-[9px] font-mono text-amber-400/80 font-bold">- NIVEL 4 (PELIGRO / CUELLO)</div>
-                <div className="text-[9px] font-mono text-cyan-400/80 font-bold">- NIVEL 2 (PROPULSOR SUMERGIDO)</div>
-              </div>
-
-              <div className="flex items-center justify-between text-[10px] font-bold text-white/60 tracking-wider uppercase">
-                <span>Tanque Guionbajo</span>
-                <span className="text-[9px] font-mono text-white/40">HIDRÁULICO IA</span>
-              </div>
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-brand-text-secondary">
-            <AlertTriangle size={14} className={isDanger ? 'text-red-400 animate-pulse' : 'text-brand-cyan'} />
-            <span>{MAX_MISTAKES - mistakes} errores restantes antes de perder</span>
-          </div>
-        </div>
-
-        {/* ── 2. Word Tiles & 4-Tier Clue System ── */}
-        <div className="lg:col-span-7 flex flex-col gap-5">
-
-          {/* Letter Tiles */}
-          <div className="p-6 rounded-3xl glass border border-brand-border/60 flex flex-col items-center gap-4 shadow-2xl">
-            <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
-              Palabra Oculta ({targetWord.length} Letras)
-            </span>
-
-            <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 py-2">
+          {/* Right: Word Tiles & Compact Clue Tabs */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between gap-1.5">
+            {/* Word Tiles Card */}
+            <div className="p-2 rounded-2xl glass border border-white/10 flex flex-wrap justify-center gap-1 shadow-md">
               {targetWord.split('').map((letter, idx) => {
                 const isGuessed = guessedLetters.has(letter) || gameOver;
                 const isFlashing = flashLetter === letter;
 
                 return (
-                  <div key={idx} className="relative">
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: idx * 0.04 }}
-                      className={`w-11 h-14 sm:w-13 sm:h-16 rounded-2xl flex items-center justify-center font-outfit text-2xl sm:text-3xl font-extrabold border-2 transition-all duration-300 shadow-lg ${
-                        isFlashing
-                          ? 'bg-emerald-500/30 border-emerald-300 text-emerald-200 tile-correct-flash'
-                          : isGuessed
-                          ? isWon
-                            ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-emerald-500/20'
-                            : 'bg-brand-surface border-brand-cyan text-white shadow-brand-cyan/30'
-                          : 'bg-brand-surface/40 border-dashed border-white/20 text-transparent'
-                      }`}
-                    >
-                      {isGuessed ? letter : ''}
-                    </motion.div>
-
-                    {/* Win confetti burst per tile */}
-                    {isWon && confettiParticles.length > 0 && (
-                      <div className="absolute inset-0 pointer-events-none overflow-visible">
-                        {confettiParticles.slice(0, 3).map((p) => (
-                          <span
-                            key={`${idx}-${p.id}`}
-                            className="confetti-particle"
-                            style={{
-                              '--cx': p.cx,
-                              '--cy': p.cy,
-                              '--cr': p.cr,
-                              '--cd': `${parseFloat(p.cd) + idx * 0.04}s`,
-                              width: p.w,
-                              height: p.h,
-                              background: p.color,
-                              left: p.left,
-                              top: '50%',
-                            } as React.CSSProperties}
-                          />
-                        ))}
-                      </div>
-                    )}
+                  <div
+                    key={idx}
+                    className={`w-7 h-9 xs:w-8 xs:h-10 rounded-xl flex items-center justify-center font-outfit text-base xs:text-lg font-extrabold border transition-all duration-200 ${
+                      isFlashing
+                        ? 'bg-emerald-500/30 border-emerald-300 text-emerald-200'
+                        : isGuessed
+                        ? isWon
+                          ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                          : 'bg-brand-surface border-brand-cyan text-white'
+                        : 'bg-brand-surface/40 border-dashed border-white/20 text-transparent'
+                    }`}
+                  >
+                    {isGuessed ? letter : ''}
                   </div>
                 );
               })}
             </div>
 
-            {(isWon || gameOver) && (
-              <motion.button
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={() => playWordAudio(targetWord)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-cyan/20 border border-brand-cyan/50 text-brand-cyan hover:bg-brand-cyan/30 font-semibold text-xs transition-all hover:scale-105"
+            {/* Compact Clue Card with Tabs */}
+            <div className="p-2 rounded-2xl glass border border-white/10 flex flex-col gap-1.5 flex-1 shadow-md">
+              {/* Tab Selector: 1 Def, 2 Sin, 3 IA, 4 1ª */}
+              <div className="flex items-center justify-between gap-1 border-b border-white/10 pb-1.5">
+                <div className="flex items-center gap-1">
+                  {[
+                    { tier: 1, label: 'Def', icon: BookOpen },
+                    { tier: 2, label: 'Sin', icon: Layers },
+                    { tier: 3, label: 'IA', icon: ImageIcon },
+                    { tier: 4, label: '1ª', icon: HelpCircle },
+                  ].map((t) => {
+                    const isUnlocked = unlockedTier >= t.tier;
+                    const isSelected = mobileSelectedTier === t.tier;
+                    const Icon = t.icon;
+                    return (
+                      <button
+                        key={t.tier}
+                        type="button"
+                        onClick={() => setMobileSelectedTier(t.tier)}
+                        className={`px-1.5 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                          isSelected
+                            ? 'bg-brand-cyan text-black shadow-sm'
+                            : isUnlocked
+                            ? 'bg-white/10 text-white hover:bg-white/15'
+                            : 'bg-black/20 text-white/30'
+                        }`}
+                      >
+                        <Icon size={10} />
+                        <span>{t.label}</span>
+                        {isUnlocked && <CheckCircle2 size={8} className={isSelected ? 'text-black' : 'text-emerald-400'} />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="text-[9px] font-mono text-white/50">{unlockedTier}/4</span>
+              </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 flex flex-col justify-center min-h-[52px]">
+                {mobileSelectedTier === 1 && (
+                  unlockedTier >= 1 ? (
+                    <p className="text-[11px] leading-tight text-blue-200 line-clamp-3">{data.clue_definition}</p>
+                  ) : (
+                    <p className="text-[10px] text-white/35 italic">1º fallo desbloquea definición.</p>
+                  )
+                )}
+
+                {mobileSelectedTier === 2 && (
+                  unlockedTier >= 2 ? (
+                    <p className="text-[11px] leading-tight text-purple-200 line-clamp-3">{data.clue_synonym}</p>
+                  ) : (
+                    <p className="text-[10px] text-white/35 italic">2º fallo desbloquea sinónimos.</p>
+                  )
+                )}
+
+                {mobileSelectedTier === 3 && (
+                  unlockedTier >= 3 ? (
+                    <div className="flex items-center gap-2">
+                      {aiImageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedImage(aiImageUrl)}
+                          className="relative group flex-shrink-0"
+                          title="Toca para ampliar"
+                        >
+                          <img
+                            src={aiImageUrl}
+                            alt="Pista MiniMax"
+                            className="w-13 h-13 rounded-lg object-cover border border-amber-400/50 shadow-sm"
+                          />
+                          <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center text-amber-200 rounded-b-lg">
+                            Ver
+                          </span>
+                        </button>
+                      ) : loadingAiImage ? (
+                        <div className="w-13 h-13 rounded-lg bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-[9px] text-amber-300 animate-pulse text-center p-1">
+                          Creando...
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => generateIllustration()}
+                          className="px-2 py-1 rounded-lg bg-amber-500/25 border border-amber-400/50 text-[10px] font-bold text-amber-300 flex items-center gap-1 hover:bg-amber-500/40"
+                        >
+                          <Sparkles size={11} />
+                          <span>MiniMax</span>
+                        </button>
+                      )}
+                      <p className="text-[10px] text-amber-100/90 leading-tight line-clamp-3 flex-1">
+                        {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración didáctica conceptual.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-white/35 italic">3º fallo desbloquea ilustración MiniMax.</p>
+                  )
+                )}
+
+                {mobileSelectedTier === 4 && (
+                  unlockedTier >= 4 ? (
+                    <p className="text-[11px] font-bold text-rose-200 line-clamp-2">{data.clue_first_letter}</p>
+                  ) : (
+                    <p className="text-[10px] text-white/35 italic">4º fallo desbloquea pista inicial.</p>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Mobile Virtual Keyboard */}
+        <div className="p-2 rounded-2xl glass border border-brand-border/60 flex flex-col items-center gap-1 shadow-lg w-full">
+          <div className="grid grid-cols-7 sm:grid-cols-9 gap-1 w-full justify-center">
+            {ALPHABET.map((letter) => {
+              const isGuessed = guessedLetters.has(letter);
+              const isCorrect = isGuessed && targetWord.includes(letter);
+              const isWrong = isGuessed && !targetWord.includes(letter);
+
+              return (
+                <motion.button
+                  key={letter}
+                  type="button"
+                  disabled={isGuessed || gameOver || tutorSpeaking}
+                  onClick={() => handleLetterClick(letter)}
+                  whileTap={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 0.88 } : {}}
+                  className={`h-8 sm:h-9 rounded-lg font-outfit text-xs sm:text-sm font-extrabold transition-colors duration-150 flex items-center justify-center shadow-sm ${
+                    isCorrect
+                      ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                      : isWrong
+                      ? 'bg-slate-800 text-white/20 border border-white/5 cursor-not-allowed opacity-40'
+                      : tutorSpeaking
+                      ? 'bg-brand-surface/50 text-white/40 border border-white/10 cursor-not-allowed'
+                      : 'bg-brand-surface text-white border border-brand-border/60 active:bg-brand-cyan active:text-black'
+                  }`}
+                >
+                  {letter}
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── DESKTOP VIEW (>= lg): Full Spacious 12-Column Grid Layout ── */}
+      <div className="hidden lg:flex flex-col gap-6 w-full">
+        {/* Row 1: 12-Col Grid (Tank 5 cols, Word & Clues 7 cols) */}
+        <div className="grid grid-cols-12 gap-6 items-start">
+
+          {/* 1. Large Reactive Tank (Zero Text Inside) */}
+          <div className="col-span-5 flex flex-col items-center">
+            <div
+              ref={tankRef}
+              className={`relative w-full max-w-[275px] h-[360px] rounded-3xl overflow-hidden border-4 transition-all duration-500 flex flex-col justify-end bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 shadow-2xl ${
+                isDanger ? 'tank-danger-glow border-red-500' : 'border-brand-cyan/40'
+              } ${isShaking ? 'tank-shake' : ''}`}
+            >
+              {/* Background grid */}
+              <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#6C63FF_1px,transparent_1px)] [background-size:16px_16px]" />
+              <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none" />
+
+              {/* Guionbajo Robot with progressive sinking */}
+              <motion.div
+                className="absolute inset-x-0 top-[90px] flex flex-col items-center justify-start pointer-events-none z-10"
+                animate={
+                  isScared
+                    ? { y: currentSinkY - 14, scale: 1.12, rotate: [-2, 3, -3, 2, 0] }
+                    : isWon
+                    ? { y: currentSinkY, scale: 1.08, rotate: 0 }
+                    : mistakes >= 5
+                    ? { y: [currentSinkY - 2, currentSinkY + 3, currentSinkY - 2], rotate: [-2.5, 2.5, -2.5] }
+                    : mistakes >= 3
+                    ? { y: [currentSinkY - 1.5, currentSinkY + 2, currentSinkY - 1.5], rotate: [-1.5, 1.5, -1.5] }
+                    : { y: [currentSinkY - 2, currentSinkY + 2, currentSinkY - 2], rotate: 0 }
+                }
+                transition={
+                  isScared
+                    ? { duration: 0.55, ease: 'easeOut' }
+                    : isWon
+                    ? { duration: 0.8, type: 'spring' }
+                    : { duration: mistakes >= 4 ? 0.35 : 2.4, repeat: Infinity, ease: 'easeInOut' }
+                }
               >
-                <Volume2 size={15} />
-                <span>Escuchar Pronunciación en Inglés</span>
-              </motion.button>
-            )}
+                <div className="relative">
+                  <TutorAvatar
+                    size="md"
+                    emotion={robotState.emotion}
+                    crtLabel={robotState.crtLabel}
+                    crtColor={robotState.crtColor}
+                    sparkBulb={robotState.sparkBulb}
+                    drowned={robotState.drowned}
+                    state={tutorSpeaking ? 'speaking' : 'idle'}
+                    text={tutorSpeechText}
+                  />
+
+                  {/* Mouth Bubbles Emitter (mistakes >= 5) */}
+                  {mistakes >= 5 && !robotState.drowned && (
+                    <div className="absolute top-[70px] left-1/2 -translate-x-1/2 pointer-events-none">
+                      <span className="mouth-bubble" style={{ width: 8, height: 8, left: -5, animationDelay: '0s' }} />
+                      <span className="mouth-bubble" style={{ width: 6, height: 6, left: 3, animationDelay: '0.4s' }} />
+                      <span className="mouth-bubble" style={{ width: 10, height: 10, left: -1, animationDelay: '0.85s' }} />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Dynamic Rising Water (In Front of Guionbajo) */}
+              <motion.div
+                className="absolute bottom-0 left-0 right-0 w-full z-20 overflow-hidden pointer-events-none"
+                animate={{ height: `${currentWaterPct}%` }}
+                transition={{ type: 'spring', damping: 20, stiffness: 85 }}
+              >
+                {/* Visible translucent water gradient */}
+                <div
+                  className={`absolute inset-0 transition-colors duration-700 ${
+                    mistakes >= 5
+                      ? 'bg-gradient-to-t from-red-950/95 via-rose-600/80 to-rose-400/85'
+                      : mistakes >= 3
+                      ? 'bg-gradient-to-t from-amber-950/95 via-amber-600/80 to-yellow-300/85'
+                      : 'bg-gradient-to-t from-blue-950/95 via-sky-600/80 to-cyan-300/85'
+                  }`}
+                  style={{
+                    boxShadow: mistakes >= 5
+                      ? 'inset 0 10px 30px rgba(239, 68, 68, 0.6), 0 -8px 25px rgba(239, 68, 68, 0.7)'
+                      : mistakes >= 3
+                      ? 'inset 0 10px 30px rgba(245, 158, 11, 0.5), 0 -8px 20px rgba(245, 158, 11, 0.6)'
+                      : 'inset 0 10px 30px rgba(6, 182, 212, 0.5), 0 -8px 20px rgba(6, 182, 212, 0.55)'
+                  }}
+                />
+
+                {/* Glowing Water Surface Wave Crest */}
+                <div className={`absolute top-0 left-0 right-0 h-1.5 water-surface-glow z-30 transition-colors duration-500 ${
+                  mistakes >= 5
+                    ? 'bg-gradient-to-r from-red-400 via-white to-red-400 shadow-[0_0_15px_#EF4444]'
+                    : mistakes >= 3
+                    ? 'bg-gradient-to-r from-amber-400 via-white to-amber-400 shadow-[0_0_15px_#F59E0B]'
+                    : 'bg-gradient-to-r from-cyan-400 via-white to-cyan-400 shadow-[0_0_15px_#00D4FF]'
+                }`} />
+
+                {/* Splash drop on water rise */}
+                {showSplash && (
+                  <span
+                    className="splash-drop"
+                    style={{ width: 12, height: 12, left: `${35 + Math.random() * 30}%` }}
+                  />
+                )}
+
+                {/* Wave 1 */}
+                <div className="absolute -top-6 left-0 w-[200%] h-8 opacity-75 animate-wave-motion">
+                  <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-cyan-300">
+                    <path d="M0,0 C150,90 350,-40 500,50 C650,140 900,10 1200,40 L1200,120 L0,120 Z" />
+                  </svg>
+                </div>
+
+                {/* Wave 2 */}
+                <div className="absolute -top-4 left-0 w-[200%] h-8 opacity-45 animate-wave-reverse">
+                  <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-blue-200">
+                    <path d="M0,0 C200,70 400,-20 600,60 C800,120 1000,20 1200,50 L1200,120 L0,120 Z" />
+                  </svg>
+                </div>
+
+                {/* Wave 3 */}
+                <div className="absolute -top-2 left-0 w-[200%] h-6 opacity-25 animate-wave-motion-slow">
+                  <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-white">
+                    <path d="M0,20 C300,80 600,-10 900,50 C1050,80 1150,40 1200,30 L1200,120 L0,120 Z" />
+                  </svg>
+                </div>
+
+                {/* Underwater Bubbles */}
+                {currentWaterPct > 10 && BUBBLES.map((b, i) => (
+                  <span
+                    key={i}
+                    className="bubble"
+                    style={{
+                      width: b.size,
+                      height: b.size,
+                      left: b.left,
+                      bottom: b.bottom,
+                      '--bubble-duration': b.duration,
+                      '--bubble-delay': b.delay,
+                    } as React.CSSProperties}
+                  />
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Error indicator capsules outside tank */}
+            <div className="mt-3 flex items-center justify-center gap-2">
+              {Array.from({ length: MAX_MISTAKES }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    i < mistakes
+                      ? i >= 4
+                        ? 'w-5 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]'
+                        : i >= 2
+                        ? 'w-5 bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]'
+                        : 'w-5 bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)]'
+                      : 'w-2.5 bg-white/15'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* 4-Tier Clue System */}
-          <div className="p-5 rounded-3xl glass border border-brand-border/60 flex flex-col gap-3.5 shadow-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Lightbulb size={18} className="text-brand-gold animate-pulse" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                  Pistas Desbloqueadas ({unlockedTier}/4)
-                </h3>
-              </div>
-              <span className="text-[11px] text-brand-text-muted font-medium">
-                Se revelan automáticamente al equivocarte
+          {/* 2. Word Tiles & 4-Tier Clue System */}
+          <div className="col-span-7 flex flex-col gap-5">
+            {/* Letter Tiles */}
+            <div className="p-6 rounded-3xl glass border border-brand-border/60 flex flex-col items-center gap-4 shadow-2xl">
+              <span className="text-xs font-bold text-brand-text-muted uppercase tracking-widest">
+                Palabra Oculta ({targetWord.length} Letras)
               </span>
+
+              <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 py-2">
+                {targetWord.split('').map((letter, idx) => {
+                  const isGuessed = guessedLetters.has(letter) || gameOver;
+                  const isFlashing = flashLetter === letter;
+
+                  return (
+                    <div key={idx} className="relative">
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: idx * 0.04 }}
+                        className={`w-11 h-14 sm:w-13 sm:h-16 rounded-2xl flex items-center justify-center font-outfit text-2xl sm:text-3xl font-extrabold border-2 transition-all duration-300 shadow-lg ${
+                          isFlashing
+                            ? 'bg-emerald-500/30 border-emerald-300 text-emerald-200 tile-correct-flash'
+                            : isGuessed
+                            ? isWon
+                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-emerald-500/20'
+                              : 'bg-brand-surface border-brand-cyan text-white shadow-brand-cyan/30'
+                            : 'bg-brand-surface/40 border-dashed border-white/20 text-transparent'
+                        }`}
+                      >
+                        {isGuessed ? letter : ''}
+                      </motion.div>
+
+                      {/* Win confetti */}
+                      {isWon && confettiParticles.length > 0 && (
+                        <div className="absolute inset-0 pointer-events-none overflow-visible">
+                          {confettiParticles.slice(0, 3).map((p) => (
+                            <span
+                              key={`${idx}-${p.id}`}
+                              className="confetti-particle"
+                              style={{
+                                '--cx': p.cx,
+                                '--cy': p.cy,
+                                '--cr': p.cr,
+                                '--cd': `${parseFloat(p.cd) + idx * 0.04}s`,
+                                width: p.w,
+                                height: p.h,
+                                background: p.color,
+                                left: p.left,
+                                top: '50%',
+                              } as React.CSSProperties}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {(isWon || gameOver) && (
+                <motion.button
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => playWordAudio(targetWord)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-cyan/20 border border-brand-cyan/50 text-brand-cyan hover:bg-brand-cyan/30 font-semibold text-xs transition-all hover:scale-105"
+                >
+                  <Volume2 size={15} />
+                  <span>Escuchar Pronunciación en Inglés</span>
+                </motion.button>
+              )}
             </div>
 
-            <div className="space-y-2.5">
-              {/* Tier 1 */}
-              <div className={`p-3.5 rounded-2xl border transition-all ${
-                unlockedTier >= 1
-                  ? 'bg-blue-500/15 border-blue-500/50 text-blue-100 shadow-lg shadow-blue-500/10'
-                  : 'bg-brand-surface/30 border-white/5 opacity-50'
-              }`}>
-                <div className="flex items-center justify-between text-xs font-bold mb-1">
-                  <span className="flex items-center gap-1.5">
-                    <BookOpen size={14} className={unlockedTier >= 1 ? 'text-blue-400' : 'text-white/30'} />
-                    1. Definición Pedagógica
-                  </span>
-                  {unlockedTier >= 1 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">1º Fallo</span>}
+            {/* 4-Tier Clue System */}
+            <div className="p-5 rounded-3xl glass border border-brand-border/60 flex flex-col gap-3.5 shadow-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lightbulb size={18} className="text-brand-gold animate-pulse" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Pistas Desbloqueadas ({unlockedTier}/4)
+                  </h3>
                 </div>
-                {unlockedTier >= 1 ? (
-                  <p className="text-xs leading-relaxed text-blue-200">{data.clue_definition}</p>
-                ) : (
-                  <p className="text-xs text-white/30 italic">Comete un fallo para desbloquear la definición.</p>
-                )}
+                <span className="text-[11px] text-brand-text-muted font-medium">
+                  Se revelan automáticamente al equivocarte
+                </span>
               </div>
 
-              {/* Tier 2 */}
-              <div className={`p-3.5 rounded-2xl border transition-all ${
-                unlockedTier >= 2
-                  ? 'bg-purple-500/15 border-purple-500/50 text-purple-100 shadow-lg shadow-purple-500/10'
-                  : 'bg-brand-surface/30 border-white/5 opacity-50'
-              }`}>
-                <div className="flex items-center justify-between text-xs font-bold mb-1">
-                  <span className="flex items-center gap-1.5">
-                    <Layers size={14} className={unlockedTier >= 2 ? 'text-purple-400' : 'text-white/30'} />
-                    2. Sinónimos & Familia Léxica
-                  </span>
-                  {unlockedTier >= 2 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">2º Fallo</span>}
-                </div>
-                {unlockedTier >= 2 ? (
-                  <p className="text-xs leading-relaxed text-purple-200">{data.clue_synonym}</p>
-                ) : (
-                  <p className="text-xs text-white/30 italic">Revelará la familia léxica y colocaciones.</p>
-                )}
-              </div>
-
-              {/* Tier 3 */}
-              <div className={`p-3.5 rounded-2xl border transition-all ${
-                unlockedTier >= 3
-                  ? 'bg-amber-500/15 border-amber-500/50 text-amber-100 shadow-lg shadow-amber-500/10'
-                  : 'bg-brand-surface/30 border-white/5 opacity-50'
-              }`}>
-                <div className="flex items-center justify-between text-xs font-bold mb-1">
-                  <span className="flex items-center gap-1.5">
-                    <ImageIcon size={14} className={unlockedTier >= 3 ? 'text-amber-400' : 'text-white/30'} />
-                    3. Ilustración Visual Didáctica
-                  </span>
-                  {unlockedTier >= 3 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">3º Fallo</span>}
-                </div>
-                {unlockedTier >= 3 ? (
-                  <div className="mt-2 flex flex-col sm:flex-row items-center gap-3">
-                    {aiImageUrl ? (
-                      <img
-                        src={aiImageUrl}
-                        alt="Pista visual de la palabra misteriosa"
-                        className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-xl border border-amber-400/40 shadow-md"
-                      />
-                    ) : loadingAiImage ? (
-                      <div className="w-24 h-24 rounded-xl bg-amber-500/20 flex items-center justify-center text-xs text-amber-300 animate-pulse border border-amber-400/30">
-                        Generando imagen...
-                      </div>
-                    ) : (
-                      <div className="w-24 h-24 rounded-xl bg-brand-surface flex items-center justify-center text-3xl border border-white/10">
-                        🎨
-                      </div>
-                    )}
-                    <p className="text-xs text-amber-200/90 leading-relaxed flex-1">
-                      {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración conceptual del concepto.'}
-                    </p>
+              <div className="space-y-2.5">
+                {/* Tier 1 */}
+                <div className={`p-3.5 rounded-2xl border transition-all ${
+                  unlockedTier >= 1
+                    ? 'bg-blue-500/15 border-blue-500/50 text-blue-100 shadow-lg shadow-blue-500/10'
+                    : 'bg-brand-surface/30 border-white/5 opacity-50'
+                }`}>
+                  <div className="flex items-center justify-between text-xs font-bold mb-1">
+                    <span className="flex items-center gap-1.5">
+                      <BookOpen size={14} className={unlockedTier >= 1 ? 'text-blue-400' : 'text-white/30'} />
+                      1. Definición Pedagógica
+                    </span>
+                    {unlockedTier >= 1 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">1º Fallo</span>}
                   </div>
-                ) : (
-                  <p className="text-xs text-white/30 italic">Desbloqueará una ilustración visual.</p>
-                )}
-              </div>
-
-              {/* Tier 4 */}
-              <div className={`p-3.5 rounded-2xl border transition-all ${
-                unlockedTier >= 4
-                  ? 'bg-rose-500/15 border-rose-500/50 text-rose-100 shadow-lg shadow-rose-500/10'
-                  : 'bg-brand-surface/30 border-white/5 opacity-50'
-              }`}>
-                <div className="flex items-center justify-between text-xs font-bold mb-1">
-                  <span className="flex items-center gap-1.5">
-                    <HelpCircle size={14} className={unlockedTier >= 4 ? 'text-rose-400' : 'text-white/30'} />
-                    4. Pista de Auxilio Final
-                  </span>
-                  {unlockedTier >= 4 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">4º Fallo</span>}
+                  {unlockedTier >= 1 ? (
+                    <p className="text-xs leading-relaxed text-blue-200">{data.clue_definition}</p>
+                  ) : (
+                    <p className="text-xs text-white/30 italic">Comete un fallo para desbloquear la definición.</p>
+                  )}
                 </div>
-                {unlockedTier >= 4 ? (
-                  <p className="text-xs font-bold leading-relaxed text-rose-200">{data.clue_first_letter}</p>
-                ) : (
-                  <p className="text-xs text-white/30 italic">Último salvavidas con la letra inicial.</p>
-                )}
+
+                {/* Tier 2 */}
+                <div className={`p-3.5 rounded-2xl border transition-all ${
+                  unlockedTier >= 2
+                    ? 'bg-purple-500/15 border-purple-500/50 text-purple-100 shadow-lg shadow-purple-500/10'
+                    : 'bg-brand-surface/30 border-white/5 opacity-50'
+                }`}>
+                  <div className="flex items-center justify-between text-xs font-bold mb-1">
+                    <span className="flex items-center gap-1.5">
+                      <Layers size={14} className={unlockedTier >= 2 ? 'text-purple-400' : 'text-white/30'} />
+                      2. Sinónimos & Familia Léxica
+                    </span>
+                    {unlockedTier >= 2 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">2º Fallo</span>}
+                  </div>
+                  {unlockedTier >= 2 ? (
+                    <p className="text-xs leading-relaxed text-purple-200">{data.clue_synonym}</p>
+                  ) : (
+                    <p className="text-xs text-white/30 italic">Revelará la familia léxica y colocaciones.</p>
+                  )}
+                </div>
+
+                {/* Tier 3: MiniMax Illustration */}
+                <div className={`p-3.5 rounded-2xl border transition-all ${
+                  unlockedTier >= 3
+                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-100 shadow-lg shadow-amber-500/10'
+                    : 'bg-brand-surface/30 border-white/5 opacity-50'
+                }`}>
+                  <div className="flex items-center justify-between text-xs font-bold mb-1">
+                    <span className="flex items-center gap-1.5">
+                      <ImageIcon size={14} className={unlockedTier >= 3 ? 'text-amber-400' : 'text-white/30'} />
+                      3. Ilustración Visual Didáctica (MiniMax IA)
+                    </span>
+                    {unlockedTier >= 3 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">3º Fallo</span>}
+                  </div>
+                  {unlockedTier >= 3 ? (
+                    <div className="mt-2 flex flex-col sm:flex-row items-center gap-3">
+                      {aiImageUrl ? (
+                        <div className="relative group flex-shrink-0">
+                          <img
+                            src={aiImageUrl}
+                            alt="Pista visual de la palabra misteriosa"
+                            className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-xl border border-amber-400/40 shadow-md cursor-pointer group-hover:scale-105 transition-transform"
+                            onClick={() => setExpandedImage(aiImageUrl)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setExpandedImage(aiImageUrl)}
+                            className="absolute bottom-1 right-1 p-1 rounded-md bg-black/60 text-white/80 hover:text-white text-[10px]"
+                            title="Ampliar imagen"
+                          >
+                            <Maximize2 size={12} />
+                          </button>
+                        </div>
+                      ) : loadingAiImage ? (
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-amber-500/20 flex flex-col items-center justify-center text-xs text-amber-300 animate-pulse border border-amber-400/30 text-center p-2">
+                          <Sparkles size={18} className="animate-spin mb-1 text-amber-400" />
+                          <span>Generando con MiniMax...</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => generateIllustration()}
+                          className="px-4 py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 text-xs font-bold transition-all flex flex-col items-center gap-1.5"
+                        >
+                          <Sparkles size={18} />
+                          <span>Generar Ilustración MiniMax</span>
+                        </button>
+                      )}
+                      <div className="flex-1 space-y-1 text-left">
+                        <p className="text-xs text-amber-200/90 leading-relaxed">
+                          {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración visual del concepto sin texto.'}
+                        </p>
+                        {aiImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => generateIllustration()}
+                            className="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-200 underline pt-1"
+                          >
+                            <RefreshCw size={11} />
+                            <span>Regenerar imagen</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-white/30 italic">Desbloqueará una ilustración didáctica creada con MiniMax.</p>
+                  )}
+                </div>
+
+                {/* Tier 4 */}
+                <div className={`p-3.5 rounded-2xl border transition-all ${
+                  unlockedTier >= 4
+                    ? 'bg-rose-500/15 border-rose-500/50 text-rose-100 shadow-lg shadow-rose-500/10'
+                    : 'bg-brand-surface/30 border-white/5 opacity-50'
+                }`}>
+                  <div className="flex items-center justify-between text-xs font-bold mb-1">
+                    <span className="flex items-center gap-1.5">
+                      <HelpCircle size={14} className={unlockedTier >= 4 ? 'text-rose-400' : 'text-white/30'} />
+                      4. Pista de Auxilio Final
+                    </span>
+                    {unlockedTier >= 4 ? <CheckCircle2 size={14} className="text-emerald-400" /> : <span className="text-[10px] text-white/40">4º Fallo</span>}
+                  </div>
+                  {unlockedTier >= 4 ? (
+                    <p className="text-xs font-bold leading-relaxed text-rose-200">{data.clue_first_letter}</p>
+                  ) : (
+                    <p className="text-xs text-white/30 italic">Último salvavidas con la letra inicial.</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Row 2: Desktop Virtual Keyboard */}
+        <div className="p-5 rounded-3xl glass border border-brand-border/60 flex flex-col items-center gap-3 shadow-2xl">
+          <div className="flex items-center justify-between w-full max-w-2xl px-2">
+            <span className="text-xs font-bold text-brand-text-muted uppercase">
+              {tutorSpeaking ? '⏳ Escucha al tutor...' : '🎯 Selecciona una letra'}
+            </span>
+            <span className="text-xs text-brand-cyan font-medium">Puedes usar tu teclado físico</span>
+          </div>
+
+          <div className="grid grid-cols-13 gap-2 w-full max-w-3xl justify-center">
+            {ALPHABET.map((letter) => {
+              const isGuessed = guessedLetters.has(letter);
+              const isCorrect = isGuessed && targetWord.includes(letter);
+              const isWrong = isGuessed && !targetWord.includes(letter);
+
+              return (
+                <motion.button
+                  key={letter}
+                  type="button"
+                  disabled={isGuessed || gameOver || tutorSpeaking}
+                  onClick={() => handleLetterClick(letter)}
+                  whileTap={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 0.88 } : {}}
+                  whileHover={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 1.1, y: -2 } : {}}
+                  className={`h-11 sm:h-12 rounded-xl font-outfit text-sm sm:text-base font-extrabold transition-colors duration-150 flex items-center justify-center shadow-md ${
+                    isCorrect
+                      ? 'bg-emerald-500 text-white shadow-emerald-500/30 scale-95'
+                      : isWrong
+                      ? 'bg-slate-800 text-white/20 border border-white/5 cursor-not-allowed opacity-40'
+                      : tutorSpeaking
+                      ? 'bg-brand-surface/50 text-white/40 border border-white/10 cursor-not-allowed'
+                      : 'bg-brand-surface text-white border border-brand-border/60 hover:border-brand-cyan hover:bg-brand-surface/80'
+                  }`}
+                >
+                  {letter}
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      {/* ── Virtual Keyboard ── */}
-      <div className="p-5 rounded-3xl glass border border-brand-border/60 flex flex-col items-center gap-3 shadow-2xl">
-        <div className="flex items-center justify-between w-full max-w-2xl px-2">
-          <span className="text-xs font-bold text-brand-text-muted uppercase">
-            {tutorSpeaking ? '⏳ Escucha al tutor...' : '🎯 Selecciona una letra'}
-          </span>
-          <span className="text-xs text-brand-cyan font-medium">Puedes usar tu teclado físico</span>
-        </div>
-
-        <div className="grid grid-cols-7 sm:grid-cols-9 md:grid-cols-13 gap-1.5 sm:gap-2 w-full max-w-3xl justify-center">
-          {ALPHABET.map((letter) => {
-            const isGuessed = guessedLetters.has(letter);
-            const isCorrect = isGuessed && targetWord.includes(letter);
-            const isWrong = isGuessed && !targetWord.includes(letter);
-
-            return (
-              <motion.button
-                key={letter}
+      {/* ── Image Zoom Modal ── */}
+      <AnimatePresence>
+        {expandedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setExpandedImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.85 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.85 }}
+              className="relative max-w-md w-full bg-slate-900 border border-amber-400/40 rounded-3xl p-4 flex flex-col items-center gap-3 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
                 type="button"
-                disabled={isGuessed || gameOver || tutorSpeaking}
-                onClick={() => handleLetterClick(letter)}
-                whileTap={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 0.88 } : {}}
-                whileHover={!isGuessed && !gameOver && !tutorSpeaking ? { scale: 1.1, y: -2 } : {}}
-                className={`h-11 sm:h-12 rounded-xl font-outfit text-sm sm:text-base font-extrabold transition-colors duration-150 flex items-center justify-center shadow-md ${
-                  isCorrect
-                    ? 'bg-emerald-500 text-white shadow-emerald-500/30 scale-95'
-                    : isWrong
-                    ? 'bg-slate-800 text-white/20 border border-white/5 cursor-not-allowed opacity-40'
-                    : tutorSpeaking
-                    ? 'bg-brand-surface/50 text-white/40 border border-white/10 cursor-not-allowed'
-                    : 'bg-brand-surface text-white border border-brand-border/60'
-                }`}
+                onClick={() => setExpandedImage(null)}
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
               >
-                {letter}
-              </motion.button>
-            );
-          })}
-        </div>
-      </div>
+                <X size={18} />
+              </button>
+              <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <ImageIcon size={16} /> Pista Visual (MiniMax IA)
+              </span>
+              <img
+                src={expandedImage}
+                alt="Ilustración didáctica generada"
+                className="w-full aspect-square object-cover rounded-2xl border border-white/10 shadow-lg"
+              />
+              <p className="text-xs text-white/70 text-center italic">
+                {data.image_prompt ? data.image_prompt.replace(/no text.*$/i, '').trim() : 'Ilustración didáctica conceptual.'}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Win / Game Over Action Bar ── */}
       <AnimatePresence>

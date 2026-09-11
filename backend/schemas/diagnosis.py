@@ -29,3 +29,8 @@ class DiagnosisResultResponse(BaseModel):
     weak_areas: Optional[List[str]] = []
     total_score: Optional[int] = 0
     confidence: Optional[float] = 0.8
+    phonetic_mastery_pct: Optional[float] = 0.0
+    phonetic_breakdown: Optional[Dict[str, Any]] = {}
+    mastered_phonemes: Optional[List[str]] = []
+    weak_phonemes: Optional[List[str]] = []
+

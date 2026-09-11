@@ -62,6 +62,7 @@ async def complete_diagnosis(
         assigned_level=eval_result["assigned_level"],
         score_by_level=eval_result["score_by_level"],
         agent_reasoning=eval_result["agent_reasoning"],
+        skills_breakdown=eval_result.get("phonetic_breakdown", {}),
     )
     db.add(diag_record)
 
@@ -71,6 +72,10 @@ async def complete_diagnosis(
         profile.current_sublevel = eval_result["assigned_level"]
         if eval_result.get("weak_areas"):
             profile.weak_areas = eval_result["weak_areas"]
+        if eval_result.get("phonetics_mastery_dict"):
+            curr_phonetics = dict(profile.phonetics_mastery or {})
+            curr_phonetics.update(eval_result["phonetics_mastery_dict"])
+            profile.phonetics_mastery = curr_phonetics
 
         # Generate personalized learning map
         prof_dict = {

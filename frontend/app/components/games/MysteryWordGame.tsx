@@ -233,9 +233,9 @@ interface GuionbajoTankState {
 function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean): GuionbajoTankState {
   if (isWon) {
     return {
-      emotion: 'victory',
+      emotion: 'happy',
       crtLabel: 'WIN!',
-      crtColor: '#FFD700',
+      crtColor: '#00E676',
       sparkBulb: false,
       drowned: false,
     };
@@ -359,6 +359,8 @@ export default function MysteryWordGame({
   const isGeneratingImageRef = useRef(false);
   const preGeneratedWordRef = useRef<string | null>(null);
 
+  const isWonRef = useRef(isWon);
+  isWonRef.current = isWon;
   const mistakesRef = useRef(mistakes);
   mistakesRef.current = mistakes;
   const gameOverRef = useRef(gameOver);
@@ -369,11 +371,12 @@ export default function MysteryWordGame({
   const currentSinkY = isWon ? -20 : ROBOT_SINK_Y_PX[Math.min(mistakes, 6)];
   const currentSinkYMobile = isWon ? -12 : ROBOT_SINK_Y_PX_SM[Math.min(mistakes, 6)];
   const robotState = getGuionbajoState(mistakes, isWon, gameOver);
-  const isDanger = mistakes >= 4;
+  const isDanger = !isWon && mistakes >= 4;
 
-  // ── 1. Speak helper — Muted underwater (mistakes >= 5 || gameOver) ────────
+  // ── 1. Speak helper — Muted underwater, but ALWAYS speaks when saved (isWon) ────────
   const speakTutor = useCallback(async (text: string) => {
-    if (!text || !isComponentMountedRef.current || mistakesRef.current >= 5 || gameOverRef.current) return;
+    if (!text || !isComponentMountedRef.current) return;
+    if (!isWonRef.current && (mistakesRef.current >= 5 || gameOverRef.current)) return;
     speechAbortControllerRef.current = false;
     setTutorSpeaking(true);
     setTutorSpeechText(text);
@@ -535,12 +538,14 @@ export default function MysteryWordGame({
 
   // ── 8. Win handler ───────────────────────────────────────────
   const handleGameWin = useCallback(async (finalScore: number) => {
+    isWonRef.current = true;
     setIsWon(true);
     setGameOver(true);
     setScore(finalScore);
     setConfettiParticles(generateConfetti(22));
+    stopTutorVoice();
     playWinSound();
-    const winMsg = `¡Increíble! Adivinaste la palabra "${targetWord}". ¡Has salvado el tanque de agua y dominado el vocabulario!`;
+    const winMsg = `¡Increíble! Adivinaste la palabra "${targetWord}". ¡Has salvado a Guionbajo y vaciado el tanque de agua!`;
     await speakTutor(winMsg);
   }, [targetWord, speakTutor]);
 
@@ -695,7 +700,13 @@ export default function MysteryWordGame({
           </div>
           <div className="truncate min-w-0">
             <div className="text-[9px] sm:text-[10px] uppercase font-bold text-brand-cyan">
-              {tutorSpeaking ? 'Tutor Guionbajo Hablando' : 'Tutor en Espera'}
+              {isWon
+                ? (tutorSpeaking ? '¡Guionbajo Salvado & Celebrando!' : '¡Victoria Conseguida!')
+                : mistakes >= 5
+                ? 'Guionbajo Bajo el Agua'
+                : tutorSpeaking
+                ? 'Tutor Guionbajo Hablando'
+                : 'Tutor en Espera'}
             </div>
             <p className="text-[11px] sm:text-xs text-white/90 italic truncate">{tutorSpeechText}</p>
           </div>
@@ -723,7 +734,11 @@ export default function MysteryWordGame({
           <div className="w-[118px] sm:w-[135px] flex-shrink-0 flex flex-col items-center justify-between">
             <div
               className={`relative w-full h-[175px] rounded-2xl overflow-hidden border-2 transition-all duration-500 flex flex-col justify-end bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 shadow-xl ${
-                isDanger ? 'tank-danger-glow border-red-500' : 'border-brand-cyan/40'
+                isWon
+                  ? 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.5)]'
+                  : isDanger
+                  ? 'tank-danger-glow border-red-500'
+                  : 'border-brand-cyan/40'
               } ${isShaking ? 'tank-shake' : ''}`}
             >
               {/* Background grid */}
@@ -759,21 +774,22 @@ export default function MysteryWordGame({
                     crtColor={robotState.crtColor}
                     sparkBulb={robotState.sparkBulb}
                     drowned={robotState.drowned}
-                    state={tutorSpeaking ? 'speaking' : 'idle'}
-                    panickedArms={mistakes >= 4 && !robotState.drowned}
-                    shortCircuit={mistakes >= 3 && !robotState.drowned}
+                    state={!isWon && (mistakes >= 5 || robotState.drowned) ? 'idle' : (tutorSpeaking ? 'speaking' : 'idle')}
+                    text={!isWon && (mistakes >= 5 || robotState.drowned) ? '' : tutorSpeechText}
+                    panickedArms={!isWon && mistakes >= 4 && !robotState.drowned}
+                    shortCircuit={!isWon && mistakes >= 3 && !robotState.drowned}
                   />
 
-                  {/* Mouth Bubbles Emitter (mistakes >= 5) */}
-                  {mistakes >= 5 && !robotState.drowned && (
+                  {/* Mouth Bubbles Emitter (!isWon && mistakes >= 5 && !drowned) */}
+                  {!isWon && mistakes >= 5 && !robotState.drowned && (
                     <div className="absolute top-[44px] left-1/2 -translate-x-1/2 pointer-events-none">
                       <span className="mouth-bubble" style={{ width: 6, height: 6, left: -4, animationDelay: '0s' }} />
                       <span className="mouth-bubble" style={{ width: 5, height: 5, left: 2, animationDelay: '0.4s' }} />
                     </div>
                   )}
 
-                  {/* Continuous Underwater Bubble Stream (mistakes >= 5) */}
-                  {mistakes >= 5 && !robotState.drowned && (
+                  {/* Continuous Underwater Bubble Stream (!isWon && mistakes >= 5 && !drowned) */}
+                  {!isWon && mistakes >= 5 && !robotState.drowned && (
                     <div className="absolute top-[20px] left-1/2 -translate-x-1/2 pointer-events-none w-10 h-20">
                       <span className="bubble-stream-particle" style={{ width: 8, height: 8, left: '25%', bottom: '10px', animationDelay: '0s' }} />
                       <span className="bubble-stream-particle" style={{ width: 6, height: 6, left: '55%', bottom: '15px', animationDelay: '0.4s' }} />
@@ -784,8 +800,8 @@ export default function MysteryWordGame({
                 </div>
               </motion.div>
 
-              {/* Electric Short Circuit Sparks (mistakes >= 3 && !drowned) */}
-              {mistakes >= 3 && !robotState.drowned && (
+              {/* Electric Short Circuit Sparks (!isWon && mistakes >= 3 && !drowned) */}
+              {!isWon && mistakes >= 3 && !robotState.drowned && (
                 <div className="absolute inset-0 pointer-events-none z-25 overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 120 160">
                     <path
@@ -1066,7 +1082,11 @@ export default function MysteryWordGame({
             <div
               ref={tankRef}
               className={`relative w-full max-w-[275px] h-[360px] rounded-3xl overflow-hidden border-4 transition-all duration-500 flex flex-col justify-end bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 shadow-2xl ${
-                isDanger ? 'tank-danger-glow border-red-500' : 'border-brand-cyan/40'
+                isWon
+                  ? 'border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.45)]'
+                  : isDanger
+                  ? 'tank-danger-glow border-red-500'
+                  : 'border-brand-cyan/40'
               } ${isShaking ? 'tank-shake' : ''}`}
             >
               {/* Background grid */}
@@ -1103,14 +1123,14 @@ export default function MysteryWordGame({
                     crtColor={robotState.crtColor}
                     sparkBulb={robotState.sparkBulb}
                     drowned={robotState.drowned}
-                    state={mistakes >= 5 || robotState.drowned ? 'idle' : (tutorSpeaking ? 'speaking' : 'idle')}
-                    text={mistakes >= 5 || robotState.drowned ? '' : tutorSpeechText}
-                    panickedArms={mistakes >= 4 && !robotState.drowned}
-                    shortCircuit={mistakes >= 3 && !robotState.drowned}
+                    state={!isWon && (mistakes >= 5 || robotState.drowned) ? 'idle' : (tutorSpeaking ? 'speaking' : 'idle')}
+                    text={!isWon && (mistakes >= 5 || robotState.drowned) ? '' : tutorSpeechText}
+                    panickedArms={!isWon && mistakes >= 4 && !robotState.drowned}
+                    shortCircuit={!isWon && mistakes >= 3 && !robotState.drowned}
                   />
 
-                  {/* Mouth Bubbles Emitter (mistakes >= 5) */}
-                  {mistakes >= 5 && !robotState.drowned && (
+                  {/* Mouth Bubbles Emitter (!isWon && mistakes >= 5 && !drowned) */}
+                  {!isWon && mistakes >= 5 && !robotState.drowned && (
                     <div className="absolute top-[70px] left-1/2 -translate-x-1/2 pointer-events-none">
                       <span className="mouth-bubble" style={{ width: 8, height: 8, left: -5, animationDelay: '0s' }} />
                       <span className="mouth-bubble" style={{ width: 6, height: 6, left: 3, animationDelay: '0.4s' }} />
@@ -1118,8 +1138,8 @@ export default function MysteryWordGame({
                     </div>
                   )}
 
-                  {/* Continuous Underwater Bubble Stream (mistakes >= 5) */}
-                  {mistakes >= 5 && !robotState.drowned && (
+                  {/* Continuous Underwater Bubble Stream (!isWon && mistakes >= 5 && !drowned) */}
+                  {!isWon && mistakes >= 5 && !robotState.drowned && (
                     <div className="absolute top-[30px] left-1/2 -translate-x-1/2 pointer-events-none w-16 h-28">
                       <span className="bubble-stream-particle" style={{ width: 10, height: 10, left: '20%', bottom: '15px', animationDelay: '0s' }} />
                       <span className="bubble-stream-particle" style={{ width: 8, height: 8, left: '60%', bottom: '25px', animationDelay: '0.35s' }} />
@@ -1130,8 +1150,8 @@ export default function MysteryWordGame({
                 </div>
               </motion.div>
 
-              {/* Electric Short Circuit Sparks (mistakes >= 3 && !drowned) */}
-              {mistakes >= 3 && !robotState.drowned && (
+              {/* Electric Short Circuit Sparks (!isWon && mistakes >= 3 && !drowned) */}
+              {!isWon && mistakes >= 3 && !robotState.drowned && (
                 <div className="absolute inset-0 pointer-events-none z-25 overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 200 280">
                     <path

@@ -19,6 +19,7 @@ import {
   Play,
 } from 'lucide-react';
 import { playTutorVoice, stopTutorVoice, playEnglishAudio } from '@/lib/api';
+import TutorAvatar, { TutorEmotion } from '@/app/components/TutorPanel/TutorAvatar';
 
 export interface MysteryWordData {
   target_word: string;
@@ -135,6 +136,117 @@ const BUBBLES = [
   { size: 3,  left: '42%', bottom: '15%', duration: '3s',   delay: '1s' },
 ];
 
+// ── Tank Water & Submersion Calibration ─────────────────────────
+// Calibrated so that each mistake level submerges the next anatomical milestone:
+// 0: Dry hover above water (0%)
+// 1: Thruster enters water (28%)
+// 2: Lower torso submerged (45%)
+// 3: CRT screen and arms submerged (60%)
+// 4: Neck and chin submerged (75%)
+// 5: Mouth submerged, bubbles erupt (88%)
+// 6: Fully submerged / drowned (100%)
+const WATER_LEVELS_PCT = [0, 28, 45, 60, 75, 88, 100];
+const ROBOT_SINK_Y_PX = [0, 14, 28, 44, 62, 78, 95];
+
+interface GuionbajoTankState {
+  emotion: TutorEmotion;
+  crtLabel: string;
+  crtColor?: string;
+  sparkBulb: boolean;
+  drowned: boolean;
+  meterText: string;
+}
+
+function getGuionbajoState(mistakes: number, isWon: boolean, gameOver: boolean): GuionbajoTankState {
+  if (isWon) {
+    return {
+      emotion: 'victory',
+      crtLabel: 'WIN!',
+      crtColor: '#FFD700',
+      sparkBulb: false,
+      drowned: false,
+      meterText: '¡SALVADO! SISTEMA SEGURO',
+    };
+  }
+
+  if (gameOver || mistakes >= 6) {
+    return {
+      emotion: 'angry',
+      crtLabel: 'X_X',
+      crtColor: '#EF4444',
+      sparkBulb: false,
+      drowned: true,
+      meterText: 'NIVEL 6: ¡DESBORDE TOTAL!',
+    };
+  }
+
+  switch (mistakes) {
+    case 0:
+      return {
+        emotion: 'happy',
+        crtLabel: 'OK!',
+        crtColor: '#00E676',
+        sparkBulb: false,
+        drowned: false,
+        meterText: 'NIVEL 0: ESTABLE',
+      };
+    case 1:
+      return {
+        emotion: 'thinking',
+        crtLabel: '? ?',
+        crtColor: '#00D4FF',
+        sparkBulb: false,
+        drowned: false,
+        meterText: 'NIVEL 1: ALERTA LEVE',
+      };
+    case 2:
+      return {
+        emotion: 'nervous',
+        crtLabel: '! !',
+        crtColor: '#FFB627',
+        sparkBulb: false,
+        drowned: false,
+        meterText: 'NIVEL 2: INESTABLE',
+      };
+    case 3:
+      return {
+        emotion: 'nervous',
+        crtLabel: 'WARN',
+        crtColor: '#FB923C',
+        sparkBulb: false,
+        drowned: false,
+        meterText: 'NIVEL 3: ADVERTENCIA',
+      };
+    case 4:
+      return {
+        emotion: 'angry',
+        crtLabel: 'SOS',
+        crtColor: '#FF5252',
+        sparkBulb: true,
+        drowned: false,
+        meterText: 'NIVEL 4: PELIGRO ALTO',
+      };
+    case 5:
+      return {
+        emotion: 'angry',
+        crtLabel: 'HELP',
+        crtColor: '#FFFFFF',
+        sparkBulb: true,
+        drowned: false,
+        meterText: 'NIVEL 5: ¡CRÍTICO!',
+      };
+    default:
+      return {
+        emotion: 'angry',
+        crtLabel: 'X_X',
+        crtColor: '#EF4444',
+        sparkBulb: false,
+        drowned: true,
+        meterText: 'NIVEL 6: ¡DESBORDE!',
+      };
+  }
+}
+
 export default function MysteryWordGame({
   data,
   topic,
@@ -179,7 +291,9 @@ export default function MysteryWordGame({
   const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Derived values ───────────────────────────────────────────
-  const waterHeightPct = Math.min((mistakes / MAX_MISTAKES) * 100, 100);
+  const currentWaterPct = isWon ? 0 : WATER_LEVELS_PCT[Math.min(mistakes, 6)];
+  const currentSinkY = isWon ? -20 : ROBOT_SINK_Y_PX[Math.min(mistakes, 6)];
+  const robotState = getGuionbajoState(mistakes, isWon, gameOver);
   const isDanger = mistakes >= 4;
 
   // ── 1. Speak helper — FIX #2: timeout fallback ──────────────
@@ -396,16 +510,6 @@ export default function MysteryWordGame({
     playEnglishAudio(word);
   };
 
-  // ── Character emoji ──────────────────────────────────────────
-  const charEmoji = isWon
-    ? '🎉'
-    : isScared
-    ? '😱'
-    : mistakes >= 5
-    ? '😰'
-    : mistakes >= 3
-    ? '🧐'
-    : '🤖';
 
   // ── Framer animate values for water ─────────────────────────
   // FIX VISUAL: background moved into `animate` so Framer interpolates color
@@ -500,36 +604,93 @@ export default function MysteryWordGame({
               isDanger ? 'tank-danger-glow border-red-500' : 'border-brand-cyan/40'
             } ${isShaking ? 'tank-shake' : ''}`}
           >
-            {/* Glass measurements overlay */}
-            <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3">
-              <div className="flex justify-between items-center text-[10px] font-mono text-brand-cyan/60">
-                <span>DANGER METER</span>
-                <span>{mistakes}/{MAX_MISTAKES} FALLOS</span>
-              </div>
-              <div className="w-full space-y-7 border-l-2 border-dashed border-white/20 pl-2">
-                <div className="text-[9px] font-mono text-red-400/70">- NIVEL 6 (DESBORDE)</div>
-                <div className="text-[9px] font-mono text-amber-400/70">- NIVEL 4 (PELIGRO)</div>
-                <div className="text-[9px] font-mono text-cyan-400/70">- NIVEL 2 (ESTABLE)</div>
-              </div>
-              <div className="text-center text-[10px] font-bold text-white/50 tracking-wider uppercase">
-                Tanque Hidráulico IA
-              </div>
-            </div>
+            {/* ── Layer 1: Background Infrastructure (Pipes, Depth Grid) ── */}
+            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#6C63FF_1px,transparent_1px)] [background-size:16px_16px]" />
+            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none" />
 
-            {/* Rising Water — FIX VISUAL: background now in `animate` for color interpolation */}
+            {/* ── Layer 2: Robot Guionbajo (TutorAvatar) with progressive sinking & reactions ── */}
             <motion.div
-              className="absolute bottom-0 left-0 right-0 w-full z-10 overflow-hidden"
+              className="absolute inset-x-0 top-7 flex flex-col items-center justify-start pointer-events-none z-10"
+              animate={
+                isScared
+                  ? {
+                      y: currentSinkY - 14,
+                      scale: 1.12,
+                      rotate: [-2, 3, -3, 2, 0],
+                    }
+                  : isWon
+                  ? {
+                      y: currentSinkY,
+                      scale: 1.08,
+                      rotate: 0,
+                    }
+                  : mistakes >= 5
+                  ? {
+                      y: [currentSinkY - 2, currentSinkY + 3, currentSinkY - 2],
+                      rotate: [-2.5, 2.5, -2.5],
+                    }
+                  : mistakes >= 3
+                  ? {
+                      y: [currentSinkY - 1.5, currentSinkY + 2, currentSinkY - 1.5],
+                      rotate: [-1.5, 1.5, -1.5],
+                    }
+                  : {
+                      y: [currentSinkY - 2, currentSinkY + 2, currentSinkY - 2],
+                      rotate: 0,
+                    }
+              }
+              transition={
+                isScared
+                  ? { duration: 0.55, ease: 'easeOut' }
+                  : isWon
+                  ? { duration: 0.8, type: 'spring' }
+                  : { duration: mistakes >= 4 ? 0.35 : 2.4, repeat: Infinity, ease: 'easeInOut' }
+              }
+            >
+              <div className="relative">
+                <TutorAvatar
+                  size="md"
+                  emotion={robotState.emotion}
+                  crtLabel={robotState.crtLabel}
+                  crtColor={robotState.crtColor}
+                  sparkBulb={robotState.sparkBulb}
+                  drowned={robotState.drowned}
+                  state={tutorSpeaking ? 'speaking' : 'idle'}
+                  text={tutorSpeechText}
+                />
+
+                {/* Mouth Bubbles Emitter (activates when mouth is submerged: mistakes >= 5) */}
+                {mistakes >= 5 && !robotState.drowned && (
+                  <div className="absolute top-[70px] left-1/2 -translate-x-1/2 pointer-events-none">
+                    <span className="mouth-bubble" style={{ width: 8, height: 8, left: -5, animationDelay: '0s' }} />
+                    <span className="mouth-bubble" style={{ width: 6, height: 6, left: 3, animationDelay: '0.4s' }} />
+                    <span className="mouth-bubble" style={{ width: 10, height: 10, left: -1, animationDelay: '0.85s' }} />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* ── Layer 3: Dynamic Rising Water (In Front of Guionbajo!) ── */}
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 w-full z-20 overflow-hidden pointer-events-none"
               animate={{
-                height: `${waterHeightPct}%`,
+                height: `${currentWaterPct}%`,
                 ...waterColors,
               }}
-              transition={{ type: 'spring', damping: 18, stiffness: 90, background: { duration: 0.9 } }}
+              style={{
+                backdropFilter: currentWaterPct > 0 ? 'blur(1.5px)' : 'none',
+                WebkitBackdropFilter: currentWaterPct > 0 ? 'blur(1.5px)' : 'none',
+              }}
+              transition={{ type: 'spring', damping: 20, stiffness: 85, background: { duration: 0.8 } }}
             >
+              {/* Glowing Water Surface Wave Crest (Top edge line of the water) */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-white to-cyan-400 shadow-[0_0_12px_#00D4FF] water-surface-glow z-30" />
+
               {/* Splash particle on level rise */}
               {showSplash && (
                 <span
                   className="splash-drop"
-                  style={{ width: 10, height: 10, left: `${30 + Math.random() * 40}%` }}
+                  style={{ width: 12, height: 12, left: `${35 + Math.random() * 30}%` }}
                 />
               )}
 
@@ -540,8 +701,8 @@ export default function MysteryWordGame({
                 </svg>
               </div>
 
-              {/* Wave 2 — right to left (counter-wave — NEW) */}
-              <div className="absolute -top-4 left-0 w-[200%] h-8 opacity-40 animate-wave-reverse">
+              {/* Wave 2 — right to left (counter-wave) */}
+              <div className="absolute -top-4 left-0 w-[200%] h-8 opacity-45 animate-wave-reverse">
                 <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full fill-current text-blue-200">
                   <path d="M0,0 C200,70 400,-20 600,60 C800,120 1000,20 1200,50 L1200,120 L0,120 Z" />
                 </svg>
@@ -554,8 +715,8 @@ export default function MysteryWordGame({
                 </svg>
               </div>
 
-              {/* Bubbles (NEW) */}
-              {waterHeightPct > 10 && BUBBLES.map((b, i) => (
+              {/* Underwater Bubbles */}
+              {currentWaterPct > 10 && BUBBLES.map((b, i) => (
                 <span
                   key={i}
                   className="bubble"
@@ -571,33 +732,34 @@ export default function MysteryWordGame({
               ))}
 
               {/* Water level percentage text */}
-              <div className="w-full h-full flex items-center justify-center relative">
-                <span className="text-4xl font-extrabold font-mono text-white/20 select-none">
-                  {Math.round(waterHeightPct)}%
+              <div className="w-full h-full flex items-end justify-center pb-3 relative">
+                <span className="text-3xl font-extrabold font-mono text-white/20 select-none">
+                  {Math.round(currentWaterPct)}%
                 </span>
               </div>
             </motion.div>
 
-            {/* Character in Tank — FIX VISUAL: reacts to error with isScared */}
-            <div className="absolute inset-0 flex items-center justify-center z-15 pointer-events-none">
-              <motion.div
-                key={`char-${isScared}-${isWon}`}
-                animate={
-                  isScared
-                    ? { scale: [1, 1.4, 0.9, 1.1, 1], y: [0, -10, 3, -4, 0], rotate: [0, -5, 5, -2, 0] }
-                    : isWon
-                    ? { y: [0, -10, 0], scale: 1.15 }
-                    : { y: [0, 5, 0], scale: 1 }
-                }
-                transition={
-                  isScared
-                    ? { duration: 0.5, ease: 'easeOut' }
-                    : { duration: 2, repeat: Infinity, ease: 'easeInOut' }
-                }
-                className="text-6xl filter drop-shadow-2xl"
-              >
-                {charEmoji}
-              </motion.div>
+            {/* ── Layer 4: Glass measurements overlay & Danger Meter ── */}
+            <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between p-3.5">
+              <div className="flex justify-between items-center text-[10px] font-mono font-bold">
+                <span className={isDanger ? 'text-red-400 animate-pulse' : 'text-brand-cyan'}>
+                  {robotState.meterText}
+                </span>
+                <span className={isDanger ? 'text-red-400 font-extrabold' : 'text-brand-cyan/80'}>
+                  {mistakes}/{MAX_MISTAKES} FALLOS
+                </span>
+              </div>
+
+              <div className="w-full space-y-7 border-l-2 border-dashed border-white/20 pl-2">
+                <div className="text-[9px] font-mono text-red-400/80 font-bold">- NIVEL 6 (DESBORDE / AHOGADO)</div>
+                <div className="text-[9px] font-mono text-amber-400/80 font-bold">- NIVEL 4 (PELIGRO / CUELLO)</div>
+                <div className="text-[9px] font-mono text-cyan-400/80 font-bold">- NIVEL 2 (PROPULSOR SUMERGIDO)</div>
+              </div>
+
+              <div className="flex items-center justify-between text-[10px] font-bold text-white/60 tracking-wider uppercase">
+                <span>Tanque Guionbajo</span>
+                <span className="text-[9px] font-mono text-white/40">HIDRÁULICO IA</span>
+              </div>
             </div>
           </div>
 

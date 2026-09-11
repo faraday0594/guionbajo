@@ -1,4 +1,4 @@
-﻿/* â•â• TutorAvatar.module.css â€” Robot GuionBajo Retro-Futurista â•â•â•â•â•â•â•â•â•â•â•â• */
+/* â•â• TutorAvatar.module.css â€” Robot GuionBajo Retro-Futurista â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .avatarWrapper {
   position: relative;
@@ -212,6 +212,9 @@
 }
 .shutterTop    { top: 0; height: 0%; border-bottom: 1px solid #64748b; }
 .shutterBottom { bottom: 0; height: 0%; border-top: 1px solid #64748b; }
+.shutterClosedTop { height: 55% !important; }
+.shutterClosedBottom { height: 50% !important; }
+.drownedPupil { opacity: 0.15 !important; box-shadow: none !important; }
 
 .eyeLens {
   position: relative;

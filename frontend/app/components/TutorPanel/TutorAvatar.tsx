@@ -20,6 +20,9 @@ export interface TutorAvatarProps {
   className?: string;
   audioElement?: HTMLAudioElement | null;
   crtLabel?: string;
+  crtColor?: string;
+  sparkBulb?: boolean;
+  drowned?: boolean;
 }
 
 interface EmotionSegment {
@@ -122,6 +125,9 @@ export default function TutorAvatar({
   className = '',
   audioElement,
   crtLabel,
+  crtColor: explicitCrtColor,
+  sparkBulb = false,
+  drowned = false,
 }: TutorAvatarProps) {
   // El avatar está en modo speaking si el estado es speaking y el progreso no ha concluido
   const isSpeaking = state === 'speaking' && (audioProgress === undefined || audioProgress < 99);
@@ -266,7 +272,10 @@ export default function TutorAvatar({
       : '_';
 
   const crtColor =
-    currentEmotion === 'happy'
+    explicitCrtColor ||
+    (drowned
+      ? '#64748B'
+      : currentEmotion === 'happy'
       ? '#00E676'
       : currentEmotion === 'thinking'
       ? '#6C63FF'
@@ -276,15 +285,15 @@ export default function TutorAvatar({
       ? '#FFB627'
       : currentEmotion === 'victory'
       ? '#FFB627'
-      : '#00D4FF';
+      : '#00D4FF');
 
   return (
     <div className={`${styles.avatarWrapper} ${sizeClass} ${className}`}>
       
-      {/* ── Chorro de Vapor / Humo (cuando está Angry / Alterado) ── */}
+      {/* ── Chorro de Vapor / Humo (cuando está Angry / Alterado y NO ahogado) ── */}
       <div className={styles.steamContainer}>
-        <div className={`${styles.steamJet} ${styles.steamLeft} ${currentEmotion === 'angry' ? styles.steamActive : ''}`} />
-        <div className={`${styles.steamJet} ${styles.steamRight} ${currentEmotion === 'angry' ? styles.steamActive : ''}`} />
+        <div className={`${styles.steamJet} ${styles.steamLeft} ${!drowned && currentEmotion === 'angry' ? styles.steamActive : ''}`} />
+        <div className={`${styles.steamJet} ${styles.steamRight} ${!drowned && currentEmotion === 'angry' ? styles.steamActive : ''}`} />
       </div>
 
       {/* ── Cabeza del Robot ── */}
@@ -314,8 +323,8 @@ export default function TutorAvatar({
           <div className={styles.antennaStem} />
           <div
             className={`${styles.vacuumBulb} ${
-              isSpeaking || state === 'listening' ? styles.bulbActive : ''
-            } ${currentEmotion === 'thinking' || state === 'thinking' ? styles.bulbSpark : ''}`}
+              !drowned && (isSpeaking || state === 'listening') ? styles.bulbActive : ''
+            } ${!drowned && (currentEmotion === 'thinking' || state === 'thinking' || sparkBulb) ? styles.bulbSpark : ''}`}
           >
             <div className={styles.bulbFilament} />
           </div>
@@ -328,7 +337,9 @@ export default function TutorAvatar({
               {/* Párpado superior mecánico */}
               <div
                 className={`${styles.shutter} ${styles.shutterTop} ${
-                  currentEmotion === 'angry'
+                  drowned
+                    ? styles.shutterClosedTop
+                    : currentEmotion === 'angry'
                     ? `${styles.angryShutterTop} ${i === 0 ? styles.angryShutterLeft : styles.angryShutterRight}`
                     : state === 'idle' && currentEmotion === 'neutral'
                     ? `${styles.idleBlink} ${i === 1 ? styles.shutterRight : ''}`
@@ -340,7 +351,9 @@ export default function TutorAvatar({
               <div className={styles.eyeLens}>
                 <div
                   className={`${styles.pupil} ${
-                    currentEmotion === 'happy' || currentEmotion === 'victory'
+                    drowned
+                      ? styles.drownedPupil
+                      : currentEmotion === 'happy' || currentEmotion === 'victory'
                       ? styles.happyPupil
                       : currentEmotion === 'angry'
                       ? styles.angryPupil
@@ -353,13 +366,17 @@ export default function TutorAvatar({
                       : ''
                   }`}
                 />
-                <div className={styles.eyeGlint} />
+                {!drowned && <div className={styles.eyeGlint} />}
               </div>
 
               {/* Párpado inferior mecánico */}
               <div
                 className={`${styles.shutter} ${styles.shutterBottom} ${
-                  currentEmotion === 'happy' || currentEmotion === 'victory' ? styles.happyShutterBottom : ''
+                  drowned
+                    ? styles.shutterClosedBottom
+                    : currentEmotion === 'happy' || currentEmotion === 'victory'
+                    ? styles.happyShutterBottom
+                    : ''
                 }`}
               />
             </div>
@@ -450,7 +467,9 @@ export default function TutorAvatar({
         {/* Micropropulsor Magnético Inferior */}
         <div className={styles.hoverThruster}>
           <div className={styles.thrusterNozzle} />
-          <div className={`${styles.plasmaFlame} ${isMouthArticulating ? styles.plasmaHigh : ''}`} />
+          {!drowned && (
+            <div className={`${styles.plasmaFlame} ${isMouthArticulating ? styles.plasmaHigh : ''}`} />
+          )}
         </div>
       </div>
     </div>

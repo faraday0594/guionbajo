@@ -3533,7 +3533,7 @@ export default function LessonPage() {
 
   // 🛡️ Board exercises check on explanation slides
   const hasBoardExercise = Boolean(
-    !isPracticeSlide && !isHook && (
+    !isPracticeSlide && !isHook && !isPhoneticBonus && (
       phaseStoryboardTimeline?.some((s: any) => s.visual_action === 'show_challenge') ||
       phase?.interaction_type === 'quiz' ||
       phase?.interaction_type === 'challenge' ||
@@ -5167,6 +5167,25 @@ export default function LessonPage() {
   };
 
   const handleNextSlide = async () => {
+    // 🌟 If we are on the Dedicated Phonetic Bonus slide, advance directly to reading without phantom locks
+    if (isPhoneticBonus) {
+      sfx.playStreakFanfare();
+      const finalQuizScore = practiceProgress.totalCount > 0
+        ? Math.round((practiceProgress.correctCount / practiceProgress.totalCount) * 100)
+        : 90;
+      setQuizCompleted(true);
+      setQuizScore(finalQuizScore);
+      toast.success('¡Entrenamiento fonético completado! Pasando a la Práctica de Lectura. 📖');
+      setViewMode('reading');
+      syncCheckpoint({
+        slide: currentPhaseIdx,
+        mode: 'reading',
+        quizDone: true,
+        quizSc: finalQuizScore,
+      });
+      return;
+    }
+
     // 🛡️ 1. Practice Slide Check (80% minimum requirement)
     if (isPracticeSlide && practiceProgress.totalCount > 0) {
       if (!practiceProgress.isUnlocked) {

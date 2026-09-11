@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Volume2, Sparkles, Layers, Mic, CheckCircle2, RefreshCw } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Volume2, Sparkles, Layers, Mic, CheckCircle2, XCircle, RefreshCw, Square, Loader2 } from 'lucide-react';
 import { api, playEnglishAudio } from '@/lib/api';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { sfx } from '@/lib/soundEffects';
 
 interface PhonemeData {
   ipa?: string;
@@ -97,9 +98,18 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
 export default function MicroPhoneticCard({ phoneticData, onCompletePractice, isStandaloneSlide = false }: MicroPhoneticProps) {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState('');
   const [recordedSuccess, setRecordedSuccess] = useState<boolean | null>(null);
+  const [evaluationData, setEvaluationData] = useState<{
+    score: number;
+    transcript: string;
+    wordStatuses: Array<{ word: string; isCorrect: boolean }>;
+  } | null>(null);
 
-  const activeAudioRef = React.useRef<HTMLAudioElement | null>(null);
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef<string>('');
+  const safetyTimeoutRef = useRef<any>(null);
 
   if (!phoneticData || (!phoneticData.symbols && !phoneticData.primary)) {
     return null;
@@ -184,19 +194,158 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
     }
   };
 
-  const handleTestRecording = (sentence: string) => {
-    setIsRecording(true);
-    setRecordedSuccess(null);
-    toast('Di la frase: ' + sentence, { icon: '🎙️' });
+  // Real Pronunciation Evaluation comparing words & acoustic clarity
+  const evaluatePronunciation = (sentence: string, transcript: string) => {
+    const rawSentenceWords = sentence
+      .replace(/[.,/#!$%^&*;:{}=\-_`~()"]/g, '')
+      .split(/\s+/)
+      .filter(Boolean);
 
-    setTimeout(() => {
-      setIsRecording(false);
+    const cleanSentenceWords = rawSentenceWords.map(w => w.toLowerCase());
+    const cleanTranscriptWords = transcript
+      .toLowerCase()
+      .replace(/[.,/#!$%^&*;:{}=\-_`~()"]/g, '')
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (cleanTranscriptWords.length === 0) {
+      setRecordedSuccess(false);
+      setEvaluationData({
+        score: 0,
+        transcript: '',
+        wordStatuses: rawSentenceWords.map(w => ({ word: w, isCorrect: false })),
+      });
+      try { sfx.playMistake(); } catch (_) {}
+      toast.error('No se detectó audio de tu voz. Por favor habla cerca del micrófono y repite la frase.');
+      if (onCompletePractice) onCompletePractice(symbols[0], false);
+      return;
+    }
+
+    // Evaluate word by word against target sentence
+    let matchedCount = 0;
+    const wordStatuses = rawSentenceWords.map((originalWord, idx) => {
+      const targetWord = cleanSentenceWords[idx];
+      const isDirectMatch = cleanTranscriptWords.includes(targetWord);
+      const isFuzzyMatch = !isDirectMatch && cleanTranscriptWords.some(spoken => {
+        if (spoken.length >= 3 && targetWord.length >= 3) {
+          if (spoken.startsWith(targetWord.slice(0, 3)) || targetWord.startsWith(spoken.slice(0, 3))) {
+            return Math.abs(spoken.length - targetWord.length) <= 2;
+          }
+        }
+        return false;
+      });
+
+      const isMatched = isDirectMatch || isFuzzyMatch;
+      if (isMatched) matchedCount++;
+      return { word: originalWord, isCorrect: isMatched };
+    });
+
+    const accuracy = Math.round((matchedCount / Math.max(cleanSentenceWords.length, 1)) * 100);
+    const isPassing = accuracy >= 60; // 60% standard passing for full phoneme drill sentence
+
+    setEvaluationData({
+      score: accuracy,
+      transcript: transcript.trim(),
+      wordStatuses,
+    });
+
+    if (isPassing) {
       setRecordedSuccess(true);
-      toast.success('¡Excelente pronunciación! Dominio registrado de ' + symbols.join(' y ') + ' 🎉');
+      try { sfx.playSuccessChime(); } catch (_) {}
+      toast.success(`¡Excelente pronunciación! (${accuracy}% de precisión en fonemas) 🎉`);
       if (onCompletePractice) {
         onCompletePractice(symbols[0], true);
       }
-    }, 2800);
+    } else {
+      setRecordedSuccess(false);
+      try { sfx.playMistake(); } catch (_) {}
+      toast.error(`Precisión: ${accuracy}%. Escucha la frase modelo y vuelve a intentarlo. 💡`);
+      if (onCompletePractice) {
+        onCompletePractice(symbols[0], false);
+      }
+    }
+  };
+
+  const startVoiceRecording = (sentence: string) => {
+    if (typeof window === 'undefined') return;
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      toast.error('Tu navegador no soporta reconocimiento de voz. Usa Google Chrome o Edge.');
+      return;
+    }
+
+    stopActiveAudio();
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (_) {}
+      recognitionRef.current = null;
+    }
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+      safetyTimeoutRef.current = null;
+    }
+
+    try { sfx.playMicStart(); } catch (_) {}
+    transcriptRef.current = '';
+    setLiveTranscript('');
+    setRecordedSuccess(null);
+    setEvaluationData(null);
+    setIsRecording(true);
+
+    const rec = new SpeechRec();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+
+    rec.onresult = (event: any) => {
+      let fullTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript + ' ';
+      }
+      const cleaned = fullTranscript.trim();
+      transcriptRef.current = cleaned;
+      setLiveTranscript(cleaned);
+    };
+
+    rec.onerror = (e: any) => {
+      if (e?.error === 'aborted' || e?.error === 'no-speech') return;
+      console.warn('MicroPhonetic SpeechRecognition error:', e);
+      if (e?.error === 'not-allowed') {
+        toast.error('Permiso de micrófono denegado en tu navegador.');
+      }
+    };
+
+    rec.onend = () => {
+      setIsRecording(false);
+      try { sfx.playMicStop(); } catch (_) {}
+    };
+
+    try {
+      rec.start();
+      recognitionRef.current = rec;
+      // Generous 25-second limit so student can speak slowly and accurately without getting cut off
+      safetyTimeoutRef.current = setTimeout(() => {
+        stopVoiceRecording(sentence);
+      }, 25000);
+    } catch (err) {
+      console.warn('SpeechRecognition start failed:', err);
+      setIsRecording(false);
+    }
+  };
+
+  const stopVoiceRecording = (sentence: string) => {
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+      safetyTimeoutRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (_) {}
+      recognitionRef.current = null;
+    }
+    setIsRecording(false);
+    try { sfx.playMicStop(); } catch (_) {}
+
+    const textToEval = transcriptRef.current.trim() || liveTranscript.trim();
+    evaluatePronunciation(sentence, textToEval);
   };
 
   // Helper to extract anatomical image paths and Spanish instructions
@@ -459,47 +608,140 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
 
       {/* 🎙️ ORAL DRILL SENTENCE & INTERACTIVE MIC CHALLENGE */}
       {drillSentence && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-black/70 to-zinc-950/80 border border-emerald-500/30 space-y-3.5 relative z-10">
+        <div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-black/70 to-zinc-950/80 border border-emerald-500/30 space-y-4 relative z-10">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
-              Reto Oral de Pronunciación
+              Reto Oral de Pronunciación de Fonemas
             </span>
             <button
               type="button"
               onClick={() => playSound(drillSentence)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 font-bold border border-emerald-500/30 transition-all hover:scale-105"
+              className="flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 font-bold border border-emerald-500/30 transition-all hover:scale-105"
             >
-              <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+              <Volume2 className="w-4 h-4 text-emerald-400" />
               <span>Escuchar Frase Modelo</span>
             </button>
           </div>
 
-          <p className="text-sm sm:text-base font-semibold text-white italic font-outfit bg-black/40 p-3 rounded-xl border border-white/5">
-            "{drillSentence}"
-          </p>
+          {/* Model Sentence Display */}
+          <div className="p-4 rounded-xl bg-black/60 border border-white/10 space-y-2">
+            <div className="text-[11px] text-zinc-400 uppercase font-bold tracking-wider">Frase a pronunciar:</div>
+            <p className="text-base sm:text-lg font-bold text-white font-outfit leading-relaxed">
+              "{drillSentence}"
+            </p>
+          </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <motion.button
-              type="button"
-              disabled={isRecording}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleTestRecording(drillSentence)}
-              className={`inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all shadow-lg ${
-                isRecording
-                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse'
-                  : 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black shadow-emerald-500/25'
+          {/* Live Recording Feedback Indicator */}
+          <AnimatePresence>
+            {isRecording && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/50 flex items-center gap-3 text-xs text-rose-200 shadow-lg shadow-rose-950/30"
+              >
+                <div className="w-3 h-3 rounded-full bg-rose-500 animate-ping flex-shrink-0" />
+                <div className="flex-1 truncate">
+                  <span className="font-bold text-rose-300">Escuchando tu voz: </span>
+                  <span className="italic">{liveTranscript || 'Pronuncia la frase a tu propio ritmo...'}</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Detailed Word-by-Word Evaluation Results */}
+          {evaluationData && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`p-4 rounded-2xl border space-y-3 ${
+                recordedSuccess
+                  ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+                  : 'bg-amber-950/30 border-amber-500/40 text-amber-200'
               }`}
             >
-              <Mic className="w-4 h-4" />
-              <span>{isRecording ? 'Escuchando tu voz...' : 'Grabar & Validar Pronunciación'}</span>
-            </motion.button>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  {recordedSuccess ? (
+                    <CheckCircle2 size={18} className="text-emerald-400" />
+                  ) : (
+                    <XCircle size={18} className="text-amber-400" />
+                  )}
+                  <span className="font-bold text-sm">
+                    {recordedSuccess ? '¡Excelente precisión fonética!' : 'Pronunciación a perfeccionar'}
+                  </span>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-black font-mono border ${
+                  recordedSuccess
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                }`}>
+                  {evaluationData.score}% de Precisión
+                </span>
+              </div>
+
+              {/* Word breakdown badges */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block">
+                  Desglose palabra por palabra:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {evaluationData.wordStatuses.map((ws, wIdx) => (
+                    <span
+                      key={wIdx}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1 shadow-sm transition-all ${
+                        ws.isCorrect
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                          : 'bg-rose-500/20 text-rose-300 border-rose-500/50'
+                      }`}
+                    >
+                      <span>{ws.isCorrect ? '✓' : '✗'}</span>
+                      <span>{ws.word}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {evaluationData.transcript && (
+                <div className="text-xs text-zinc-400 italic pt-1 border-t border-white/5">
+                  Escuchado: "{evaluationData.transcript}"
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Action Button: Start vs. Stop Recording */}
+          <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
+            {isRecording ? (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.95 }}
+                onClick={() => stopVoiceRecording(drillSentence)}
+                className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl text-xs font-black bg-rose-600 hover:bg-rose-500 text-white shadow-xl shadow-rose-600/40 animate-pulse transition-all cursor-pointer"
+              >
+                <Square size={15} className="fill-current" />
+                <span>Detener y Calificar ⏹️</span>
+              </motion.button>
+            ) : (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.95 }}
+                onClick={() => startVoiceRecording(drillSentence)}
+                className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl text-xs font-black bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 shadow-xl shadow-emerald-500/25 transition-all cursor-pointer"
+              >
+                {evaluationData ? <RefreshCw size={15} /> : <Mic size={15} />}
+                <span>
+                  {evaluationData ? 'Reintentar Grabación 🎤' : 'Grabar & Validar Pronunciación 🎤'}
+                </span>
+              </motion.button>
+            )}
 
             {recordedSuccess && (
               <motion.span
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30"
+                className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3.5 py-2 rounded-xl border border-emerald-500/30"
               >
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>¡Dominio Fonético Registrado!</span>

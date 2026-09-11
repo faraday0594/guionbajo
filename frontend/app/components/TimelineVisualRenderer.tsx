@@ -379,25 +379,33 @@ export default function TimelineVisualRenderer({
           </div>
 
           {/* Stable Image Display (Clean aspect ratio to prevent sudden zoom distortions) */}
-          <div className={`w-full overflow-hidden bg-black/60 flex items-center justify-center transition-all duration-700 ${
+          <div className={`w-full overflow-hidden bg-black/60 flex items-center justify-center relative transition-all duration-700 ${
             isHookOnly || isHeroCentered
               ? 'aspect-[16/10] sm:aspect-video min-h-[200px] sm:min-h-[350px] max-h-[280px] sm:max-h-[420px]'
               : 'aspect-[16/9] sm:aspect-[16/10] min-h-[160px] sm:min-h-[220px] max-h-[190px] sm:max-h-[260px]'
           }`}>
-            {imageLoading ? (
+            {imageUrl ? (
+              <div className="relative w-full h-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt={imagePrompt || 'Ilustración didáctica de la situación'}
+                  className="w-full h-full object-cover object-center transition-transform duration-500 hover:scale-105"
+                />
+                {imageLoading && (
+                  <div className="absolute bottom-2.5 right-2.5 z-10 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md border border-brand-cyan/40 text-[10px] font-mono text-brand-cyan flex items-center gap-1.5 shadow-lg">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-ping" />
+                    <span>Mejorando a HD...</span>
+                  </div>
+                )}
+              </div>
+            ) : imageLoading ? (
               <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
                 <div className="w-10 h-10 border-4 border-brand-cyan border-t-transparent rounded-full animate-spin shadow-lg" />
                 <span className="text-xs font-mono text-brand-cyan font-bold animate-pulse">
-                  Generando ilustración situacional con IA...
+                  Generando ilustración didáctica con IA...
                 </span>
               </div>
-            ) : imageUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={imageUrl}
-                alt={imagePrompt || 'Ilustración didáctica de la situación'}
-                className="w-full h-full object-cover object-center transition-transform duration-500 hover:scale-105"
-              />
             ) : (
               <div className="flex flex-col items-center justify-center gap-2 p-6 text-center text-white/50 font-mono text-xs">
                 <Sparkles size={24} className="text-brand-gold animate-bounce" />

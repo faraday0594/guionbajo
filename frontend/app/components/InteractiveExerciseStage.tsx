@@ -552,15 +552,18 @@ export default function InteractiveExerciseStage({
                       <button
                         key={oIdx}
                         type="button"
+                        disabled={Boolean(currentEval?.isCorrect)}
                         onClick={() => handleSelectOption(opt)}
                         className={`p-3 rounded-xl border text-xs font-bold text-left transition-all flex items-center justify-between gap-2 shadow-sm ${
                           isEvaluated && isCorrectOption
-                            ? 'bg-emerald-500/25 border-emerald-500 text-emerald-300 ring-2 ring-emerald-500/40'
+                            ? 'bg-emerald-500/25 border-emerald-500 text-emerald-300 ring-2 ring-emerald-500/40 cursor-default'
                             : isEvaluated && isSelected && !isCorrectOption
                             ? 'bg-rose-500/25 border-rose-500 text-rose-300'
                             : isSelected
                             ? 'bg-brand-cyan text-black border-brand-cyan shadow-brand-cyan/20 scale-[1.02]'
-                            : 'bg-zinc-900/90 hover:bg-zinc-800 border-white/10 text-white'
+                            : currentEval?.isCorrect
+                            ? 'bg-zinc-900/60 border-white/5 text-zinc-500 cursor-default'
+                            : 'bg-zinc-900/90 hover:bg-zinc-800 border-white/10 text-white cursor-pointer'
                         }`}
                       >
                         <span className="truncate">{opt}</span>
@@ -661,44 +664,64 @@ export default function InteractiveExerciseStage({
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="Escribe tu respuesta o presiona el micrófono..."
+                placeholder={currentEval?.isCorrect ? "Respuesta correcta registrada ✓" : "Escribe tu respuesta o presiona el micrófono..."}
+                disabled={Boolean(currentEval?.isCorrect)}
                 value={textInputs[currentEx.id] || ''}
                 onChange={(e) => setTextInputs(prev => ({ ...prev, [currentEx.id]: e.target.value }))}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' && !currentEval?.isCorrect) {
                     validateAnswer(textInputs[currentEx.id] || '');
                   }
                 }}
-                className="flex-1 bg-black/70 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-brand-cyan"
+                className={`flex-1 bg-black/70 border rounded-xl px-3.5 py-2.5 text-xs placeholder-zinc-500 focus:outline-none transition-all ${
+                  currentEval?.isCorrect
+                    ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/20'
+                    : 'border-white/15 text-white focus:border-brand-cyan'
+                }`}
               />
               <button
                 type="button"
-                disabled={isEvaluatingSpeech || !(textInputs[currentEx.id] || '').trim()}
+                disabled={isEvaluatingSpeech || Boolean(currentEval?.isCorrect) || !(textInputs[currentEx.id] || '').trim()}
                 onClick={() => validateAnswer(textInputs[currentEx.id] || '')}
-                className="px-3.5 py-2 rounded-xl bg-brand-cyan hover:bg-cyan-400 text-black font-bold text-xs disabled:opacity-40 transition-all flex items-center gap-1.5 shadow-md shadow-brand-cyan/20"
-                title="Validar respuesta escrita"
+                className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-md ${
+                  currentEval?.isCorrect
+                    ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 cursor-not-allowed opacity-90'
+                    : 'bg-brand-cyan hover:bg-cyan-400 text-black shadow-brand-cyan/20 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
+                }`}
+                title={currentEval?.isCorrect ? 'Respuesta ya validada con éxito' : 'Validar respuesta escrita'}
               >
-                {isEvaluatingSpeech ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-                <span>Validar</span>
+                {isEvaluatingSpeech ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : currentEval?.isCorrect ? (
+                  <CheckCircle2 size={14} className="text-emerald-400" />
+                ) : (
+                  <Send size={13} />
+                )}
+                <span>{currentEval?.isCorrect ? 'Correcto ✓' : 'Validar'}</span>
               </button>
             </div>
 
-            {/* Voice Recording Control */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            {/* Voice Recording Control & High-Visibility Next Exercise Navigation */}
+            <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
               <motion.button
                 type="button"
+                disabled={Boolean(currentEval?.isCorrect)}
                 whileTap={{ scale: 0.95 }}
                 onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
                 className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 shadow-lg ${
-                  isRecording
+                  currentEval?.isCorrect
+                    ? 'bg-white/10 text-zinc-500 border border-white/5 cursor-not-allowed opacity-60'
+                    : isRecording
                     ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/40 animate-pulse'
-                    : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20'
+                    : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20 cursor-pointer'
                 }`}
+                title={currentEval?.isCorrect ? 'Ejercicio ya aprobado' : 'Grabar tu respuesta oral con voz'}
               >
                 {isRecording ? <Square size={14} className="fill-current" /> : <Mic size={14} />}
                 <span>{isRecording ? 'Detener y Calificar ⏹️' : 'Responder por Voz 🎤'}</span>
               </motion.button>
 
+              {/* Clear, High-Visibility Next Exercise Navigation */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -707,24 +730,45 @@ export default function InteractiveExerciseStage({
                     if (isRecording) stopVoiceRecording();
                     setCurrentExIdx(prev => Math.max(0, prev - 1));
                   }}
-                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 transition-all"
+                  className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold disabled:opacity-25 disabled:cursor-not-allowed transition-all flex items-center gap-1"
                   title="Ejercicio anterior"
                 >
                   <ChevronLeft size={16} />
+                  <span className="hidden sm:inline">Anterior</span>
                 </button>
 
-                <button
-                  type="button"
-                  disabled={currentExIdx === exercises.length - 1}
-                  onClick={() => {
-                    if (isRecording) stopVoiceRecording();
-                    setCurrentExIdx(prev => Math.min(exercises.length - 1, prev + 1));
-                  }}
-                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 transition-all"
-                  title="Siguiente ejercicio"
-                >
-                  <ChevronRight size={16} />
-                </button>
+                {currentExIdx < exercises.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isRecording) stopVoiceRecording();
+                      setCurrentExIdx(prev => Math.min(exercises.length - 1, prev + 1));
+                    }}
+                    className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-xl cursor-pointer ${
+                      currentEval?.isCorrect
+                        ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 shadow-emerald-500/30 scale-105 animate-pulse'
+                        : 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                    }`}
+                    title="Pasar al siguiente ejercicio"
+                  >
+                    <span>Siguiente Ejercicio</span>
+                    <ChevronRight size={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleNextClick}
+                    className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-xl cursor-pointer ${
+                      is80PercentMet
+                        ? 'bg-gradient-to-r from-brand-gold via-amber-400 to-emerald-400 text-slate-950 shadow-amber-500/30 scale-105 animate-pulse'
+                        : 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                    }`}
+                    title={is80PercentMet ? "Completar práctica y avanzar" : "Revisar ejercicios pendientes"}
+                  >
+                    <span>{is80PercentMet ? 'Completar Práctica 🚀' : 'Verificar Progreso'}</span>
+                    <ChevronRight size={16} />
+                  </button>
+                )}
               </div>
             </div>
           </div>

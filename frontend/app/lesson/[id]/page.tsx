@@ -5440,9 +5440,13 @@ export default function LessonPage() {
   const cleanImagePrompt = sanitizeImagePrompt(rawImagePrompt, topicParam, currentPhaseIdx);
 
   const promptKey = `${currentPhaseIdx}-${topicParam}`;
-  const minimaxGeneratedUrl = minimaxImageMap[promptKey];
-  const isImageGenerating = generatingImages[promptKey] || !minimaxGeneratedUrl;
-  const imageUrl = minimaxGeneratedUrl || '';
+  const fallbackSlideUrl = useMemo(
+    () => getFallbackImageUrl(cleanImagePrompt, topicParam, currentPhaseIdx),
+    [cleanImagePrompt, topicParam, currentPhaseIdx]
+  );
+  const minimaxGeneratedUrl = minimaxImageMap[promptKey] || fallbackSlideUrl;
+  const isImageGenerating = generatingImages[promptKey] || !minimaxImageMap[promptKey];
+  const imageUrl = minimaxGeneratedUrl || fallbackSlideUrl;
 
   // Dedicated Sentence Image URL for timeline items
   const getSentenceImageUrl = (englishSentence: string, index: number): string => {

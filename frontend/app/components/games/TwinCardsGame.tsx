@@ -722,50 +722,69 @@ export default function TwinCardsGame({
       : 'grid-cols-4 sm:grid-cols-5';
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 text-white pb-10">
-      {/* ── Top HUD: Difficulty, Score, Turn ── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-3xl glass border border-brand-border/60 shadow-2xl">
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border transition-all ${
-            currentTurn === 'student'
-              ? 'bg-brand-cyan/20 border-brand-cyan text-white shadow-lg shadow-brand-cyan/20'
-              : 'bg-brand-surface border-white/10 text-brand-text-muted opacity-60'
-          }`}>
-            <UserIcon size={16} className="text-brand-cyan" />
-            <div>
-              <div className="text-[10px] uppercase font-bold text-brand-cyan">Tú (Estudiante)</div>
-              <div className="text-sm font-extrabold font-mono">{studentPairsCount} Pares ({studentScore} pts)</div>
+    <div className="w-full max-w-5xl mx-auto flex flex-col gap-3 sm:gap-5 text-white pb-8 px-1 sm:px-0">
+      {/* ── Top HUD: Scoreboard, Streak, Difficulty ── */}
+      <div className="p-2.5 sm:p-4 rounded-2xl sm:rounded-3xl glass border border-brand-border/60 shadow-2xl flex flex-col gap-2.5 sm:gap-3.5">
+        {/* Scoreboard: Tú vs Guionbajo */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 items-center">
+          {/* Student Score Badge */}
+          <div
+            className={`flex items-center gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border transition-all ${
+              currentTurn === 'student'
+                ? 'bg-brand-cyan/20 border-brand-cyan text-white shadow-lg shadow-brand-cyan/20'
+                : 'bg-brand-surface/60 border-white/10 text-brand-text-muted opacity-70'
+            }`}
+          >
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand-cyan/20 flex items-center justify-center flex-shrink-0">
+              <UserIcon size={15} className="text-brand-cyan" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] sm:text-[10px] uppercase font-bold text-brand-cyan truncate">
+                Tú (Estudiante)
+              </div>
+              <div className="text-xs sm:text-sm font-extrabold font-mono truncate">
+                {studentPairsCount} Pares <span className="text-[10px] sm:text-xs text-white/60">({studentScore} pts)</span>
+              </div>
             </div>
           </div>
 
-          <span className="text-xs font-extrabold text-brand-text-muted">VS</span>
-
-          <div className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border transition-all ${
-            currentTurn === 'ai'
-              ? 'bg-purple-500/20 border-purple-400 text-white shadow-lg shadow-purple-500/20'
-              : 'bg-brand-surface border-white/10 text-brand-text-muted opacity-60'
-          }`}>
-            <Bot size={16} className="text-purple-400" />
-            <div>
-              <div className="text-[10px] uppercase font-bold text-purple-300">Guionbajo</div>
-              <div className="text-sm font-extrabold font-mono">{aiPairsCount} Pares ({aiScore} pts)</div>
+          {/* AI Score Badge (Guionbajo) */}
+          <div
+            className={`flex items-center gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border transition-all ${
+              currentTurn === 'ai'
+                ? 'bg-purple-500/20 border-purple-400 text-white shadow-lg shadow-purple-500/20'
+                : 'bg-brand-surface/60 border-white/10 text-brand-text-muted opacity-70'
+            }`}
+          >
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+              <Bot size={15} className="text-purple-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] sm:text-[10px] uppercase font-bold text-purple-300 truncate">
+                Guionbajo (IA)
+              </div>
+              <div className="text-xs sm:text-sm font-extrabold font-mono truncate">
+                {aiPairsCount} Pares <span className="text-[10px] sm:text-xs text-white/60">({aiScore} pts)</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Streak & Difficulty */}
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all ${
-            streak > 1
-              ? 'bg-amber-500/20 border-amber-500/60 text-amber-300 flame-streak'
-              : 'bg-brand-surface/60 border-white/10 text-brand-text-muted'
-          }`}>
-            <Flame size={16} className={streak > 1 ? 'text-amber-400 animate-bounce' : ''} />
-            <span className="text-xs font-bold">Racha: x{streak}</span>
+        {/* Streak & Difficulty bar */}
+        <div className="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-white/[0.06]">
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg sm:rounded-xl border transition-all ${
+              streak > 1
+                ? 'bg-amber-500/20 border-amber-500/60 text-amber-300 flame-streak'
+                : 'bg-brand-surface/60 border-white/10 text-brand-text-muted'
+            }`}
+          >
+            <Flame size={14} className={streak > 1 ? 'text-amber-400 animate-bounce' : ''} />
+            <span className="text-[11px] sm:text-xs font-bold">Racha: x{streak}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-brand-surface/80 p-1 rounded-xl border border-white/10 text-xs">
-            <Sliders size={13} className="text-brand-cyan ml-1.5" />
+          <div className="flex items-center gap-1 bg-brand-surface/80 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-white/10 text-xs">
+            <Sliders size={12} className="text-brand-cyan ml-1 hidden sm:inline" />
             {(['easy', 'medium', 'hard'] as DifficultyLevel[]).map((lvl) => (
               <button
                 key={lvl}
@@ -775,7 +794,7 @@ export default function TwinCardsGame({
                   setDifficulty(lvl);
                   resetQuestionTimerUI();
                 }}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg font-bold text-[10px] sm:text-[11px] transition-all cursor-pointer ${
                   difficulty === lvl
                     ? 'bg-brand-accent text-white shadow-md'
                     : 'text-brand-text-muted hover:text-white'
@@ -789,18 +808,25 @@ export default function TwinCardsGame({
       </div>
 
       {/* ── Turn Timer Bar & Live Tutor Voice Message ── */}
-      <div className="p-4 rounded-2xl glass border border-brand-border/60 flex flex-col gap-3 shadow-xl">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${isSpeaking ? 'bg-brand-cyan animate-ping' : 'bg-emerald-400'}`} />
-            <span className="font-bold text-white">
-              {currentTurn === 'student' ? '🎮 Tu Turno de Voltear Cartas' : '🤖 Pensando jugada del Tutor IA...'}
+      <div className="p-2.5 sm:p-4 rounded-2xl glass border border-brand-border/60 flex flex-col gap-2 sm:gap-3 shadow-xl">
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span
+              className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                isSpeaking ? 'bg-brand-cyan animate-ping' : 'bg-emerald-400'
+              }`}
+            />
+            <span className="font-bold text-white truncate text-[11px] sm:text-xs">
+              {currentTurn === 'student' ? '🎮 Tu Turno de Jugar' : '🤖 Turno de Guionbajo...'}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 font-mono font-bold text-brand-gold">
-            <Clock size={14} className={timeLeft <= 5 ? 'text-red-400 animate-pulse' : 'text-brand-gold'} />
-            <span className={timeLeft <= 5 ? 'text-red-400 font-extrabold' : ''}>{timeLeft}s</span>
+          {/* Cronómetro / Timer: Always flex-shrink-0 and highly visible */}
+          <div className="flex items-center gap-1.5 font-mono font-bold px-2.5 py-1 rounded-lg bg-black/50 border border-brand-gold/40 text-brand-gold flex-shrink-0 shadow-sm">
+            <Clock size={13} className={timeLeft <= 5 ? 'text-red-400 animate-pulse' : 'text-brand-gold'} />
+            <span className={`text-xs sm:text-sm font-extrabold ${timeLeft <= 5 ? 'text-red-400 animate-pulse' : ''}`}>
+              {timeLeft}s
+            </span>
           </div>
         </div>
 
@@ -820,39 +846,44 @@ export default function TwinCardsGame({
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-brand-gold/25 to-amber-500/20 border border-brand-gold/60 text-brand-gold text-xs font-bold shadow-lg shadow-brand-gold/15"
+            className="flex items-center justify-between gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-brand-gold/25 to-amber-500/20 border border-brand-gold/60 text-brand-gold text-[11px] sm:text-xs font-bold shadow-lg shadow-brand-gold/15"
           >
-            <div className="flex items-center gap-2">
-              <Sparkles size={15} className="animate-spin text-amber-300 flex-shrink-0" />
-              <span>⚡ ¡ÚLTIMAS 4 CARTAS! Quien acierte gana DOBLE PUNTO (2 parejas)</span>
+            <div className="flex items-center gap-1.5 truncate">
+              <Sparkles size={14} className="animate-spin text-amber-300 flex-shrink-0" />
+              <span className="truncate">⚡ ¡ÚLTIMAS 4 CARTAS! Doble punto</span>
             </div>
-            <span className="px-2 py-0.5 rounded-md bg-amber-400 text-black text-[10px] font-extrabold uppercase font-mono tracking-wider shadow-sm flex-shrink-0">
-              Jugada Decisiva
+            <span className="px-2 py-0.5 rounded-md bg-amber-400 text-black text-[9px] sm:text-[10px] font-extrabold uppercase font-mono tracking-wider shadow-sm flex-shrink-0">
+              Decisiva
             </span>
           </motion.div>
         )}
 
-        <div className="bg-brand-surface/70 px-4 py-2.5 rounded-xl border border-brand-cyan/20 text-xs text-brand-text-secondary flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-1">
-            <Volume2 size={15} className={`text-brand-cyan flex-shrink-0 ${isSpeaking ? 'animate-pulse text-brand-gold' : ''}`} />
-            <span className="italic leading-relaxed">{tutorMessage}</span>
+        <div className="bg-brand-surface/70 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-brand-cyan/20 text-[11px] sm:text-xs text-brand-text-secondary flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Volume2
+              size={14}
+              className={`text-brand-cyan flex-shrink-0 ${
+                isSpeaking ? 'animate-pulse text-brand-gold' : ''
+              }`}
+            />
+            <span className="italic leading-snug line-clamp-2 sm:line-clamp-1">{tutorMessage}</span>
           </div>
           {lastMatchedPair && (
             <button
               type="button"
               onClick={() => playTutorVoice(lastMatchedPair.audio_phrase, 'en')}
-              className="px-2.5 py-1 rounded-lg bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 text-[11px] font-bold flex-shrink-0 flex items-center gap-1 border border-brand-cyan/30"
+              className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-brand-cyan/20 text-brand-cyan hover:bg-brand-cyan/30 text-[10px] sm:text-[11px] font-bold flex-shrink-0 flex items-center gap-1 border border-brand-cyan/30 cursor-pointer"
               title="Volver a escuchar pronunciación"
             >
-              <Volume2 size={12} />
-              <span>Pronunciar</span>
+              <Volume2 size={11} />
+              <span>Oír</span>
             </button>
           )}
         </div>
       </div>
 
       {/* ── 3D Twin Cards Grid Arena ── */}
-      <div className={`grid ${gridColsClass} gap-3 sm:gap-4.5 justify-center`}>
+      <div className={`grid ${gridColsClass} gap-2 sm:gap-3.5 md:gap-4.5 justify-center`}>
         {cards.map((card, idx) => {
           const isFlipped = flippedCardIndices.includes(idx);
           const isMatched = matchedPairIds.has(card.pairId);
@@ -860,51 +891,51 @@ export default function TwinCardsGame({
           return (
             <div
               key={card.uid}
-              className={`twin-card h-32 sm:h-40 w-full cursor-pointer select-none ${
+              className={`twin-card h-28 sm:h-36 md:h-40 w-full cursor-pointer select-none ${
                 isFlipped ? 'flipped' : ''
               } ${isMatched ? 'matched pointer-events-none' : ''}`}
               onClick={() => handleStudentCardClick(idx)}
             >
               <div className="twin-card-inner">
                 {/* CARD FRONT */}
-                <div className="card-face card-front bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border-2 border-brand-border/80 hover:border-brand-cyan/80 p-3 flex flex-col items-center justify-between shadow-xl transition-all group hover:scale-[1.02]">
-                  <div className="w-full flex justify-between items-center text-[10px] text-brand-cyan/40 font-mono">
+                <div className="card-face card-front bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border-2 border-brand-border/80 hover:border-brand-cyan/80 p-2 sm:p-3 flex flex-col items-center justify-between shadow-xl transition-all group hover:scale-[1.02] overflow-hidden">
+                  <div className="w-full flex justify-between items-center text-[9px] sm:text-[10px] text-brand-cyan/50 font-mono">
                     <span>#{(idx + 1).toString().padStart(2, '0')}</span>
-                    <Sparkles size={11} className="group-hover:text-brand-cyan transition-colors" />
+                    <Sparkles size={10} className="group-hover:text-brand-cyan transition-colors" />
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-brand-surface/60 border border-brand-cyan/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-surface/60 border border-brand-cyan/20 flex items-center justify-center text-xl sm:text-2xl group-hover:scale-110 transition-transform">
                     🔮
                   </div>
-                  <span className="text-[10px] font-bold tracking-wider text-brand-text-muted group-hover:text-brand-cyan uppercase">
+                  <span className="text-[8px] sm:text-[10px] font-black tracking-wide sm:tracking-wider text-brand-text-muted group-hover:text-brand-cyan uppercase truncate max-w-full text-center px-1">
                     GUIONBAJO
                   </span>
                 </div>
 
                 {/* CARD BACK */}
                 <div
-                  className={`card-face card-back-side p-3 sm:p-4 flex flex-col justify-between items-center text-center shadow-2xl border-2 transition-all ${
+                  className={`card-face card-back-side p-2 sm:p-3 md:p-4 flex flex-col justify-between items-center text-center shadow-2xl border-2 transition-all overflow-hidden ${
                     isMatched
                       ? 'bg-gradient-to-br from-emerald-950 via-slate-900 to-emerald-950 border-emerald-400/80 shadow-emerald-500/20'
                       : 'bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border-brand-cyan shadow-brand-cyan/30'
                   }`}
                 >
-                  <div className="w-full flex justify-between items-center text-[9px] font-bold uppercase tracking-wider text-brand-cyan">
-                    <span className="truncate max-w-[80px]">{card.category}</span>
-                    <span className="px-1.5 py-0.5 rounded bg-brand-surface text-brand-gold border border-brand-gold/30">
+                  <div className="w-full flex justify-between items-center text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-brand-cyan">
+                    <span className="truncate max-w-[60px] sm:max-w-[80px]">{card.category}</span>
+                    <span className="px-1 py-0.2 rounded bg-brand-surface text-brand-gold border border-brand-gold/30 text-[8px] sm:text-[9px]">
                       {card.side === 'A' ? 'EN' : 'ES'}
                     </span>
                   </div>
 
-                  <div className="text-3xl sm:text-4xl my-1 filter drop-shadow-md">
+                  <div className="text-2xl sm:text-3xl md:text-4xl my-0.5 filter drop-shadow-md">
                     {card.icon}
                   </div>
 
-                  <div className="space-y-0.5 w-full">
-                    <div className="font-outfit font-extrabold text-xs sm:text-sm text-white leading-tight">
+                  <div className="space-y-0.5 w-full min-w-0">
+                    <div className="font-outfit font-extrabold text-[11px] sm:text-xs md:text-sm text-white leading-tight line-clamp-2">
                       {card.text}
                     </div>
                     {isMatched && (
-                      <div className="text-[10px] text-emerald-300 font-semibold truncate">
+                      <div className="text-[9px] sm:text-[10px] text-emerald-300 font-semibold truncate">
                         ✓ {card.translation}
                       </div>
                     )}

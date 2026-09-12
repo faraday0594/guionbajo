@@ -5471,10 +5471,7 @@ export default function LessonPage() {
   const cleanImagePrompt = sanitizeImagePrompt(rawImagePrompt, topicParam, currentPhaseIdx);
 
   const promptKey = `${currentPhaseIdx}-${topicParam}`;
-  const fallbackSlideUrl = useMemo(
-    () => getFallbackImageUrl(cleanImagePrompt, topicParam, currentPhaseIdx),
-    [cleanImagePrompt, topicParam, currentPhaseIdx]
-  );
+  const fallbackSlideUrl = getFallbackImageUrl(cleanImagePrompt, topicParam, currentPhaseIdx);
   const minimaxGeneratedUrl = minimaxImageMap[promptKey] || fallbackSlideUrl;
   const isImageGenerating = generatingImages[promptKey] || !minimaxImageMap[promptKey];
   const imageUrl = minimaxGeneratedUrl || fallbackSlideUrl;

@@ -98,18 +98,24 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
 export default function MicroPhoneticCard({ phoneticData, onCompletePractice, isStandaloneSlide = false }: MicroPhoneticProps) {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [recordedSuccess, setRecordedSuccess] = useState<boolean | null>(null);
   const [evaluationData, setEvaluationData] = useState<{
     score: number;
     transcript: string;
-    wordStatuses: Array<{ word: string; isCorrect: boolean }>;
+    wordStatuses: Array<{ word: string; isCorrect: boolean; heardAs?: string }>;
+    phoneticTip?: string;
+    isGroq?: boolean;
   } | null>(null);
 
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<string>('');
   const safetyTimeoutRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
 
   if (!phoneticData || (!phoneticData.symbols && !phoneticData.primary)) {
     return null;
@@ -194,8 +200,88 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
     }
   };
 
-  // Real Pronunciation Evaluation comparing words & acoustic clarity
-  const evaluatePronunciation = (sentence: string, transcript: string) => {
+  // Homophone dictionary for client fallback evaluation
+  const HOMOPHONES_CLIENT: Record<string, string> = {
+    threw: 'through', thru: 'through',
+    there: 'their', theyre: 'their', "they're": 'their',
+    to: 'two', too: 'two', '2': 'two',
+    for: 'four', fore: 'four', '4': 'four',
+    won: 'one', '1': 'one',
+    ate: 'eight', '8': 'eight',
+    '3': 'three', '5': 'five', '6': 'six', '7': 'seven', '9': 'nine', '10': 'ten',
+    write: 'right', rite: 'right',
+    hear: 'here',
+    no: 'know',
+    new: 'knew',
+    by: 'buy', bye: 'buy',
+    whether: 'weather',
+    see: 'sea',
+    sun: 'son',
+    knight: 'night',
+    peace: 'piece',
+    plane: 'plain',
+    weight: 'wait',
+    hole: 'whole',
+    wood: 'would',
+    witch: 'which',
+    brake: 'break',
+    meet: 'meat',
+    weak: 'week',
+    flour: 'flower',
+    rode: 'road', rowed: 'road',
+    where: 'wear',
+    pear: 'pair',
+    bear: 'bare',
+    male: 'mail',
+    tale: 'tail',
+    sale: 'sail',
+    stare: 'stair',
+    blue: 'blew',
+    high: 'hi',
+    bee: 'be',
+    sent: 'cent', scent: 'cent',
+    sell: 'cell',
+    fare: 'fair',
+    dont: "don't",
+    cant: "can't",
+    wont: "won't",
+    im: "i'm",
+    youre: "you're",
+    hes: "he's",
+    shes: "she's",
+    its: "it's",
+  };
+
+  const getCanonicalToken = (token: string): string => {
+    const clean = token.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()'"]/g, '').trim();
+    return HOMOPHONES_CLIENT[clean] || clean;
+  };
+
+  const calcLevenshteinRatio = (s1: string, s2: string): number => {
+    if (s1 === s2) return 1.0;
+    const len1 = s1.length;
+    const len2 = s2.length;
+    if (len1 === 0 || len2 === 0) return 0.0;
+    const matrix: number[][] = [];
+    for (let i = 0; i <= len1; i++) matrix[i] = [i];
+    for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+    const dist = matrix[len1][len2];
+    const maxLen = Math.max(len1, len2);
+    return Math.max(0, 1.0 - dist / maxLen);
+  };
+
+  // Fallback client-side pronunciation evaluation with homophone & Levenshtein tolerance
+  const evaluatePronunciationFallback = (sentence: string, transcript: string) => {
     const rawSentenceWords = sentence
       .replace(/[.,/#!$%^&*;:{}=\-_`~()"]/g, '')
       .split(/\s+/)
@@ -214,6 +300,7 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
         score: 0,
         transcript: '',
         wordStatuses: rawSentenceWords.map(w => ({ word: w, isCorrect: false })),
+        isGroq: false,
       });
       try { sfx.playMistake(); } catch (_) {}
       toast.error('No se detectó audio de tu voz. Por favor habla cerca del micrófono y repite la frase.');
@@ -221,18 +308,22 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
       return;
     }
 
-    // Evaluate word by word against target sentence
     let matchedCount = 0;
     const wordStatuses = rawSentenceWords.map((originalWord, idx) => {
       const targetWord = cleanSentenceWords[idx];
-      const isDirectMatch = cleanTranscriptWords.includes(targetWord);
+      const targetCanon = getCanonicalToken(targetWord);
+
+      // Direct match or canonical homophone match
+      const isDirectMatch = cleanTranscriptWords.some(spoken => {
+        const spokenCanon = getCanonicalToken(spoken);
+        return spoken === targetWord || spokenCanon === targetCanon;
+      });
+
+      // Levenshtein phonetic distance
       const isFuzzyMatch = !isDirectMatch && cleanTranscriptWords.some(spoken => {
-        if (spoken.length >= 3 && targetWord.length >= 3) {
-          if (spoken.startsWith(targetWord.slice(0, 3)) || targetWord.startsWith(spoken.slice(0, 3))) {
-            return Math.abs(spoken.length - targetWord.length) <= 2;
-          }
-        }
-        return false;
+        const spokenCanon = getCanonicalToken(spoken);
+        const ratio = calcLevenshteinRatio(spokenCanon, targetCanon);
+        return ratio >= 0.70;
       });
 
       const isMatched = isDirectMatch || isFuzzyMatch;
@@ -241,43 +332,103 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
     });
 
     const accuracy = Math.round((matchedCount / Math.max(cleanSentenceWords.length, 1)) * 100);
-    const isPassing = accuracy >= 60; // 60% standard passing for full phoneme drill sentence
+    const isPassing = accuracy >= 60;
 
     setEvaluationData({
       score: accuracy,
       transcript: transcript.trim(),
       wordStatuses,
+      isGroq: false,
     });
 
     if (isPassing) {
       setRecordedSuccess(true);
       try { sfx.playSuccessChime(); } catch (_) {}
-      toast.success(`¡Excelente pronunciación! (${accuracy}% de precisión en fonemas) 🎉`);
-      if (onCompletePractice) {
-        onCompletePractice(symbols[0], true);
-      }
+      toast.success(`¡Excelente pronunciación! (${accuracy}% de precisión) 🎉`);
+      if (onCompletePractice) onCompletePractice(symbols[0], true);
     } else {
       setRecordedSuccess(false);
       try { sfx.playMistake(); } catch (_) {}
       toast.error(`Precisión: ${accuracy}%. Escucha la frase modelo y vuelve a intentarlo. 💡`);
-      if (onCompletePractice) {
-        onCompletePractice(symbols[0], false);
-      }
+      if (onCompletePractice) onCompletePractice(symbols[0], false);
     }
   };
 
-  const startVoiceRecording = (sentence: string) => {
-    if (typeof window === 'undefined') return;
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) {
-      toast.error('Tu navegador no soporta reconocimiento de voz. Usa Google Chrome o Edge.');
-      return;
+  // Process evaluation using Groq Whisper via backend with seamless client fallback
+  const processEvaluation = async (sentence: string) => {
+    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+    const localText = transcriptRef.current.trim() || liveTranscript.trim();
+
+    if (audioBlob.size > 500) {
+      setIsEvaluating(true);
+      try {
+        const symbolTarget = symbols && symbols.length > 0 ? symbols[0] : undefined;
+        const res = await api.transcribeAndEvaluateSpeech(audioBlob, sentence, symbolTarget);
+        if (res && res.success) {
+          const finalScore = res.score ?? 85;
+          const isPassing = res.is_correct ?? (finalScore >= 60);
+          const whisperTrans = res.transcription || localText;
+
+          const wordStatuses = (res.word_feedback && res.word_feedback.length > 0)
+            ? res.word_feedback.map(wf => ({
+                word: wf.word,
+                isCorrect: wf.status === 'correct',
+                heardAs: wf.heard_as || undefined,
+              }))
+            : sentence
+                .replace(/[.,/#!$%^&*;:{}=\-_`~()"]/g, '')
+                .split(/\s+/)
+                .filter(Boolean)
+                .map(w => ({ word: w, isCorrect: isPassing }));
+
+          setEvaluationData({
+            score: finalScore,
+            transcript: whisperTrans,
+            wordStatuses,
+            phoneticTip: res.phonetic_tip,
+            isGroq: res.groq_active,
+          });
+
+          if (isPassing) {
+            setRecordedSuccess(true);
+            try { sfx.playSuccessChime(); } catch (_) {}
+            toast.success(`¡Excelente pronunciación! (${finalScore}% de precisión acústica) 🎉`);
+            if (onCompletePractice) onCompletePractice(symbols[0], true);
+          } else {
+            setRecordedSuccess(false);
+            try { sfx.playMistake(); } catch (_) {}
+            toast.error(`Precisión acústica: ${finalScore}%. ${res.phonetic_tip || 'Escucha el modelo y reintenta.'} 💡`);
+            if (onCompletePractice) onCompletePractice(symbols[0], false);
+          }
+          setIsEvaluating(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Groq Whisper evaluation failed, falling back to local speech recognition:', err);
+      } finally {
+        setIsEvaluating(false);
+      }
     }
+
+    // Fallback if audio was empty or Groq call failed
+    evaluatePronunciationFallback(sentence, localText);
+  };
+
+  const startVoiceRecording = async (sentence: string) => {
+    if (typeof window === 'undefined') return;
 
     stopActiveAudio();
     if (recognitionRef.current) {
       try { recognitionRef.current.abort(); } catch (_) {}
       recognitionRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch (_) {}
+      mediaRecorderRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
     }
     if (safetyTimeoutRef.current) {
       clearTimeout(safetyTimeoutRef.current);
@@ -286,66 +437,113 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
 
     try { sfx.playMicStart(); } catch (_) {}
     transcriptRef.current = '';
+    audioChunksRef.current = [];
     setLiveTranscript('');
     setRecordedSuccess(null);
     setEvaluationData(null);
-    setIsRecording(true);
 
-    const rec = new SpeechRec();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = 'en-US';
-
-    rec.onresult = (event: any) => {
-      let fullTranscript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        fullTranscript += event.results[i][0].transcript + ' ';
-      }
-      const cleaned = fullTranscript.trim();
-      transcriptRef.current = cleaned;
-      setLiveTranscript(cleaned);
-    };
-
-    rec.onerror = (e: any) => {
-      if (e?.error === 'aborted' || e?.error === 'no-speech') return;
-      console.warn('MicroPhonetic SpeechRecognition error:', e);
-      if (e?.error === 'not-allowed') {
-        toast.error('Permiso de micrófono denegado en tu navegador.');
-      }
-    };
-
-    rec.onend = () => {
-      setIsRecording(false);
-      try { sfx.playMicStop(); } catch (_) {}
-    };
-
+    // 1. Capture real audio via MediaRecorder for Groq Whisper
     try {
-      rec.start();
-      recognitionRef.current = rec;
-      // Generous 25-second limit so student can speak slowly and accurately without getting cut off
-      safetyTimeoutRef.current = setTimeout(() => {
-        stopVoiceRecording(sentence);
-      }, 25000);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/mp4';
+
+      const mr = new MediaRecorder(stream, { mimeType });
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+      mediaRecorderRef.current = mr;
+      mr.start(100);
     } catch (err) {
-      console.warn('SpeechRecognition start failed:', err);
-      setIsRecording(false);
+      console.warn('MicroPhonetic MediaRecorder error or mic denied:', err);
     }
+
+    // 2. Start browser SpeechRecognition for live visual transcription feedback
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRec) {
+      try {
+        const rec = new SpeechRec();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.lang = 'en-US';
+
+        rec.onresult = (event: any) => {
+          let fullTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            fullTranscript += event.results[i][0].transcript + ' ';
+          }
+          const cleaned = fullTranscript.trim();
+          transcriptRef.current = cleaned;
+          setLiveTranscript(cleaned);
+        };
+
+        rec.onerror = (e: any) => {
+          if (e?.error === 'aborted' || e?.error === 'no-speech') return;
+          console.warn('MicroPhonetic SpeechRecognition error:', e);
+          if (e?.error === 'not-allowed') {
+            toast.error('Permiso de micrófono denegado en tu navegador.');
+          }
+        };
+
+        rec.start();
+        recognitionRef.current = rec;
+      } catch (err) {
+        console.warn('SpeechRecognition start failed:', err);
+      }
+    }
+
+    setIsRecording(true);
+    // Generous 25-second limit so student can speak slowly and accurately without getting cut off
+    safetyTimeoutRef.current = setTimeout(() => {
+      stopVoiceRecording(sentence);
+    }, 25000);
   };
 
-  const stopVoiceRecording = (sentence: string) => {
+  const stopVoiceRecording = async (sentence: string) => {
     if (safetyTimeoutRef.current) {
       clearTimeout(safetyTimeoutRef.current);
       safetyTimeoutRef.current = null;
     }
+    setIsRecording(false);
+    try { sfx.playMicStop(); } catch (_) {}
+
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch (_) {}
       recognitionRef.current = null;
     }
-    setIsRecording(false);
-    try { sfx.playMicStop(); } catch (_) {}
 
-    const textToEval = transcriptRef.current.trim() || liveTranscript.trim();
-    evaluatePronunciation(sentence, textToEval);
+    const mr = mediaRecorderRef.current;
+    if (mr && mr.state !== 'inactive') {
+      mr.onstop = async () => {
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(t => t.stop());
+          mediaStreamRef.current = null;
+        }
+        await processEvaluation(sentence);
+      };
+      try {
+        mr.stop();
+      } catch (e) {
+        console.warn('Error stopping MediaRecorder:', e);
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(t => t.stop());
+          mediaStreamRef.current = null;
+        }
+        await processEvaluation(sentence);
+      }
+    } else {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+        mediaStreamRef.current = null;
+      }
+      await processEvaluation(sentence);
+    }
   };
 
   // Helper to extract anatomical image paths and Spanish instructions
@@ -648,6 +846,21 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
                 </div>
               </motion.div>
             )}
+
+            {isEvaluating && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/50 flex items-center gap-3 text-xs text-cyan-200 shadow-lg shadow-cyan-950/30"
+              >
+                <Loader2 className="w-4 h-4 text-cyan-400 animate-spin flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="font-bold text-cyan-300">Analizando pronunciación acústica: </span>
+                  <span className="italic text-cyan-100">Evaluando fonemas con Groq Whisper...</span>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
 
           {/* Detailed Word-by-Word Evaluation Results */}
@@ -672,14 +885,30 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
                     {recordedSuccess ? '¡Excelente precisión fonética!' : 'Pronunciación a perfeccionar'}
                   </span>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-black font-mono border ${
-                  recordedSuccess
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                    : 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                }`}>
-                  {evaluationData.score}% de Precisión
-                </span>
+                <div className="flex items-center gap-2">
+                  {evaluationData.isGroq && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
+                      <Sparkles size={11} className="text-cyan-400" />
+                      Groq Whisper LPU
+                    </span>
+                  )}
+                  <span className={`px-3 py-1 rounded-full text-xs font-black font-mono border ${
+                    recordedSuccess
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                      : 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                  }`}>
+                    {evaluationData.score}% de Precisión
+                  </span>
+                </div>
               </div>
+
+              {/* Pedagogical phonetic tip from backend */}
+              {evaluationData.phoneticTip && (
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-zinc-300 flex items-start gap-2.5">
+                  <span className="text-sm flex-shrink-0">💡</span>
+                  <span className="leading-relaxed">{evaluationData.phoneticTip}</span>
+                </div>
+              )}
 
               {/* Word breakdown badges */}
               <div className="space-y-1.5 pt-1">
@@ -690,7 +919,8 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
                   {evaluationData.wordStatuses.map((ws, wIdx) => (
                     <span
                       key={wIdx}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1 shadow-sm transition-all ${
+                      title={ws.heardAs && !ws.isCorrect ? `Detectado como: "${ws.heardAs}"` : undefined}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5 shadow-sm transition-all ${
                         ws.isCorrect
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
                           : 'bg-rose-500/20 text-rose-300 border-rose-500/50'
@@ -698,6 +928,11 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
                     >
                       <span>{ws.isCorrect ? '✓' : '✗'}</span>
                       <span>{ws.word}</span>
+                      {ws.heardAs && !ws.isCorrect && (
+                        <span className="text-[10px] text-rose-300/80 font-normal italic">
+                          ({ws.heardAs})
+                        </span>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -713,7 +948,16 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
 
           {/* Action Button: Start vs. Stop Recording */}
           <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
-            {isRecording ? (
+            {isEvaluating ? (
+              <button
+                type="button"
+                disabled
+                className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl text-xs font-black bg-zinc-800 text-zinc-400 border border-zinc-700 cursor-not-allowed opacity-80"
+              >
+                <Loader2 size={15} className="animate-spin text-cyan-400" />
+                <span>Evaluando con Whisper... 🧠</span>
+              </button>
+            ) : isRecording ? (
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.95 }}

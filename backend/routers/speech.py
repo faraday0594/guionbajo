@@ -30,18 +30,92 @@ def _clean_text(text: str) -> str:
     return " ".join(cleaned.lower().split())
 
 
+# Common English homophones, phonetic variants, numbers, and contractions
+HOMOPHONE_GROUPS = [
+    {"through", "threw", "thru"},
+    {"there", "their", "theyre", "they're"},
+    {"to", "too", "two", "2"},
+    {"for", "four", "4", "fore"},
+    {"one", "won", "1"},
+    {"ate", "eight", "8"},
+    {"three", "3"},
+    {"four", "4"},
+    {"five", "5"},
+    {"six", "6"},
+    {"seven", "7"},
+    {"eight", "8"},
+    {"nine", "9"},
+    {"ten", "10"},
+    {"right", "write", "rite"},
+    {"here", "hear"},
+    {"know", "no"},
+    {"knew", "new"},
+    {"buy", "by", "bye"},
+    {"peace", "piece"},
+    {"plain", "plane"},
+    {"wait", "weight"},
+    {"weather", "whether"},
+    {"whole", "hole"},
+    {"would", "wood"},
+    {"which", "witch"},
+    {"sea", "see"},
+    {"son", "sun"},
+    {"break", "brake"},
+    {"meat", "meet"},
+    {"week", "weak"},
+    {"hour", "our"},
+    {"flower", "flour"},
+    {"road", "rode", "rowed"},
+    {"wear", "where"},
+    {"pair", "pear"},
+    {"bare", "bear"},
+    {"mail", "male"},
+    {"tail", "tale"},
+    {"sail", "sale"},
+    {"stair", "stare"},
+    {"blew", "blue"},
+    {"hi", "high"},
+    {"eye", "i"},
+    {"be", "bee"},
+    {"so", "sew", "sow"},
+    {"cent", "scent", "sent"},
+    {"cell", "sell"},
+    {"fair", "fare"},
+    {"knight", "night"},
+]
+
+HOMOPHONE_MAP = {}
+for grp in HOMOPHONE_GROUPS:
+    primary = sorted(grp)[0].lower()
+    for word in grp:
+        HOMOPHONE_MAP[word.lower().replace("'", "")] = primary.replace("'", "")
+
+
 def _levenshtein_ratio(s1: str, s2: str) -> float:
-    """Simple similarity ratio between two tokens."""
+    """Similarity ratio between two tokens with phonetic, number, and homophone tolerance."""
     if not s1 and not s2:
         return 1.0
     if not s1 or not s2:
         return 0.0
-    s1, s2 = s1.lower(), s2.lower()
+    s1, s2 = s1.lower().strip(), s2.lower().strip()
     if s1 == s2:
         return 1.0
     
-    if s1 in s2 or s2 in s1:
-        return max(len(s1), len(s2)) / (len(s1) + len(s2)) * 1.5
+    # Strip apostrophes for contraction matching (e.g. don't vs dont)
+    c1 = s1.replace("'", "")
+    c2 = s2.replace("'", "")
+    if c1 == c2:
+        return 1.0
+
+    # Phonetic homophone & numerical matching
+    canon1 = HOMOPHONE_MAP.get(c1)
+    canon2 = HOMOPHONE_MAP.get(c2)
+    if canon1 and canon2 and canon1 == canon2:
+        return 1.0
+    if canon1 and canon1 == c2:
+        return 1.0
+    if canon2 and canon2 == c1:
+        return 1.0
 
     len1, len2 = len(s1), len(s2)
     matrix = [[0] * (len2 + 1) for _ in range(len1 + 1)]
@@ -59,7 +133,9 @@ def _levenshtein_ratio(s1: str, s2: str) -> float:
             )
     dist = matrix[len1][len2]
     max_len = max(len1, len2)
-    return max(0.0, 1.0 - (dist / max_len))
+    if max_len == 0:
+        return 1.0
+    return max(0.0, min(1.0, 1.0 - (dist / max_len)))
 
 
 def _align_words(target_text: str, transcribed_text: str) -> List[Dict[str, Any]]:

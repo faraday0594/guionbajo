@@ -144,8 +144,7 @@ export default function JourneyVisualStage({
 
   const currentPoint = getMinimapPoint(currentIndex);
 
-  /* ─── Path waypoints for the winding trail (viewBox 960x420) ─── */
-  const trailPath = "M 480 395 C 480 370, 430 340, 380 320 C 310 290, 280 270, 340 240 C 400 210, 520 200, 560 180 C 610 155, 580 130, 520 115 C 460 100, 420 80, 480 55";
+  /* trail path not needed — new version uses filled polygons for perspective */
 
   return (
     <div className="w-full rounded-3xl overflow-hidden border border-white/[0.08] shadow-2xl relative bg-[#0c1a0e] mb-8">
@@ -211,14 +210,13 @@ export default function JourneyVisualStage({
       </div>
 
       {/* ==================== MAIN LANDSCAPE SCENE ==================== */}
-      <div className={`relative w-full h-[260px] sm:h-[310px] md:h-[380px] overflow-hidden`}>
+      <div className={`relative w-full h-[200px] sm:h-[240px] md:h-[280px] overflow-hidden`}>
         <svg
-          viewBox="0 0 960 420"
+          viewBox="0 0 960 340"
           preserveAspectRatio="xMidYMid slice"
           className="w-full h-full block"
         >
           <defs>
-            {/* Soft glow filter */}
             <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
               <feGaussianBlur stdDeviation="4" result="blur" />
               <feMerge>
@@ -234,392 +232,316 @@ export default function JourneyVisualStage({
               </feMerge>
             </filter>
 
-            {/* Sky gradient — golden hour warmth */}
+            {/* Bright, clear sky */}
             <linearGradient id="skyWarm" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#1a1145" />
-              <stop offset="25%" stopColor="#2d1b69" />
-              <stop offset="45%" stopColor="#7c3aed" stopOpacity="0.3" />
-              <stop offset="60%" stopColor="#f97316" stopOpacity="0.4" />
-              <stop offset="75%" stopColor="#fb923c" stopOpacity="0.5" />
-              <stop offset="88%" stopColor="#fbbf24" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#fef3c7" stopOpacity="0.35" />
+              <stop offset="0%" stopColor="#7dd3fc" />
+              <stop offset="30%" stopColor="#bae6fd" />
+              <stop offset="55%" stopColor="#e0f2fe" />
+              <stop offset="75%" stopColor="#fef9c3" stopOpacity="0.5" />
+              <stop offset="90%" stopColor="#fef3c7" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#fde68a" stopOpacity="0.4" />
             </linearGradient>
 
-            {/* Sun glow */}
-            <radialGradient id="sunGlow" cx="0.5" cy="0.52" r="0.35">
-              <stop offset="0%" stopColor="#fef3c7" stopOpacity="0.9" />
-              <stop offset="20%" stopColor="#fbbf24" stopOpacity="0.5" />
-              <stop offset="50%" stopColor="#f97316" stopOpacity="0.2" />
+            {/* Warm horizon glow */}
+            <radialGradient id="sunGlow" cx="0.5" cy="0.42" r="0.3">
+              <stop offset="0%" stopColor="#fef9c3" stopOpacity="0.7" />
+              <stop offset="40%" stopColor="#fde68a" stopOpacity="0.3" />
               <stop offset="100%" stopColor="#000" stopOpacity="0" />
             </radialGradient>
 
-            {/* Hill gradients (far to near) */}
+            {/* Ground/grass gradient — perspective floor */}
+            <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3d8b55" />
+              <stop offset="25%" stopColor="#2d7a42" />
+              <stop offset="60%" stopColor="#226b36" />
+              <stop offset="100%" stopColor="#1a5c2e" />
+            </linearGradient>
+
+            {/* Distant hill */}
             <linearGradient id="hillFar" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#1e3a2a" />
-              <stop offset="100%" stopColor="#162e20" />
+              <stop offset="0%" stopColor="#5da06e" />
+              <stop offset="100%" stopColor="#4a8c5c" />
             </linearGradient>
             <linearGradient id="hillMid" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#1a4a2e" />
-              <stop offset="100%" stopColor="#143822" />
-            </linearGradient>
-            <linearGradient id="hillNear" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#1c5c34" />
-              <stop offset="100%" stopColor="#0f3d1e" />
-            </linearGradient>
-            <linearGradient id="hillClosest" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#16492a" />
-              <stop offset="100%" stopColor="#0a2e16" />
+              <stop offset="0%" stopColor="#4a8c5c" />
+              <stop offset="100%" stopColor="#3a7d4c" />
             </linearGradient>
 
-            {/* Trail/path gradient */}
-            <linearGradient id="trailGrad" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stopColor="#d4a574" />
-              <stop offset="30%" stopColor="#c09660" />
-              <stop offset="60%" stopColor="#a8845a" />
-              <stop offset="100%" stopColor="#8a7050" />
+            {/* Trail / dirt path */}
+            <linearGradient id="trailGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#b89a6a" />
+              <stop offset="40%" stopColor="#c9a87a" />
+              <stop offset="100%" stopColor="#d4b48a" />
             </linearGradient>
-
-            {/* Grass texture pattern */}
-            <pattern id="grassTex" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
-              <rect width="6" height="6" fill="transparent" />
-              <line x1="1" y1="6" x2="2" y2="3" stroke="#2a7040" strokeWidth="0.5" opacity="0.3" />
-              <line x1="4" y1="6" x2="4.5" y2="4" stroke="#1f5530" strokeWidth="0.4" opacity="0.2" />
-            </pattern>
+            <linearGradient id="trailEdge" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#8a7050" />
+              <stop offset="100%" stopColor="#9a8060" />
+            </linearGradient>
           </defs>
 
-          {/* ─── SKY ─── */}
-          <rect width="960" height="420" fill="url(#skyWarm)" />
+          {/* ─── SKY (bright, clear, inviting) ─── */}
+          <rect width="960" height="340" fill="url(#skyWarm)" />
+          <rect x="0" y="60" width="960" height="120" fill="url(#sunGlow)" />
 
-          {/* Stars (subtle, upper sky) */}
+          {/* Clouds — soft, white, daytime */}
           <g opacity="0.6">
-            <circle cx="120" cy="30" r="1" fill="#e2e8f0" />
-            <circle cx="250" cy="55" r="0.8" fill="#e2e8f0" />
-            <circle cx="380" cy="20" r="1.2" fill="#e2e8f0" />
-            <circle cx="600" cy="40" r="0.8" fill="#e2e8f0" />
-            <circle cx="720" cy="25" r="1" fill="#e2e8f0" />
-            <circle cx="850" cy="50" r="0.7" fill="#e2e8f0" />
-            <circle cx="180" cy="65" r="0.6" fill="#e2e8f0" />
-            <circle cx="500" cy="15" r="0.9" fill="#e2e8f0" />
-            <circle cx="790" cy="60" r="0.8" fill="#e2e8f0" />
+            <ellipse cx="160" cy="40" rx="55" ry="12" fill="#ffffff" />
+            <ellipse cx="190" cy="38" rx="35" ry="9" fill="#ffffff" opacity="0.8" />
+            <ellipse cx="650" cy="55" rx="65" ry="14" fill="#ffffff" />
+            <ellipse cx="685" cy="52" rx="42" ry="10" fill="#ffffff" opacity="0.8" />
+            <ellipse cx="420" cy="28" rx="40" ry="10" fill="#ffffff" opacity="0.5" />
+            <ellipse cx="850" cy="35" rx="45" ry="11" fill="#ffffff" opacity="0.4" />
           </g>
 
-          {/* Sun/horizon glow */}
-          <rect x="0" y="100" width="960" height="220" fill="url(#sunGlow)" />
-
-          {/* Clouds */}
-          <g opacity="0.25">
-            <ellipse cx="200" cy="80" rx="60" ry="14" fill="#fde68a" />
-            <ellipse cx="230" cy="78" rx="40" ry="10" fill="#fef3c7" />
-            <ellipse cx="700" cy="95" rx="70" ry="16" fill="#fed7aa" />
-            <ellipse cx="735" cy="92" rx="45" ry="11" fill="#fef3c7" />
-            <ellipse cx="450" cy="65" rx="50" ry="12" fill="#fde68a" />
+          {/* Birds */}
+          <g stroke="#4b5563" strokeWidth="1" fill="none" opacity="0.3">
+            <path d="M 280 50 Q 284 46, 288 50 Q 292 46, 296 50" />
+            <path d="M 600 38 Q 603 35, 606 38 Q 609 35, 612 38" />
           </g>
 
-          {/* Birds (V shapes) */}
-          <g stroke="#1e1b4b" strokeWidth="1.2" fill="none" opacity="0.35">
-            <path d="M 300 70 Q 305 65, 310 70 Q 315 65, 320 70" />
-            <path d="M 620 55 Q 624 51, 628 55 Q 632 51, 636 55" />
-            <path d="M 500 85 Q 503 82, 506 85 Q 509 82, 512 85" />
-          </g>
-
-          {/* ─── HILL LAYERS (far → near, creating depth) ─── */}
-
-          {/* Farthest hills (horizon line) */}
+          {/* ─── DISTANT HILLS (horizon, y≈130) ─── */}
           <path
-            d="M 0 200 Q 120 160, 240 185 Q 360 210, 480 170 Q 600 130, 720 175 Q 840 210, 960 180 L 960 250 L 0 250 Z"
+            d="M 0 140 Q 150 115, 300 130 Q 420 145, 500 120 Q 620 100, 750 128 Q 870 148, 960 130 L 960 165 L 0 165 Z"
             fill="url(#hillFar)"
-            opacity="0.7"
+            opacity="0.65"
           />
-
-          {/* Mid hills */}
           <path
-            d="M 0 230 Q 100 195, 200 220 Q 330 250, 440 205 Q 550 165, 680 215 Q 800 255, 960 210 L 960 290 L 0 290 Z"
+            d="M 0 150 Q 200 130, 350 148 Q 480 162, 580 140 Q 700 120, 840 145 Q 920 158, 960 148 L 960 175 L 0 175 Z"
             fill="url(#hillMid)"
-            opacity="0.85"
+            opacity="0.8"
           />
 
-          {/* Trees on mid hills (simple triangles) */}
-          <g opacity="0.55">
-            {[80, 140, 200, 290, 750, 810, 870, 920].map((x, i) => {
-              const treeY = 225 + Math.sin(x * 0.02) * 15;
-              const h = 18 + (i % 3) * 6;
-              return (
-                <g key={`tree-far-${i}`}>
-                  <polygon
-                    points={`${x},${treeY} ${x - 5},${treeY + h} ${x + 5},${treeY + h}`}
-                    fill="#0f3d1e"
-                  />
-                  <polygon
-                    points={`${x},${treeY - 6} ${x - 4},${treeY + h * 0.55} ${x + 4},${treeY + h * 0.55}`}
-                    fill="#16492a"
-                  />
-                </g>
-              );
+          {/* Distant tiny trees on the hills */}
+          <g opacity="0.5">
+            {[60,120,180,260,700,760,820,900].map((x, i) => (
+              <polygon
+                key={`dt-${i}`}
+                points={`${x},${138 + Math.sin(x*0.03)*6} ${x-3},${148 + Math.sin(x*0.03)*6} ${x+3},${148 + Math.sin(x*0.03)*6}`}
+                fill="#3a6e48"
+              />
+            ))}
+          </g>
+
+          {/* ─── GREEN GROUND PLANE (perspective floor from horizon down) ─── */}
+          <rect x="0" y="160" width="960" height="180" fill="url(#groundGrad)" />
+
+          {/* Ground texture — subtle grass lines */}
+          <g opacity="0.15" stroke="#2a6b3a" strokeWidth="0.5">
+            {Array.from({length: 20}, (_, i) => {
+              const y = 170 + i * 8;
+              return <line key={`gl-${i}`} x1="0" y1={y} x2="960" y2={y} />;
             })}
           </g>
 
-          {/* Nearer hills */}
+          {/* ─── WINDING TRAIL — perspective correct (wide at bottom, narrow at horizon) ─── */}
+
+          {/* Trail: starts wide at bottom-center, curves left, then right into distance */}
+          {/* Shadow underneath */}
           <path
-            d="M 0 270 Q 160 240, 300 265 Q 420 285, 500 250 Q 600 220, 720 260 Q 850 295, 960 255 L 960 340 L 0 340 Z"
-            fill="url(#hillNear)"
-          />
-
-          {/* Closer trees */}
-          <g opacity="0.7">
-            {[50, 130, 245, 350, 610, 690, 780, 880, 940].map((x, i) => {
-              const treeY = 258 + Math.sin(x * 0.03) * 12;
-              const h = 22 + (i % 4) * 5;
-              return (
-                <g key={`tree-near-${i}`}>
-                  <rect x={x - 1.5} y={treeY + h - 4} width="3" height="6" fill="#2d1f0e" rx="0.5" />
-                  <polygon
-                    points={`${x},${treeY} ${x - 7},${treeY + h} ${x + 7},${treeY + h}`}
-                    fill="#134a25"
-                  />
-                  <polygon
-                    points={`${x},${treeY - 8} ${x - 5.5},${treeY + h * 0.5} ${x + 5.5},${treeY + h * 0.5}`}
-                    fill="#1a5c32"
-                  />
-                </g>
-              );
-            })}
-          </g>
-
-          {/* Closest foreground hill */}
-          <path
-            d="M 0 310 Q 200 290, 380 310 Q 480 320, 580 305 Q 750 285, 960 310 L 960 420 L 0 420 Z"
-            fill="url(#hillClosest)"
-          />
-
-          {/* Grass overlay texture */}
-          <path
-            d="M 0 310 Q 200 290, 380 310 Q 480 320, 580 305 Q 750 285, 960 310 L 960 420 L 0 420 Z"
-            fill="url(#grassTex)"
-            opacity="0.4"
-          />
-
-          {/* ─── WINDING TRAIL (the path the student walks) ─── */}
-
-          {/* Trail shadow */}
-          <path
-            d={trailPath}
-            fill="none"
-            stroke="#0a2010"
-            strokeWidth="42"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity="0.25"
-          />
-
-          {/* Trail body */}
-          <path
-            d={trailPath}
-            fill="none"
-            stroke="url(#trailGrad)"
-            strokeWidth="36"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* Trail edge detail (darker border) */}
-          <path
-            d={trailPath}
-            fill="none"
-            stroke="#8b6f47"
-            strokeWidth="38"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            d="M 380 340 L 560 340 Q 580 300, 570 270 Q 555 235, 520 215 Q 490 200, 500 185 Q 510 172, 500 165 Q 490 160, 492 155 L 488 155 Q 470 160, 475 165 Q 485 172, 475 185 Q 465 200, 440 215 Q 400 235, 395 270 Q 388 300, 400 340 Z"
+            fill="#1a4a2e"
             opacity="0.3"
           />
+
+          {/* Trail edges (darker border) */}
           <path
-            d={trailPath}
-            fill="none"
-            stroke="url(#trailGrad)"
-            strokeWidth="33"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            d="M 375 340 L 565 340 Q 585 295, 575 265 Q 558 228, 525 210 Q 495 195, 505 182 Q 515 168, 503 160 Q 495 155, 495 150 L 485 150 Q 465 155, 470 162 Q 480 170, 470 184 Q 458 198, 430 212 Q 392 230, 385 268 Q 378 300, 395 340 Z"
+            fill="url(#trailEdge)"
           />
 
-          {/* Trail subtle center line (worn path) */}
+          {/* Trail body (lighter center) */}
           <path
-            d={trailPath}
+            d="M 390 340 L 550 340 Q 572 298, 565 268 Q 550 233, 520 216 Q 495 202, 502 186 Q 510 174, 500 164 Q 494 158, 493 153 L 487 153 Q 468 158, 474 166 Q 483 175, 474 188 Q 462 203, 438 218 Q 402 238, 395 270 Q 388 302, 400 340 Z"
+            fill="url(#trailGrad)"
+          />
+
+          {/* Worn center line */}
+          <path
+            d="M 470 340 Q 478 300, 480 270 Q 482 240, 490 218 Q 496 202, 492 188 Q 488 175, 490 165 Q 491 158, 490 153"
             fill="none"
             stroke="#dcc8a8"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeDasharray="8 12"
-            opacity="0.25"
+            strokeWidth="1.5"
+            strokeDasharray="6 8"
+            opacity="0.3"
           />
 
-          {/* ─── NEXT FLAG (further along the path) ─── */}
+          {/* ─── TREES (proper scale — TALL, flanking the path at the sides) ─── */}
+
+          {/* RIGHT SIDE TREES (near, big) */}
+          {/* Tree R1 — closest, partially cut off at right edge */}
+          <g>
+            <rect x="748" y="185" width="10" height="60" fill="#5c3a1e" rx="2" />
+            <ellipse cx="753" cy="185" rx="38" ry="50" fill="#2d7a42" />
+            <ellipse cx="753" cy="175" rx="30" ry="38" fill="#3a8c50" />
+            <ellipse cx="753" cy="168" rx="20" ry="25" fill="#4a9c60" opacity="0.6" />
+          </g>
+          {/* Tree R2 — medium distance */}
+          <g>
+            <rect x="668" y="178" width="7" height="40" fill="#5c3a1e" rx="1.5" />
+            <ellipse cx="672" cy="178" rx="26" ry="35" fill="#2a7040" />
+            <ellipse cx="672" cy="170" rx="20" ry="26" fill="#3a8550" />
+            <ellipse cx="672" cy="165" rx="14" ry="18" fill="#4a9560" opacity="0.5" />
+          </g>
+
+          {/* LEFT SIDE TREES (near, big) */}
+          {/* Tree L1 — closest, big */}
+          <g>
+            <rect x="175" y="182" width="10" height="55" fill="#5c3a1e" rx="2" />
+            <ellipse cx="180" cy="182" rx="35" ry="46" fill="#266e3a" />
+            <ellipse cx="180" cy="173" rx="28" ry="35" fill="#358a4a" />
+            <ellipse cx="180" cy="166" rx="18" ry="22" fill="#45a05a" opacity="0.6" />
+          </g>
+          {/* Tree L2 — medium distance */}
+          <g>
+            <rect x="268" y="176" width="7" height="38" fill="#5c3a1e" rx="1.5" />
+            <ellipse cx="272" cy="176" rx="24" ry="32" fill="#2a7040" />
+            <ellipse cx="272" cy="169" rx="18" ry="24" fill="#3a8550" />
+            <ellipse cx="272" cy="164" rx="12" ry="16" fill="#4a9560" opacity="0.5" />
+          </g>
+
+          {/* Medium-distance trees (smaller, further down the path) */}
+          <g opacity="0.8">
+            <rect x="598" y="170" width="5" height="26" fill="#5c3a1e" rx="1" />
+            <ellipse cx="601" cy="170" rx="16" ry="22" fill="#2d7a42" />
+            <ellipse cx="601" cy="165" rx="12" ry="16" fill="#3d8d52" />
+          </g>
+          <g opacity="0.8">
+            <rect x="338" y="168" width="5" height="24" fill="#5c3a1e" rx="1" />
+            <ellipse cx="341" cy="168" rx="15" ry="20" fill="#2a7040" />
+            <ellipse cx="341" cy="163" rx="11" ry="14" fill="#3d8d52" />
+          </g>
+
+          {/* Far trees (small, near horizon) */}
+          <g opacity="0.6">
+            <ellipse cx="560" cy="162" rx="10" ry="14" fill="#3a7d4c" />
+            <ellipse cx="410" cy="160" rx="9" ry="12" fill="#3a7d4c" />
+            <ellipse cx="630" cy="161" rx="8" ry="11" fill="#3a7d4c" />
+            <ellipse cx="350" cy="162" rx="7" ry="10" fill="#3a7d4c" />
+          </g>
+
+          {/* ─── NEXT FLAG (ahead on the trail, near the first curve) ─── */}
           {nextTopic && (
-            <g opacity="0.6">
-              {/* Flag pole */}
-              <line x1="520" y1="115" x2="520" y2="78" stroke="#8b6f47" strokeWidth="2.5" strokeLinecap="round" />
-              {/* Flag */}
-              <path d="M 520 78 L 540 84 L 520 90 Z" fill={getPalette(nextTopic.levelColor).flag} opacity="0.8" />
-              {/* Flag glow */}
-              <circle cx="520" cy="84" r="5" fill={getPalette(nextTopic.levelColor).primary} opacity="0.15" />
-              <text x="520" y="72" fill="#ffffff" fontFamily="sans-serif" fontSize="8" fontWeight="bold" textAnchor="middle" opacity="0.5">
+            <g opacity="0.55">
+              <line x1="495" y1="198" x2="495" y2="172" stroke="#8b6f47" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 495 172 L 510 177 L 495 182 Z" fill={getPalette(nextTopic.levelColor).flag} opacity="0.8" />
+              <circle cx="503" cy="177" r="4" fill={getPalette(nextTopic.levelColor).primary} opacity="0.12" />
+              <text x="495" y="168" fill="#374151" fontFamily="sans-serif" fontSize="7" fontWeight="bold" textAnchor="middle" opacity="0.6">
                 {currentIndex + 2}
               </text>
             </g>
           )}
 
-          {/* ─── CURRENT FLAG (at the bend, the student's position) ─── */}
+          {/* ─── CURRENT FLAG (beside the trail, near the student) ─── */}
           <g filter="url(#flagGlow)">
-            {/* Flag pole shadow */}
-            <line x1="381" y1="320" x2="381" y2="262" stroke="#0a2010" strokeWidth="4" strokeLinecap="round" opacity="0.25" />
-            {/* Flag pole */}
-            <line x1="380" y1="320" x2="380" y2="260" stroke="#d4a574" strokeWidth="3" strokeLinecap="round" />
-            {/* Pole top ornament */}
-            <circle cx="380" cy="258" r="3" fill={palette.primary} />
-            {/* Flag banner */}
+            <line x1="541" y1="270" x2="541" y2="218" stroke="#0a2010" strokeWidth="4" strokeLinecap="round" opacity="0.2" />
+            <line x1="540" y1="270" x2="540" y2="216" stroke="#b89a6a" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="540" cy="214" r="3.5" fill={palette.primary} />
             <path
-              d="M 380 262 L 406 270 L 404 276 L 380 280 Z"
+              d="M 540 218 L 564 226 L 562 232 L 540 238 Z"
               fill={palette.flag}
               stroke={palette.primary}
               strokeWidth="0.8"
-            >
-              {/* Subtle wave animation via CSS */}
-            </path>
-            {/* Flag inner detail */}
-            <path
-              d="M 384 268 L 400 273 L 399 276 L 384 276 Z"
-              fill={palette.glow}
-              opacity="0.35"
             />
-            {/* Flag glow circle */}
-            <circle cx="393" cy="271" r="14" fill={palette.primary} opacity="0.08" />
+            <path
+              d="M 544 223 L 559 228 L 558 232 L 544 232 Z"
+              fill={palette.glow}
+              opacity="0.3"
+            />
+            <circle cx="552" cy="228" r="12" fill={palette.primary} opacity="0.06" />
           </g>
-
-          {/* Current class number on flag */}
-          <text x="393" y="275" fill="#ffffff" fontFamily="sans-serif" fontSize="7" fontWeight="900" textAnchor="middle">
+          <text x="552" y="231" fill="#ffffff" fontFamily="sans-serif" fontSize="7" fontWeight="900" textAnchor="middle">
             {currentIndex + 1}
           </text>
 
-          {/* ─── PAST FLAGS (small markers behind the walker) ─── */}
+          {/* ─── PAST FLAG (behind, subtle) ─── */}
           {currentIndex > 0 && (
-            <g opacity="0.35">
-              <line x1="460" y1="365" x2="460" y2="340" stroke="#8b6f47" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M 460 340 L 472 344 L 460 348 Z" fill="#6b7280" />
-            </g>
-          )}
-          {currentIndex > 1 && (
-            <g opacity="0.2">
-              <line x1="490" y1="388" x2="490" y2="368" stroke="#8b6f47" strokeWidth="1.2" strokeLinecap="round" />
-              <path d="M 490 368 L 499 371 L 490 374 Z" fill="#6b7280" />
+            <g opacity="0.3">
+              <line x1="445" y1="310" x2="445" y2="286" stroke="#8b6f47" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M 445 286 L 456 290 L 445 294 Z" fill="#9ca3af" />
             </g>
           )}
 
-          {/* ─── WALKER / STUDENT (silhouette from behind, center-bottom) ─── */}
+          {/* ─── WALKER / STUDENT (first-person scale — large, bottom center) ─── */}
           <g
             style={{
               transform: `translateY(${walkOffset}px)`,
               transition: isTraveling ? 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'transform 0.8s ease-out',
             }}
           >
-            {/* Walker shadow on ground */}
-            <ellipse cx="430" cy="345" rx="14" ry="4" fill="#0a2010" opacity="0.35" />
+            {/* Shadow on ground */}
+            <ellipse cx="475" cy="330" rx="18" ry="5" fill="#1a4a2e" opacity="0.3" />
 
-            {/* Body (jacket / torso) */}
+            {/* Legs */}
+            <line x1="467" y1="312" x2="464" y2="330" stroke="#2c4a6e" strokeWidth="6" strokeLinecap="round" />
+            <line x1="483" y1="312" x2="486" y2="330" stroke="#2c4a6e" strokeWidth="6" strokeLinecap="round" />
+
+            {/* Shoes */}
+            <ellipse cx="463" cy="332" rx="6" ry="3" fill="#6b3a1e" />
+            <ellipse cx="487" cy="332" rx="6" ry="3" fill="#6b3a1e" />
+
+            {/* Body / torso */}
             <path
-              d="M 422 315 Q 420 325, 418 338 L 420 344 L 440 344 L 442 338 Q 440 325, 438 315 Z"
-              fill="#374151"
-              stroke="#1f2937"
-              strokeWidth="0.5"
+              d="M 463 278 Q 460 290, 458 305 L 460 312 L 490 312 L 492 305 Q 490 290, 487 278 Z"
+              fill="#475569"
+              stroke="#334155"
+              strokeWidth="0.8"
             />
 
             {/* Backpack */}
-            <rect x="424" y="312" width="12" height="18" rx="3" fill="#4b5563" stroke="#374151" strokeWidth="0.5" />
-            <rect x="426" y="315" width="8" height="4" rx="1" fill="#6b7280" opacity="0.4" />
-            {/* Backpack straps */}
-            <line x1="426" y1="312" x2="424" y2="320" stroke="#374151" strokeWidth="1" />
-            <line x1="434" y1="312" x2="436" y2="320" stroke="#374151" strokeWidth="1" />
-
-            {/* Head */}
-            <circle cx="430" cy="305" r="9" fill="#92400e" />
-            {/* Hair */}
-            <ellipse cx="430" cy="302" rx="9.5" ry="7" fill="#451a03" />
-            <path d="M 421 304 Q 425 298, 430 296 Q 435 298, 439 304" fill="#451a03" />
-
-            {/* Neck */}
-            <rect x="427" y="312" width="6" height="4" fill="#92400e" rx="1" />
+            <rect x="467" y="274" width="16" height="24" rx="4" fill="#64748b" stroke="#475569" strokeWidth="0.8" />
+            <rect x="469.5" y="278" width="11" height="5" rx="1.5" fill="#94a3b8" opacity="0.3" />
+            {/* Straps */}
+            <path d="M 469 274 Q 466 282, 464 288" fill="none" stroke="#475569" strokeWidth="1.5" />
+            <path d="M 481 274 Q 484 282, 486 288" fill="none" stroke="#475569" strokeWidth="1.5" />
 
             {/* Arms */}
-            <path d="M 422 318 Q 416 328, 414 336" fill="none" stroke="#374151" strokeWidth="4" strokeLinecap="round" />
-            <path d="M 438 318 Q 444 328, 446 336" fill="none" stroke="#374151" strokeWidth="4" strokeLinecap="round" />
+            <path d="M 463 282 Q 455 296, 452 308" fill="none" stroke="#475569" strokeWidth="5.5" strokeLinecap="round" />
+            <path d="M 487 282 Q 495 296, 498 308" fill="none" stroke="#475569" strokeWidth="5.5" strokeLinecap="round" />
 
-            {/* Legs */}
-            <line x1="425" y1="344" x2="423" y2="357" stroke="#1e3a5f" strokeWidth="4" strokeLinecap="round" />
-            <line x1="435" y1="344" x2="437" y2="357" stroke="#1e3a5f" strokeWidth="4" strokeLinecap="round" />
+            {/* Neck */}
+            <rect x="471" y="270" width="8" height="6" fill="#b07848" rx="2" />
 
-            {/* Shoes */}
-            <ellipse cx="422" cy="358" rx="4" ry="2.5" fill="#78350f" />
-            <ellipse cx="438" cy="358" rx="4" ry="2.5" fill="#78350f" />
+            {/* Head */}
+            <circle cx="475" cy="261" r="12" fill="#b07848" />
+            {/* Hair */}
+            <ellipse cx="475" cy="257" rx="12.5" ry="9" fill="#3b1a08" />
+            <path d="M 463 262 Q 468 254, 475 252 Q 482 254, 487 262" fill="#3b1a08" />
+
+            {/* Ear hint */}
+            <ellipse cx="462.5" cy="262" rx="2.5" ry="3.5" fill="#a06840" />
+            <ellipse cx="487.5" cy="262" rx="2.5" ry="3.5" fill="#a06840" />
           </g>
 
-          {/* ─── FOREGROUND GRASS BLADES ─── */}
-          <g opacity="0.6">
-            {[20, 60, 100, 160, 740, 800, 860, 920].map((x, i) => (
-              <g key={`grass-${i}`}>
-                <line
-                  x1={x}
-                  y1="420"
-                  x2={x + (i % 2 === 0 ? 3 : -3)}
-                  y2={400 - (i % 3) * 4}
-                  stroke="#1a5c32"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <line
-                  x1={x + 6}
-                  y1="420"
-                  x2={x + 8}
-                  y2={406 - (i % 2) * 5}
-                  stroke="#16492a"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </g>
-            ))}
+          {/* ─── Subtle flowers near path ─── */}
+          <g opacity="0.45">
+            <circle cx="560" cy="260" r="2" fill="#fbbf24" />
+            <circle cx="565" cy="263" r="1.5" fill="#fb923c" />
+            <circle cx="395" cy="285" r="2" fill="#f472b6" />
+            <circle cx="600" cy="245" r="1.5" fill="#e879f9" />
+            <circle cx="370" cy="250" r="1.8" fill="#60a5fa" />
           </g>
 
-          {/* Wildflowers near the path */}
-          <g opacity="0.5">
-            <circle cx="350" cy="330" r="2" fill="#fbbf24" />
-            <circle cx="355" cy="333" r="1.5" fill="#fb923c" />
-            <circle cx="500" cy="310" r="2" fill="#f472b6" />
-            <circle cx="505" cy="313" r="1.5" fill="#e879f9" />
-            <circle cx="310" cy="315" r="1.8" fill="#fbbf24" />
-            <circle cx="555" cy="300" r="1.5" fill="#60a5fa" />
-          </g>
-
-          {/* ─── Floating particles / fireflies ─── */}
+          {/* ─── Fireflies / particles ─── */}
           <g>
-            <circle cx="400" cy="280" r="1.5" fill="#fef3c7" opacity="0.5">
-              <animate attributeName="opacity" values="0.2;0.6;0.2" dur="3s" repeatCount="indefinite" />
-              <animate attributeName="cy" values="280;275;280" dur="4s" repeatCount="indefinite" />
+            <circle cx="550" cy="230" r="1.5" fill="#fef9c3" opacity="0.4">
+              <animate attributeName="opacity" values="0.15;0.5;0.15" dur="3s" repeatCount="indefinite" />
+              <animate attributeName="cy" values="230;225;230" dur="4s" repeatCount="indefinite" />
             </circle>
-            <circle cx="500" cy="250" r="1" fill="#fef3c7" opacity="0.4">
-              <animate attributeName="opacity" values="0.15;0.5;0.15" dur="2.5s" repeatCount="indefinite" />
-              <animate attributeName="cy" values="250;244;250" dur="3.5s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="340" cy="260" r="1.2" fill={palette.glow} opacity="0.3">
-              <animate attributeName="opacity" values="0.1;0.45;0.1" dur="3.8s" repeatCount="indefinite" />
-              <animate attributeName="cx" values="340;345;340" dur="5s" repeatCount="indefinite" />
+            <circle cx="400" cy="220" r="1" fill="#fef9c3" opacity="0.3">
+              <animate attributeName="opacity" values="0.1;0.4;0.1" dur="2.5s" repeatCount="indefinite" />
+              <animate attributeName="cy" values="220;215;220" dur="3.5s" repeatCount="indefinite" />
             </circle>
           </g>
         </svg>
 
         {/* ─── FLOATING STATION BADGE ─── */}
-        <div className="absolute top-4 left-0 right-0 z-10 pointer-events-none flex flex-col items-center px-4">
+        <div className="absolute top-3 left-0 right-0 z-10 pointer-events-none flex flex-col items-center px-4">
           <div
             className="px-4 sm:px-6 py-2 rounded-2xl border backdrop-blur-md transition-colors duration-700 text-center max-w-[92%] sm:max-w-lg shadow-2xl pointer-events-auto"
             style={{
-              backgroundColor: 'rgba(10, 20, 14, 0.88)',
+              backgroundColor: 'rgba(10, 20, 14, 0.82)',
               borderColor: `${palette.primary}44`,
-              boxShadow: `0 0 30px ${palette.primary}15, 0 4px 20px rgba(0,0,0,0.4)`,
+              boxShadow: `0 0 30px ${palette.primary}15, 0 4px 20px rgba(0,0,0,0.3)`,
             }}
           >
             <div

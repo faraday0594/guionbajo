@@ -3989,13 +3989,13 @@ export default function LessonPage() {
 
         if (isCancelledRef.current) return;
 
-        // ─── 3. Adaptive Lesson Generator with 12-second Cloud Timeout Safeguard ─
+        // ─── 3. Adaptive Lesson Generator with MiniMax M3 (70-second Safeguard) ─
         if (!data) {
           try {
-            setLoadingStage('Diseñando guion didáctico y plan pedagógico...');
+            setLoadingStage('Diseñando guion didáctico y plan pedagógico con MiniMax M3...');
             const genPromise = api.generateAdaptiveLesson(sublevelParam, classIndexParam, topicParam, loadAbortControllerRef.current?.signal);
             const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Adaptive generation timed out (12s limit)')), 12000)
+              setTimeout(() => reject(new Error('Adaptive generation timed out (70s limit)')), 70000)
             );
             const genRes: any = await Promise.race([genPromise, timeoutPromise]);
             if (isCancelledRef.current) return;

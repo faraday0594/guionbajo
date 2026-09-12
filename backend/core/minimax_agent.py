@@ -1586,6 +1586,7 @@ class TutorAgent:
             f"1. {'Explicaciones (tutor_says), pizarra (board_content) y tareas en español con ejemplos en inglés.' if is_a_level else 'Full English immersion.'}\n"
             f"2. En cada fase incluye 'target_audio_items' con las oraciones modelo en inglés y su traducción.\n"
             f"3. Prohibido contenido genérico o de otros temas: debe enseñar ESTRICTAMENTE '{topic}' ({grammar_target}).\n"
+            f"4. PAUTA DE EFICIENCIA PEDAGÓGICA: Sé didáctico, conciso y directo (cada 'tutor_says' de 2 a 4 oraciones bien formuladas). Evita divagaciones innecesarias.\n"
             f"Responde estrictamente con JSON con la clave 'phases'."
         )
         try:

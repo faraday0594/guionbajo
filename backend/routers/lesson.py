@@ -68,7 +68,8 @@ async def generate_adaptive_lesson(
     adaptive_plan = engine.compose_adaptive_plan(sublevel=sublevel, class_index=class_idx)
     topic = req.topic or adaptive_plan["core_topic"]
 
-    agent = TutorAgent(api_key=profile.minimax_api_key if profile else None)
+    profile_key = profile.minimax_api_key.strip() if profile and profile.minimax_api_key and profile.minimax_api_key.strip() else None
+    agent = TutorAgent(api_key=profile_key)
     prof_dict = {
         "current_sublevel": sublevel,
         "native_language": getattr(current_user, "native_language", "es"),
@@ -76,11 +77,13 @@ async def generate_adaptive_lesson(
         "total_xp": profile.total_xp if profile else 0,
     }
 
+    logger.info(f"Generating adaptive lesson with MiniMax M3 for topic: '{topic}', sublevel: '{sublevel}'...")
     try:
         script = await asyncio.wait_for(
             agent.generate_adaptive_lesson_script(topic, sublevel, prof_dict, adaptive_plan),
-            timeout=25.0
+            timeout=75.0
         )
+        logger.info(f"Successfully generated adaptive lesson with MiniMax M3 for '{topic}' ({len(script.get('phases', []))} phases)")
     except Exception as e:
         logger.warning(f"Adaptive lesson generation fallback triggered ({e}) for {topic}")
         is_a_level = sublevel.startswith("A1") or sublevel.startswith("A2")

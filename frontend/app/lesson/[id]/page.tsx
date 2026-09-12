@@ -3858,52 +3858,85 @@ export default function LessonPage() {
       try {
         let data: any = null;
 
-        if (lessonId && lessonId !== 'new' && !lessonId.startsWith('a1') && !lessonId.startsWith('a2') && !lessonId.startsWith('b1') && !lessonId.startsWith('b2')) {
+        // ─── 1. Checkpoint Resolution Upfront (for seamless class resumption) ───
+        let restoredCp: any = null;
+        try {
+          const raw = localStorage.getItem('guionbajo_lesson_checkpoint');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && (parsed.sublevel === sublevelParam || !sublevelParam)) {
+              restoredCp = parsed;
+            }
+          }
+        } catch (_) {}
+
+        if (!restoredCp) {
+          try {
+            const cpRes = await api.getLessonCheckpoint();
+            if (cpRes?.checkpoint) {
+              restoredCp = cpRes.checkpoint;
+            }
+          } catch (_) {}
+        }
+
+        // ─── 2. Fetch Existing Lesson from DB if In-Progress or ID provided ────
+        const candidateLessonId = (lessonId && lessonId !== 'new')
+          ? lessonId
+          : (restoredCp?.lesson_id && restoredCp.lesson_id !== 'new' ? restoredCp.lesson_id : null);
+
+        if (candidateLessonId) {
           try {
             if (isCancelledRef.current) return;
-            const existing = await api.getLesson(lessonId);
+            const existing = await api.getLesson(candidateLessonId);
             if (isCancelledRef.current) return;
-            const isTopicMismatch = Boolean(
-              topicParam &&
-              existing?.topic &&
-              topicParam.trim().toLowerCase() !== existing.topic.trim().toLowerCase()
-            );
 
-            if (existing && existing.script && existing.script.phases && !isTopicMismatch) {
+            if (existing && existing.script && Array.isArray(existing.script.phases) && existing.script.phases.length > 0) {
               data = {
-                 id: existing.id || lessonId,
-                 title: existing.topic || topicParam,
-                 sublevel: existing.sublevel || sublevelParam,
-                 phases: existing.script.phases || [],
+                id: existing.id || candidateLessonId,
+                title: existing.topic || topicParam,
+                sublevel: existing.sublevel || sublevelParam,
+                phases: existing.script.phases,
+                phonetic_focus: existing.phonetic_data || existing.script?.phonetic_focus,
+                archetype: existing.archetype || existing.script?.archetype,
               };
+              console.log('📌 Reanudando lección existente encontrada en DB:', data.id);
             }
           } catch (e) {
-            console.warn('Lesson ID not found in DB, generating new lesson script...');
+            console.warn('Candidate lesson ID not found in DB, proceeding to adaptive generator:', e);
           }
         }
 
         if (isCancelledRef.current) return;
 
+        // ─── 3. Adaptive Lesson Generator with 12-second Cloud Timeout Safeguard ─
         if (!data) {
           try {
-            const genRes = await api.generateAdaptiveLesson(sublevelParam, classIndexParam, topicParam, loadAbortControllerRef.current?.signal);
+            setLoadingStage('Diseñando guion didáctico y plan pedagógico...');
+            const genPromise = api.generateAdaptiveLesson(sublevelParam, classIndexParam, topicParam, loadAbortControllerRef.current?.signal);
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Adaptive generation timed out (12s limit)')), 12000)
+            );
+            const genRes: any = await Promise.race([genPromise, timeoutPromise]);
             if (isCancelledRef.current) return;
-            data = {
-              id: genRes.lesson_id || lessonId,
-              title: topicParam,
-              sublevel: sublevelParam,
-              phases: genRes.script?.phases || [],
-              phonetic_focus: genRes.adaptive_plan?.phonetic_focus || genRes.script?.phonetic_focus,
-              archetype: genRes.adaptive_plan?.archetype || genRes.script?.archetype,
-            };
 
-            if (genRes.lesson_id && typeof window !== 'undefined' && window.history.replaceState) {
-              const newUrl = `/lesson/${genRes.lesson_id}?topic=${encodeURIComponent(topicParam)}&sublevel=${encodeURIComponent(sublevelParam)}&class_index=${classIndexParam}`;
-              window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
+            if (genRes && genRes.script && Array.isArray(genRes.script.phases) && genRes.script.phases.length > 0) {
+              data = {
+                id: genRes.lesson_id || lessonId,
+                title: topicParam,
+                sublevel: sublevelParam,
+                phases: genRes.script.phases,
+                phonetic_focus: genRes.adaptive_plan?.phonetic_focus || genRes.script?.phonetic_focus,
+                archetype: genRes.adaptive_plan?.archetype || genRes.script?.archetype,
+              };
+
+              if (genRes.lesson_id && typeof window !== 'undefined' && window.history.replaceState) {
+                const newUrl = `/lesson/${genRes.lesson_id}?topic=${encodeURIComponent(topicParam)}&sublevel=${encodeURIComponent(sublevelParam)}&class_index=${classIndexParam}`;
+                window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
+              }
             }
           } catch (genErr: any) {
             if (isCancelledRef.current) return;
-            console.warn('generateAdaptiveLesson failed, activating rich offline lesson fallback:', genErr);
+            console.warn('generateAdaptiveLesson fallback activated:', genErr);
           }
         }
 
@@ -4387,44 +4420,10 @@ export default function LessonPage() {
 
         if (isCancelledRef.current) return;
         setLesson(data);
-
-        // 🎨 Pre-generate & preload Phase 0's image with MiniMax image-01 so the lesson NEVER starts without it
-        setLoadingStage('Generando ilustración didáctica con MiniMax IA (image-01)...');
-        const initialImageUrl = await fetchPhaseImage(0, topicParam, data.phases[0]);
-        console.log('🎨 Phase 0 MiniMax image ready:', initialImageUrl);
-
-        if (isCancelledRef.current) return;
-
-        // Preload image in browser before revealing UI so it appears immediately with 0 delay
-        setLoadingStage('Precargando pizarra interactiva...');
-        await preloadImage(initialImageUrl, 5000).catch(() => {});
-
-        if (isCancelledRef.current) return;
-
         setImageLoading(false);
         setLoadingLesson(false);
 
-        // ─── Restore Checkpoint / Savepoint ──────────────────────────────────
-        let restoredCp: any = null;
-        try {
-          const raw = localStorage.getItem('guionbajo_lesson_checkpoint');
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (parsed && (parsed.sublevel === sublevelParam || !sublevelParam)) {
-              restoredCp = parsed;
-            }
-          }
-        } catch (_) {}
-
-        if (!restoredCp) {
-          try {
-            const cpRes = await api.getLessonCheckpoint();
-            if (cpRes?.checkpoint) {
-              restoredCp = cpRes.checkpoint;
-            }
-          } catch (_) {}
-        }
-
+        // ─── 4. Restore Checkpoint / Savepoint State ─────────────────────────
         if (restoredCp) {
           if (restoredCp.quiz_score) setQuizScore(restoredCp.quiz_score);
           if (restoredCp.quiz_completed) setQuizCompleted(true);
@@ -4462,9 +4461,16 @@ export default function LessonPage() {
           }
         }
 
-        // 🚀 NON-BLOCKING BACKGROUND WORKER: Sequentially pre-generate remaining slide images with MiniMax
+        // 🚀 NON-BLOCKING BACKGROUND WORKER: Fetch Phase 0 illustration and remaining slides
         (async () => {
-          for (let i = 1; i < data.phases.length; i++) {
+          if (data.phases && data.phases[0]) {
+            try {
+              await fetchPhaseImage(0, topicParam, data.phases[0]);
+            } catch (p0Err) {
+              console.warn('Non-blocking Phase 0 image generation error:', p0Err);
+            }
+          }
+          for (let i = 1; i < (data.phases?.length || 0); i++) {
             if (isCancelledRef.current) return;
             try {
               await new Promise(r => setTimeout(r, 1200));
@@ -4478,8 +4484,14 @@ export default function LessonPage() {
 
       } catch (err: any) {
         if (isCancelledRef.current || err?.name === 'AbortError') return;
-        console.error('Failed to load lesson:', err);
-        toast.error('Error al conectar con el servidor.');
+        console.error('Failed to load lesson, applying emergency fallback:', err);
+        const emergencyFallback = buildFrontendOfflineLesson(
+          topicParam || 'English Practice',
+          sublevelParam || 'A1.1',
+          lessonId || `emergency-${Date.now()}`
+        );
+        setLesson(emergencyFallback);
+        setImageLoading(false);
         setLoadingLesson(false);
       }
     }
@@ -5332,7 +5344,7 @@ export default function LessonPage() {
 
   if (loadingLesson) {
     return (
-      <div className="min-h-screen bg-brand-dark flex flex-col items-center justify-center text-white p-6 relative overflow-hidden">
+      <div className="min-h-[100dvh] h-[100dvh] bg-brand-dark flex flex-col items-center justify-center text-white p-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(108,99,255,0.15),_transparent_70%)] pointer-events-none" />
         <div className="relative mb-6">
           <div className="w-20 h-20 rounded-full bg-brand-accent/20 border-2 border-brand-accent flex items-center justify-center animate-ping absolute inset-0 pointer-events-none" />
@@ -5651,7 +5663,7 @@ export default function LessonPage() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-dark flex flex-col h-screen overflow-hidden text-white relative">
+    <div className="min-h-[100dvh] h-[100dvh] max-h-[100dvh] bg-brand-dark flex flex-col overflow-hidden text-white relative">
       {/* 🌊 Dynamic ambient background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div

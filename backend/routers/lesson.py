@@ -77,7 +77,7 @@ async def generate_adaptive_lesson(
     try:
         script = await asyncio.wait_for(
             agent.generate_adaptive_lesson_script(topic, sublevel, prof_dict, adaptive_plan),
-            timeout=120.0
+            timeout=25.0
         )
     except Exception as e:
         logger.warning(f"Adaptive lesson generation fallback triggered ({e}) for {topic}")
@@ -326,6 +326,15 @@ async def get_lesson(
         # Fallback lookup without user_id filter for seamless multi-device or fresh sessions
         result_any = await db.execute(select(LessonHistory).where(LessonHistory.id == lesson_id))
         lesson = result_any.scalars().first()
+
+    if not lesson and current_user:
+        # Fallback to most recent in-progress lesson for current student
+        recent_res = await db.execute(
+            select(LessonHistory)
+            .where(LessonHistory.user_id == current_user.id)
+            .order_by(LessonHistory.completed_at.desc())
+        )
+        lesson = recent_res.scalars().first()
 
     if not lesson:
         raise HTTPException(status_code=404, detail="Lección no encontrada")

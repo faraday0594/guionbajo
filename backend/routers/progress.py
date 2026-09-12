@@ -30,12 +30,20 @@ async def get_progress_stats(current_user: User = Depends(get_current_user), db:
     k_map = dict(profile.knowledge_map or {})
     active_cp = k_map.get("active_checkpoint")
     current_class_idx = k_map.get("current_class_index", 1)
+    user_sublevel = profile.current_sublevel or "A1.1"
+
+    # Strict isolation: filter out active_cp if belonging to a different class index or sublevel
+    if active_cp:
+        cp_class_idx = active_cp.get("class_index")
+        cp_sublevel = active_cp.get("sublevel")
+        if (cp_class_idx is not None and int(cp_class_idx) != int(current_class_idx)) or (cp_sublevel and cp_sublevel != user_sublevel):
+            active_cp = None
 
     return {
         "total_xp": profile.total_xp,
         "streak_days": profile.streak_days,
         "current_level": profile.current_level,
-        "current_sublevel": profile.current_sublevel,
+        "current_sublevel": user_sublevel,
         "current_class_index": current_class_idx,
         "active_checkpoint": active_cp,
     }

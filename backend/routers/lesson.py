@@ -307,10 +307,21 @@ async def get_lesson_checkpoint(
     k_map = dict(profile.knowledge_map or {})
     active_cp = k_map.get("active_checkpoint")
     current_class_idx = k_map.get("current_class_index", 1)
+    user_sublevel = profile.current_sublevel or "A1.1"
+
+    # Strict isolation: If active checkpoint belongs to a different class index or sublevel, discard and clear it
+    if active_cp:
+        cp_class_idx = active_cp.get("class_index")
+        cp_sublevel = active_cp.get("sublevel")
+        if (cp_class_idx is not None and int(cp_class_idx) != int(current_class_idx)) or (cp_sublevel and cp_sublevel != user_sublevel):
+            active_cp = None
+            k_map["active_checkpoint"] = None
+            profile.knowledge_map = k_map
+            await db.commit()
 
     return {
         "checkpoint": active_cp,
-        "current_sublevel": profile.current_sublevel or "A1.1",
+        "current_sublevel": user_sublevel,
         "current_class_index": current_class_idx,
     }
 

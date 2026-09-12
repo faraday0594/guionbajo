@@ -3341,9 +3341,12 @@ export default function LessonPage() {
           overall_score: compositeScore,
           is_completed: true,
         });
-        localStorage.removeItem('guionbajo_lesson_checkpoint');
       } catch (e) {
         console.warn('Save completed checkpoint error:', e);
+      } finally {
+        try {
+          localStorage.removeItem('guionbajo_lesson_checkpoint');
+        } catch (_) {}
       }
     } else {
       sfx.playMistake();
@@ -3398,9 +3401,12 @@ export default function LessonPage() {
         overall_score: Math.max(82, compositeScore),
         is_completed: true,
       });
-      localStorage.removeItem('guionbajo_lesson_checkpoint');
     } catch (e) {
       console.warn('Save completed checkpoint error:', e);
+    } finally {
+      try {
+        localStorage.removeItem('guionbajo_lesson_checkpoint');
+      } catch (_) {}
     }
 
     router.push('/dashboard');
@@ -3939,14 +3945,28 @@ export default function LessonPage() {
       try {
         let data: any = null;
 
-        // ─── 1. Checkpoint Resolution Upfront (for seamless class resumption) ───
+        // ─── 1. Checkpoint Resolution Upfront (Strict Class & Topic Isolation) ───
+        const isCpMatching = (cp: any) => {
+          if (!cp) return false;
+          if (sublevelParam && cp.sublevel && cp.sublevel !== sublevelParam) return false;
+          if (classIndexParam !== undefined && classIndexParam !== null && cp.class_index !== undefined && cp.class_index !== null) {
+            if (Number(cp.class_index) !== Number(classIndexParam)) return false;
+          }
+          if (topicParam && cp.topic && cp.topic.toLowerCase().trim() !== topicParam.toLowerCase().trim()) return false;
+          if (lessonId && lessonId !== 'new' && cp.lesson_id && cp.lesson_id !== lessonId) return false;
+          return true;
+        };
+
         let restoredCp: any = null;
         try {
           const raw = localStorage.getItem('guionbajo_lesson_checkpoint');
           if (raw) {
             const parsed = JSON.parse(raw);
-            if (parsed && (parsed.sublevel === sublevelParam || !sublevelParam)) {
+            if (isCpMatching(parsed)) {
               restoredCp = parsed;
+            } else {
+              // Outdated or mismatched checkpoint from an earlier class — purge to avoid contamination
+              localStorage.removeItem('guionbajo_lesson_checkpoint');
             }
           }
         } catch (_) {}
@@ -3954,7 +3974,7 @@ export default function LessonPage() {
         if (!restoredCp) {
           try {
             const cpRes = await api.getLessonCheckpoint();
-            if (cpRes?.checkpoint) {
+            if (cpRes?.checkpoint && isCpMatching(cpRes.checkpoint)) {
               restoredCp = cpRes.checkpoint;
             }
           } catch (_) {}
@@ -3963,7 +3983,7 @@ export default function LessonPage() {
         // ─── 2. Fetch Existing Lesson from DB if In-Progress or ID provided ────
         const candidateLessonId = (lessonId && lessonId !== 'new')
           ? lessonId
-          : (restoredCp?.lesson_id && restoredCp.lesson_id !== 'new' ? restoredCp.lesson_id : null);
+          : (restoredCp?.lesson_id && restoredCp.lesson_id !== 'new' && isCpMatching(restoredCp) ? restoredCp.lesson_id : null);
 
         if (candidateLessonId) {
           try {
@@ -4504,12 +4524,15 @@ export default function LessonPage() {
         setImageLoading(false);
         setLoadingLesson(false);
 
-        // ─── 4. Restore Checkpoint / Savepoint State ─────────────────────────
-        if (restoredCp) {
+        // ─── 4. Restore Checkpoint / Savepoint State (Strict Pedagogical Sequence) ───
+        if (restoredCp && isCpMatching(restoredCp)) {
+          const isQuizPassed = Boolean(restoredCp.quiz_completed && (restoredCp.quiz_score || 0) >= 80);
+          const isReadingPassed = Boolean(restoredCp.reading_completed);
+
           if (restoredCp.quiz_score) setQuizScore(restoredCp.quiz_score);
-          if (restoredCp.quiz_completed) setQuizCompleted(true);
+          if (isQuizPassed) setQuizCompleted(true);
           if (restoredCp.reading_score) setReadingScore(restoredCp.reading_score);
-          if (restoredCp.reading_completed) setReadingCompleted(true);
+          if (isReadingPassed) setReadingCompleted(true);
           if (restoredCp.mystery_word_score) setMysteryWordScore(restoredCp.mystery_word_score);
           if (restoredCp.mystery_word_completed) setMysteryWordCompleted(true);
           if (restoredCp.twin_cards_score) setTwinCardsScore(restoredCp.twin_cards_score);
@@ -4518,16 +4541,20 @@ export default function LessonPage() {
           if (restoredCp.pov_quest_completed) setPovQuestCompleted(true);
 
           if (searchParams.get('resume') === 'true' || (restoredCp.current_slide && restoredCp.current_slide > 0) || (restoredCp.view_mode && restoredCp.view_mode !== 'board')) {
-            if (restoredCp.view_mode === 'games') {
+            // STRICT PEDAGOGICAL GATEKEEPER:
+            // 1. Can ONLY be in 'games' if BOTH quiz AND reading are completed!
+            // 2. Can ONLY be in 'reading' if quiz is completed!
+            // 3. Otherwise, MUST be in 'board' at the saved explanation slide!
+            if (restoredCp.view_mode === 'games' && isQuizPassed && isReadingPassed) {
               setViewMode('games');
               toast('🎮 Reanudando en la Zona de Juegos.', { icon: '🎮' });
-            } else if (restoredCp.view_mode === 'reading') {
+            } else if ((restoredCp.view_mode === 'reading' || restoredCp.view_mode === 'games') && isQuizPassed) {
               setViewMode('reading');
               toast('📖 Reanudando en la Práctica de Lectura IPA.', { icon: '📖' });
             } else {
               setViewMode('board');
               const savedSlide = Math.min(Math.max(0, restoredCp.current_slide || 0), (data.phases?.length || 1) - 1);
-              if (!restoredCp.quiz_completed && data.phases?.[savedSlide]?.is_practice_slide) {
+              if (!isQuizPassed && data.phases?.[savedSlide]?.is_practice_slide) {
                 setCurrentPhaseIdx(savedSlide);
                 setPracticeProgress({ correctCount: 0, totalCount: data.phases[savedSlide].exercises?.length || 8, isUnlocked: false });
                 toast('📝 Examen de la lección pendiente: debes completarlo desde el inicio.', {
@@ -5881,15 +5908,22 @@ export default function LessonPage() {
 
             <button
               onClick={() => {
+                if (!quizCompleted) {
+                  sfx.playMistake();
+                  toast.error('🔒 Completa la explicación y el examen para desbloquear la Lectura.', { id: 'reading-locked-tab' });
+                  return;
+                }
                 stopCurrentAudio();
                 setViewMode('reading');
               }}
               className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all font-semibold text-xs ${
                 viewMode === 'reading'
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25'
-                  : 'text-brand-text-muted hover:text-white'
+                  : quizCompleted
+                    ? 'text-brand-text-muted hover:text-white cursor-pointer'
+                    : 'text-zinc-600 opacity-60 cursor-not-allowed'
               }`}
-              title="Lectura con Fonética IPA"
+              title={quizCompleted ? "Lectura con Fonética IPA" : "Completa el examen para desbloquear"}
             >
               <BookOpen size={13} className={viewMode === 'reading' ? 'text-yellow-300 animate-pulse' : ''} />
               <span>Lectura 📖</span>
@@ -5897,15 +5931,22 @@ export default function LessonPage() {
 
             <button
               onClick={() => {
+                if (!quizCompleted || !readingCompleted) {
+                  sfx.playMistake();
+                  toast.error('🔒 Completa el examen y la lectura IPA para desbloquear la Zona de Juegos.', { id: 'games-locked-tab' });
+                  return;
+                }
                 stopCurrentAudio();
                 setViewMode('games');
               }}
               className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all font-semibold text-xs ${
                 viewMode === 'games'
                   ? 'bg-gradient-to-r from-brand-accent to-brand-cyan text-white shadow-md shadow-brand-accent/25'
-                  : 'text-brand-text-muted hover:text-white'
+                  : (quizCompleted && readingCompleted)
+                    ? 'text-brand-text-muted hover:text-white cursor-pointer'
+                    : 'text-zinc-600 opacity-60 cursor-not-allowed'
               }`}
-              title="Zona de Juegos"
+              title={(quizCompleted && readingCompleted) ? "Zona de Juegos" : "Completa el examen y la lectura para desbloquear"}
             >
               <Gamepad2 size={13} className={viewMode === 'games' ? 'text-brand-gold animate-bounce' : ''} />
               <span>Juegos 🎮</span>

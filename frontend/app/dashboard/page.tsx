@@ -255,11 +255,16 @@ export default function DashboardPage() {
             const saved = localStorage.getItem('guionbajo_lesson_checkpoint');
             if (saved) {
               const parsed = JSON.parse(saved);
-              if (parsed && (!parsed.sublevel || parsed.sublevel === userSublevel)) {
+              if (parsed && (!parsed.sublevel || parsed.sublevel === userSublevel) && (!parsed.class_index || Number(parsed.class_index) === Number(classIdx))) {
                 cp = parsed;
+              } else {
+                localStorage.removeItem('guionbajo_lesson_checkpoint');
               }
             }
           } catch (_) {}
+        }
+        if (cp && cp.class_index && Number(cp.class_index) !== Number(classIdx)) {
+          cp = null;
         }
         setActiveCheckpoint(cp);
       } catch (err) {
@@ -277,13 +282,25 @@ export default function DashboardPage() {
   const handleLaunchMission = () => {
     const pensum = CEFR_PENSUM[userStats.current_sublevel] || CEFR_PENSUM['A1.1'];
     const activeMod = pensum.modules[currentClassIndex - 1] || pensum.modules[0];
-    const topic = activeCheckpoint?.topic || activeMod.topic || activeMod.title;
+    
+    // Strict isolation: ensure activeCheckpoint belongs to currentClassIndex
+    const isCpValid = activeCheckpoint &&
+      (!activeCheckpoint.sublevel || activeCheckpoint.sublevel === userStats.current_sublevel) &&
+      (!activeCheckpoint.class_index || Number(activeCheckpoint.class_index) === Number(currentClassIndex));
+    const validCp = isCpValid ? activeCheckpoint : null;
+
+    const topic = validCp?.topic || activeMod.topic || activeMod.title;
     const sublevel = userStats.current_sublevel;
     const classIdx = currentClassIndex;
-    const lessonId = activeCheckpoint?.lesson_id || 'new';
+    const lessonId = validCp?.lesson_id || 'new';
 
-    toast.success(`Continuando Clase ${classIdx}: "${topic}" (${sublevel})`);
-    router.push(`/lesson/${lessonId}?topic=${encodeURIComponent(topic)}&sublevel=${encodeURIComponent(sublevel)}&class_index=${classIdx}&resume=true`);
+    if (validCp) {
+      toast.success(`Continuando Clase ${classIdx}: "${topic}" (${sublevel})`);
+      router.push(`/lesson/${lessonId}?topic=${encodeURIComponent(topic)}&sublevel=${encodeURIComponent(sublevel)}&class_index=${classIdx}&resume=true`);
+    } else {
+      toast.success(`Iniciando Clase ${classIdx}: "${topic}" (${sublevel})`);
+      router.push(`/lesson/new?topic=${encodeURIComponent(topic)}&sublevel=${encodeURIComponent(sublevel)}&class_index=${classIdx}`);
+    }
   };
 
   const handleLogout = () => {

@@ -29,7 +29,7 @@ export default function JourneyVisualStage({
   const currentTopic: JourneyTopic = JOURNEY_TOPICS[currentIndex] || JOURNEY_TOPICS[0];
   const nextTopic: JourneyTopic | null = JOURNEY_TOPICS[currentIndex + 1] || null;
 
-  // Precomputed planks for the perspective boardwalk (scaled for viewBox 960x400)
+  // Precomputed planks for perspective boardwalk (scaled for viewBox 960x400)
   const planks = useMemo(() => {
     const list: Array<{ x1: number; y1: number; x2: number; y2: number; strokeWidth: number }> = [];
     let y = 395;
@@ -125,33 +125,32 @@ export default function JourneyVisualStage({
     }
   }, [targetIndex]);
 
-  // Minimap GPS point (x: 20 to 540, y: sinusoidal around y=35)
+  // Minimap GPS point calculation (x: 28 to 532, y: sinusoidal around y=36)
   const getMinimapPoint = (index: number) => {
     const total = 63;
     const t = Math.max(0, Math.min(1, index / total));
-    const x = 24 + t * (536 - 24);
+    const x = 28 + t * (532 - 28);
     const angle = t * Math.PI * 4;
-    const y = 35 - Math.sin(angle) * 12;
+    const y = 36 - Math.sin(angle) * 13;
     return { x, y };
   };
 
-  const minVisible = Math.max(0, currentIndex - 4);
-  const maxVisible = Math.min(JOURNEY_TOPICS.length - 1, currentIndex + 4);
+  const currentPoint = getMinimapPoint(currentIndex);
 
   return (
     <div className="w-full rounded-3xl overflow-hidden glass border border-brand-accent/30 shadow-2xl relative bg-[#04060d] mb-8">
       {/* ==================== STAGE HEADER HUD ==================== */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-5 py-2.5 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
-        <div className="flex items-center gap-2.5 pointer-events-auto">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 bg-gradient-to-b from-black/90 via-black/60 to-black/30 border-b border-white/10">
+        <div className="flex items-center gap-3">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center border transition-colors duration-700 shadow"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center border transition-colors duration-700 shadow-md flex-shrink-0"
             style={{
               borderColor: `${currentTopic.levelColor}66`,
               backgroundColor: `${currentTopic.levelColor}22`,
               color: currentTopic.levelColor,
             }}
           >
-            <Sparkles size={15} className="animate-spin" />
+            <Sparkles size={16} className="animate-spin" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -159,25 +158,31 @@ export default function JourneyVisualStage({
                 Ruta de Aprendizaje
               </span>
               <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border transition-colors duration-700 font-mono"
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors duration-700 font-mono"
                 style={{
                   borderColor: `${currentTopic.levelColor}66`,
                   backgroundColor: `${currentTopic.levelColor}22`,
                   color: currentTopic.levelColor,
                 }}
               >
-                {currentTopic.level}
+                NIVEL {currentTopic.level}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400">
-              64 Clases CEFR — Clase {currentIndex + 1}
+            <p className="text-[11px] text-slate-400">
+              64 Clases Oficiales CEFR — Estación {currentIndex + 1}
             </p>
           </div>
         </div>
 
         {/* Progress + Sound Toggle */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <div className="w-16 sm:w-20 h-1.5 bg-slate-800/90 rounded-full overflow-hidden border border-slate-700">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="text-right hidden sm:block">
+            <span className="text-[10px] uppercase font-bold text-slate-400 font-mono block">Ubicación</span>
+            <span className="text-xs font-bold font-mono" style={{ color: currentTopic.levelColor }}>
+              Clase {currentIndex + 1} de 64
+            </span>
+          </div>
+          <div className="w-14 sm:w-20 h-1.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
             <div
               className="h-full transition-all duration-700 rounded-full"
               style={{
@@ -186,21 +191,18 @@ export default function JourneyVisualStage({
               }}
             />
           </div>
-          <span className="text-[10px] font-bold text-slate-300 hidden sm:inline font-mono">
-            {currentIndex + 1}/64
-          </span>
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="p-1.5 rounded-lg glass hover:bg-slate-800/80 text-slate-400 hover:text-white transition border border-white/10"
             title={soundEnabled ? 'Silenciar' : 'Activar audio'}
           >
-            {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+            {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
         </div>
       </div>
 
-      {/* ==================== SVG 3D PERSPECTIVE STAGE ==================== */}
-      <div className={`relative w-full overflow-hidden ${isTraveling ? 'traveling' : ''}`} style={{ height: 'clamp(220px, 28vw, 320px)' }}>
+      {/* ==================== 3D PERSPECTIVE VISUAL STAGE (CLEAR & UNOBSTRUCTED) ==================== */}
+      <div className={`relative w-full h-[250px] sm:h-[300px] md:h-[360px] overflow-hidden ${isTraveling ? 'traveling' : ''}`}>
         <svg
           viewBox="0 0 960 400"
           preserveAspectRatio="xMidYMid slice"
@@ -246,19 +248,19 @@ export default function JourneyVisualStage({
             </linearGradient>
 
             <radialGradient id="portalFieldGrad" cx="0.5" cy="0.5" r="0.5">
-              <stop offset="0%" stopColor={currentTopic.levelColor} stopOpacity="0.32" />
+              <stop offset="0%" stopColor={currentTopic.levelColor} stopOpacity="0.35" />
               <stop offset="65%" stopColor="#00b0ff" stopOpacity="0.08" />
               <stop offset="100%" stopColor="#000000" stopOpacity="0" />
             </radialGradient>
           </defs>
 
-          {/* Sky */}
+          {/* Sky & Mountains */}
           <rect width="960" height="400" fill="url(#skyGrad)" />
           <path d="M 0 60 Q 240 40, 480 65 T 960 55 L 960 170 L 0 170 Z" fill="#0d141e" opacity="0.6" />
           <path d="M 0 95 Q 320 75, 640 100 T 960 85 L 960 185 L 0 185 Z" fill="#15202d" opacity="0.4" />
           <rect x="0" y="130" width="960" height="100" fill="url(#horizonGlow)" />
 
-          {/* Horizon lights */}
+          {/* Distant horizon station lights */}
           <g opacity="0.8">
             <circle cx="440" cy="178" r="2.5" fill="#fef08a" />
             <circle cx="460" cy="176" r="3" fill="#ffedd5" />
@@ -267,11 +269,11 @@ export default function JourneyVisualStage({
             <circle cx="520" cy="177" r="2.5" fill="#fde68a" />
           </g>
 
-          {/* Side terrain */}
+          {/* Lateral landscape */}
           <path d="M 0 185 Q 150 175, 390 190 L 390 250 L 0 270 Z" fill="#070a0f" />
           <path d="M 570 190 Q 800 180, 960 195 L 960 270 L 570 250 Z" fill="#070a0f" />
 
-          {/* Boardwalk */}
+          {/* 3D Boardwalk with geometric planks */}
           <g id="boardwalkGroup">
             <path d="M 60 400 L 380 175 L 580 175 L 900 400 Z" fill="url(#boardwalkGrad)" />
 
@@ -281,31 +283,31 @@ export default function JourneyVisualStage({
               ))}
             </g>
 
-            {/* Metal edges */}
+            {/* Metal guardrails */}
             <line x1="60" y1="400" x2="380" y2="175" stroke="#334155" strokeWidth="5" strokeLinecap="round" />
             <line x1="900" y1="400" x2="580" y2="175" stroke="#334155" strokeWidth="5" strokeLinecap="round" />
 
-            {/* Neon rails */}
-            <line x1="60" y1="398" x2="380" y2="175" stroke={currentTopic.levelColor} strokeWidth="2.5" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
-            <line x1="60" y1="398" x2="380" y2="175" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" />
-            <line x1="900" y1="398" x2="580" y2="175" stroke={currentTopic.levelColor} strokeWidth="2.5" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
-            <line x1="900" y1="398" x2="580" y2="175" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" />
+            {/* Neon Rails */}
+            <line x1="60" y1="398" x2="380" y2="175" stroke={currentTopic.levelColor} strokeWidth="3" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
+            <line x1="60" y1="398" x2="380" y2="175" stroke="#ffffff" strokeWidth="0.9" strokeLinecap="round" />
+            <line x1="900" y1="398" x2="580" y2="175" stroke={currentTopic.levelColor} strokeWidth="3" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
+            <line x1="900" y1="398" x2="580" y2="175" stroke="#ffffff" strokeWidth="0.9" strokeLinecap="round" />
 
-            {/* Center neon */}
-            <line x1="480" y1="400" x2="480" y2="175" stroke="#00b0ff" strokeWidth="2" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
-            <line x1="480" y1="400" x2="480" y2="175" stroke="#ffffff" strokeWidth="0.7" strokeLinecap="round" />
+            {/* Center neon guidance rail */}
+            <line x1="480" y1="400" x2="480" y2="175" stroke="#00b0ff" strokeWidth="2.5" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
+            <line x1="480" y1="400" x2="480" y2="175" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" />
 
-            {/* Speed streaks */}
+            {/* Speed streaks during warp */}
             {isTraveling && (
               <g className="animate-pulse">
-                <line x1="275" y1="330" x2="340" y2="270" stroke={currentTopic.levelColor} strokeWidth="2" strokeDasharray="10 20" />
-                <line x1="480" y1="345" x2="480" y2="280" stroke="#00b0ff" strokeWidth="2" strokeDasharray="12 22" />
-                <line x1="685" y1="330" x2="620" y2="270" stroke={currentTopic.levelColor} strokeWidth="2" strokeDasharray="10 20" />
+                <line x1="275" y1="330" x2="340" y2="270" stroke={currentTopic.levelColor} strokeWidth="2.5" strokeDasharray="10 20" />
+                <line x1="480" y1="345" x2="480" y2="280" stroke="#00b0ff" strokeWidth="2.5" strokeDasharray="12 22" />
+                <line x1="685" y1="330" x2="620" y2="270" stroke={currentTopic.levelColor} strokeWidth="2.5" strokeDasharray="10 20" />
               </g>
             )}
           </g>
 
-          {/* Distant portal (next topic) */}
+          {/* Distant Next Station */}
           {nextTopic && (
             <g
               id="distantPortalGroup"
@@ -325,7 +327,7 @@ export default function JourneyVisualStage({
             </g>
           )}
 
-          {/* Main Portal */}
+          {/* Main Active Station Portal */}
           <g
             id="portalGroup"
             style={{
@@ -335,176 +337,226 @@ export default function JourneyVisualStage({
               transition: isTraveling ? 'none' : 'transform 1.1s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.8s ease',
             }}
           >
-            {/* Energy core */}
-            <ellipse cx="480" cy="170" rx="120" ry="65" fill="url(#portalFieldGrad)" />
-            <ellipse cx="480" cy="170" rx="100" ry="52" fill="none" stroke={currentTopic.levelColor} strokeWidth="0.6" strokeDasharray="3 3" opacity="0.45" />
+            {/* Vortex core */}
+            <ellipse cx="480" cy="170" rx="125" ry="68" fill="url(#portalFieldGrad)" />
+            <ellipse cx="480" cy="170" rx="104" ry="54" fill="none" stroke={currentTopic.levelColor} strokeWidth="0.8" strokeDasharray="4 4" opacity="0.5" />
 
-            {/* Left column */}
+            {/* Left Column */}
             <polygon points="365,250 390,120 402,120 383,250" fill="url(#portalStrutGrad)" stroke="#475569" strokeWidth="0.8" />
-            <line x1="388" y1="120" x2="368" y2="250" stroke={currentTopic.levelColor} strokeWidth="2.5" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
-            <line x1="388" y1="120" x2="368" y2="250" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" />
+            <line x1="388" y1="120" x2="368" y2="250" stroke={currentTopic.levelColor} strokeWidth="3" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
+            <line x1="388" y1="120" x2="368" y2="250" stroke="#ffffff" strokeWidth="0.9" strokeLinecap="round" />
 
-            {/* Right column */}
+            {/* Right Column */}
             <polygon points="595,250 570,120 558,120 578,250" fill="url(#portalStrutGrad)" stroke="#475569" strokeWidth="0.8" />
-            <line x1="573" y1="120" x2="593" y2="250" stroke={currentTopic.levelColor} strokeWidth="2.5" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
-            <line x1="573" y1="120" x2="593" y2="250" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" />
+            <line x1="573" y1="120" x2="593" y2="250" stroke={currentTopic.levelColor} strokeWidth="3" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
+            <line x1="573" y1="120" x2="593" y2="250" stroke="#ffffff" strokeWidth="0.9" strokeLinecap="round" />
 
-            {/* Crown arch */}
+            {/* Crown Arch */}
             <path d="M 385 120 Q 480 100, 575 120 L 565 110 Q 480 92, 395 110 Z" fill="url(#portalStrutGrad)" stroke="#475569" strokeWidth="0.8" />
-            <path d="M 390 118 Q 480 100, 570 118" fill="none" stroke={currentTopic.levelColor} strokeWidth="2.5" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
-            <path d="M 390 118 Q 480 100, 570 118" fill="none" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" />
+            <path d="M 390 118 Q 480 100, 570 118" fill="none" stroke={currentTopic.levelColor} strokeWidth="3" strokeLinecap="round" filter="url(#neon-glow-dynamic)" />
+            <path d="M 390 118 Q 480 100, 570 118" fill="none" stroke="#ffffff" strokeWidth="0.9" strokeLinecap="round" />
           </g>
         </svg>
 
-        {/* ==================== HTML OVERLAY: Topic Label ==================== */}
-        <div className="absolute inset-0 z-10 pointer-events-none flex flex-col items-center" style={{ paddingTop: 'clamp(50px, 14%, 80px)' }}>
-          {/* Topic title badge */}
+        {/* ==================== CLEAN FLOATING STATION BADGE (ON THE PORTAL ARCH) ==================== */}
+        <div className="absolute top-4 left-0 right-0 z-10 pointer-events-none flex flex-col items-center px-4">
           <div
-            className="px-4 sm:px-6 py-2 rounded-xl border backdrop-blur-sm transition-colors duration-700 text-center max-w-[90%]"
+            className="px-4 sm:px-6 py-2 rounded-2xl border backdrop-blur-md transition-colors duration-700 text-center max-w-[92%] sm:max-w-lg shadow-2xl pointer-events-auto"
             style={{
-              backgroundColor: 'rgba(8, 14, 24, 0.88)',
-              borderColor: `${currentTopic.levelColor}55`,
-              boxShadow: `0 0 20px ${currentTopic.levelColor}22`,
+              backgroundColor: 'rgba(6, 10, 18, 0.88)',
+              borderColor: `${currentTopic.levelColor}66`,
+              boxShadow: `0 0 25px ${currentTopic.levelColor}25`,
             }}
           >
-            <div className="text-[10px] sm:text-xs font-bold tracking-widest font-mono mb-0.5" style={{ color: currentTopic.levelColor }}>
+            <div
+              className="text-[10px] sm:text-xs font-bold tracking-widest font-mono uppercase mb-0.5"
+              style={{ color: currentTopic.levelColor }}
+            >
               NIVEL {currentTopic.level} • {currentTopic.module} — CLASE {currentTopic.classNum}
             </div>
-            <div className="text-sm sm:text-base font-outfit font-black text-white tracking-wide leading-tight">
+            <div className="text-sm sm:text-base md:text-lg font-outfit font-black text-white tracking-wide leading-tight">
               {currentTopic.title.toUpperCase()}
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* 3 Pedagogical Pillars Card */}
-          <div
-            className="mt-3 sm:mt-4 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl border backdrop-blur-sm max-w-[88%] sm:max-w-md transition-colors duration-700"
-            style={{
-              backgroundColor: 'rgba(8, 14, 24, 0.82)',
-              borderColor: `${currentTopic.levelColor}33`,
-            }}
-          >
-            <div className="space-y-1.5">
-              <div>
-                <span className="text-[10px] sm:text-xs font-bold text-emerald-400">📘 GRAMÁTICA: </span>
-                <span className="text-[11px] sm:text-xs text-slate-200">{currentTopic.grammar}</span>
-              </div>
-              <div>
-                <span className="text-[10px] sm:text-xs font-bold text-sky-400">💬 VOCABULARIO: </span>
-                <span className="text-[11px] sm:text-xs text-slate-200">{currentTopic.vocab}</span>
-              </div>
-              <div>
-                <span className="text-[10px] sm:text-xs font-bold text-purple-400">🎙️ FONÉTICA: </span>
-                <span className="text-[11px] sm:text-xs text-slate-200">{currentTopic.phonetics}</span>
-              </div>
-            </div>
+      {/* ==================== 3 PEDAGOGICAL PILLARS (READABLE DEDICATED CARDS BELOW STAGE) ==================== */}
+      <div className="px-4 sm:px-6 py-3 bg-slate-950/80 border-t border-slate-800/80">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+          {/* Pilar 1: Gramática */}
+          <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30">
+            <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-0.5">
+              📘 Gramática
+            </span>
+            <p className="text-xs text-slate-200 leading-relaxed font-medium">
+              {currentTopic.grammar}
+            </p>
+          </div>
+
+          {/* Pilar 2: Vocabulario */}
+          <div className="p-3 rounded-xl bg-sky-950/20 border border-sky-500/30">
+            <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider block mb-0.5">
+              💬 Vocabulario
+            </span>
+            <p className="text-xs text-slate-200 leading-relaxed font-medium">
+              {currentTopic.vocab}
+            </p>
+          </div>
+
+          {/* Pilar 3: Fonética */}
+          <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-500/30">
+            <span className="text-[11px] font-bold text-purple-400 uppercase tracking-wider block mb-0.5">
+              🎙️ Fonética
+            </span>
+            <p className="text-xs text-slate-200 leading-relaxed font-medium">
+              {currentTopic.phonetics}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ==================== MINIMAPA RADAR GPS ==================== */}
-      <div className="px-4 sm:px-5 pt-3 pb-2 bg-slate-950/90 border-t border-slate-800/80">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: currentTopic.levelColor }} />
-          <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
-            GPS de Progreso — Clase {currentIndex + 1} de 64
+      {/* ==================== MINIMAPA RADAR GPS (CLEAN & CRYSTAL-CLEAR ON MOBILE) ==================== */}
+      <div className="px-4 sm:px-6 pt-3 pb-2 bg-slate-950/95 border-t border-slate-800/80">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: currentTopic.levelColor }} />
+            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+              Radar GPS — Estación {currentIndex + 1} de 64
+            </span>
+          </div>
+          <span className="text-[10px] font-mono text-slate-400">
+            {Math.round(((currentIndex + 1) / 64) * 100)}% de avance global
           </span>
         </div>
 
-        <svg width="100%" height="70" viewBox="0 0 560 70" preserveAspectRatio="xMidYMid meet" className="block">
-          <defs>
-            <filter id="miniGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
+        <div className="w-full overflow-hidden py-1">
+          <svg width="100%" height="68" viewBox="0 0 560 68" preserveAspectRatio="xMidYMid meet" className="block overflow-visible">
+            <defs>
+              <filter id="miniGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
 
-          {/* Grid line */}
-          <line x1="24" y1="35" x2="536" y2="35" stroke="#1e293b" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
+            {/* Radar Grid line */}
+            <line x1="28" y1="36" x2="532" y2="36" stroke="#1e293b" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
 
-          {/* 4 Colored segments (A1, A2, B1, B2) */}
-          <path d="M 24 42 Q 90 18, 156 35" fill="none" stroke="#00e676" strokeWidth="5" strokeLinecap="round" opacity="0.85" filter="url(#miniGlow)" />
-          <path d="M 24 42 Q 90 18, 156 35" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+            {/* 4 CEFR Level Segments (A1: Green, A2: Gold, B1: Cyan, B2: Magenta) */}
+            <path d="M 28 44 Q 92 18, 154 36" fill="none" stroke="#00e676" strokeWidth="5" strokeLinecap="round" opacity="0.85" filter="url(#miniGlow)" />
+            <path d="M 28 44 Q 92 18, 154 36" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
 
-          <path d="M 156 35 Q 220 52, 284 33" fill="none" stroke="#ffd600" strokeWidth="5" strokeLinecap="round" opacity="0.85" filter="url(#miniGlow)" />
-          <path d="M 156 35 Q 220 52, 284 33" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+            <path d="M 154 36 Q 218 54, 280 34" fill="none" stroke="#ffd600" strokeWidth="5" strokeLinecap="round" opacity="0.85" filter="url(#miniGlow)" />
+            <path d="M 154 36 Q 218 54, 280 34" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
 
-          <path d="M 284 33 Q 350 16, 412 35" fill="none" stroke="#00b0ff" strokeWidth="5" strokeLinecap="round" opacity="0.85" filter="url(#miniGlow)" />
-          <path d="M 284 33 Q 350 16, 412 35" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+            <path d="M 280 34 Q 344 16, 406 36" fill="none" stroke="#00b0ff" strokeWidth="5" strokeLinecap="round" opacity="0.85" filter="url(#miniGlow)" />
+            <path d="M 280 34 Q 344 16, 406 36" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
 
-          <path d="M 412 35 Q 476 54, 536 30" fill="none" stroke="#d500f9" strokeWidth="5" strokeLinecap="round" opacity="0.85" filter="url(#miniGlow)" />
-          <path d="M 412 35 Q 476 54, 536 30" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+            <path d="M 406 36 Q 470 56, 532 30" fill="none" stroke="#d500f9" strokeWidth="5" strokeLinecap="round" opacity="0.85" filter="url(#miniGlow)" />
+            <path d="M 406 36 Q 470 56, 532 30" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
 
-          {/* Level labels */}
-          <text x="90" y="12" fill="#00e676" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">A1</text>
-          <text x="220" y="66" fill="#ffd600" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">A2</text>
-          <text x="350" y="12" fill="#00b0ff" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">B1</text>
-          <text x="476" y="66" fill="#d500f9" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">B2</text>
+            {/* Level Sector Badges */}
+            <text x="92" y="14" fill="#00e676" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">A1</text>
+            <text x="218" y="65" fill="#ffd600" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">A2</text>
+            <text x="344" y="14" fill="#00b0ff" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">B1</text>
+            <text x="470" y="65" fill="#d500f9" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">B2</text>
 
-          {/* Dynamic position flags */}
-          <g id="minimapFlagsGroup">
+            {/* Milestone Route Dots */}
             {JOURNEY_TOPICS.map((t, idx) => {
+              if (idx === currentIndex) return null;
               const pt = getMinimapPoint(idx);
-              const isCurrent = idx === currentIndex;
               const isPast = idx < currentIndex;
-              const isPastVisible = idx >= minVisible && isPast;
-              const isNextVisible = idx > currentIndex && idx <= maxVisible;
-
-              if (isCurrent) {
-                return (
-                  <g key={t.id}>
-                    <circle cx={pt.x} cy={pt.y} r="10" fill={t.levelColor} fillOpacity="0.3" stroke={t.levelColor} strokeWidth="1.5" className="animate-ping" />
-                    <circle cx={pt.x} cy={pt.y} r="4.5" fill={t.levelColor} />
-                    <line x1={pt.x} y1={pt.y} x2={pt.x} y2={pt.y - 16} stroke="#ffffff" strokeWidth="1.5" />
-                    <polygon points={`${pt.x},${pt.y - 16} ${pt.x + 9},${pt.y - 12} ${pt.x},${pt.y - 8}`} fill={t.levelColor} stroke="#ffffff" strokeWidth="0.8" />
-                  </g>
-                );
-              }
-              if (isPastVisible) {
-                return (
-                  <g key={t.id} opacity="0.9">
-                    <circle cx={pt.x} cy={pt.y} r="2.5" fill={t.levelColor} />
-                    <line x1={pt.x} y1={pt.y} x2={pt.x} y2={pt.y - 12} stroke="#94a3b8" strokeWidth="1" />
-                    <polygon points={`${pt.x},${pt.y - 12} ${pt.x + 7},${pt.y - 9} ${pt.x},${pt.y - 6}`} fill={t.levelColor} />
-                  </g>
-                );
-              }
-              if (isNextVisible) {
-                return (
-                  <g key={t.id} opacity="0.5">
-                    <circle cx={pt.x} cy={pt.y} r="2.2" fill="none" stroke={t.levelColor} strokeWidth="1" />
-                    <line x1={pt.x} y1={pt.y} x2={pt.x} y2={pt.y - 12} stroke="#64748b" strokeWidth="1" strokeDasharray="2 1" />
-                    <polygon points={`${pt.x},${pt.y - 12} ${pt.x + 7},${pt.y - 9} ${pt.x},${pt.y - 6}`} fill="none" stroke={t.levelColor} strokeWidth="1" />
-                  </g>
-                );
-              }
               return (
-                <circle key={t.id} cx={pt.x} cy={pt.y} r="1.5" fill={t.levelColor} opacity={isPast ? 0.6 : 0.2} />
+                <circle
+                  key={t.id}
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={isPast ? 2.2 : 1.4}
+                  fill={t.levelColor}
+                  opacity={isPast ? 0.75 : 0.25}
+                />
               );
             })}
-          </g>
-        </svg>
+
+            {/* 📍 THE SOLE PROMINENT RADAR BEACON: CURRENT ACTIVE STATION */}
+            <g id="activeRadarBeacon">
+              {/* Pulsing Radar Ring */}
+              <circle
+                cx={currentPoint.x}
+                cy={currentPoint.y}
+                r="14"
+                fill={currentTopic.levelColor}
+                fillOpacity="0.25"
+                stroke={currentTopic.levelColor}
+                strokeWidth="1.5"
+                className="animate-ping"
+              />
+              {/* Solid Center Dot */}
+              <circle
+                cx={currentPoint.x}
+                cy={currentPoint.y}
+                r="4.5"
+                fill="#ffffff"
+                stroke={currentTopic.levelColor}
+                strokeWidth="2.5"
+              />
+              {/* Flagpole */}
+              <line
+                x1={currentPoint.x}
+                y1={currentPoint.y}
+                x2={currentPoint.x}
+                y2={currentPoint.y - 18}
+                stroke="#ffffff"
+                strokeWidth="1.8"
+              />
+              {/* Flag Banner */}
+              <polygon
+                points={`${currentPoint.x},${currentPoint.y - 18} ${currentPoint.x + 10},${currentPoint.y - 13.5} ${currentPoint.x},${currentPoint.y - 9}`}
+                fill={currentTopic.levelColor}
+                stroke="#ffffff"
+                strokeWidth="0.8"
+              />
+              {/* Active station text tag */}
+              <text
+                x={currentPoint.x}
+                y={currentPoint.y - 21}
+                fill="#ffffff"
+                fontFamily="sans-serif"
+                fontSize="9"
+                fontWeight="900"
+                textAnchor="middle"
+              >
+                TEMA {currentIndex + 1}
+              </text>
+            </g>
+          </svg>
+        </div>
       </div>
 
-      {/* ==================== CTA FOOTER WITH AVATAR ==================== */}
-      <div className="px-4 sm:px-5 pb-4 pt-2 bg-slate-950/90 flex items-center justify-between gap-3">
-        {/* Guion Bajo Avatar */}
-        <div className="flex items-center gap-3">
-          <TutorAvatar size="sm" emotion="happy" />
-          <div className="hidden sm:block">
-            <div className="text-xs font-bold text-white">¡Vamos a la clase!</div>
+      {/* ==================== CTA FOOTER WITH AVATAR & LAUNCH BUTTON ==================== */}
+      <div className="px-4 sm:px-6 py-3.5 bg-slate-950/95 border-t border-slate-800/80 flex items-center justify-between gap-3">
+        {/* Guion Bajo Mascot */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="w-11 h-11 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <TutorAvatar size="sm" emotion="happy" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-white leading-tight">
+              {currentTopic.level} — Clase {currentTopic.classNum}
+            </div>
             <div className="text-[10px] text-slate-400">
-              {activeCheckpoint ? 'Tienes progreso guardado' : `${currentTopic.level} — Clase ${currentTopic.classNum}`}
+              {activeCheckpoint ? 'Progreso guardado listo' : '5 minutos • interactivo'}
             </div>
           </div>
         </div>
 
-        {/* Launch Button */}
+        {/* Prominent Launch Action Button */}
         <button
           onClick={onLaunchClass}
-          className="px-5 sm:px-7 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+          className="px-5 sm:px-7 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2 active:scale-95 cursor-pointer flex-shrink-0"
         >
           <Play size={16} className="fill-current" />
           <span>

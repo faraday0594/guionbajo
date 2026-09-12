@@ -41,6 +41,8 @@ class LessonCheckpointRequest(BaseModel):
     mystery_word_score: int = 0
     twin_cards_completed: bool = False
     twin_cards_score: int = 0
+    pov_quest_completed: bool = False
+    pov_quest_score: int = 0
     overall_score: int = 0
     is_completed: bool = False
 
@@ -205,6 +207,8 @@ async def save_lesson_checkpoint(
         "mystery_word_score": req.mystery_word_score,
         "twin_cards_completed": req.twin_cards_completed,
         "twin_cards_score": req.twin_cards_score,
+        "pov_quest_completed": req.pov_quest_completed,
+        "pov_quest_score": req.pov_quest_score,
         "overall_score": req.overall_score,
         "is_completed": req.is_completed,
         "updated_at": datetime.utcnow().isoformat(),

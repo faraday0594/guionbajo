@@ -30,7 +30,25 @@ export default function JourneyVisualStage({
 }: JourneyVisualStageProps) {
   const targetIndex = useMemo(() => getTopicIndex(sublevel, classIndex), [sublevel, classIndex]);
 
-  const [currentIndex, setCurrentIndex] = useState<number>(targetIndex);
+  const [currentIndex, setCurrentIndex] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const justCompletedStr = localStorage.getItem('guionbajo_class_just_completed');
+        if (justCompletedStr) {
+          const data = JSON.parse(justCompletedStr);
+          return getTopicIndex(data.sublevel, data.classIndex);
+        }
+        const lastSeenStr = localStorage.getItem('guionbajo_last_seen_topic_index');
+        if (lastSeenStr !== null) {
+          const lastSeen = parseInt(lastSeenStr, 10);
+          if (!isNaN(lastSeen) && lastSeen < targetIndex) {
+            return lastSeen;
+          }
+        }
+      } catch (_) {}
+    }
+    return targetIndex;
+  });
   const [isTraveling, setIsTraveling] = useState(false);
   const [travelProgress, setTravelProgress] = useState(0); // 0 to 1 during walk
   const [travelFrom, setTravelFrom] = useState<number>(targetIndex);

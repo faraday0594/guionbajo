@@ -33,8 +33,10 @@ interface GameArenaProps {
   onBackToLesson?: () => void;
   mysteryWordCompleted?: boolean;
   twinCardsCompleted?: boolean;
-  onGameScoreUpdate?: (gameType: 'mystery_word' | 'twin_cards', score: number) => void;
+  povQuestCompleted?: boolean;
+  onGameScoreUpdate?: (gameType: 'mystery_word' | 'twin_cards' | 'pov_quest', score: number) => void;
   onFinishClass?: () => void;
+  onFinishAndGoToDashboard?: () => Promise<void> | void;
 }
 
 export default function GameArena({
@@ -44,13 +46,20 @@ export default function GameArena({
   onBackToLesson,
   mysteryWordCompleted = false,
   twinCardsCompleted = false,
+  povQuestCompleted = false,
   onGameScoreUpdate,
   onFinishClass,
+  onFinishAndGoToDashboard,
 }: GameArenaProps) {
   const router = useRouter();
   // Starts on the Game Hub Lobby panel so the user chooses their game first
   const [activeTab, setActiveTab] = useState<'lobby' | 'twin_cards' | 'mystery_word' | 'pov_quest'>('lobby');
   const [loading, setLoading] = useState(true);
+  const [localPovCompleted, setLocalPovCompleted] = useState(povQuestCompleted);
+
+  useEffect(() => {
+    if (povQuestCompleted) setLocalPovCompleted(true);
+  }, [povQuestCompleted]);
 
   const [mysteryWordData, setMysteryWordData] = useState<MysteryWordData | null>(null);
   const [twinCardsPairs, setTwinCardsPairs] = useState<TwinCardPairData[]>([]);
@@ -358,6 +367,11 @@ export default function GameArena({
     setLastFinishedGameType('pov_quest');
     setFinalScore(res.score);
     setMaxStreak(res.nodesCompleted);
+    setLocalPovCompleted(true);
+
+    if (onGameScoreUpdate) {
+      onGameScoreUpdate('pov_quest', res.score);
+    }
 
     try {
       const submitRes = await api.submitQuestScore({
@@ -458,9 +472,16 @@ export default function GameArena({
                 <div className="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
                   🎬
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-gradient-to-r from-purple-500/30 to-brand-cyan/30 border border-purple-400/40 text-purple-300 text-[10px] font-extrabold uppercase tracking-wider animate-pulse">
-                  Nuevo • Conversación
-                </span>
+                {(povQuestCompleted || localPovCompleted) ? (
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                    <CheckCircle2 size={11} />
+                    Completado
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-full bg-gradient-to-r from-purple-500/30 to-brand-cyan/30 border border-purple-400/40 text-purple-300 text-[10px] font-extrabold uppercase tracking-wider animate-pulse">
+                    Nuevo • Conversación
+                  </span>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -490,7 +511,7 @@ export default function GameArena({
                 type="button"
                 className="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-brand-cyan text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-purple-500/30 flex items-center justify-center gap-2 group-hover:opacity-95 transition-all"
               >
-                <span>Comenzar Misión POV</span>
+                <span>{(povQuestCompleted || localPovCompleted) ? 'Repetir Misión POV' : 'Comenzar Misión POV'}</span>
                 <ChevronRight size={16} />
               </button>
             </div>
@@ -788,7 +809,14 @@ export default function GameArena({
         }}
         onGoToDashboard={() => {
           stopTutorVoice();
-          router.push('/dashboard');
+          setShowReviewModal(false);
+          if (onFinishAndGoToDashboard) {
+            onFinishAndGoToDashboard();
+          } else if (onFinishClass) {
+            onFinishClass();
+          } else {
+            router.push('/dashboard');
+          }
         }}
       />
     </div>

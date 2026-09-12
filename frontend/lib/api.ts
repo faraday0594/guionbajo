@@ -197,6 +197,8 @@ export const api = {
     mystery_word_score?: number;
     twin_cards_completed?: boolean;
     twin_cards_score?: number;
+    pov_quest_completed?: boolean;
+    pov_quest_score?: number;
     overall_score?: number;
     is_completed?: boolean;
   }) =>

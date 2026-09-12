@@ -3194,6 +3194,8 @@ export default function LessonPage() {
   const [mysteryWordCompleted, setMysteryWordCompleted] = useState<boolean>(false);
   const [twinCardsScore, setTwinCardsScore] = useState<number>(0);
   const [twinCardsCompleted, setTwinCardsCompleted] = useState<boolean>(false);
+  const [povQuestScore, setPovQuestScore] = useState<number>(0);
+  const [povQuestCompleted, setPovQuestCompleted] = useState<boolean>(false);
   const [showGraduationModal, setShowGraduationModal] = useState<boolean>(false);
   const [showFailedScoreModal, setShowFailedScoreModal] = useState<boolean>(false);
   const [calculatedOverallScore, setCalculatedOverallScore] = useState<number>(0);
@@ -3226,6 +3228,8 @@ export default function LessonPage() {
     mysterySc?: number;
     twinDone?: boolean;
     twinSc?: number;
+    povDone?: boolean;
+    povSc?: number;
     completed?: boolean;
   }) => {
     const s = updates.slide !== undefined ? updates.slide : currentPhaseIdx;
@@ -3238,9 +3242,16 @@ export default function LessonPage() {
     const mwSc = updates.mysterySc !== undefined ? updates.mysterySc : mysteryWordScore;
     const twDone = updates.twinDone !== undefined ? updates.twinDone : twinCardsCompleted;
     const twSc = updates.twinSc !== undefined ? updates.twinSc : twinCardsScore;
+    const pvDone = updates.povDone !== undefined ? updates.povDone : povQuestCompleted;
+    const pvSc = updates.povSc !== undefined ? updates.povSc : povQuestScore;
 
-    const sumScores = (qDone ? qSc : 0) + (rDone ? rSc : 0) + (mwDone ? mwSc : 0) + (twDone ? twSc : 0);
-    const overall = Math.round(sumScores / 4);
+    const gameScoresList: number[] = [];
+    if (mwDone) gameScoresList.push(mwSc || 85);
+    if (twDone) gameScoresList.push(twSc || 85);
+    if (pvDone) gameScoresList.push(pvSc || 85);
+    const avgGame = gameScoresList.length > 0 ? Math.round(gameScoresList.reduce((a, b) => a + b, 0) / gameScoresList.length) : 85;
+
+    const overall = Math.round(((qDone ? qSc : 85) + (rDone ? rSc : 85) + avgGame * 2) / 4);
 
     const cpPayload = {
       lesson_id: lesson?.id || (lessonId !== 'new' ? lessonId : undefined),
@@ -3257,6 +3268,8 @@ export default function LessonPage() {
       mystery_word_score: mwSc,
       twin_cards_completed: twDone,
       twin_cards_score: twSc,
+      pov_quest_completed: pvDone,
+      pov_quest_score: pvSc,
       overall_score: overall,
       is_completed: Boolean(updates.completed),
     };
@@ -3270,24 +3283,31 @@ export default function LessonPage() {
     } catch (err) {
       console.warn('Error saving checkpoint:', err);
     }
-  }, [lesson, lessonId, topicParam, sublevelParam, classIndexParam, currentPhaseIdx, viewMode, quizCompleted, quizScore, readingCompleted, readingScore, mysteryWordCompleted, mysteryWordScore, twinCardsCompleted, twinCardsScore]);
+  }, [lesson, lessonId, topicParam, sublevelParam, classIndexParam, currentPhaseIdx, viewMode, quizCompleted, quizScore, readingCompleted, readingScore, mysteryWordCompleted, mysteryWordScore, twinCardsCompleted, twinCardsScore, povQuestCompleted, povQuestScore]);
 
   const handleEvaluateClassCompletion = async () => {
-    if (!mysteryWordCompleted) {
+    const hasCompletedAnyGame = mysteryWordCompleted || twinCardsCompleted || povQuestCompleted;
+    if (!hasCompletedAnyGame) {
       sfx.playMistake();
-      toast.error('⚠️ Tienes pendiente la Palabra Misteriosa. Debes descifrarla para evaluar la clase.', {
-        id: 'mystery-word-required',
+      toast.error('⚠️ Debes completar al menos una actividad didáctica (Misión POV, Palabra Misteriosa o Cartas Gemelas) para evaluar la clase.', {
+        id: 'game-required',
         duration: 4500,
       });
       return;
     }
 
-    const qSc = quizCompleted ? (quizScore || 85) : 0;
-    const rSc = readingCompleted ? (readingScore || 85) : 0;
-    const mwSc = mysteryWordCompleted ? (mysteryWordScore || 85) : 0;
-    const twSc = twinCardsCompleted ? (twinCardsScore || 85) : 80;
+    const qSc = quizCompleted ? (quizScore || 85) : 85;
+    const rSc = readingCompleted ? (readingScore || 85) : 85;
 
-    const compositeScore = Math.round((qSc + rSc + mwSc + twSc) / 4);
+    const gamesScores: number[] = [];
+    if (povQuestCompleted) gamesScores.push(povQuestScore || 85);
+    if (mysteryWordCompleted) gamesScores.push(mysteryWordScore || 85);
+    if (twinCardsCompleted) gamesScores.push(twinCardsScore || 85);
+    const avgGameScore = gamesScores.length > 0
+      ? Math.round(gamesScores.reduce((a, b) => a + b, 0) / gamesScores.length)
+      : 85;
+
+    const compositeScore = Math.round((qSc + rSc + avgGameScore * 2) / 4);
     setCalculatedOverallScore(compositeScore);
 
     if (compositeScore >= 80) {
@@ -3312,10 +3332,12 @@ export default function LessonPage() {
           quiz_score: qSc,
           reading_completed: true,
           reading_score: rSc,
-          mystery_word_completed: true,
-          mystery_word_score: mwSc,
-          twin_cards_completed: twinCardsCompleted,
-          twin_cards_score: twSc,
+          mystery_word_completed: Boolean(mysteryWordCompleted),
+          mystery_word_score: mysteryWordScore,
+          twin_cards_completed: Boolean(twinCardsCompleted),
+          twin_cards_score: twinCardsScore,
+          pov_quest_completed: Boolean(povQuestCompleted),
+          pov_quest_score: povQuestScore,
           overall_score: compositeScore,
           is_completed: true,
         });
@@ -3330,6 +3352,58 @@ export default function LessonPage() {
         completed: false,
       });
     }
+  };
+
+  // Direct approval and transition to dashboard from GameReviewModal
+  const handleFinishAndGoToDashboard = async () => {
+    const qSc = quizCompleted ? (quizScore || 85) : 85;
+    const rSc = readingCompleted ? (readingScore || 85) : 85;
+
+    const gamesScores: number[] = [];
+    if (povQuestCompleted) gamesScores.push(povQuestScore || 85);
+    if (mysteryWordCompleted) gamesScores.push(mysteryWordScore || 85);
+    if (twinCardsCompleted) gamesScores.push(twinCardsScore || 85);
+    const avgGameScore = gamesScores.length > 0
+      ? Math.round(gamesScores.reduce((a, b) => a + b, 0) / gamesScores.length)
+      : 85;
+
+    const compositeScore = Math.round((qSc + rSc + avgGameScore * 2) / 4);
+
+    try {
+      localStorage.setItem('guionbajo_class_just_completed', JSON.stringify({
+        sublevel: sublevelParam || 'A1.1',
+        classIndex: classIndexParam || 1,
+        timestamp: Date.now(),
+      }));
+    } catch (_) {}
+
+    try {
+      await api.saveLessonCheckpoint({
+        lesson_id: lesson?.id || (lessonId !== 'new' ? lessonId : undefined),
+        topic: topicParam,
+        sublevel: sublevelParam,
+        class_index: classIndexParam,
+        current_slide: currentPhaseIdx,
+        view_mode: 'games',
+        quiz_completed: true,
+        quiz_score: qSc,
+        reading_completed: true,
+        reading_score: rSc,
+        mystery_word_completed: Boolean(mysteryWordCompleted),
+        mystery_word_score: mysteryWordScore,
+        twin_cards_completed: Boolean(twinCardsCompleted),
+        twin_cards_score: twinCardsScore,
+        pov_quest_completed: Boolean(povQuestCompleted),
+        pov_quest_score: povQuestScore,
+        overall_score: Math.max(82, compositeScore),
+        is_completed: true,
+      });
+      localStorage.removeItem('guionbajo_lesson_checkpoint');
+    } catch (e) {
+      console.warn('Save completed checkpoint error:', e);
+    }
+
+    router.push('/dashboard');
   };
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [zoomedImageUrl, setZoomedImageUrl] = useState<string>('');
@@ -4440,6 +4514,8 @@ export default function LessonPage() {
           if (restoredCp.mystery_word_completed) setMysteryWordCompleted(true);
           if (restoredCp.twin_cards_score) setTwinCardsScore(restoredCp.twin_cards_score);
           if (restoredCp.twin_cards_completed) setTwinCardsCompleted(true);
+          if (restoredCp.pov_quest_score) setPovQuestScore(restoredCp.pov_quest_score);
+          if (restoredCp.pov_quest_completed) setPovQuestCompleted(true);
 
           if (searchParams.get('resume') === 'true' || (restoredCp.current_slide && restoredCp.current_slide > 0) || (restoredCp.view_mode && restoredCp.view_mode !== 'board')) {
             if (restoredCp.view_mode === 'games') {
@@ -5937,6 +6013,7 @@ export default function LessonPage() {
                 lessonId={lesson?.id || lessonId}
                 mysteryWordCompleted={mysteryWordCompleted}
                 twinCardsCompleted={twinCardsCompleted}
+                povQuestCompleted={povQuestCompleted}
                 onBackToLesson={() => {
                   setViewMode('board');
                   syncCheckpoint({ mode: 'board' });
@@ -5950,9 +6027,14 @@ export default function LessonPage() {
                     setTwinCardsCompleted(true);
                     setTwinCardsScore(score);
                     syncCheckpoint({ twinDone: true, twinSc: score });
+                  } else if (gameType === 'pov_quest') {
+                    setPovQuestCompleted(true);
+                    setPovQuestScore(score);
+                    syncCheckpoint({ povDone: true, povSc: score });
                   }
                 }}
                 onFinishClass={handleEvaluateClassCompletion}
+                onFinishAndGoToDashboard={handleFinishAndGoToDashboard}
               />
             ) : viewMode === 'reading' ? (
               /* ═══════════════════════════════════════════════════════════════════════
@@ -6844,8 +6926,12 @@ export default function LessonPage() {
                 </div>
                 <div className="p-3 rounded-2xl bg-black/50 border border-white/10">
                   <div className="text-[10px] text-zinc-400 uppercase font-bold">4. Juegos</div>
-                  <div className="text-base font-extrabold text-emerald-400">{mysteryWordScore || 85}%</div>
-                  <div className="text-[10px] text-zinc-400">Palabra Resuelta</div>
+                  <div className="text-base font-extrabold text-emerald-400">
+                    {povQuestCompleted ? (povQuestScore || 90) : mysteryWordCompleted ? (mysteryWordScore || 85) : twinCardsCompleted ? (twinCardsScore || 85) : 85}%
+                  </div>
+                  <div className="text-[10px] text-zinc-400">
+                    {povQuestCompleted ? 'Misión POV' : mysteryWordCompleted ? 'P. Misteriosa' : twinCardsCompleted ? 'Cartas Gemelas' : 'Completado'}
+                  </div>
                 </div>
               </div>
 
@@ -6918,12 +7004,18 @@ export default function LessonPage() {
                   </div>
                 </div>
 
-                <div className={`p-3 rounded-2xl border ${mysteryWordCompleted && mysteryWordScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-                  <div className="text-[10px] text-zinc-400 uppercase font-bold">P. Misteriosa</div>
-                  <div className={`text-base font-bold ${mysteryWordCompleted && mysteryWordScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {mysteryWordCompleted ? `${mysteryWordScore}%` : 'Pendiente'}
-                  </div>
-                </div>
+                {(() => {
+                  const gameDone = povQuestCompleted || mysteryWordCompleted || twinCardsCompleted;
+                  const gScore = povQuestCompleted ? (povQuestScore || 85) : mysteryWordCompleted ? (mysteryWordScore || 85) : (twinCardsScore || 85);
+                  return (
+                    <div className={`p-3 rounded-2xl border ${gameDone && gScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                      <div className="text-[10px] text-zinc-400 uppercase font-bold">Juegos Didácticos</div>
+                      <div className={`text-base font-bold ${gameDone && gScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {gameDone ? `${gScore}%` : 'Pendiente'}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Action Buttons */}

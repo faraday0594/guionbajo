@@ -3294,6 +3294,13 @@ export default function LessonPage() {
       sfx.playStreakFanfare();
       setShowGraduationModal(true);
       try {
+        localStorage.setItem('guionbajo_class_just_completed', JSON.stringify({
+          sublevel: sublevelParam || 'A1.1',
+          classIndex: classIndexParam || 1,
+          timestamp: Date.now(),
+        }));
+      } catch (_) {}
+      try {
         await api.saveLessonCheckpoint({
           lesson_id: lesson?.id || (lessonId !== 'new' ? lessonId : undefined),
           topic: topicParam,
@@ -6847,6 +6854,13 @@ export default function LessonPage() {
                   type="button"
                   onClick={() => {
                     setShowGraduationModal(false);
+                    try {
+                      localStorage.setItem('guionbajo_class_just_completed', JSON.stringify({
+                        sublevel: sublevelParam || 'A1.1',
+                        classIndex: classIndexParam || 1,
+                        timestamp: Date.now(),
+                      }));
+                    } catch (_) {}
                     router.push('/dashboard');
                   }}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-accent via-indigo-600 to-brand-cyan hover:opacity-95 text-white font-black text-sm sm:text-base shadow-xl shadow-brand-accent/40 flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-105"

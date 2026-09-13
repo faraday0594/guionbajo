@@ -5797,7 +5797,7 @@ export default function LessonPage() {
       </div>
 
       {/* 🌟 Top Header Bar with Consolidated Responsive Switcher */}
-      <header className="px-3 sm:px-6 py-2 sm:py-3 border-b border-brand-border/60 flex flex-col sm:flex-row sm:items-center justify-between glass z-20 gap-2 sm:gap-4">
+      <header className="px-3 sm:px-6 py-2.5 sm:py-3.5 sm:min-h-[70px] border-b border-brand-border/60 flex flex-col sm:flex-row sm:items-center justify-between glass z-20 gap-2 sm:gap-4">
         {/* Mobile Top Line / Desktop Left Side */}
         <div className="flex items-center justify-between w-full sm:w-auto gap-2 min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
@@ -5980,7 +5980,7 @@ export default function LessonPage() {
             </button>
 
             {/* Live Waveform & Tutor State */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-surface/80 border border-brand-border text-xs">
+            <div className="hidden lg:flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-brand-surface/90 border border-brand-border/80 text-xs shadow-inner h-11">
               <AnimatePresence>
                 {tutorState === 'speaking' && (
                   <motion.div
@@ -6007,14 +6007,16 @@ export default function LessonPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <TutorAvatar
-                state={tutorState}
-                text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
-                audioProgress={audioProgress}
-                size="sm"
-                audioElement={currentAudioRef.current}
-              />
-              <span className="text-brand-text-secondary font-medium">
+              <div className="w-8 h-8 flex items-center justify-center relative flex-shrink-0">
+                <TutorAvatar
+                  state={tutorState}
+                  text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
+                  audioProgress={audioProgress}
+                  size="sm"
+                  audioElement={currentAudioRef.current}
+                />
+              </div>
+              <span className="text-brand-text-secondary font-medium whitespace-nowrap">
                 {tutorState === 'speaking'
                   ? 'Explicando...'
                   : tutorState === 'thinking'

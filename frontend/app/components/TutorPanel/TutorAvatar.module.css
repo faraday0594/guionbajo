@@ -11,22 +11,25 @@
 }
 
 @keyframes hoverFloat {
-  0%, 100% { transform: translateY(0px); }
-  50%      { transform: translateY(-5px); }
+  0%, 100% { transform: scale(var(--avatar-scale, 1)) translateY(0px); }
+  50%      { transform: scale(var(--avatar-scale, 1)) translateY(-4px); }
 }
 
 .sizeSm {
+  --avatar-scale: 0.48;
   transform: scale(0.48);
   transform-origin: center center;
   margin: -24px -28px;
 }
 
 .sizeMd {
+  --avatar-scale: 0.8;
   transform: scale(0.8);
   transform-origin: center center;
 }
 
 .sizeLg {
+  --avatar-scale: 1;
   transform: scale(1);
   transform-origin: center center;
 }

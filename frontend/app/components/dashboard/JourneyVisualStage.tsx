@@ -1037,30 +1037,52 @@ export default function JourneyVisualStage({
       </div>
 
       {/* ==================== CTA FOOTER ==================== */}
-      <div className="px-4 sm:px-6 py-3.5 bg-[#0a1510]/95 border-t border-white/[0.05] flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <div className="w-11 h-11 flex items-center justify-center overflow-hidden flex-shrink-0">
-            <TutorAvatar size="sm" emotion="happy" />
+      <div className="px-5 sm:px-8 py-4 sm:py-5 min-h-[86px] bg-gradient-to-r from-brand-surface/95 via-[#0e1224]/95 to-brand-surface/95 border-t border-brand-border/80 flex items-center justify-between gap-4 relative overflow-visible z-20 shadow-2xl backdrop-blur-md">
+        <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0 min-w-0">
+          {/* Avatar pedestal with ample vertical breathing room and soft glow */}
+          <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center flex-shrink-0 relative overflow-visible">
+            <div className="absolute inset-0 bg-brand-cyan/10 rounded-2xl blur-md -z-10" />
+            <TutorAvatar size="sm" emotion={activeCheckpoint ? 'victory' : 'happy'} />
           </div>
-          <div>
-            <div className="text-xs font-bold text-white leading-tight">
-              {currentTopic.level} — Clase {currentTopic.classNum}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="text-xs sm:text-sm font-black text-white font-outfit tracking-wide">
+                {currentTopic.level} • Clase {currentTopic.classNum}
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan">
+                {currentTopic.title || 'Misión Actual'}
+              </span>
             </div>
-            <div className="text-[10px] text-white/40">
-              {activeCheckpoint ? 'Progreso guardado listo' : '5 minutos • interactivo'}
+            <div className="flex items-center gap-2 text-xs">
+              {activeCheckpoint ? (
+                <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+                  Progreso guardado listo para continuar
+                </span>
+              ) : (
+                <span className="text-brand-text-muted">
+                  5 minutos • Lección adaptativa con IA
+                </span>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Ultra-Modern High-Performance CTA Button */}
         <button
           onClick={onLaunchClass}
-          className="px-5 sm:px-7 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-400 hover:via-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition-all flex items-center gap-2 active:scale-95 cursor-pointer flex-shrink-0 border border-emerald-400/20"
+          className="group relative px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-brand-accent via-[#6366f1] to-brand-cyan hover:from-brand-accent/90 hover:to-cyan-400 text-white font-bold text-xs sm:text-sm tracking-wide shadow-[0_4px_24px_rgba(99,102,241,0.4)] hover:shadow-[0_6px_30px_rgba(0,212,255,0.5)] transition-all duration-300 flex items-center gap-3 active:scale-[0.98] cursor-pointer flex-shrink-0 border border-white/20 overflow-hidden"
         >
-          <Play size={16} className="fill-current" />
-          <span>
-            {activeCheckpoint ? 'CONTINUAR CLASE' : `INICIAR CLASE ${classIndex}`}
+          {/* Shimmer light sweep on hover */}
+          <div className="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-1000 ease-out pointer-events-none" />
+
+          <div className="p-1 rounded-xl bg-white/15 flex items-center justify-center">
+            <Play size={15} className="fill-current text-white" />
+          </div>
+          <span className="font-outfit uppercase tracking-wider">
+            {activeCheckpoint ? 'Continuar Clase' : `Iniciar Clase ${classIndex}`}
           </span>
-          <ChevronRight size={16} />
+          <ChevronRight size={17} className="transition-transform duration-200 group-hover:translate-x-1" />
         </button>
       </div>
     </div>

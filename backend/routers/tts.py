@@ -490,30 +490,13 @@ async def tts_synthesize(
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    user_api_key = None
     user_preferred_voice = None
     if current_user:
         try:
             result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
             profile = result.scalars().first()
-            if profile:
-                if profile.minimax_api_key:
-                    user_api_key = profile.minimax_api_key
-                if getattr(profile, "preferred_voice", None):
-                    user_preferred_voice = profile.preferred_voice
-        except Exception:
-            pass
-
-    if not user_api_key:
-        try:
-            res_key = await db.execute(
-                select(StudentProfile.minimax_api_key)
-                .where(StudentProfile.minimax_api_key.isnot(None))
-                .limit(1)
-            )
-            found_key = res_key.scalars().first()
-            if found_key:
-                user_api_key = found_key
+            if profile and getattr(profile, "preferred_voice", None):
+                user_preferred_voice = profile.preferred_voice
         except Exception:
             pass
 
@@ -526,7 +509,6 @@ async def tts_synthesize(
         voice_id=voice_id,
         emotion=emotion,
         speed=speed,
-        api_key=user_api_key,
     )
 
     if not audio_bytes:

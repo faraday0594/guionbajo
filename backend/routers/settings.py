@@ -25,6 +25,7 @@ async def get_settings(current_user: User = Depends(get_current_user), db: Async
     
     return {
         "minimax_api_key": masked_key,
+        "minimax_configured": bool(app_settings.MINIMAX_API_KEY and app_settings.MINIMAX_API_KEY.strip()),
         "groq_api_key": masked_groq,
         "groq_configured": bool(groq_k and groq_k.strip()),
         "preferred_voice": preferred_voice

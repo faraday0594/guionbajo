@@ -16,10 +16,10 @@
 }
 
 .sizeSm {
-  --avatar-scale: 0.48;
-  transform: scale(0.48);
+  --avatar-scale: 0.70;
+  transform: scale(0.70);
   transform-origin: center center;
-  margin: -24px -28px;
+  margin: -10px -12px;
 }
 
 .sizeMd {

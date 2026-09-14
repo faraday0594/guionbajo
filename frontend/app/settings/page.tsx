@@ -14,8 +14,6 @@ import {
 import { clearToken } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 import {
-  Save,
-  Key,
   LogOut,
   ArrowLeft,
   Shield,
@@ -304,9 +302,6 @@ const CURATED_VOICES: VoiceItem[] = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [apiKey, setApiKey] = useState('');
-  const [savedMaskedKey, setSavedMaskedKey] = useState<string | null>(null);
-  const [savingKey, setSavingKey] = useState(false);
 
   const [voices, setVoices] = useState<VoiceItem[]>(CURATED_VOICES);
   const [selectedVoice, setSelectedVoice] = useState<string>('female-yujie');
@@ -352,9 +347,6 @@ export default function SettingsPage() {
         }
 
         if (settingsRes.status === 'fulfilled' && settingsRes.value) {
-          if (settingsRes.value.minimax_api_key) {
-            setSavedMaskedKey(settingsRes.value.minimax_api_key);
-          }
           if (settingsRes.value.preferred_voice) {
             setSelectedVoice(settingsRes.value.preferred_voice);
             setSavedPreferredVoice(settingsRes.value.preferred_voice);
@@ -372,21 +364,6 @@ export default function SettingsPage() {
       activeAudioRef.current = null;
     };
   }, []);
-
-  const handleSaveKey = async () => {
-    if (!apiKey) return;
-    setSavingKey(true);
-    try {
-      await api.saveMinimaxKey(apiKey);
-      toast.success('Clave API guardada con éxito');
-      setSavedMaskedKey(`${apiKey.slice(0, 6)}...${apiKey.slice(-4)}`);
-      setApiKey('');
-    } catch (err) {
-      toast.error('Error al guardar la clave API');
-    } finally {
-      setSavingKey(false);
-    }
-  };
 
   const handleSelectVoice = async (voiceId: string) => {
     setSelectedVoice(voiceId);
@@ -741,58 +718,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ── SECCIÓN 2: CLAVE API DE MINIMAX ────────────────────────────────── */}
-        <section className="glass p-6 sm:p-8 rounded-3xl border border-brand-border/60">
-          <div className="flex items-center gap-2 mb-4">
-            <Key className="w-5 h-5 text-brand-accent" />
-            <h2 className="text-xl font-bold font-outfit">Clave API de MiniMax (Opcional)</h2>
-          </div>
-
-          <p className="text-xs sm:text-sm text-brand-text-secondary mb-4 leading-relaxed">
-            Si cuentas con una cuenta y clave API de MiniMax (t2a_v2), ingrésala aquí para activar
-            la síntesis de ultra alta definición directamente con tu cuota. Si no tienes clave, el
-            sistema usará automáticamente los motores de Google TTS y Microsoft Edge Studio con
-            calidad excelente sin costo.
-          </p>
-
-          {savedMaskedKey && (
-            <div className="mb-4 p-3 rounded-xl bg-brand-surface border border-brand-border flex items-center justify-between text-xs">
-              <span className="text-brand-text-secondary">Clave configurada actualmente:</span>
-              <span className="font-mono text-emerald-400 font-bold">{savedMaskedKey}</span>
-            </div>
-          )}
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSaveKey();
-            }}
-            className="flex flex-col sm:flex-row gap-3"
-          >
-            <input
-              type="password"
-              name="minimax_api_key"
-              id="minimax_api_key"
-              autoComplete="new-password"
-              data-lpignore="true"
-              data-1p-ignore="true"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Introduce tu clave API personalizada de MiniMax"
-              className="flex-1 bg-brand-surface border border-brand-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-accent transition-colors text-sm"
-            />
-            <button
-              type="submit"
-              disabled={savingKey || !apiKey}
-              className="px-6 py-3 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm shadow-sm"
-            >
-              <Save className="w-4 h-4" />
-              {savingKey ? 'Guardando...' : 'Guardar Clave'}
-            </button>
-          </form>
-        </section>
-
-        {/* ── SECCIÓN 3: CUENTA Y SESIÓN ACTIVA ──────────────────────────────── */}
+        {/* ── SECCIÓN 2: CUENTA Y SESIÓN ACTIVA ──────────────────────────────── */}
         <section className="glass p-6 sm:p-8 rounded-3xl border border-red-500/20 bg-red-950/10">
           <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-red-400">
             <Shield className="w-5 h-5 text-red-400" />

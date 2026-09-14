@@ -5979,35 +5979,9 @@ export default function LessonPage() {
               <span>44 Fonemas</span>
             </button>
 
-            {/* Live Waveform & Tutor State */}
-            <div className="hidden lg:flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-brand-surface/90 border border-brand-border/80 text-xs shadow-inner h-11">
-              <AnimatePresence>
-                {tutorState === 'speaking' && (
-                  <motion.div
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    className="flex items-end gap-[2px] overflow-hidden"
-                    style={{ height: '16px' }}
-                  >
-                    {[4, 11, 6, 15, 8, 13, 5, 12, 7, 10].map((h, i) => (
-                      <motion.div
-                        key={i}
-                        className="w-[2px] rounded-full bg-brand-cyan"
-                        animate={{ scaleY: [0.2, 1, 0.2] }}
-                        transition={{
-                          duration: 0.55 + (i % 3) * 0.12,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                          delay: i * 0.055,
-                        }}
-                        style={{ height: `${h}px`, originY: '100%' }}
-                      />
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <div className="w-8 h-8 flex items-center justify-center relative flex-shrink-0">
+            {/* Guionbajo Tutor State */}
+            <div className="hidden lg:flex items-center gap-2.5 px-3 py-1 rounded-full bg-brand-surface/90 border border-brand-border/80 text-xs shadow-inner h-12">
+              <div className="w-10 h-10 flex items-center justify-center relative flex-shrink-0">
                 <TutorAvatar
                   state={tutorState}
                   text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
@@ -6016,7 +5990,7 @@ export default function LessonPage() {
                   audioElement={currentAudioRef.current}
                 />
               </div>
-              <span className="text-brand-text-secondary font-medium whitespace-nowrap">
+              <span className="text-brand-text-secondary font-medium whitespace-nowrap pr-1">
                 {tutorState === 'speaking'
                   ? 'Explicando...'
                   : tutorState === 'thinking'

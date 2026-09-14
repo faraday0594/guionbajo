@@ -185,7 +185,7 @@ export default function LoginPage() {
         <p className="mt-6 text-center text-sm text-brand-text-secondary">
           ¿No tienes cuenta?{' '}
           <Link href="/register" className="text-brand-cyan hover:underline font-medium">
-            Regístrate gratis
+            Crea tu cuenta
           </Link>
         </p>
       </motion.div>

@@ -390,9 +390,19 @@ export default function JourneyVisualStage({
           </div>
 
           <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-white/35 hover:text-white/70 transition border border-white/[0.06]"
-            title={soundEnabled ? 'Silenciar' : 'Activar audio'}
+            onClick={() => {
+              const next = !soundEnabled;
+              setSoundEnabled(next);
+              if (!next) {
+                stopThrusterSound();
+              }
+            }}
+            className={`p-1.5 rounded-lg transition border flex items-center justify-center cursor-pointer ${
+              soundEnabled
+                ? 'bg-brand-accent/20 border-brand-cyan/40 text-brand-cyan hover:bg-brand-accent/35 shadow-[0_0_12px_rgba(0,212,255,0.2)]'
+                : 'bg-white/[0.04] border-white/[0.08] text-white/35 hover:text-white/70'
+            }`}
+            title={soundEnabled ? 'Silenciar propulsor y efectos' : 'Activar sonido del propulsor'}
           >
             {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
@@ -468,27 +478,61 @@ export default function JourneyVisualStage({
               <stop offset="100%" stopColor="#9a8060" />
             </linearGradient>
 
-            {/* 🔥 Thruster flame gradients */}
-            <linearGradient id="flameOuter" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="#ffffff"  stopOpacity="0.95" />
-              <stop offset="18%"  stopColor="#fde68a"  stopOpacity="0.9"  />
-              <stop offset="45%"  stopColor="#f97316"  stopOpacity="0.8"  />
-              <stop offset="80%"  stopColor="#dc2626"  stopOpacity="0.4"  />
-              <stop offset="100%" stopColor="#7c3aed"  stopOpacity="0"    />
+            {/* 🤖 Guionbajo Robot Gradients & Shaders */}
+            <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            <linearGradient id="robotChassis" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#374151" />
+              <stop offset="60%" stopColor="#1f2937" />
+              <stop offset="100%" stopColor="#111827" />
             </linearGradient>
-            <linearGradient id="flameCore" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="#ffffff"  stopOpacity="1"   />
-              <stop offset="30%"  stopColor="#fef3c7"  stopOpacity="0.9" />
-              <stop offset="70%"  stopColor="#fbbf24"  stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#f97316"  stopOpacity="0"   />
+
+            <linearGradient id="antennaStemGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#94a3b8" />
+              <stop offset="100%" stopColor="#475569" />
             </linearGradient>
-            <radialGradient id="jetGlow" cx="0.5" cy="0.1" r="0.9">
-              <stop offset="0%"   stopColor="#00d4ff" stopOpacity="0.55" />
-              <stop offset="100%" stopColor="#00d4ff" stopOpacity="0"    />
+
+            <radialGradient id="vacuumBulbGrad" cx="0.35" cy="0.35" r="0.65">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+              <stop offset="35%" stopColor="#00d4ff" stopOpacity="0.85" />
+              <stop offset="75%" stopColor="#6366f1" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#090d14" stopOpacity="0.9" />
             </radialGradient>
-            <radialGradient id="groundFlameGlow" cx="0.5" cy="0" r="0.7">
-              <stop offset="0%"   stopColor="#f97316" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#f97316" stopOpacity="0"    />
+
+            <linearGradient id="earDialGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#64748b" />
+              <stop offset="50%" stopColor="#334155" />
+              <stop offset="100%" stopColor="#1e293b" />
+            </linearGradient>
+
+            {/* 🔥 Magnetic Plasma Hover Thruster Gradients */}
+            <linearGradient id="plasmaFlameCore" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+              <stop offset="20%" stopColor="#00d4ff" stopOpacity="0.95" />
+              <stop offset="65%" stopColor="#6366f1" stopOpacity="0.85" />
+              <stop offset="90%" stopColor="#a855f7" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#00d4ff" stopOpacity="0" />
+            </linearGradient>
+
+            <linearGradient id="plasmaFlameOuter" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+              <stop offset="15%" stopColor="#fef08a" stopOpacity="0.9" />
+              <stop offset="38%" stopColor="#f97316" stopOpacity="0.85" />
+              <stop offset="70%" stopColor="#00d4ff" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+            </linearGradient>
+
+            <radialGradient id="groundPlasmaGlow" cx="0.5" cy="0.1" r="0.7">
+              <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.5" />
+              <stop offset="45%" stopColor="#6366f1" stopOpacity="0.25" />
+              <stop offset="85%" stopColor="#f97316" stopOpacity="0.1" />
+              <stop offset="100%" stopColor="#000000" stopOpacity="0" />
             </radialGradient>
           </defs>
 
@@ -915,240 +959,508 @@ export default function JourneyVisualStage({
           </g>
 
           {/* ══════════════════════════════════════════════════════════════
-              🚀 GUIONBAJO — Jetpack character (seen from behind)
-              • Idle: gentle hover bob, small idle flame
-              • Forward: tilts forward, flames grow and intensify
-              • Backward: quick half-turn → flies reversed → half-turn back
+              🤖 GUIONBAJO — RETRO-FUTURISTIC AI ROBOT TUTOR
+              • Canonical design from TutorAvatar:
+                - Rounded rectangular robot head with 4 corner rivets
+                - Vacuum bulb antenna on top with glowing neon filament
+                - Side potentiometer ear dials with glowing cyan notches
+                - Articulated mechanical arms (upper, joint, forearm, clamp)
+                - Retro metal chassis torso with rounded base
+                - Magnetic hover thruster with energetic plasma flame
+              • Forward flight: tilts forward, plasma thruster blasts intensely
+              • Backward travel:
+                1) Gives a 180° media vuelta to face us (scaleX: 1 -> 0 -> -1)
+                2) Front view is revealed: glowing cyan eyes, terminal mouth '_', CRT screen!
+                3) Thrusters blast pushing him backward down the trail!
+                4) Gives a second 180° media vuelta back to settle facing the path!
              ══════════════════════════════════════════════════════════════ */}
           {(() => {
             const p = travelProgress; // 0..1 eased
             const isFlying = isTraveling;
 
-            // ── Flame intensity (sinusoidal peak at mid-flight) ──────────
-            const flameIntensity = isFlying ? Math.sin(p * Math.PI) : 0.12;
-            const flameLen  = 10 + flameIntensity * 38;    // 10 → 48 px
-            const flameW    = 5  + flameIntensity * 5;     // 5  → 10 px
-            const flameCoreLen = flameLen * 0.55;
-            const flameOpacity = 0.45 + flameIntensity * 0.55;
-            // Slight random shimmer (uses progress as seed, no extra state)
-            const shimmer = Math.sin(p * Math.PI * 11) * 2;
+            // ── 180° Media Vuelta (Turn) Kinematics ────────────────────────
+            // When moving backward, Guionbajo spins 180° to face us, flies in reverse,
+            // then spins 180° back to land facing forward.
+            let flipScaleX = 1;
+            let showFront = false;
 
-            // ── Ground glow (visible when flames are hot) ─────────────────
-            const glowR = 18 + flameIntensity * 22;
-
-            // ── Forward tilt (into flight direction) ─────────────────────
-            const tiltAngle = isFlying
-              ? Math.sin(p * Math.PI) * (travelDirection === 'forward' ? -13 : 13)
-              : 0;
-
-            // ── Hover bob (gentle when idle, quick turbulence when flying) ─
-            const hoverY = isFlying
-              ? Math.sin(p * Math.PI * 6) * 2.5
-              : 0;
-
-            // ── Flip transform for BACKWARD travel ────────────────────────
-            // 0→0.15 : spin to face us (scaleX 1 → -1)
-            // 0.15→0.85 : fly reversed (scaleX -1)
-            // 0.85→1   : spin back to face away (scaleX -1 → 1)
-            let flipX = 1;
             if (isFlying && travelDirection === 'backward') {
-              if (p < 0.15)       flipX = 1 - (p / 0.15) * 2;
-              else if (p < 0.85)  flipX = -1;
-              else                flipX = -1 + ((p - 0.85) / 0.15) * 2;
+              // Spin 1: p from 0 to 0.18
+              // Mid-flight: p from 0.18 to 0.82 (fully facing camera)
+              // Spin 2: p from 0.82 to 1.0
+              if (p < 0.18) {
+                const spin1 = p / 0.18; // 0 to 1
+                const rotCos = Math.cos(spin1 * Math.PI);
+                flipScaleX = Math.abs(rotCos);
+                showFront = rotCos < 0;
+              } else if (p <= 0.82) {
+                flipScaleX = 1;
+                showFront = true;
+              } else {
+                const spin2 = (p - 0.82) / 0.18; // 0 to 1
+                const rotCos = Math.cos(spin2 * Math.PI);
+                flipScaleX = Math.abs(rotCos);
+                showFront = rotCos > 0;
+              }
             }
 
-            // Thruster nozzle positions (relative to character center x=475)
-            const nozL = { x: 461, yTop: 299, yBot: 311 }; // left nozzle exit
-            const nozR = { x: 489, yTop: 299, yBot: 311 }; // right nozzle exit
+            // ── Flame intensity (sinusoidal peak at mid-flight) ──────────
+            const flameIntensity = isFlying ? Math.sin(p * Math.PI) : 0.15;
+            const flameLen = 12 + flameIntensity * 44;    // 12 -> 56 px
+            const flameW = 8 + flameIntensity * 7;        // 8 -> 15 px
+            const flameCoreLen = flameLen * 0.6;
+            const flameOpacity = 0.5 + flameIntensity * 0.5;
+            const shimmer = Math.sin(p * Math.PI * 13) * 2;
+
+            // ── Tilt angle ───────────────────────────────────────────────
+            // Tilts forward when advancing, tilts slightly into flight direction when reversing
+            const tiltAngle = isFlying
+              ? travelDirection === 'forward'
+                ? Math.sin(p * Math.PI) * -11
+                : Math.sin(p * Math.PI) * 7
+              : 0;
+
+            // ── Hover Bob ────────────────────────────────────────────────
+            const hoverY = isFlying
+              ? Math.sin(p * Math.PI * 5) * 2
+              : 0;
+
+            // Ground glow dimensions
+            const groundGlowR = 16 + flameIntensity * 26;
 
             return (
               <g
                 style={{
-                  transform: `translateY(${hoverY}px) rotate(${tiltAngle}deg) scaleX(${flipX})`,
-                  transformOrigin: '475px 290px',
+                  transform: `translateY(${hoverY}px) rotate(${tiltAngle}deg) scaleX(${Math.max(0.05, flipScaleX)})`,
+                  transformOrigin: '475px 285px',
                   transition: 'none',
                 }}
               >
-                {/* ── Ground glow cast by flames ───────────────────────── */}
-                {isFlying && (
-                  <ellipse
-                    cx="475" cy="330"
-                    rx={glowR} ry={glowR * 0.28}
-                    fill="url(#groundFlameGlow)"
-                    opacity={flameIntensity * 0.7}
-                  />
-                )}
-
-                {/* ── Shadow (shrinks when airborne) ───────────────────── */}
+                {/* ── Ground shadow & plasma light bloom ────────────────── */}
                 <ellipse
-                  cx="475" cy="332"
-                  rx={isFlying ? 14 - flameIntensity * 6 : 18}
+                  cx="475"
+                  cy="330"
+                  rx={isFlying ? 15 - flameIntensity * 6 : 18}
                   ry={isFlying ? 3.5 - flameIntensity * 1.5 : 5}
-                  fill="#0a2010"
-                  opacity={isFlying ? 0.2 + (1 - flameIntensity) * 0.2 : 0.4}
+                  fill="#07150a"
+                  opacity={isFlying ? 0.25 : 0.4}
+                />
+                <ellipse
+                  cx="475"
+                  cy="330"
+                  rx={groundGlowR}
+                  ry={groundGlowR * 0.28}
+                  fill="url(#groundPlasmaGlow)"
+                  opacity={flameIntensity * 0.85}
                 />
 
-                {/* ── LEFT THRUSTER FLAME ──────────────────────────────── */}
-                {/* Outer flame plume */}
+                {/* ── MAGNETIC HOVER THRUSTER (Mounted at base of body) ── */}
+                {/* Plasma flame plume shooting downward */}
+                {/* Outer energetic fire */}
                 <path
-                  d={`M ${nozL.x - flameW * 0.5} ${nozL.yBot}
-                      Q ${nozL.x - flameW * 0.3 + shimmer} ${nozL.yBot + flameLen * 0.55}
-                        ${nozL.x} ${nozL.yBot + flameLen}
-                      Q ${nozL.x + flameW * 0.3 + shimmer} ${nozL.yBot + flameLen * 0.55}
-                        ${nozL.x + flameW * 0.5} ${nozL.yBot}`}
-                  fill="url(#flameOuter)"
+                  d={`M ${475 - flameW} 314
+                      Q ${475 - flameW * 0.4 + shimmer} ${314 + flameLen * 0.55}
+                        475 ${314 + flameLen}
+                      Q ${475 + flameW * 0.4 + shimmer} ${314 + flameLen * 0.55}
+                        ${475 + flameW} 314 Z`}
+                  fill="url(#plasmaFlameOuter)"
                   opacity={flameOpacity}
+                  filter="url(#cyanGlow)"
                 />
-                {/* Inner hot core */}
+                {/* Inner hot plasma core */}
                 <path
-                  d={`M ${nozL.x - flameW * 0.28} ${nozL.yBot}
-                      Q ${nozL.x} ${nozL.yBot + flameCoreLen * 0.6}
-                        ${nozL.x} ${nozL.yBot + flameCoreLen}
-                      Q ${nozL.x} ${nozL.yBot + flameCoreLen * 0.6}
-                        ${nozL.x + flameW * 0.28} ${nozL.yBot}`}
-                  fill="url(#flameCore)"
-                  opacity={flameOpacity * 0.95}
+                  d={`M ${475 - flameW * 0.55} 314
+                      Q 475 ${314 + flameCoreLen * 0.55}
+                        475 ${314 + flameCoreLen}
+                      Q 475 ${314 + flameCoreLen * 0.55}
+                        ${475 + flameW * 0.55} 314 Z`}
+                  fill="url(#plasmaFlameCore)"
+                  opacity={0.95}
                 />
 
-                {/* ── RIGHT THRUSTER FLAME ─────────────────────────────── */}
-                <path
-                  d={`M ${nozR.x - flameW * 0.5} ${nozR.yBot}
-                      Q ${nozR.x - flameW * 0.3 - shimmer} ${nozR.yBot + flameLen * 0.55}
-                        ${nozR.x} ${nozR.yBot + flameLen}
-                      Q ${nozR.x + flameW * 0.3 - shimmer} ${nozR.yBot + flameLen * 0.55}
-                        ${nozR.x + flameW * 0.5} ${nozR.yBot}`}
-                  fill="url(#flameOuter)"
-                  opacity={flameOpacity}
+                {/* Heavy-duty metallic thruster nozzle */}
+                <rect
+                  x="464"
+                  y="310"
+                  width="22"
+                  height="5"
+                  rx="2"
+                  fill="url(#antennaStemGrad)"
+                  stroke="#334155"
+                  strokeWidth="1"
                 />
-                <path
-                  d={`M ${nozR.x - flameW * 0.28} ${nozR.yBot}
-                      Q ${nozR.x} ${nozR.yBot + flameCoreLen * 0.6}
-                        ${nozR.x} ${nozR.yBot + flameCoreLen}
-                      Q ${nozR.x} ${nozR.yBot + flameCoreLen * 0.6}
-                        ${nozR.x + flameW * 0.28} ${nozR.yBot}`}
-                  fill="url(#flameCore)"
-                  opacity={flameOpacity * 0.95}
+                <rect
+                  x="467"
+                  y="313"
+                  width="16"
+                  height="2"
+                  rx="1"
+                  fill="#0a0e17"
+                />
+                <rect
+                  x="467"
+                  y="313"
+                  width="16"
+                  height="2"
+                  rx="1"
+                  fill="#00D4FF"
+                  opacity={0.7 + flameIntensity * 0.3}
+                  filter="url(#cyanGlow)"
                 />
 
-                {/* ── LEGS / FLIGHT SUIT LOWER BODY ────────────────────── */}
-                {/* Left leg */}
-                <rect x="463" y="308" width="9" height="18" rx="4.5"
-                  fill="#0f172a" stroke="#1e293b" strokeWidth="0.8" />
-                {/* Right leg */}
-                <rect x="478" y="308" width="9" height="18" rx="4.5"
-                  fill="#0f172a" stroke="#1e293b" strokeWidth="0.8" />
-                {/* Boot left */}
-                <ellipse cx="467" cy="327" rx="7.5" ry="4" fill="#1e293b" />
-                <ellipse cx="467" cy="325" rx="5.5" ry="2.5" fill="#334155" />
-                {/* Boot right */}
-                <ellipse cx="482" cy="327" rx="7.5" ry="4" fill="#1e293b" />
-                <ellipse cx="482" cy="325" rx="5.5" ry="2.5" fill="#334155" />
-
-                {/* ── JETPACK BODY (behind torso, drawn before body) ───── */}
-                {/* Main pack */}
-                <rect x="463" y="265" width="24" height="36" rx="6"
-                  fill="#1e293b" stroke="#334155" strokeWidth="1" />
-                {/* Pack highlight top */}
-                <rect x="466" y="268" width="18" height="9" rx="3"
-                  fill="#0f172a" opacity="0.7" />
-                {/* Cyan indicator lights */}
-                <circle cx="471" cy="281" r="2.8" fill="#00d4ff" opacity={0.7 + flameIntensity * 0.3} />
-                <circle cx="479" cy="281" r="2.8" fill="#00d4ff" opacity={0.5 + flameIntensity * 0.3} />
-                {/* Cyan glow bloom when flying */}
-                {isFlying && (
-                  <ellipse cx="475" cy="281" rx="16" ry="10"
-                    fill="url(#jetGlow)" opacity={flameIntensity * 0.8} />
-                )}
-                {/* Pack vents */}
-                <rect x="465" y="287" width="5" height="10" rx="2" fill="#0a1520" />
-                <rect x="480" y="287" width="5" height="10" rx="2" fill="#0a1520" />
-
-                {/* Straps (connecting pack to shoulders) */}
-                <path d="M 465 267 Q 462 278, 461 286" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" />
-                <path d="M 485 267 Q 488 278, 489 286" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" />
-
-                {/* ── LEFT THRUSTER NOZZLE ─────────────────────────────── */}
-                <rect x="457" y="293" width="9" height="16" rx="4"
-                  fill="#334155" stroke="#475569" strokeWidth="0.8" />
-                <ellipse cx="461" cy="309" rx="5" ry="3"
-                  fill="#1a2535" stroke="#475569" strokeWidth="0.6" />
-                {/* Nozzle ring glow */}
-                <ellipse cx="461" cy="309" rx="5" ry="3"
-                  fill="#f97316" opacity={0.1 + flameIntensity * 0.5} />
-
-                {/* ── RIGHT THRUSTER NOZZLE ────────────────────────────── */}
-                <rect x="484" y="293" width="9" height="16" rx="4"
-                  fill="#334155" stroke="#475569" strokeWidth="0.8" />
-                <ellipse cx="489" cy="309" rx="5" ry="3"
-                  fill="#1a2535" stroke="#475569" strokeWidth="0.6" />
-                <ellipse cx="489" cy="309" rx="5" ry="3"
-                  fill="#f97316" opacity={0.1 + flameIntensity * 0.5} />
-
-                {/* ── ARMS ─────────────────────────────────────────────── */}
-                {/* Left arm (slightly raised when flying) */}
+                {/* ── MECHANICAL ARMS (Drawn behind body chassis) ───────── */}
+                {/* Left arm */}
                 <path
                   d={isFlying
-                    ? `M 461 278 Q 447 ${283 - flameIntensity * 8}, 440 ${292 - flameIntensity * 10}`
-                    : 'M 461 278 Q 447 290, 443 300'}
-                  fill="none" stroke="#0f172a" strokeWidth="9" strokeLinecap="round"
+                    ? `M 451 282 Q 440 ${288 - flameIntensity * 6}, 438 ${300 - flameIntensity * 8}`
+                    : 'M 451 282 Q 441 292, 439 304'}
+                  fill="none"
+                  stroke="#475569"
+                  strokeWidth="5"
+                  strokeLinecap="round"
                 />
-                {/* Cyan sleeve cuff left */}
-                <circle cx={isFlying ? 440 : 443} cy={isFlying ? 292 - flameIntensity * 10 : 300}
-                  r="4" fill="#0e7490" />
+                <circle
+                  cx={isFlying ? 438 : 439}
+                  cy={isFlying ? 300 - flameIntensity * 8 : 304}
+                  r="3.5"
+                  fill="#334155"
+                  stroke="#64748b"
+                  strokeWidth="1"
+                />
+                {/* Left forearm & pincer clamp */}
+                <path
+                  d={isFlying
+                    ? `M 438 ${300 - flameIntensity * 8} L 441 ${309 - flameIntensity * 8}`
+                    : 'M 439 304 L 443 315'}
+                  fill="none"
+                  stroke="#334155"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+                <circle
+                  cx={isFlying ? 441 : 443}
+                  cy={isFlying ? 310 - flameIntensity * 8 : 316}
+                  r="2.8"
+                  fill="#64748b"
+                />
+
                 {/* Right arm */}
                 <path
                   d={isFlying
-                    ? `M 489 278 Q 503 ${283 - flameIntensity * 8}, 510 ${292 - flameIntensity * 10}`
-                    : 'M 489 278 Q 503 290, 507 300'}
-                  fill="none" stroke="#0f172a" strokeWidth="9" strokeLinecap="round"
+                    ? `M 499 282 Q 510 ${288 - flameIntensity * 6}, 512 ${300 - flameIntensity * 8}`
+                    : 'M 499 282 Q 509 292, 511 304'}
+                  fill="none"
+                  stroke="#475569"
+                  strokeWidth="5"
+                  strokeLinecap="round"
                 />
-                <circle cx={isFlying ? 510 : 507} cy={isFlying ? 292 - flameIntensity * 10 : 300}
-                  r="4" fill="#0e7490" />
-
-                {/* ── TORSO / FLIGHT SUIT ──────────────────────────────── */}
+                <circle
+                  cx={isFlying ? 512 : 511}
+                  cy={isFlying ? 300 - flameIntensity * 8 : 304}
+                  r="3.5"
+                  fill="#334155"
+                  stroke="#64748b"
+                  strokeWidth="1"
+                />
+                {/* Right forearm & pincer clamp */}
                 <path
-                  d="M 461 272 Q 458 285, 457 300 L 459 308 L 491 308 L 493 300 Q 492 285, 489 272 Z"
-                  fill="#0f172a" stroke="#1e293b" strokeWidth="0.8"
+                  d={isFlying
+                    ? `M 512 ${300 - flameIntensity * 8} L 509 ${309 - flameIntensity * 8}`
+                    : 'M 511 304 L 507 315'}
+                  fill="none"
+                  stroke="#334155"
+                  strokeWidth="4"
+                  strokeLinecap="round"
                 />
-                {/* Cyan vertical accent stripes */}
-                <line x1="472" y1="272" x2="470" y2="308"
-                  stroke="#0891b2" strokeWidth="1.2" opacity="0.6" />
-                <line x1="478" y1="272" x2="480" y2="308"
-                  stroke="#0891b2" strokeWidth="1.2" opacity="0.6" />
-                {/* Chest logo — underscore (_) symbol on back */}
-                <rect x="468" y="291" width="14" height="3" rx="1.5"
-                  fill="#00d4ff" opacity={0.55 + flameIntensity * 0.4} />
+                <circle
+                  cx={isFlying ? 509 : 507}
+                  cy={isFlying ? 310 - flameIntensity * 8 : 316}
+                  r="2.8"
+                  fill="#64748b"
+                />
 
-                {/* ── HELMET (from behind) ─────────────────────────────── */}
-                {/* Neck connector */}
-                <rect x="470" y="266" width="10" height="7" rx="3"
-                  fill="#1e293b" />
-                {/* Main helmet dome */}
-                <circle cx="475" cy="255" r="15" fill="#0f172a" />
-                {/* Helmet shell shading */}
-                <path d="M 461 260 Q 463 244, 475 240 Q 487 244, 489 260 Z"
-                  fill="#0a1520" />
-                {/* Visor back-edge (cyan band visible from behind) */}
-                <path d="M 461 262 Q 475 271, 489 262"
-                  stroke="#00d4ff" strokeWidth="2.2" fill="none"
-                  opacity={0.55 + flameIntensity * 0.35} />
-                {/* Side visor rails */}
-                <path d="M 461.5 256 Q 460 262, 461 268"
-                  stroke="#0891b2" strokeWidth="1.5" fill="none" opacity="0.5" />
-                <path d="M 488.5 256 Q 490 262, 489 268"
-                  stroke="#0891b2" strokeWidth="1.5" fill="none" opacity="0.5" />
-                {/* Helmet fin / ridge */}
-                <path d="M 475 240 L 475 252"
-                  stroke="#1e3a5f" strokeWidth="3" strokeLinecap="round" />
-                {/* Ambient gloss reflection */}
-                <ellipse cx="480" cy="248" rx="5" ry="3"
-                  fill="#60a5fa" opacity="0.18" />
-                {/* Ear pods */}
-                <ellipse cx="460" cy="258" rx="3.5" ry="4.5" fill="#1e293b" stroke="#334155" strokeWidth="0.6" />
-                <ellipse cx="490" cy="258" rx="3.5" ry="4.5" fill="#1e293b" stroke="#334155" strokeWidth="0.6" />
-                {/* Cyan dot on ear pod (antenna) */}
-                <circle cx="460" cy="255" r="1.5" fill="#00d4ff" opacity="0.7" />
-                <circle cx="490" cy="255" r="1.5" fill="#00d4ff" opacity="0.7" />
+                {/* ── ROBOT TORSO / BODY (Retro-futuristic chassis) ─────── */}
+                <rect
+                  x="451"
+                  y="278"
+                  width="48"
+                  height="32"
+                  rx="10"
+                  fill="url(#robotChassis)"
+                  stroke="#4b5563"
+                  strokeWidth="1.8"
+                />
+
+                {showFront ? (
+                  /* ─── TORSO FRONT: CRT MONITOR & SCANLINES ─── */
+                  <>
+                    <rect
+                      x="457"
+                      y="282"
+                      width="36"
+                      height="22"
+                      rx="5"
+                      fill="#020617"
+                      stroke="#334155"
+                      strokeWidth="1.2"
+                      filter="url(#softGlow)"
+                    />
+                    {/* Horizontal CRT scanlines */}
+                    <line x1="459" y1="286" x2="491" y2="286" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
+                    <line x1="459" y1="290" x2="491" y2="290" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
+                    <line x1="459" y1="294" x2="491" y2="294" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
+                    <line x1="459" y1="298" x2="491" y2="298" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
+                    {/* Glowing CRT Screen Content: Guionbajo Underscore Terminal Symbol */}
+                    <text
+                      x="475"
+                      y="297"
+                      textAnchor="middle"
+                      fill="#00D4FF"
+                      fontFamily="monospace"
+                      fontSize="10"
+                      fontWeight="900"
+                      filter="url(#cyanGlow)"
+                    >
+                      _
+                    </text>
+                  </>
+                ) : (
+                  /* ─── TORSO BACK: REAR CHASSIS & POWER COUPLING ─── */
+                  <>
+                    {/* Central power conduit spine */}
+                    <rect
+                      x="469"
+                      y="278"
+                      width="12"
+                      height="28"
+                      rx="3"
+                      fill="#0f172a"
+                      stroke="#334155"
+                      strokeWidth="0.8"
+                    />
+                    <line x1="471" y1="283" x2="479" y2="283" stroke="#00D4FF" strokeWidth="1" opacity="0.8" />
+                    <line x1="471" y1="288" x2="479" y2="288" stroke="#00D4FF" strokeWidth="1" opacity="0.8" />
+                    {/* Underscore illuminated insignia on back */}
+                    <rect
+                      x="472"
+                      y="295"
+                      width="6"
+                      height="2"
+                      rx="1"
+                      fill="#00D4FF"
+                      filter="url(#cyanGlow)"
+                    />
+                    {/* Lateral ventilation / heat exhaust grilles */}
+                    <rect x="456" y="283" width="9" height="17" rx="2" fill="#111827" stroke="#334155" strokeWidth="0.8" />
+                    <line x1="458" y1="287" x2="463" y2="287" stroke="#334155" strokeWidth="1" />
+                    <line x1="458" y1="291" x2="463" y2="291" stroke="#334155" strokeWidth="1" />
+                    <line x1="458" y1="295" x2="463" y2="295" stroke="#334155" strokeWidth="1" />
+
+                    <rect x="485" y="283" width="9" height="17" rx="2" fill="#111827" stroke="#334155" strokeWidth="0.8" />
+                    <line x1="487" y1="287" x2="492" y2="287" stroke="#334155" strokeWidth="1" />
+                    <line x1="487" y1="291" x2="492" y2="291" stroke="#334155" strokeWidth="1" />
+                    <line x1="487" y1="295" x2="492" y2="295" stroke="#334155" strokeWidth="1" />
+                  </>
+                )}
+
+                {/* ── MECHANICAL NECK ───────────────────────────────────── */}
+                <rect
+                  x="470"
+                  y="272"
+                  width="10"
+                  height="7"
+                  rx="2"
+                  fill="#1e293b"
+                  stroke="#334155"
+                  strokeWidth="0.8"
+                />
+
+                {/* ── LATERAL EAR DIALS (Potenciómetros con notch cyan) ─── */}
+                <rect
+                  x="438"
+                  y="241"
+                  width="7"
+                  height="18"
+                  rx="2"
+                  fill="url(#earDialGrad)"
+                  stroke="#475569"
+                  strokeWidth="0.8"
+                />
+                <rect
+                  x="439"
+                  y="249"
+                  width="3.5"
+                  height="2"
+                  rx="1"
+                  fill="#00D4FF"
+                  filter="url(#cyanGlow)"
+                />
+
+                <rect
+                  x="505"
+                  y="241"
+                  width="7"
+                  height="18"
+                  rx="2"
+                  fill="url(#earDialGrad)"
+                  stroke="#475569"
+                  strokeWidth="0.8"
+                />
+                <rect
+                  x="507.5"
+                  y="249"
+                  width="3.5"
+                  height="2"
+                  rx="1"
+                  fill="#00D4FF"
+                  filter="url(#cyanGlow)"
+                />
+
+                {/* ── ROBOT HEAD (Rounded rectangular casing with corner rivets) */}
+                <rect
+                  x="445"
+                  y="226"
+                  width="60"
+                  height="48"
+                  rx="12"
+                  fill="url(#robotChassis)"
+                  stroke="#4b5563"
+                  strokeWidth="2"
+                />
+
+                {/* 4 Corner Rivets */}
+                <circle cx="451" cy="232" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                <circle cx="499" cy="232" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                <circle cx="451" cy="268" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                <circle cx="499" cy="268" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+
+                {showFront ? (
+                  /* ─── HEAD FRONT: ICONIC ROBOT EYES & MOUTH CURSOR ─── */
+                  <>
+                    {/* Left Eye Socket */}
+                    <circle
+                      cx="463"
+                      cy="245"
+                      r="8.5"
+                      fill="#090d14"
+                      stroke="#334155"
+                      strokeWidth="1.5"
+                    />
+                    {/* Neon Cyan Pupil */}
+                    <circle
+                      cx="463"
+                      cy="245"
+                      r="4.5"
+                      fill="#00D4FF"
+                      filter="url(#cyanGlow)"
+                    />
+                    {/* Eye Glint */}
+                    <circle cx="461.5" cy="243.5" r="1.2" fill="#ffffff" />
+                    {/* Mechanical eyelid shutter line */}
+                    <line x1="455" y1="239" x2="471" y2="239" stroke="#475569" strokeWidth="1.2" />
+
+                    {/* Right Eye Socket */}
+                    <circle
+                      cx="487"
+                      cy="245"
+                      r="8.5"
+                      fill="#090d14"
+                      stroke="#334155"
+                      strokeWidth="1.5"
+                    />
+                    {/* Neon Cyan Pupil */}
+                    <circle
+                      cx="487"
+                      cy="245"
+                      r="4.5"
+                      fill="#00D4FF"
+                      filter="url(#cyanGlow)"
+                    />
+                    {/* Eye Glint */}
+                    <circle cx="485.5" cy="243.5" r="1.2" fill="#ffffff" />
+                    {/* Mechanical eyelid shutter line */}
+                    <line x1="479" y1="239" x2="495" y2="239" stroke="#475569" strokeWidth="1.2" />
+
+                    {/* Mouth Frame with Terminal Cursor '_' */}
+                    <rect
+                      x="457"
+                      y="260"
+                      width="36"
+                      height="8"
+                      rx="3"
+                      fill="#090d14"
+                      stroke="#334155"
+                      strokeWidth="1.2"
+                    />
+                    <text
+                      x="475"
+                      y="267"
+                      textAnchor="middle"
+                      fill="#00D4FF"
+                      fontFamily="monospace"
+                      fontSize="11"
+                      fontWeight="900"
+                      filter="url(#cyanGlow)"
+                    >
+                      _
+                    </text>
+                  </>
+                ) : (
+                  /* ─── HEAD BACK: MAINTENANCE HATCH & HEATSINK FINS ─── */
+                  <>
+                    <rect
+                      x="454"
+                      y="235"
+                      width="42"
+                      height="30"
+                      rx="6"
+                      fill="#141c2b"
+                      stroke="#334155"
+                      strokeWidth="1.2"
+                    />
+                    {/* Horizontal cooling fins */}
+                    <line x1="459" y1="243" x2="491" y2="243" stroke="#26354a" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="459" y1="250" x2="491" y2="250" stroke="#26354a" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="459" y1="257" x2="491" y2="257" stroke="#26354a" strokeWidth="2" strokeLinecap="round" />
+                    {/* Central cyan power/status diode */}
+                    <circle cx="475" cy="250" r="2.5" fill="#00D4FF" filter="url(#cyanGlow)" />
+                  </>
+                )}
+
+                {/* ── ANTENNA & VACUUM BULB (On top of head) ─────────────── */}
+                <rect
+                  x="473.5"
+                  y="210"
+                  width="3"
+                  height="16"
+                  rx="1.5"
+                  fill="url(#antennaStemGrad)"
+                />
+                {/* Glowing Vacuum Bulb */}
+                <circle
+                  cx="475"
+                  cy="203"
+                  r="7.5"
+                  fill="url(#vacuumBulbGrad)"
+                  stroke="rgba(255,255,255,0.6)"
+                  strokeWidth="1.2"
+                />
+                {/* Glowing bulb bloom */}
+                <circle
+                  cx="475"
+                  cy="203"
+                  r="11"
+                  fill="#00D4FF"
+                  opacity={0.35 + flameIntensity * 0.25}
+                  filter="url(#cyanGlow)"
+                />
+                {/* Bulb Filament */}
+                <path
+                  d="M 473 205 C 473 200, 477 200, 477 205"
+                  fill="none"
+                  stroke="#00D4FF"
+                  strokeWidth="1.2"
+                />
               </g>
             );
           })()}

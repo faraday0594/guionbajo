@@ -468,15 +468,25 @@ export class LiveAudioStreamQueue {
   private voiceId?: string;
   private onAudioElementChange?: (audio: HTMLAudioElement | null) => void;
   private onStateChange?: (state: 'idle' | 'playing') => void;
+  private onClausePlay?: (clauseIndex: number, text: string) => void;
+  private onAllEnded?: () => void;
 
   constructor(options?: {
     voiceId?: string;
     onAudioElementChange?: (audio: HTMLAudioElement | null) => void;
     onStateChange?: (state: 'idle' | 'playing') => void;
+    onClausePlay?: (clauseIndex: number, text: string) => void;
+    onAllEnded?: () => void;
   }) {
     this.voiceId = options?.voiceId;
     this.onAudioElementChange = options?.onAudioElementChange;
     this.onStateChange = options?.onStateChange;
+    this.onClausePlay = options?.onClausePlay;
+    this.onAllEnded = options?.onAllEnded;
+  }
+
+  getIsPlaying(): boolean {
+    return this.isPlaying;
   }
 
   enqueue(clauseIndex: number, text: string) {
@@ -540,6 +550,7 @@ export class LiveAudioStreamQueue {
     item.status = 'playing';
     this.currentItem = item;
     this.onStateChange?.('playing');
+    this.onClausePlay?.(item.clauseIndex, item.text);
 
     const audio = new Audio(item.audioUrl);
     item.audio = audio;
@@ -586,6 +597,7 @@ export class LiveAudioStreamQueue {
     this.currentItem = null;
     this.onAudioElementChange?.(null);
     this.onStateChange?.('idle');
+    this.onAllEnded?.();
   }
 
   stop() {

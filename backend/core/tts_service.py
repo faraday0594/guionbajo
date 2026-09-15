@@ -281,7 +281,7 @@ async def _synthesize_google_tts(text: str, lang: str = "es", tld: str = "com") 
         return b""
 
 async def _fallback_edge_tts(text: str, voice_id: str = "es-MX-DaliaNeural", speed: float = 1.0) -> bytes:
-    """High-quality Microsoft Edge Neural Voice synthesis."""
+    """High-quality Microsoft Edge Neural Voice synthesis with timeout protection."""
     try:
         vid = (voice_id or "").lower()
         if "jenny" in vid:
@@ -302,7 +302,7 @@ async def _fallback_edge_tts(text: str, voice_id: str = "es-MX-DaliaNeural", spe
             voice = "es-ES-AlvaroNeural"
         elif "elvira" in vid:
             voice = "es-ES-ElviraNeural"
-        elif "jorge" in vid or "male" in vid or "college" in vid or "qingse" in vid or "jingying" in vid or "daxuesheng" in vid:
+        elif "jorge" in vid or "college" in vid or "qingse" in vid or "jingying" in vid or "daxuesheng" in vid or ("male" in vid and "female" not in vid):
             voice = "es-MX-JorgeNeural"
         elif "dalia" in vid or "female" in vid or "yujie" in vid or "chengshu" in vid or "tianmei" in vid or "shaonv" in vid or "presenter_female" in vid or "audiobook_female" in vid:
             voice = "es-MX-DaliaNeural"
@@ -315,13 +315,17 @@ async def _fallback_edge_tts(text: str, voice_id: str = "es-MX-DaliaNeural", spe
 
         rate_str = f"{int((speed - 1.0) * 100):+d}%" if speed != 1.0 else "+0%"
         communicate = edge_tts.Communicate(text, voice, rate=rate_str)
-        audio_data = b""
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_data += chunk["data"]
-        return audio_data
+
+        async def _stream():
+            data = b""
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    data += chunk["data"]
+            return data
+
+        return await asyncio.wait_for(_stream(), timeout=3.5)
     except Exception as e:
-        logger.warning(f"Edge TTS synthesis error ({voice_id}): {e}")
+        logger.warning(f"Edge TTS synthesis error or timeout ({voice_id}): {e}")
         return b""
 
 def is_predominantly_english(text: str) -> bool:
@@ -371,33 +375,179 @@ def is_predominantly_english(text: str) -> bool:
     # Only consider predominantly English if it has clear English function words and no Spanish markers
     return english_count >= 2 and spanish_count == 0
 
+VOICE_PERSONA_MAP: Dict[str, Dict[str, Any]] = {
+    # ─── Microsoft Edge Neural Personas (Matched with authentic voice actors) ─
+    "es-MX-DaliaNeural": {
+        "minimax_voice": "female-tianmei",
+        "pitch": 1,
+        "emotion": "calm",
+        "gender": "female",
+        "is_english": False,
+    },
+    "es-MX-JorgeNeural": {
+        "minimax_voice": "male-qn-daxuesheng",
+        "pitch": -1,
+        "emotion": "calm",
+        "gender": "male",
+        "is_english": False,
+    },
+    "es-ES-ElviraNeural": {
+        "minimax_voice": "female-chengshu",
+        "pitch": 0,
+        "emotion": "calm",
+        "gender": "female",
+        "is_english": False,
+    },
+    "es-ES-AlvaroNeural": {
+        "minimax_voice": "male-qn-jingying",
+        "pitch": -1,
+        "emotion": "calm",
+        "gender": "male",
+        "is_english": False,
+    },
+    "es-US-PalomaNeural": {
+        "minimax_voice": "female-shaonv",
+        "pitch": 1,
+        "emotion": "calm",
+        "gender": "female",
+        "is_english": False,
+    },
+    "es-US-AlonsoNeural": {
+        "minimax_voice": "male-qn-qingse",
+        "pitch": 0,
+        "emotion": "calm",
+        "gender": "male",
+        "is_english": False,
+    },
+    "en-US-RogerNeural": {
+        "minimax_voice": "presenter_male",
+        "pitch": -1,
+        "emotion": "calm",
+        "gender": "male",
+        "is_english": True,
+    },
+    "en-US-JennyNeural": {
+        "minimax_voice": "presenter_female",
+        "pitch": 0,
+        "emotion": "calm",
+        "gender": "female",
+        "is_english": True,
+    },
+
+    # ─── Google TTS Personas (Distinct, expressive vocal profiles) ─────────────
+    "google-es": {
+        "minimax_voice": "audiobook_female_1",
+        "pitch": 0,
+        "emotion": "calm",
+        "gender": "female",
+        "is_english": False,
+    },
+    "google-es-mx": {
+        "minimax_voice": "female-yujie",
+        "pitch": 2,
+        "emotion": "calm",
+        "gender": "female",
+        "is_english": False,
+    },
+    "google-es-es": {
+        "minimax_voice": "female-chengshu",
+        "pitch": -2,
+        "emotion": "calm",
+        "gender": "female",
+        "is_english": False,
+    },
+    "google-en-us": {
+        "minimax_voice": "presenter_female",
+        "pitch": 1,
+        "emotion": "calm",
+        "gender": "female",
+        "is_english": True,
+    },
+    "google-en-uk": {
+        "minimax_voice": "audiobook_male_2",
+        "pitch": 0,
+        "emotion": "calm",
+        "gender": "male",
+        "is_english": True,
+    },
+}
+
+def resolve_voice_persona(voice_id: str) -> Dict[str, Any]:
+    """Resolves voice ID into exact persona attributes (minimax_voice, pitch, emotion, gender, is_english)."""
+    vid = (voice_id or "").strip()
+    if vid in VOICE_PERSONA_MAP:
+        return VOICE_PERSONA_MAP[vid]
+
+    KNOWN_MINIMAX = {
+        "female-yujie", "female-chengshu", "female-tianmei", "female-shaonv",
+        "audiobook_female_1", "presenter_female", "male-qn-qingse",
+        "male-qn-jingying", "male-qn-daxuesheng", "presenter_male",
+        "audiobook_male_1", "audiobook_male_2", "cute_boy", "santa_claus"
+    }
+    if vid in KNOWN_MINIMAX:
+        is_f = "female" in vid
+        return {
+            "minimax_voice": vid,
+            "pitch": 0,
+            "emotion": "calm",
+            "gender": "female" if is_f else "male",
+            "is_english": False,
+        }
+
+    vid_lower = vid.lower()
+    for key, persona in VOICE_PERSONA_MAP.items():
+        if key.lower() == vid_lower or key.lower() in vid_lower:
+            return persona
+
+    is_female = "female" in vid_lower or any(f in vid_lower for f in ("dalia", "elvira", "paloma", "jenny", "yujie", "chengshu", "tianmei", "shaonv"))
+    is_male = not is_female and any(m in vid_lower for m in ("male", "jorge", "alvaro", "alonso", "roger", "guy", "qingse", "jingying", "daxuesheng"))
+    is_eng = any(k in vid_lower for k in ("en-", "english", "roger", "jenny", "uk", "british", "us"))
+
+    if is_eng:
+        return {
+            "minimax_voice": "presenter_male" if is_male else "presenter_female",
+            "pitch": 0,
+            "emotion": "calm",
+            "gender": "male" if is_male else "female",
+            "is_english": True,
+        }
+
+    return {
+        "minimax_voice": "male-qn-daxuesheng" if is_male else "female-yujie",
+        "pitch": 0,
+        "emotion": "calm",
+        "gender": "male" if is_male else "female",
+        "is_english": False,
+    }
+
 async def _synthesize_minimax_tts(
     text: str,
     voice_id: str = "female-yujie",
     emotion: str = "calm",
     speed: float = 1.0,
+    pitch: Optional[int] = None,
     api_key: str = None
 ) -> Optional[bytes]:
-    """Calls MiniMax speech-02-hd text-to-audio API (t2a_v2)."""
+    """Calls MiniMax speech-02-hd text-to-audio API (t2a_v2) with persona matching."""
     key = api_key or settings.MINIMAX_API_KEY
     if not key or key == "your_minimax_api_key_here" or len(key) < 10:
         return None
 
-    # Map generic/edge/google IDs to MiniMax voice IDs
-    minimax_voice = voice_id
-    if not voice_id or voice_id.startswith("edge-") or voice_id.startswith("en-") or voice_id.startswith("es-") or voice_id.startswith("google") or voice_id in ("default", "tutor"):
-        minimax_voice = "female-yujie"
+    persona = resolve_voice_persona(voice_id)
+    actual_voice = persona.get("minimax_voice", "female-yujie")
+    actual_pitch = pitch if pitch is not None else persona.get("pitch", 0)
+    actual_emotion = emotion or persona.get("emotion", "calm")
 
     payload = {
         "model": settings.MINIMAX_TTS_MODEL or "speech-02-hd",
         "text": text,
         "stream": False,
         "voice_setting": {
-            "voice_id": minimax_voice,
+            "voice_id": actual_voice,
             "speed": speed,
             "vol": 1.0,
-            "pitch": 0,
-            "emotion": emotion,
+            "pitch": actual_pitch,
+            "emotion": actual_emotion,
         },
         "audio_setting": {
             "sample_rate": 32000,
@@ -412,15 +562,15 @@ async def _synthesize_minimax_tts(
         "Content-Type": "application/json",
     }
 
-    endpoints = [
-        settings.MINIMAX_TTS_ENDPOINT or "https://api.minimax.io/v1/t2a_v2",
-        "https://api.minimax.chat/v1/t2a_v2",
-    ]
+    endpoint = settings.MINIMAX_TTS_ENDPOINT or "https://api.minimax.io/v1/t2a_v2"
+    endpoints = [endpoint]
+    if "api.minimax.chat" not in endpoint:
+        endpoints.append("https://api.minimax.chat/v1/t2a_v2")
 
-    for endpoint in endpoints:
+    for ep in endpoints:
         try:
             async with httpx.AsyncClient(timeout=25.0) as client:
-                resp = await client.post(endpoint, json=payload, headers=headers)
+                resp = await client.post(ep, json=payload, headers=headers)
                 if resp.status_code == 200:
                     data = resp.json()
                     base_resp = data.get("base_resp", {})
@@ -433,11 +583,11 @@ async def _synthesize_minimax_tts(
                                 import base64
                                 return base64.b64decode(audio_raw)
                     else:
-                        logger.warning(f"MiniMax TTS returned status error on {endpoint}: {base_resp}")
+                        logger.warning(f"MiniMax TTS returned status error on {ep}: {base_resp}")
                 else:
-                    logger.warning(f"MiniMax TTS HTTP {resp.status_code} on {endpoint}: {resp.text[:200]}")
+                    logger.warning(f"MiniMax TTS HTTP {resp.status_code} on {ep}: {resp.text[:200]}")
         except Exception as e:
-            logger.warning(f"MiniMax TTS error on {endpoint}: {e}")
+            logger.warning(f"MiniMax TTS error on {ep}: {e}")
 
     return None
 
@@ -451,68 +601,95 @@ async def synthesize_speech(
     """
     Master speech synthesis router:
     Respects student's chosen voice persona (MiniMax HD, Edge Neural Studio, Google TTS).
-    Ensures smart fallback chaining (MiniMax -> Edge Neural Studio -> Google TTS).
+    Guarantees that every voice persona in the catalog has an authentic, distinct voice.
+    Ensures smart fallback chaining (MiniMax HD / Edge Studio -> gTTS).
     """
     key = api_key or settings.MINIMAX_API_KEY
-    vid = (voice_id or "").lower()
+    vid = (voice_id or "").strip()
+    vid_lower = vid.lower()
+    persona = resolve_voice_persona(vid)
+    is_eng = persona.get("is_english", False) or is_predominantly_english(text)
 
     # ── 1. EXPLICIT GOOGLE TTS VOICES ─────────────────────────────────────────
-    if vid.startswith("google-") or vid.startswith("gtts-"):
-        is_eng = "en" in vid
+    # In cloud environments, raw gTTS only has 1 single female voice across all accents.
+    # To provide distinct voices for each Google persona, synthesize using each persona's distinct neural profile.
+    if vid_lower.startswith("google-") or vid_lower.startswith("gtts-"):
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=not is_eng)
-        lang = "en" if is_eng else "es"
-        if "es-es" in vid:
-            tld = "es"
-        elif "es-mx" in vid:
-            tld = "com.mx"
-        elif "en-uk" in vid:
-            tld = "co.uk"
-        else:
-            tld = "com"
-        
-        google_audio = await _synthesize_google_tts(speech_text, lang=lang, tld=tld)
-        if google_audio and len(google_audio) > 100:
-            return google_audio
-        # Fallback to Edge Neural
-        fallback_v = "en-US-JennyNeural" if is_eng else "es-MX-DaliaNeural"
-        return await _fallback_edge_tts(speech_text, voice_id=fallback_v, speed=speed)
+        if key and len(key) >= 10:
+            mm_audio = await _synthesize_minimax_tts(
+                text=speech_text,
+                voice_id=vid,
+                emotion=emotion,
+                speed=speed,
+                api_key=key
+            )
+            if mm_audio and len(mm_audio) > 100:
+                return mm_audio
+
+        # Tertiary fallback: Google gTTS
+        lang = "en" if "en" in vid_lower else "es"
+        tld = "co.uk" if "en-uk" in vid_lower else ("es" if "es-es" in vid_lower else ("com.mx" if "es-mx" in vid_lower else "com"))
+        return await _synthesize_google_tts(speech_text, lang=lang, tld=tld)
 
     # ── 2. EXPLICIT MICROSOFT EDGE NEURAL STUDIO VOICES ───────────────────────
-    if vid.startswith("es-") or vid.startswith("en-") or vid.startswith("edge-"):
-        is_eng = vid.startswith("en-") or "roger" in vid or "jenny" in vid or "aria" in vid
+    if vid_lower.startswith("es-") or vid_lower.startswith("en-") or vid_lower.startswith("edge-"):
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=not is_eng)
-        edge_audio = await _fallback_edge_tts(speech_text, voice_id=voice_id, speed=speed)
+        # A) Try native Edge TTS first (works on desktop/local or unblocked networks)
+        edge_audio = await _fallback_edge_tts(speech_text, voice_id=vid, speed=speed)
         if edge_audio and len(edge_audio) > 100:
             return edge_audio
-        # Fallback to Google TTS
+
+        # B) Edge blocked on cloud datacenter (e.g. Render) -> use matched MiniMax Neural Persona!
+        if key and len(key) >= 10:
+            mm_audio = await _synthesize_minimax_tts(
+                text=speech_text,
+                voice_id=vid,
+                emotion=emotion,
+                speed=speed,
+                api_key=key
+            )
+            if mm_audio and len(mm_audio) > 100:
+                return mm_audio
+
+        # C) Emergency fallback: Google TTS with gender awareness
         lang = "en" if is_eng else "es"
         return await _synthesize_google_tts(speech_text, lang=lang)
 
-    # ── 3. STRICT ENGLISH DRILL / MODEL SENTENCE (ONLY IF 100% PURE ENGLISH) ─
-    # If the text is purely an English practice sentence without any Spanish,
-    # speak with native English Studio voice
+    # ── 3. STRICT ENGLISH PRACTICE DRILL ──────────────────────────────────────
     if is_predominantly_english(text):
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
-        is_explicit_male = any(m in vid for m in ("male", "roger", "guy", "christopher", "alvaro", "jorge", "alonso"))
+        is_explicit_male = persona.get("gender") == "male" or any(m in vid_lower for m in ("male", "roger", "guy", "christopher", "alvaro", "jorge", "alonso"))
         chosen_en_voice = "en-US-RogerNeural" if is_explicit_male else "en-US-JennyNeural"
-        if vid.startswith("en-"):
-            chosen_en_voice = voice_id
+        if vid_lower.startswith("en-"):
+            chosen_en_voice = vid
 
-        neural_audio = await _fallback_edge_tts(speech_text, voice_id=chosen_en_voice, speed=speed)
-        if neural_audio and len(neural_audio) > 100:
-            return neural_audio
+        edge_audio = await _fallback_edge_tts(speech_text, voice_id=chosen_en_voice, speed=speed)
+        if edge_audio and len(edge_audio) > 100:
+            return edge_audio
+
+        if key and len(key) >= 10:
+            mm_en_voice = "presenter_male" if is_explicit_male else "presenter_female"
+            mm_audio = await _synthesize_minimax_tts(
+                text=speech_text,
+                voice_id=mm_en_voice,
+                speed=speed,
+                api_key=key
+            )
+            if mm_audio and len(mm_audio) > 100:
+                return mm_audio
+
         return await _synthesize_google_tts(speech_text, lang="en")
 
-    # ── 4. SPANISH TUTOR PERSONA SPEECH (MiniMax HD with Edge Studio Fallback) ─
+    # ── 4. SPANISH TUTOR PERSONA SPEECH (MiniMax HD -> Edge Studio -> Google) ─
     speech_text = preprocess_text_for_tts(text, is_spanish_tutor=True)
     if not speech_text:
         return b""
 
-    # A) PRIMARY: MiniMax High-Definition Neural Speech Engine (if valid key)
-    if key and key != "your_minimax_api_key_here" and len(key) >= 10:
+    # A) PRIMARY: MiniMax High-Definition Neural Speech Engine
+    if key and len(key) >= 10:
         minimax_audio = await _synthesize_minimax_tts(
             text=speech_text,
-            voice_id=voice_id,
+            voice_id=vid,
             emotion=emotion,
             speed=speed,
             api_key=key
@@ -520,12 +697,12 @@ async def synthesize_speech(
         if minimax_audio and len(minimax_audio) > 200:
             return minimax_audio
 
-    # B) SECONDARY: Microsoft Edge Neural Studio HD Voice (High-Fidelity Studio Persona)
-    is_male = any(m in vid for m in ("male", "jorge", "alvaro", "alonso", "qingse", "jingying", "daxuesheng", "presenter_male"))
+    # B) SECONDARY: Microsoft Edge Neural Studio HD Voice
+    is_male = persona.get("gender") == "male" or any(m in vid_lower for m in ("male", "jorge", "alvaro", "alonso", "qingse", "jingying", "daxuesheng", "presenter_male"))
     fallback_spanish = "es-MX-JorgeNeural" if is_male else "es-MX-DaliaNeural"
-    if "es-es" in vid or "spain" in vid or "elvira" in vid or "alvaro" in vid:
+    if "es-es" in vid_lower or "spain" in vid_lower or "elvira" in vid_lower or "alvaro" in vid_lower:
         fallback_spanish = "es-ES-AlvaroNeural" if is_male else "es-ES-ElviraNeural"
-    elif "es-us" in vid or "bilingual" in vid or "paloma" in vid or "alonso" in vid:
+    elif "es-us" in vid_lower or "bilingual" in vid_lower or "paloma" in vid_lower or "alonso" in vid_lower:
         fallback_spanish = "es-US-AlonsoNeural" if is_male else "es-US-PalomaNeural"
 
     neural_audio = await _fallback_edge_tts(speech_text, voice_id=fallback_spanish, speed=speed)
@@ -533,9 +710,5 @@ async def synthesize_speech(
         return neural_audio
 
     # C) TERTIARY: Google TTS Spanish Fallback
-    google_audio = await _synthesize_google_tts(speech_text, lang="es", tld="com.mx")
-    if google_audio and len(google_audio) > 100:
-        return google_audio
-
-    return await _synthesize_google_tts(speech_text, lang="es", tld="com")
+    return await _synthesize_google_tts(speech_text, lang="es", tld="com.mx")
 

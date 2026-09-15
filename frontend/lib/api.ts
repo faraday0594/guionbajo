@@ -584,8 +584,15 @@ function createBrowserSpeechAudioAdapter(text: string, voiceId?: string) {
           window.speechSynthesis.cancel();
           await ensureBrowserVoices();
           const utterance = new SpeechSynthesisUtterance(cleanedSpeech);
-          utterance.lang = isEnglish ? 'en-US' : 'es-MX';
+          const isSpain = targetVoice.includes('es-es') || targetVoice.includes('alvaro') || targetVoice.includes('elvira');
+          const isBritish = targetVoice.includes('uk') || targetVoice.includes('gb') || targetVoice.includes('british') || targetVoice.includes('sonia');
+          const isFemale = targetVoice.includes('female') || targetVoice.includes('dalia') || targetVoice.includes('elvira') || targetVoice.includes('paloma') || targetVoice.includes('jenny') || targetVoice.includes('yujie') || targetVoice.includes('chengshu') || targetVoice.includes('tianmei') || targetVoice.includes('shaonv');
+          const isMale = !isFemale && (targetVoice.includes('male') || targetVoice.includes('jorge') || targetVoice.includes('alvaro') || targetVoice.includes('alonso') || targetVoice.includes('roger') || targetVoice.includes('guy') || targetVoice.includes('qingse') || targetVoice.includes('jingying') || targetVoice.includes('daxuesheng'));
+
+          utterance.lang = isEnglish ? (isBritish ? 'en-GB' : 'en-US') : (isSpain ? 'es-ES' : 'es-MX');
           utterance.rate = isEnglish ? 0.9 : 1.0;
+          utterance.pitch = isMale ? 0.82 : (isFemale ? 1.05 : 1.0);
+
           const bestVoice = getBestBrowserVoice(isEnglish ? 'en' : 'es', targetVoice);
           if (bestVoice) utterance.voice = bestVoice;
 

@@ -1,7 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Volume2, VolumeX, Play, Sparkles, ChevronRight, MapPin } from 'lucide-react';
+import {
+  Volume2,
+  VolumeX,
+  Play,
+  Sparkles,
+  ChevronRight,
+  ChevronLeft,
+  RotateCcw,
+  CheckCircle2,
+  Lock,
+  MapPin,
+} from 'lucide-react';
 import { JOURNEY_TOPICS, getTopicIndex, JourneyTopic } from '@/lib/journeyTopics';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 
@@ -9,7 +20,7 @@ interface JourneyVisualStageProps {
   sublevel: string;
   classIndex: number;
   activeCheckpoint?: any;
-  onLaunchClass: () => void;
+  onLaunchClass: (targetSublevel?: string, targetClassIndex?: number) => void;
 }
 
 /* ─── CEFR Level palette (warm, nature-inspired) ─── */
@@ -53,8 +64,19 @@ export default function JourneyVisualStage({
   const [travelProgress, setTravelProgress] = useState(0); // 0 to 1 during walk
   const [travelFrom, setTravelFrom] = useState<number>(targetIndex);
   const [travelTo, setTravelTo] = useState<number>(targetIndex);
+  const [travelDirection, setTravelDirection] = useState<'forward' | 'backward'>('forward');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [legPhase, setLegPhase] = useState(0); // 0=idle, 1..4=walk cycle
+
+  const handleNavigatePrev = () => {
+    if (isTraveling || currentIndex <= 0) return;
+    triggerAdvance(currentIndex, currentIndex - 1);
+  };
+
+  const handleNavigateNext = () => {
+    if (isTraveling || currentIndex >= 63) return;
+    triggerAdvance(currentIndex, currentIndex + 1);
+  };
 
   const isTravelingRef = useRef(false);
   const animFrameRef = useRef<number | null>(null);
@@ -122,10 +144,11 @@ export default function JourneyVisualStage({
     } catch (_) {}
   };
 
-  // 🚶 The smooth advance animation:
-  // Everything scrolls backward past the student while the student walks in place.
+  // 🚶 The smooth advance / retreat animation:
   const triggerAdvance = (fromIdx: number, toIdx: number) => {
     if (isTravelingRef.current || fromIdx === toIdx) return;
+    const direction = toIdx < fromIdx ? 'backward' : 'forward';
+    setTravelDirection(direction);
     isTravelingRef.current = true;
     setIsTraveling(true);
     setTravelFrom(fromIdx);
@@ -133,7 +156,7 @@ export default function JourneyVisualStage({
     setCurrentIndex(fromIdx);
 
     const startTime = performance.now();
-    const duration = 1850; // 1.85 seconds of smooth walking
+    const duration = 1450; // 1.45 seconds smooth walking
 
     // Play footstep audio in rhythm
     let stepCount = 0;
@@ -142,7 +165,7 @@ export default function JourneyVisualStage({
       playStepSound();
       stepCount++;
       setLegPhase((stepCount % 4) + 1);
-    }, 220);
+    }, 200);
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
@@ -287,26 +310,29 @@ export default function JourneyVisualStage({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Manual test / preview button */}
-          <button
-            onClick={() => {
-              if (isTraveling) return;
-              const nextIdx = (currentIndex + 1) % 64;
-              triggerAdvance(currentIndex, nextIdx);
-            }}
-            className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-white/50 hover:text-emerald-300 transition border border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono font-bold cursor-pointer"
-            title="Ver animación de avance al siguiente banderín"
-          >
-            <Sparkles size={13} className={isTraveling ? 'animate-spin text-emerald-400' : ''} />
-            <span className="hidden sm:inline">
-              {isTraveling ? 'Avanzando...' : 'Avanzar'}
-            </span>
-          </button>
+          {/* Quick jump back to active checkpoint if viewing another class */}
+          {currentIndex !== targetIndex && (
+            <button
+              onClick={() => triggerAdvance(currentIndex, targetIndex)}
+              disabled={isTraveling}
+              className="px-2.5 py-1 rounded-xl bg-brand-accent/20 hover:bg-brand-accent/35 text-brand-cyan hover:text-white transition border border-brand-accent/40 flex items-center gap-1.5 text-[11px] font-bold cursor-pointer shadow-sm"
+              title={`Volver a mi último checkpoint: Clase ${targetIndex + 1}`}
+            >
+              <CheckCircle2 size={13} className="text-brand-cyan" />
+              <span className="hidden sm:inline">Ir a Checkpoint (Clase {targetIndex + 1})</span>
+              <span className="sm:hidden">Checkpoint</span>
+            </button>
+          )}
 
           <div className="text-right hidden sm:block">
-            <span className="text-[10px] uppercase font-bold text-white/35 font-mono block">Ubicación</span>
-            <span className="text-xs font-bold font-mono" style={{ color: palette.primary }}>
-              Clase {currentIndex + 1} de 64
+            <span className="text-[10px] uppercase font-bold text-white/35 font-mono block">
+              {currentIndex < targetIndex ? 'Repaso' : 'Ubicación'}
+            </span>
+            <span
+              className="text-xs font-bold font-mono"
+              style={{ color: currentIndex < targetIndex ? '#94a3b8' : palette.primary }}
+            >
+              Clase {currentIndex + 1} de 64 {currentIndex < targetIndex && '(Completada)'}
             </span>
           </div>
 
@@ -825,7 +851,105 @@ export default function JourneyVisualStage({
               );
             })()}
           </g>
+
+          {/* ══════════════════════════════════════════════════════════════
+              ⬅️ ➡️ NAVIGATION ARROWS (DENTRO DEL SVG A ALTURA CENTRAL Y=170)
+             ══════════════════════════════════════════════════════════════ */}
+          {/* Left Arrow inside SVG */}
+          <g
+            id="svgNavLeft"
+            className={`transition-all duration-200 select-none ${
+              currentIndex === 0 || isTraveling
+                ? 'opacity-20 cursor-not-allowed'
+                : 'opacity-85 hover:opacity-100 cursor-pointer'
+            }`}
+            onClick={handleNavigatePrev}
+            style={{ pointerEvents: currentIndex === 0 || isTraveling ? 'none' : 'auto' }}
+          >
+            <circle
+              cx="44"
+              cy="170"
+              r="24"
+              fill="#0a1510"
+              fillOpacity="0.85"
+              stroke="#ffffff"
+              strokeOpacity="0.3"
+              strokeWidth="2"
+              filter="url(#softGlow)"
+            />
+            <path
+              d="M 48 158 L 36 170 L 48 182"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <title>{currentIndex > 0 ? `Retroceder a Clase ${currentIndex}` : 'Primera clase'}</title>
+          </g>
+
+          {/* Right Arrow inside SVG */}
+          <g
+            id="svgNavRight"
+            className={`transition-all duration-200 select-none ${
+              currentIndex >= 63 || isTraveling
+                ? 'opacity-20 cursor-not-allowed'
+                : 'opacity-85 hover:opacity-100 cursor-pointer'
+            }`}
+            onClick={handleNavigateNext}
+            style={{ pointerEvents: currentIndex >= 63 || isTraveling ? 'none' : 'auto' }}
+          >
+            <circle
+              cx="916"
+              cy="170"
+              r="24"
+              fill="#0a1510"
+              fillOpacity="0.85"
+              stroke="#ffffff"
+              strokeOpacity="0.3"
+              strokeWidth="2"
+              filter="url(#softGlow)"
+            />
+            <path
+              d="M 912 158 L 924 170 L 912 182"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <title>{currentIndex < 63 ? `Avanzar a Clase ${currentIndex + 2}` : 'Última clase'}</title>
+          </g>
         </svg>
+
+        {/* High-Precision Touch / Click Overlays for Left & Right Navigation */}
+        <button
+          onClick={handleNavigatePrev}
+          disabled={currentIndex === 0 || isTraveling}
+          aria-label="Retroceder clase"
+          className={`absolute left-2.5 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center backdrop-blur-md transition-all duration-200 border shadow-xl group ${
+            currentIndex === 0 || isTraveling
+              ? 'opacity-20 cursor-not-allowed bg-black/40 border-white/10 text-white/30 pointer-events-none'
+              : 'opacity-85 hover:opacity-100 bg-black/65 hover:bg-black/90 border-white/25 hover:border-brand-cyan text-white hover:text-brand-cyan active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(0,0,0,0.6)]'
+          }`}
+          title={currentIndex > 0 ? `Retroceder a Clase ${currentIndex}` : 'Primera clase'}
+        >
+          <ChevronLeft size={20} className="sm:w-6 sm:h-6 transition-transform group-hover:-translate-x-0.5" />
+        </button>
+
+        <button
+          onClick={handleNavigateNext}
+          disabled={currentIndex >= 63 || isTraveling}
+          aria-label="Avanzar clase"
+          className={`absolute right-2.5 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center backdrop-blur-md transition-all duration-200 border shadow-xl group ${
+            currentIndex >= 63 || isTraveling
+              ? 'opacity-20 cursor-not-allowed bg-black/40 border-white/10 text-white/30 pointer-events-none'
+              : 'opacity-85 hover:opacity-100 bg-black/65 hover:bg-black/90 border-white/25 hover:border-brand-cyan text-white hover:text-brand-cyan active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(0,0,0,0.6)]'
+          }`}
+          title={currentIndex < 63 ? `Avanzar a Clase ${currentIndex + 2}` : 'Última clase'}
+        >
+          <ChevronRight size={20} className="sm:w-6 sm:h-6 transition-transform group-hover:translate-x-0.5" />
+        </button>
 
         {/* ─── FLOATING STATION BADGE ─── */}
         <div className="absolute top-3 left-0 right-0 z-10 pointer-events-none flex flex-col items-center px-4">
@@ -835,10 +959,14 @@ export default function JourneyVisualStage({
               backgroundColor: 'rgba(10, 20, 14, 0.85)',
               borderColor: isTraveling
                 ? `${getPalette(destinationTopic.levelColor).primary}66`
+                : currentIndex < targetIndex
+                ? '#94a3b888'
                 : `${palette.primary}44`,
               boxShadow: `0 0 30px ${
                 isTraveling
                   ? getPalette(destinationTopic.levelColor).primary
+                  : currentIndex < targetIndex
+                  ? '#94a3b822'
                   : palette.primary
               }15, 0 4px 20px rgba(0,0,0,0.3)`,
               transform: isTraveling ? 'scale(1.02)' : 'scale(1)',
@@ -849,16 +977,26 @@ export default function JourneyVisualStage({
               style={{
                 color: isTraveling
                   ? getPalette(destinationTopic.levelColor).primary
+                  : currentIndex < targetIndex
+                  ? '#cbd5e1'
                   : palette.primary,
               }}
             >
               {isTraveling
-                ? `AVANZANDO A CLASE ${destinationTopic.classNum} • NIVEL ${destinationTopic.level}...`
+                ? `${travelDirection === 'backward' ? 'RETROCEDIENDO' : 'AVANZANDO'} A CLASE ${destinationTopic.classNum} • NIVEL ${destinationTopic.level}...`
+                : currentIndex < targetIndex
+                ? `NIVEL ${currentTopic.level} • ${currentTopic.module} — CLASE ${currentTopic.classNum} (COMPLETADA)`
                 : `NIVEL ${currentTopic.level} • ${currentTopic.module} — CLASE ${currentTopic.classNum}`}
             </div>
             <div className="text-sm sm:text-base md:text-lg font-outfit font-black text-white tracking-wide leading-tight transition-opacity duration-300">
               {isTraveling ? destinationTopic.title.toUpperCase() : currentTopic.title.toUpperCase()}
             </div>
+            {currentIndex < targetIndex && !isTraveling && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-full bg-slate-800/80 border border-slate-600/70 text-slate-300 text-[10px] font-bold tracking-wider uppercase">
+                <CheckCircle2 size={11} className="text-emerald-400 flex-shrink-0" />
+                <span>Clase Aprobada • Puedes repetirla para mejorar tu nota</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -963,24 +1101,36 @@ export default function JourneyVisualStage({
             {JOURNEY_TOPICS.map((t, idx) => {
               if (idx === currentIndex) return null;
               const pt = getMinimapPoint(idx);
-              const isPast = idx < currentIndex;
-              const dotColor =
-                t.levelColor === '#00e676'
-                  ? '#34d399'
-                  : t.levelColor === '#ffd600'
-                  ? '#fbbf24'
-                  : t.levelColor === '#00b0ff'
-                  ? '#38bdf8'
-                  : '#c084fc';
+              const isCompleted = idx < targetIndex;
+              // Las clases terminadas correctamente se marcan en gris (#94a3b8)
+              const dotColor = isCompleted
+                ? '#94a3b8'
+                : t.levelColor === '#00e676'
+                ? '#34d399'
+                : t.levelColor === '#ffd600'
+                ? '#fbbf24'
+                : t.levelColor === '#00b0ff'
+                ? '#38bdf8'
+                : '#c084fc';
               return (
                 <circle
                   key={t.id}
                   cx={pt.x}
                   cy={pt.y}
-                  r={isPast ? 2.2 : 1.4}
+                  r={isCompleted ? 2.5 : 1.5}
                   fill={dotColor}
-                  opacity={isPast ? 0.75 : 0.25}
-                />
+                  stroke={isCompleted ? '#64748b' : 'none'}
+                  strokeWidth={isCompleted ? 0.8 : 0}
+                  opacity={isCompleted ? 0.95 : 0.25}
+                  className="cursor-pointer transition-all hover:scale-150"
+                  onClick={() => {
+                    if (!isTraveling && idx !== currentIndex) {
+                      triggerAdvance(currentIndex, idx);
+                    }
+                  }}
+                >
+                  <title>{`Clase ${idx + 1}: ${t.title} (${isCompleted ? 'Completada - Clic para ver y repetir' : 'Nivel ' + t.level})`}</title>
+                </circle>
               );
             })}
 
@@ -990,9 +1140,9 @@ export default function JourneyVisualStage({
                 cx={beaconPoint.x}
                 cy={beaconPoint.y}
                 r="14"
-                fill={palette.primary}
+                fill={currentIndex < targetIndex ? '#94a3b8' : palette.primary}
                 fillOpacity="0.2"
-                stroke={palette.primary}
+                stroke={currentIndex < targetIndex ? '#94a3b8' : palette.primary}
                 strokeWidth="1.5"
                 className="animate-ping"
               />
@@ -1001,7 +1151,7 @@ export default function JourneyVisualStage({
                 cy={beaconPoint.y}
                 r="4.5"
                 fill="#ffffff"
-                stroke={palette.primary}
+                stroke={currentIndex < targetIndex ? '#64748b' : palette.primary}
                 strokeWidth="2.5"
               />
               {/* Flagpole */}
@@ -1016,7 +1166,7 @@ export default function JourneyVisualStage({
               {/* Flag */}
               <polygon
                 points={`${beaconPoint.x},${beaconPoint.y - 18} ${beaconPoint.x + 10},${beaconPoint.y - 13.5} ${beaconPoint.x},${beaconPoint.y - 9}`}
-                fill={palette.flag}
+                fill={currentIndex < targetIndex ? '#64748b' : palette.flag}
                 stroke="#ffffff"
                 strokeWidth="0.8"
               />
@@ -1029,7 +1179,7 @@ export default function JourneyVisualStage({
                 fontWeight="900"
                 textAnchor="middle"
               >
-                TEMA {currentIndex + 1}
+                {currentIndex < targetIndex ? `CLASE ${currentIndex + 1} (COMPLETADA)` : `TEMA ${currentIndex + 1}`}
               </text>
             </g>
           </svg>
@@ -1042,19 +1192,33 @@ export default function JourneyVisualStage({
           {/* Avatar container with generous vertical breathing room without clipping */}
           <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center flex-shrink-0 relative overflow-visible">
             <div className="absolute inset-0 bg-brand-cyan/10 rounded-2xl blur-sm -z-10" />
-            <TutorAvatar size="sm" emotion={activeCheckpoint ? 'victory' : 'happy'} />
+            <TutorAvatar
+              size="sm"
+              emotion={currentIndex < targetIndex ? 'victory' : activeCheckpoint ? 'victory' : 'happy'}
+            />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
               <span className="text-xs sm:text-sm font-black text-white font-outfit tracking-wide whitespace-nowrap">
                 {currentTopic.level} • Clase {currentTopic.classNum}
               </span>
-              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan truncate max-w-[120px] sm:max-w-none">
-                {currentTopic.title || 'Misión Actual'}
-              </span>
+              {currentIndex < targetIndex ? (
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-800/90 border border-slate-600 text-slate-300 truncate max-w-[120px] sm:max-w-none">
+                  Completada
+                </span>
+              ) : (
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan truncate max-w-[120px] sm:max-w-none">
+                  {currentTopic.title || 'Misión Actual'}
+                </span>
+              )}
             </div>
             <div className="text-[11px] sm:text-xs truncate">
-              {activeCheckpoint ? (
+              {currentIndex < targetIndex ? (
+                <span className="flex items-center gap-1.5 text-slate-300 font-medium truncate">
+                  <CheckCircle2 size={12} className="text-emerald-400 flex-shrink-0" />
+                  <span className="truncate">Clase completada • Repite para mejorar nota</span>
+                </span>
+              ) : activeCheckpoint ? (
                 <span className="flex items-center gap-1.5 text-emerald-400 font-semibold truncate">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399] flex-shrink-0" />
                   <span className="truncate">Progreso guardado listo</span>
@@ -1070,26 +1234,41 @@ export default function JourneyVisualStage({
 
         {/* Sleek, Compact & Responsive CTA Button */}
         <button
-          onClick={onLaunchClass}
-          className="group relative px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-brand-accent via-[#6366f1] to-brand-cyan hover:from-brand-accent/90 hover:to-cyan-400 text-white font-bold text-xs sm:text-sm tracking-wide shadow-[0_2px_15px_rgba(99,102,241,0.35)] hover:shadow-[0_4px_20px_rgba(0,212,255,0.45)] transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-[0.97] cursor-pointer flex-shrink-0 border border-white/20 overflow-hidden"
+          onClick={() => onLaunchClass(currentTopic.module, currentTopic.classNum)}
+          className={`group relative px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-white font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-[0.97] cursor-pointer flex-shrink-0 border overflow-hidden ${
+            currentIndex < targetIndex
+              ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-brand-cyan hover:from-emerald-500 hover:to-cyan-400 border-emerald-400/30 shadow-[0_2px_15px_rgba(16,185,129,0.35)] hover:shadow-[0_4px_20px_rgba(0,212,255,0.45)]'
+              : 'bg-gradient-to-r from-brand-accent via-[#6366f1] to-brand-cyan hover:from-brand-accent/90 hover:to-cyan-400 border-white/20 shadow-[0_2px_15px_rgba(99,102,241,0.35)] hover:shadow-[0_4px_20px_rgba(0,212,255,0.45)]'
+          }`}
         >
           {/* Subtle Shimmer light sweep on hover */}
           <div className="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-700 ease-out pointer-events-none" />
 
-          <Play size={13} className="fill-current text-white flex-shrink-0" />
-          <span className="font-outfit uppercase tracking-wider whitespace-nowrap">
-            {activeCheckpoint ? (
-              <>
+          {currentIndex < targetIndex ? (
+            <>
+              <RotateCcw size={13} className="text-white flex-shrink-0 group-hover:-rotate-45 transition-transform" />
+              <span className="font-outfit uppercase tracking-wider whitespace-nowrap">
+                <span>Repetir</span>
+                <span className="hidden sm:inline"> Clase</span>
+              </span>
+            </>
+          ) : activeCheckpoint ? (
+            <>
+              <Play size={13} className="fill-current text-white flex-shrink-0" />
+              <span className="font-outfit uppercase tracking-wider whitespace-nowrap">
                 <span>Continuar</span>
                 <span className="hidden sm:inline"> Clase</span>
-              </>
-            ) : (
-              <>
+              </span>
+            </>
+          ) : (
+            <>
+              <Play size={13} className="fill-current text-white flex-shrink-0" />
+              <span className="font-outfit uppercase tracking-wider whitespace-nowrap">
                 <span>Iniciar</span>
                 <span className="hidden sm:inline"> Clase {classIndex}</span>
-              </>
-            )}
-          </span>
+              </span>
+            </>
+          )}
           <ChevronRight size={14} className="flex-shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
         </button>
       </div>

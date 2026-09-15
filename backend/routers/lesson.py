@@ -234,24 +234,41 @@ async def save_lesson_checkpoint(
             is_productive_speaking=True
         )
 
-        # Advance class index or sublevel
-        if current_class_idx < 4:
-            next_class_idx = current_class_idx + 1
-            next_sublevel = req.sublevel
-        else:
-            # Advance to next sublevel if available
-            cur_sub = req.sublevel
-            idx = LEVEL_SEQUENCE.index(cur_sub) if cur_sub in LEVEL_SEQUENCE else 0
-            if idx + 1 < len(LEVEL_SEQUENCE):
-                next_sublevel = LEVEL_SEQUENCE[idx + 1]
-            else:
-                next_sublevel = cur_sub
-            next_class_idx = 1
-            profile.current_sublevel = next_sublevel
-            profile.current_level = next_sublevel.split(".")[0]
+        # Calculate current highest global progress (0 to 63)
+        cur_prog_sub = profile.current_sublevel or "A1.1"
+        cur_prog_cls = k_map.get("current_class_index", 1)
+        cur_prog_sub_idx = LEVEL_SEQUENCE.index(cur_prog_sub) if cur_prog_sub in LEVEL_SEQUENCE else 0
+        cur_global_prog = cur_prog_sub_idx * 4 + (cur_prog_cls - 1)
 
-        k_map["current_class_index"] = next_class_idx
-        # Clear in-progress checkpoint since class was successfully passed
+        # Calculate candidate next progress from this finished lesson
+        lesson_sub = req.sublevel or cur_prog_sub
+        lesson_sub_idx = LEVEL_SEQUENCE.index(lesson_sub) if lesson_sub in LEVEL_SEQUENCE else 0
+        if current_class_idx < 4:
+            cand_class_idx = current_class_idx + 1
+            cand_sublevel = lesson_sub
+        else:
+            if lesson_sub_idx + 1 < len(LEVEL_SEQUENCE):
+                cand_sublevel = LEVEL_SEQUENCE[lesson_sub_idx + 1]
+            else:
+                cand_sublevel = lesson_sub
+            cand_class_idx = 1
+        
+        cand_sub_idx = LEVEL_SEQUENCE.index(cand_sublevel) if cand_sublevel in LEVEL_SEQUENCE else 0
+        cand_global_prog = cand_sub_idx * 4 + (cand_class_idx - 1)
+
+        # Only advance highest checkpoint if this lesson advances the student's furthest reach
+        if cand_global_prog > cur_global_prog:
+            next_class_idx = cand_class_idx
+            next_sublevel = cand_sublevel
+            profile.current_sublevel = cand_sublevel
+            profile.current_level = cand_sublevel.split(".")[0]
+            k_map["current_class_index"] = cand_class_idx
+        else:
+            # Retain current highest checkpoint
+            next_class_idx = cur_prog_cls
+            next_sublevel = cur_prog_sub
+
+        # Clear in-progress checkpoint
         k_map["active_checkpoint"] = None
         profile.knowledge_map = k_map
 
@@ -279,8 +296,18 @@ async def save_lesson_checkpoint(
         }
 
     # If not finished or score < 80, persist savepoint
+    cur_prog_sub = profile.current_sublevel or "A1.1"
+    cur_prog_cls = k_map.get("current_class_index", 1)
+    cur_prog_sub_idx = LEVEL_SEQUENCE.index(cur_prog_sub) if cur_prog_sub in LEVEL_SEQUENCE else 0
+    cur_global_prog = cur_prog_sub_idx * 4 + (cur_prog_cls - 1)
+
+    lesson_sub = req.sublevel or cur_prog_sub
+    lesson_sub_idx = LEVEL_SEQUENCE.index(lesson_sub) if lesson_sub in LEVEL_SEQUENCE else 0
+    lesson_global = lesson_sub_idx * 4 + (current_class_idx - 1)
+
     k_map["active_checkpoint"] = checkpoint_data
-    k_map["current_class_index"] = current_class_idx
+    if lesson_global >= cur_global_prog:
+        k_map["current_class_index"] = current_class_idx
     profile.knowledge_map = k_map
 
     await db.commit()

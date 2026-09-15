@@ -279,19 +279,20 @@ export default function DashboardPage() {
 
   const [dashboardTab, setDashboardTab] = useState<'curriculum' | 'phonetics'>('curriculum');
 
-  const handleLaunchMission = () => {
-    const pensum = CEFR_PENSUM[userStats.current_sublevel] || CEFR_PENSUM['A1.1'];
-    const activeMod = pensum.modules[currentClassIndex - 1] || pensum.modules[0];
+  const handleLaunchMission = (targetSublevel?: string, targetClassIdx?: number) => {
+    const sublevel = targetSublevel || userStats.current_sublevel;
+    const classIdx = targetClassIdx || currentClassIndex;
+
+    const pensum = CEFR_PENSUM[sublevel] || CEFR_PENSUM['A1.1'];
+    const activeMod = pensum.modules[classIdx - 1] || pensum.modules[0];
     
-    // Strict isolation: ensure activeCheckpoint belongs to currentClassIndex
+    // Strict isolation: ensure activeCheckpoint belongs to targeted sublevel and class
     const isCpValid = activeCheckpoint &&
-      (!activeCheckpoint.sublevel || activeCheckpoint.sublevel === userStats.current_sublevel) &&
-      (!activeCheckpoint.class_index || Number(activeCheckpoint.class_index) === Number(currentClassIndex));
+      (!activeCheckpoint.sublevel || activeCheckpoint.sublevel === sublevel) &&
+      (!activeCheckpoint.class_index || Number(activeCheckpoint.class_index) === Number(classIdx));
     const validCp = isCpValid ? activeCheckpoint : null;
 
     const topic = validCp?.topic || activeMod.topic || activeMod.title;
-    const sublevel = userStats.current_sublevel;
-    const classIdx = currentClassIndex;
     const lessonId = validCp?.lesson_id || 'new';
 
     if (validCp) {

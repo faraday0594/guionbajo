@@ -1587,6 +1587,7 @@ class TutorAgent:
             f"2. En cada fase incluye 'target_audio_items' con las oraciones modelo en inglés y su traducción.\n"
             f"3. Prohibido contenido genérico o de otros temas: debe enseñar ESTRICTAMENTE '{topic}' ({grammar_target}).\n"
             f"4. PAUTA DE EFICIENCIA PEDAGÓGICA: Sé didáctico, conciso y directo (cada 'tutor_says' de 2 a 4 oraciones bien formuladas). Evita divagaciones innecesarias.\n"
+            f"5. RESTRICCIÓN DE ALCANCE GRAMATICAL: Los ejemplos y ejercicios deben limitarse ESTRICTAMENTE al tema gramatical de la clase ({topic} - {grammar_target}) y su nivel CEFR ({sublevel}). NUNCA incluyas tiempos verbales o modales no introducidos (por ejemplo, si la clase es de 'Do y Does' en A1.2, está TERMINANTEMENTE PROHIBIDO incluir oraciones en pasado simple, modales como 'can' o futuros como 'will').\n"
             f"Responde estrictamente con JSON con la clave 'phases'."
         )
         try:
@@ -1685,12 +1686,95 @@ class TutorAgent:
                 fallback["phonetic_focus"] = ph_focus
             return self._audit_and_sanitize_lesson_content(fallback, topic, sublevel, adaptive_plan)
 
-    def _generate_default_exercises(self, topic: str, sublevel: str, grammar_target: str = "") -> list:
-        """Constructs authentic complete-sentence exercises (minimum 8) with vivid situational image prompts."""
-        t_low = f"{topic} {grammar_target}".lower()
+    def _generate_default_exercises(self, topic: str, sublevel: str = "", grammar_target: str = "") -> list:
+        """Constructs authentic complete-sentence exercises (minimum 8) strictly aligned with the target topic."""
+        if not grammar_target:
+            curr_node = self._find_curriculum_node(topic, sublevel) or {}
+            grammar_target = curr_node.get("grammar_core") or ""
+        t_low = f"{topic} {grammar_target} {sublevel}".lower()
 
-        # 1. Past Continuous & Interrupted Actions
-        if any(k in t_low for k in ["past continuous", "pasado continuo", "interrupted action", "was/were +", "while i was", "while they were", "was cooking", "were playing"]):
+        # 1. Questions & Negatives / Present Simple Auxiliaries (Do / Does / Don't / Doesn't)
+        if (
+            any(k in t_low for k in ["questions & negatives", "questions and negatives", "do and does", "do / does", "do & does", "don't / doesn't", "don't and doesn't", "auxiliar"]) or
+            (sublevel.upper() == "A1.2" and any(k in t_low for k in ["question", "negative", "do", "does"]))
+        ):
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "_____ [Do / Does / Are] you drink hot coffee in the morning?",
+                    "options": ["Do", "Does", "Are"],
+                    "expected_answer": "Do",
+                    "spanish_translation": "¿Tomas café caliente por la mañana?",
+                    "image_prompt": "A person holding a steaming coffee mug in a sunny morning kitchen, 2D flat vector art, no text",
+                    "hint": "Con el pronombre 'you', el auxiliar en preguntas de Present Simple es 'Do'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "She _____ [doesn't / don't / not] drink tea; she prefers mineral water.",
+                    "options": ["doesn't", "don't", "not"],
+                    "expected_answer": "doesn't",
+                    "spanish_translation": "Ella no toma té; prefiere agua mineral.",
+                    "image_prompt": "A woman at a cafe table politely declining a cup of tea, 2D flat vector art, no text",
+                    "hint": "Con 'She' (tercera persona singular), la forma negativa en Present Simple es 'doesn't'."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "_____ [Does / Do / Is] your brother live in Madrid or Barcelona?",
+                    "options": ["Does", "Do", "Is"],
+                    "expected_answer": "Does",
+                    "spanish_translation": "¿Tu hermano vive en Madrid o en Barcelona?",
+                    "image_prompt": "Two friends talking while looking at a map of Spain, 2D flat vector art, no text",
+                    "hint": "Para 'your brother' (sujeto singular equivalente a He), el auxiliar interrogativo es 'Does'."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "We _____ [don't / doesn't / no] work on Sunday mornings.",
+                    "options": ["don't", "doesn't", "no"],
+                    "expected_answer": "don't",
+                    "spanish_translation": "Nosotros no trabajamos los domingos por la mañana.",
+                    "image_prompt": "Two coworkers enjoying a leisurely walk in a sunny park with flowers, 2D flat vector art, no text",
+                    "hint": "Con el sujeto plural 'We', usamos el auxiliar negativo 'don't'."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "Where _____ [do / does / are] you work on weekdays?",
+                    "options": ["do", "does", "are"],
+                    "expected_answer": "do",
+                    "spanish_translation": "¿Dónde trabajas los días de semana?",
+                    "image_prompt": "A modern bright office interior with desks and computers, 2D flat vector art, no text",
+                    "hint": "En preguntas Wh- con 'you', el auxiliar que acompaña al verbo es 'do': Where do you work?"
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "Does Carlos _____ [speak / speaks / speaking] English at his job?",
+                    "options": ["speak", "speaks", "speaking"],
+                    "expected_answer": "speak",
+                    "spanish_translation": "¿Carlos habla inglés en su trabajo?",
+                    "image_prompt": "A young professional man speaking confidently on an office headset, 2D flat vector art, no text",
+                    "hint": "¡Regla de oro! Tras el auxiliar 'Does', el verbo principal regresa a su forma base 'speak' (sin -s)."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "What time _____ [does / do / is] the train arrive at the station?",
+                    "options": ["does", "do", "is"],
+                    "expected_answer": "does",
+                    "spanish_translation": "¿A qué hora llega el tren a la estación?",
+                    "image_prompt": "A clean passenger train arriving at a sunny railway platform, 2D flat vector art, no text",
+                    "hint": "'The train' es sujeto singular (It), por lo tanto el auxiliar de pregunta es 'does'."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "I _____ [don't / doesn't / not] like waking up before six in the morning.",
+                    "options": ["don't", "doesn't", "not"],
+                    "expected_answer": "don't",
+                    "spanish_translation": "No me gusta despertarme antes de las seis de la mañana.",
+                    "image_prompt": "A person cozy in bed looking at an alarm clock at dawn, 2D flat vector art, no text",
+                    "hint": "Con el pronombre personal 'I' usamos el auxiliar negativo 'don't'."
+                }
+            ]
+
+        # 2. Past Continuous & Interrupted Actions
+        elif any(k in t_low for k in ["past continuous", "pasado continuo", "interrupted action", "was/were +", "while i was", "while they were", "was cooking", "were playing"]):
             return [
                 {
                     "id": "ex-1",
@@ -2151,80 +2235,311 @@ class TutorAgent:
                 }
             ]
 
-        # 7. General Contextual Default
+        # Can & Abilities
+        elif any(k in t_low for k in ["can & abilities", "can and abilities", "abilities", "habilidades", "modal can", "can/can't"]):
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "Mateo _____ [can speak / can speaks / can to speak] Spanish and English fluently.",
+                    "options": ["can speak", "can speaks", "can to speak"],
+                    "expected_answer": "can speak",
+                    "spanish_translation": "Mateo puede hablar español e inglés con fluidez.",
+                    "image_prompt": "A young man speaking confidently in an international conference room, 2D flat vector art, no text",
+                    "hint": "Tras el modal 'can' siempre usamos la forma base del verbo sin 'to' ni '-s': 'can speak'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "_____ [Can you / Do you can / Are you can] swim in deep water?",
+                    "options": ["Can you", "Do you can", "Are you can"],
+                    "expected_answer": "Can you",
+                    "spanish_translation": "¿Puedes nadar en aguas profundas?",
+                    "image_prompt": "A swimmer in a clear blue swimming pool lane, 2D flat vector art, no text",
+                    "hint": "En preguntas de habilidad con 'can', se coloca 'Can' directamente al inicio: 'Can you...?'"
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "She _____ [can't / doesn't can / not can] play the piano, but she wants to learn.",
+                    "options": ["can't", "doesn't can", "not can"],
+                    "expected_answer": "can't",
+                    "spanish_translation": "Ella no puede tocar el piano, pero quiere aprender.",
+                    "image_prompt": "A person looking curiously at the keys of a grand piano, 2D flat vector art, no text",
+                    "hint": "La forma negativa correcta del modal de habilidad es 'can't' (o cannot)."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "My father can _____ [cook / cooks / cooking] delicious Italian meals.",
+                    "options": ["cook", "cooks", "cooking"],
+                    "expected_answer": "cook",
+                    "spanish_translation": "Mi padre puede cocinar deliciosas comidas italianas.",
+                    "image_prompt": "A happy man preparing pasta with fresh tomatoes in a rustic kitchen, 2D flat vector art, no text",
+                    "hint": "El verbo después de 'can' va en su forma base pura: 'cook'."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "They _____ [can run / can to run / can running] ten kilometers without stopping.",
+                    "options": ["can run", "can to run", "can running"],
+                    "expected_answer": "can run",
+                    "spanish_translation": "Ellos pueden correr diez kilómetros sin detenerse.",
+                    "image_prompt": "Two runners jogging along a scenic riverside path at sunset, 2D flat vector art, no text",
+                    "hint": "Estructura correcta: Sujeto + can + verbo base ('can run')."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "Carlos can't _____ [drive / drives / driving] a manual transmission car.",
+                    "options": ["drive", "drives", "driving"],
+                    "expected_answer": "drive",
+                    "spanish_translation": "Carlos no puede conducir un auto de transmisión manual.",
+                    "image_prompt": "A driver sitting in a car looking thoughtfully at the gear shift, 2D flat vector art, no text",
+                    "hint": "Tras 'can't' el verbo nunca cambia, se mantiene en infinitivo sin to: 'drive'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "_____ [Can she / Does she can / Is she can] repair computers and smartphones?",
+                    "options": ["Can she", "Does she can", "Is she can"],
+                    "expected_answer": "Can she",
+                    "spanish_translation": "¿Puede ella reparar computadoras y teléfonos inteligentes?",
+                    "image_prompt": "A technician with precision tools working on circuit boards in a workshop, 2D flat vector art, no text",
+                    "hint": "'Can' no necesita el auxiliar 'does'. La pregunta es directamente: 'Can she...?'"
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "I can understand written English, but I _____ [can't speak / don't can speak / not can speak] very fast yet.",
+                    "options": ["can't speak", "don't can speak", "not can speak"],
+                    "expected_answer": "can't speak",
+                    "spanish_translation": "Puedo entender inglés escrito, pero todavía no puedo hablar muy rápido.",
+                    "image_prompt": "A student reading an English book with concentration and confidence, 2D flat vector art, no text",
+                    "hint": "La negación del modal can es 'can't + verbo base': 'can't speak'."
+                }
+            ]
+
+        # Places & There is / There are
+        elif any(k in t_low for k in ["there is", "there are", "places & there", "places and there", "hay singular y plural"]):
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "_____ [There is / There are / There be] a large supermarket near my apartment.",
+                    "options": ["There is", "There are", "There be"],
+                    "expected_answer": "There is",
+                    "spanish_translation": "Hay un supermercado grande cerca de mi apartamento.",
+                    "image_prompt": "A modern neighborhood supermarket with fresh produce visible through windows, 2D flat vector art, no text",
+                    "hint": "Para un solo lugar singular ('a large supermarket') usamos 'There is'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "_____ [There are / There is / Is there] three quiet coffee shops on this street.",
+                    "options": ["There are", "There is", "Is there"],
+                    "expected_answer": "There are",
+                    "spanish_translation": "Hay tres cafeterías tranquilas en esta calle.",
+                    "image_prompt": "A cozy city street with outdoor cafe tables and awnings, 2D flat vector art, no text",
+                    "hint": "Para sustantivos plurales ('three quiet coffee shops') usamos 'There are'."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "_____ [Is there / Are there / There is] a pharmacy around here?",
+                    "options": ["Is there", "Are there", "There is"],
+                    "expected_answer": "Is there",
+                    "spanish_translation": "¿Hay una farmacia por aquí cerca?",
+                    "image_prompt": "A pedestrian looking around an urban corner with storefronts, 2D flat vector art, no text",
+                    "hint": "En preguntas para un lugar singular invertimos el orden: 'Is there a pharmacy?'"
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "_____ [Are there / Is there / There are] any good restaurants near the train station?",
+                    "options": ["Are there", "Is there", "There are"],
+                    "expected_answer": "Are there",
+                    "spanish_translation": "¿Hay buenos restaurantes cerca de la estación de tren?",
+                    "image_prompt": "Exterior of a bustling train station with city restaurants nearby, 2D flat vector art, no text",
+                    "hint": "En preguntas plurales ('any good restaurants') usamos 'Are there'."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "There _____ [isn't / aren't / not] a bank on this block; you must walk two more blocks.",
+                    "options": ["isn't", "aren't", "not"],
+                    "expected_answer": "isn't",
+                    "spanish_translation": "No hay un banco en esta cuadra; debes caminar dos cuadras más.",
+                    "image_prompt": "A city sidewalk with trees and retail shops, 2D flat vector art, no text",
+                    "hint": "La negación singular de 'There is' es 'There isn't'."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "There _____ [aren't / isn't / no] any free parking spots available right now.",
+                    "options": ["aren't", "isn't", "no"],
+                    "expected_answer": "aren't",
+                    "spanish_translation": "No hay espacios de estacionamiento libres disponibles ahora mismo.",
+                    "image_prompt": "A crowded parking lot with cars parked neatly side by side, 2D flat vector art, no text",
+                    "hint": "La negación plural de 'There are' con 'any' es 'There aren't'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "The bookstore is _____ [next to / between / under] the post office and the bank.",
+                    "options": ["between", "next to", "under"],
+                    "expected_answer": "between",
+                    "spanish_translation": "La librería está entre la oficina de correos y el banco.",
+                    "image_prompt": "A charming little bookstore flanked by two other storefront buildings, 2D flat vector art, no text",
+                    "hint": "Cuando un lugar se encuentra en medio de dos puntos de referencia usamos 'between A and B'."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "The bakery is _____ [opposite / in / on] the cinema, across the main avenue.",
+                    "options": ["opposite", "in", "on"],
+                    "expected_answer": "opposite",
+                    "spanish_translation": "La panadería está frente al cine, cruzando la avenida principal.",
+                    "image_prompt": "A bakery with fresh bread displayed facing across a street toward a cinema, 2D flat vector art, no text",
+                    "hint": "Para indicar que un lugar está enfrente cruzando la calle usamos 'opposite' o 'across from'."
+                }
+            ]
+
+        # Present Continuous (Actions in Progress)
+        elif (any(k in t_low for k in ["present continuous", "presente continuo", "actions in progress", "verb-ing"]) and "past" not in t_low and "pasado" not in t_low):
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "Right now, Mateo is _____ [cooking / cook / cooked] dinner in the kitchen.",
+                    "options": ["cooking", "cook", "cooked"],
+                    "expected_answer": "cooking",
+                    "spanish_translation": "Ahora mismo, Mateo está cocinando la cena en la cocina.",
+                    "image_prompt": "A person happily stirring soup in a modern kitchen with steam rising, 2D flat vector art, no text",
+                    "hint": "En Present Continuous usamos el verbo 'to be' + verbo con terminación '-ing': 'is cooking'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "They are _____ [studying / study / studies] for tomorrow's English test at the library.",
+                    "options": ["studying", "study", "studies"],
+                    "expected_answer": "studying",
+                    "spanish_translation": "Ellos están estudiando para el examen de inglés de mañana en la biblioteca.",
+                    "image_prompt": "Two students focused on open notebooks at a wooden study desk, 2D flat vector art, no text",
+                    "hint": "Con 'They are' la acción en desarrollo lleva la forma con '-ing': 'studying'."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "What _____ [are you doing / do you do / you doing] at this moment?",
+                    "options": ["are you doing", "do you do", "you doing"],
+                    "expected_answer": "are you doing",
+                    "spanish_translation": "¿Qué estás haciendo en este momento?",
+                    "image_prompt": "A person holding a phone and chatting casually in a living room, 2D flat vector art, no text",
+                    "hint": "Para acciones ocurriendo en este momento exacto usamos 'What are you doing?'."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "She isn't _____ [sleeping / sleep / sleeps]; she is reading a novel in her bedroom.",
+                    "options": ["sleeping", "sleep", "sleeps"],
+                    "expected_answer": "sleeping",
+                    "spanish_translation": "Ella no está durmiendo; está leyendo una novela en su habitación.",
+                    "image_prompt": "A woman sitting propped up in bed reading a book under a warm lamp, 2D flat vector art, no text",
+                    "hint": "En la forma negativa continua usamos 'isn't' + verbo con '-ing': 'isn't sleeping'."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "Look! It _____ [is raining / rains / raining] outside, take an umbrella.",
+                    "options": ["is raining", "rains", "raining"],
+                    "expected_answer": "is raining",
+                    "spanish_translation": "¡Mira! Está lloviendo afuera, lleva un paraguas.",
+                    "image_prompt": "Raindrops falling against a window pane looking onto a city street, 2D flat vector art, no text",
+                    "hint": "Para una acción que ocurre frente a nuestros ojos ('Look!'), usamos 'is raining'."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "We _____ [are listening / listen / listening] to an interesting podcast right now.",
+                    "options": ["are listening", "listen", "listening"],
+                    "expected_answer": "are listening",
+                    "spanish_translation": "Estamos escuchando un podcast interesante ahora mismo.",
+                    "image_prompt": "Two people sharing earbuds and smiling while listening to audio, 2D flat vector art, no text",
+                    "hint": "Con 'We' y el marcador temporal 'right now' usamos 'are listening'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "Carlos is _____ [driving / drive / drove] to the airport to pick up his friend.",
+                    "options": ["driving", "drive", "drove"],
+                    "expected_answer": "driving",
+                    "spanish_translation": "Carlos está conduciendo hacia el aeropuerto para recoger a su amigo.",
+                    "image_prompt": "A driver focused on the road through the car windshield on a highway, 2D flat vector art, no text",
+                    "hint": "Los verbos terminados en 'e' como 'drive' eliminan la 'e' y añaden '-ing': 'driving'."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "Why _____ [is she crying / does she cry / she is crying]? Is everything okay?",
+                    "options": ["is she crying", "does she cry", "she is crying"],
+                    "expected_answer": "is she crying",
+                    "spanish_translation": "¿Por qué está llorando ella? ¿Está todo bien?",
+                    "image_prompt": "A comforting friend placing a reassuring hand on someone's shoulder, 2D flat vector art, no text",
+                    "hint": "Estructura de pregunta continua: Wh-word + is + sujeto + verbo-ing: 'is she crying'."
+                }
+            ]
+
+        # General Contextual Default (Strictly Present Simple & Everyday Vocabulary - Zero out-of-scope tenses)
         else:
             return [
                 {
                     "id": "ex-1",
-                    "sentence": f"Can you _____ [speak / speaks / speaking] English with clarity and confidence?",
-                    "options": ["speak", "speaks", "speaking"],
-                    "expected_answer": "speak",
-                    "spanish_translation": f"¿Puedes hablar inglés con claridad y confianza?",
-                    "image_prompt": f"A student speaking English in a modern study lounge, 2D flat vector art, no text",
-                    "hint": f"Tras el modal Can usamos la forma base del verbo: 'speak'."
-                },
-                {
-                    "id": "ex-2",
-                    "sentence": f"Every morning, Sophia _____ [practices / practice / practiced] English conversation before work.",
-                    "options": ["practices", "practice", "practiced"],
+                    "sentence": "Every morning, Sophia _____ [practices / practice / practicing] English conversation before work.",
+                    "options": ["practices", "practice", "practicing"],
                     "expected_answer": "practices",
                     "spanish_translation": "Cada mañana, Sophia practica conversación en inglés antes del trabajo.",
                     "image_prompt": "A young professional woman practicing speaking with headphones in a sunny room, 2D flat vector art, no text",
-                    "hint": "Tercera persona singular en presente afirmativo lleva '-s'."
+                    "hint": "Tercera persona singular (Sophia = She) en Present Simple afirmativo lleva '-s': 'practices'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "We always _____ [review / reviews / reviewing] the key grammar rules before practicing.",
+                    "options": ["review", "reviews", "reviewing"],
+                    "expected_answer": "review",
+                    "spanish_translation": "Nosotros siempre repasamos las reglas gramaticales clave antes de practicar.",
+                    "image_prompt": "Two students studying together with flashcards and a whiteboard, 2D flat vector art, no text",
+                    "hint": "Con el pronombre 'We', el verbo va en forma base pura: 'review'."
                 },
                 {
                     "id": "ex-3",
-                    "sentence": f"Can you _____ [express / expresses / expressing] this idea using the correct grammar form?",
-                    "options": ["express", "expresses", "expressing"],
-                    "expected_answer": "express",
-                    "spanish_translation": "¿Puedes expresar esta idea usando la forma gramatical correcta?",
-                    "image_prompt": "Two friends chatting enthusiastically in a cozy coffee shop, 2D vector art, no text",
-                    "hint": "Tras el verbo modal 'Can', usamos la forma base 'express'."
+                    "sentence": "David _____ [writes / write / writing] down new vocabulary words in his study notebook.",
+                    "options": ["writes", "write", "writing"],
+                    "expected_answer": "writes",
+                    "spanish_translation": "David anota nuevas palabras de vocabulario en su cuaderno de estudio.",
+                    "image_prompt": "A student writing neatly with a pen in a clean notebook, 2D flat vector art, no text",
+                    "hint": "Sujeto singular David (He) lleva terminación '-s': 'writes'."
                 },
                 {
                     "id": "ex-4",
-                    "sentence": f"We _____ [learned / learn / learns] important communication patterns in today's lesson.",
-                    "options": ["learned", "learn", "learns"],
-                    "expected_answer": "learned",
-                    "spanish_translation": "Aprendimos patrones de comunicación importantes en la lección de hoy.",
-                    "image_prompt": "A diverse group of students celebrating in a modern classroom, 2D vector art, no text",
-                    "hint": "Forma correcta del verbo para describir lo aprendido."
+                    "sentence": "They _____ [understand / understands / understanding] the main concept of the lesson very well.",
+                    "options": ["understand", "understands", "understanding"],
+                    "expected_answer": "understand",
+                    "spanish_translation": "Ellos entienden el concepto principal de la lección muy bien.",
+                    "image_prompt": "A team of classmates smiling and nodding while discussing an idea, 2D flat vector art, no text",
+                    "hint": "Con 'They', usamos la forma base del verbo: 'understand'."
                 },
                 {
                     "id": "ex-5",
-                    "sentence": f"She always _____ [speaks / speak / speaking] with confidence during presentations.",
+                    "sentence": "She _____ [speaks / speak / speaking] clearly and with confidence in class.",
                     "options": ["speaks", "speak", "speaking"],
                     "expected_answer": "speaks",
-                    "spanish_translation": "Ella siempre habla con seguridad durante las presentaciones.",
-                    "image_prompt": "A confident speaker giving a presentation in front of a supportive audience, 2D vector art, no text",
-                    "hint": "Sujeto 'She' + adverbio de frecuencia + verbo con '-s'."
+                    "spanish_translation": "Ella habla con claridad y seguridad en clase.",
+                    "image_prompt": "A student giving an inspiring presentation in front of peers, 2D flat vector art, no text",
+                    "hint": "Tercera persona singular She lleva '-s': 'speaks'."
                 },
                 {
                     "id": "ex-6",
-                    "sentence": f"They are _____ [improving / improve / improved] their English fluency step by step.",
-                    "options": ["improving", "improve", "improved"],
-                    "expected_answer": "improving",
-                    "spanish_translation": "Ellos están mejorando su fluidez en inglés paso a paso.",
-                    "image_prompt": "Two students looking at an upward progress chart smiling, 2D vector art, no text",
-                    "hint": "Con 'They are' usamos el verbo con '-ing'."
+                    "sentence": "Students usually _____ [ask / asks / asking] insightful questions during the discussion.",
+                    "options": ["ask", "asks", "asking"],
+                    "expected_answer": "ask",
+                    "spanish_translation": "Los estudiantes usualmente hacen preguntas interesantes durante la discusión.",
+                    "image_prompt": "A student raising a hand politely in a bright seminar room, 2D flat vector art, no text",
+                    "hint": "Sujeto plural 'Students' (They) lleva la forma base: 'ask'."
                 },
                 {
                     "id": "ex-7",
-                    "sentence": f"If you practice regularly, you _____ [will achieve / achieve will / achieving] your language goals.",
-                    "options": ["will achieve", "achieve will", "achieving"],
-                    "expected_answer": "will achieve",
-                    "spanish_translation": "Si practicas regularmente, alcanzarás tus metas lingüísticas.",
-                    "image_prompt": "A student standing at the summit of a mountain looking at the sunrise, 2D vector art, no text",
-                    "hint": "Resultado futuro en condicional: 'will + verbo base'."
+                    "sentence": "It is essential to _____ [practice / practices / practicing] speaking every single day.",
+                    "options": ["practice", "practices", "practicing"],
+                    "expected_answer": "practice",
+                    "spanish_translation": "Es fundamental practicar el habla todos los días.",
+                    "image_prompt": "A dedicated learner practicing pronunciation in front of a mirror with audio notes, 2D flat vector art, no text",
+                    "hint": "Tras el infinitivo 'to' usamos siempre el verbo en forma base: 'to practice'."
                 },
                 {
                     "id": "ex-8",
-                    "sentence": f"It is essential to _____ [review / reviews / reviewed] key vocabulary every week.",
-                    "options": ["review", "reviews", "reviewed"],
-                    "expected_answer": "review",
-                    "spanish_translation": "Es esencial repasar el vocabulario clave cada semana.",
-                    "image_prompt": "A student organizing colorful flashcards on a wooden study table, 2D vector art, no text",
-                    "hint": "Infinitivo con 'to + verbo base': 'to review'."
+                    "sentence": "He _____ [reads / read / reading] an interesting article about modern technology every evening.",
+                    "options": ["reads", "read", "reading"],
+                    "expected_answer": "reads",
+                    "spanish_translation": "Él lee un artículo interesante sobre tecnología moderna cada noche.",
+                    "image_prompt": "A person reading a digital tablet in a comfortable armchair, 2D flat vector art, no text",
+                    "hint": "Sujeto He en presente simple afirmativo lleva '-s': 'reads'."
                 }
             ]
 

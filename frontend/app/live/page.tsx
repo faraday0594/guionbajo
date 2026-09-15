@@ -6,18 +6,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Mic,
-  MicOff,
   Volume2,
   VolumeX,
   Sparkles,
   ArrowLeft,
   RotateCcw,
-  CheckCircle2,
   Radio,
   Volume1,
   Pause,
   Play,
   Send,
+  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -51,7 +50,7 @@ const CONVERSATION_STARTERS = [
 export default function LiveChatPage() {
   const router = useRouter();
 
-  // User Profile
+  // User & Settings
   const [userName, setUserName] = useState<string>('Estudiante');
   const [userLevel, setUserLevel] = useState<string>('A1.2');
   const [preferredVoice, setPreferredVoice] = useState<string>('male-qn-qingse');
@@ -60,14 +59,13 @@ export default function LiveChatPage() {
   const [isSessionActive, setIsSessionActive] = useState<boolean>(false);
   const [tutorState, setTutorState] = useState<TutorState>('idle');
   const [micVolume, setMicVolume] = useState<number>(0);
-  const [speechThreshold, setSpeechThreshold] = useState<number>(8);
   const [isSpeechDetected, setIsSpeechDetected] = useState<boolean>(false);
   const [silenceProgress, setSilenceProgress] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [activeAudio, setActiveAudio] = useState<HTMLAudioElement | null>(null);
   const [textInput, setTextInput] = useState<string>('');
 
-  // Messages & Corrections (Temporary Session Memory)
+  // Messages & Session Memory
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome-msg',
@@ -79,23 +77,24 @@ export default function LiveChatPage() {
   const [corrections, setCorrections] = useState<GrammarCorrection[]>([]);
   const [showCorrections, setShowCorrections] = useState<boolean>(false);
 
-  // Audio Processing Refs
+  // Audio Pipeline References (PERSISTENT REFS TO PREVENT V8 GARBAGE COLLECTION)
   const audioStreamRef = useRef<MediaStream | null>(null);
-  const currentRecorderRef = useRef<MediaRecorder | null>(null);
-  const currentChunksRef = useRef<Blob[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // VAD Tracking Refs
-  const isRecordingUtteranceRef = useRef<boolean>(false);
-  const speechStartTimeRef = useRef<number>(0);
+  // Recorder & VAD Refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const hasSpeechRef = useRef<boolean>(false);
   const silenceStartRef = useRef<number | null>(null);
-  const ambientNoiseFloorRef = useRef<number>(2);
+  const speechStartRef = useRef<number>(0);
   const isSessionActiveRef = useRef<boolean>(false);
   const tutorStateRef = useRef<TutorState>('idle');
 
-  // Playback & Stream Refs
+  // Queue & Stream Refs
   const audioQueueRef = useRef<LiveAudioStreamQueue | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
@@ -108,7 +107,7 @@ export default function LiveChatPage() {
     tutorStateRef.current = tutorState;
   }, [tutorState]);
 
-  // Initial Load
+  // Initial Auth & Preferences
   useEffect(() => {
     const token = getToken();
     if (!token) {
@@ -121,7 +120,7 @@ export default function LiveChatPage() {
         if (data?.name) setUserName(data.name);
         if (data?.current_sublevel) setUserLevel(data.current_sublevel);
       })
-      .catch((err) => console.warn('Failed to load profile for live room:', err));
+      .catch((err) => console.warn('Failed to load profile:', err));
 
     const savedVoice = getSavedPreferredVoice();
     if (savedVoice) setPreferredVoice(savedVoice);
@@ -131,12 +130,12 @@ export default function LiveChatPage() {
     };
   }, [router]);
 
-  // Scroll to bottom
+  // Auto-scroll chat
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, silenceProgress]);
 
-  // ── 1. Start Hands-Free Session ──────────────────────────
+  // ── 1. Start Continuous Hands-Free Session ──────────────────
   const startHandsFreeSession = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -149,7 +148,7 @@ export default function LiveChatPage() {
 
       audioStreamRef.current = stream;
 
-      // Initialize Web Audio Context & Analyser
+      // 1. Initialize AudioContext
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioCtx();
       audioContextRef.current = ctx;
@@ -158,138 +157,57 @@ export default function LiveChatPage() {
         await ctx.resume();
       }
 
+      // 2. Build Audio Processing Graph (Preserved on persistent Refs)
       const source = ctx.createMediaStreamSource(stream);
+      sourceNodeRef.current = source;
+
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.2;
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.15;
       analyserRef.current = analyser;
 
+      // Silent gain node to force Chrome/Edge to keep audio thread pulling hardware mic frames
+      const gain = ctx.createGain();
+      gain.gain.value = 0.0;
+      gainNodeRef.current = gain;
+
       source.connect(analyser);
+      analyser.connect(gain);
+      gain.connect(ctx.destination);
 
       setIsSessionActive(true);
-      setTutorState('listening');
-      isRecordingUtteranceRef.current = false;
-      silenceStartRef.current = null;
-      ambientNoiseFloorRef.current = 2;
+      isSessionActiveRef.current = true;
 
+      // 3. Start recording turn and continuous VAD
+      startRecordingTurn();
       startContinuousVadLoop();
-      toast.success('Micrófono abierto en modo Manos Libres. ¡Habla cuando quieras!');
+
+      toast.success('Micrófono activo en Manos Libres. ¡Habla con naturalidad!');
     } catch (err: any) {
-      console.error('Error starting hands-free session:', err);
-      toast.error('No se pudo acceder al micrófono. Por favor permite el acceso en tu navegador.');
+      console.error('Microphone error:', err);
+      toast.error('No se pudo acceder al micrófono. Por favor permite el acceso.');
       setIsSessionActive(false);
       setTutorState('idle');
     }
   };
 
-  // ── 2. Real-Time RMS VAD Loop ─────────────────────────────
-  const startContinuousVadLoop = () => {
-    const timeData = new Uint8Array(256);
+  // ── 2. Start a Recording Turn for MediaRecorder ───────────
+  const startRecordingTurn = () => {
+    if (!audioStreamRef.current || !isSessionActiveRef.current) return;
 
-    const checkFrame = () => {
-      if (!analyserRef.current || !isSessionActiveRef.current) return;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (_) {}
+    }
 
-      analyserRef.current.getByteTimeDomainData(timeData);
-
-      // Calculate True Root-Mean-Square (RMS) Energy (accurate voice pressure)
-      let sumSquares = 0;
-      for (let i = 0; i < timeData.length; i++) {
-        const norm = (timeData[i] - 128) / 128;
-        sumSquares += norm * norm;
-      }
-      const rms = Math.sqrt(sumSquares / timeData.length);
-      const volume = Math.min(100, Math.round(rms * 280));
-      setMicVolume(volume);
-
-      // Adaptive ambient noise floor calculation
-      if (volume < 6) {
-        ambientNoiseFloorRef.current = ambientNoiseFloorRef.current * 0.96 + volume * 0.04;
-      }
-      const threshold = Math.max(6, Math.round(ambientNoiseFloorRef.current + 4));
-      setSpeechThreshold(threshold);
-
-      const now = Date.now();
-      const currentState = tutorStateRef.current;
-
-      // ── BARGE-IN INTERRUPTION ─────────────────────────────
-      // If Guionbajo is speaking and student starts talking loudly (> threshold + 4 for > 250ms):
-      if (currentState === 'speaking' || currentState === 'thinking') {
-        if (volume >= threshold + 3) {
-          if (!speechStartTimeRef.current) speechStartTimeRef.current = now;
-          if (now - speechStartTimeRef.current >= 250) {
-            console.log('⚡ Interrupción (Barge-in): Pausando voz de Guionbajo');
-            if (audioQueueRef.current) {
-              audioQueueRef.current.stop();
-            }
-            if (abortControllerRef.current) {
-              abortControllerRef.current.abort();
-            }
-            setTutorState('listening');
-            startUtteranceRecording();
-          }
-        } else {
-          speechStartTimeRef.current = 0;
-        }
-        animationFrameRef.current = requestAnimationFrame(checkFrame);
-        return;
-      }
-
-      // ── NORMAL LISTENING & SILENCE DETECTION ──────────────
-      if (currentState === 'listening') {
-        if (volume >= threshold) {
-          // Voice detected!
-          if (!isRecordingUtteranceRef.current) {
-            startUtteranceRecording();
-          }
-          setIsSpeechDetected(true);
-          silenceStartRef.current = null;
-          setSilenceProgress(0);
-        } else {
-          // Volume is below threshold
-          setIsSpeechDetected(false);
-
-          if (isRecordingUtteranceRef.current) {
-            if (silenceStartRef.current === null) {
-              silenceStartRef.current = now;
-            }
-            const silenceElapsed = now - silenceStartRef.current;
-            const progress = Math.min(100, Math.round((silenceElapsed / 1500) * 100));
-            setSilenceProgress(progress);
-
-            // Exactly 1.5 seconds of silence reached -> Finalize user utterance!
-            if (silenceElapsed >= 1500) {
-              const utteranceDuration = now - speechStartTimeRef.current;
-              silenceStartRef.current = null;
-              setSilenceProgress(0);
-
-              if (utteranceDuration >= 400) {
-                // Legitimate speech utterance! Commit turn.
-                stopAndCommitUtterance();
-                return;
-              } else {
-                // Too short (< 400ms, likely a cough or click): discard and keep listening
-                cancelUtteranceRecording();
-              }
-            }
-          } else {
-            setSilenceProgress(0);
-          }
-        }
-      }
-
-      animationFrameRef.current = requestAnimationFrame(checkFrame);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(checkFrame);
-  };
-
-  // ── 3. MediaRecorder Utterance Management ─────────────────
-  const startUtteranceRecording = () => {
-    if (!audioStreamRef.current || isRecordingUtteranceRef.current) return;
-
-    isRecordingUtteranceRef.current = true;
-    speechStartTimeRef.current = Date.now();
-    currentChunksRef.current = [];
+    recordedChunksRef.current = [];
+    hasSpeechRef.current = false;
+    silenceStartRef.current = null;
+    speechStartRef.current = 0;
+    setSilenceProgress(0);
+    setIsSpeechDetected(false);
+    setTutorState('listening');
 
     let mimeType = 'audio/webm';
     if (typeof MediaRecorder.isTypeSupported === 'function') {
@@ -304,54 +222,134 @@ export default function LiveChatPage() {
 
     try {
       const recorder = new MediaRecorder(audioStreamRef.current, { mimeType });
-      currentRecorderRef.current = recorder;
+      mediaRecorderRef.current = recorder;
 
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
-          currentChunksRef.current.push(e.data);
+          recordedChunksRef.current.push(e.data);
+          // If no speech has happened yet and buffer gets long (> 20 chunks / 2s), keep last 5 chunks
+          if (!hasSpeechRef.current && recordedChunksRef.current.length > 20) {
+            recordedChunksRef.current.splice(0, recordedChunksRef.current.length - 5);
+          }
         }
       };
 
-      recorder.start(100); // 100ms slices
+      recorder.start(100); // 100ms slices for clean continuous WebM frames
     } catch (e) {
       console.error('Failed to start MediaRecorder:', e);
-      isRecordingUtteranceRef.current = false;
     }
   };
 
-  const cancelUtteranceRecording = () => {
-    isRecordingUtteranceRef.current = false;
-    speechStartTimeRef.current = 0;
-    silenceStartRef.current = null;
-    setSilenceProgress(0);
-    if (currentRecorderRef.current && currentRecorderRef.current.state !== 'inactive') {
-      try {
-        currentRecorderRef.current.stop();
-      } catch (_) {}
+  // ── 3. Real-Time RMS VAD & 1.5s Silence Window ─────────────
+  const startContinuousVadLoop = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
-    currentChunksRef.current = [];
+
+    const timeData = new Uint8Array(512);
+
+    const checkFrame = () => {
+      if (!analyserRef.current || !isSessionActiveRef.current) return;
+
+      analyserRef.current.getByteTimeDomainData(timeData);
+
+      // Calculate Root-Mean-Square (RMS) Acoustic Energy
+      let sum = 0;
+      for (let i = 0; i < timeData.length; i++) {
+        const diff = timeData[i] - 128;
+        sum += diff * diff;
+      }
+      const rms = Math.sqrt(sum / timeData.length);
+      const volume = Math.min(100, Math.round(rms * 2.8));
+      setMicVolume(volume);
+
+      const SPEECH_THRESHOLD = 5; // Sensitive: whispers are 8-15, normal voice is 25-60
+      const now = Date.now();
+      const currentState = tutorStateRef.current;
+
+      // ── BARGE-IN INTERRUPTION ─────────────────────────────
+      // If Guionbajo is speaking and user speaks (> threshold for > 200ms):
+      if (currentState === 'speaking' || currentState === 'thinking') {
+        if (volume >= SPEECH_THRESHOLD) {
+          if (!speechStartRef.current) speechStartRef.current = now;
+          if (now - speechStartRef.current >= 200) {
+            console.log('⚡ Interrupción: el estudiante comenzó a hablar');
+            if (audioQueueRef.current) {
+              audioQueueRef.current.stop();
+            }
+            if (abortControllerRef.current) {
+              abortControllerRef.current.abort();
+            }
+            startRecordingTurn();
+            hasSpeechRef.current = true;
+            setIsSpeechDetected(true);
+          }
+        } else {
+          speechStartRef.current = 0;
+        }
+        animationFrameRef.current = requestAnimationFrame(checkFrame);
+        return;
+      }
+
+      // ── NORMAL LISTENING & SILENCE COMMIT ─────────────────
+      if (currentState === 'listening') {
+        if (volume >= SPEECH_THRESHOLD) {
+          // Student is actively speaking
+          hasSpeechRef.current = true;
+          if (!speechStartRef.current) speechStartRef.current = now;
+          silenceStartRef.current = null;
+          setIsSpeechDetected(true);
+          setSilenceProgress(0);
+        } else {
+          // Below speech threshold
+          setIsSpeechDetected(false);
+
+          if (hasSpeechRef.current) {
+            if (silenceStartRef.current === null) {
+              silenceStartRef.current = now;
+            }
+            const silenceElapsed = now - silenceStartRef.current;
+            const progress = Math.min(100, Math.round((silenceElapsed / 1500) * 100));
+            setSilenceProgress(progress);
+
+            // Exactly 1.5 seconds of silence reached -> Submit speech turn!
+            if (silenceElapsed >= 1500) {
+              console.log('🎤 1.5s de silencio alcanzado. Enviando audio del estudiante...');
+              commitSpeechTurn();
+              return;
+            }
+          } else {
+            setSilenceProgress(0);
+          }
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(checkFrame);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(checkFrame);
   };
 
-  const stopAndCommitUtterance = () => {
-    isRecordingUtteranceRef.current = false;
+  // ── 4. Commit Audio Turn & Transcribe ─────────────────────
+  const commitSpeechTurn = () => {
     setTutorState('thinking');
     setIsSpeechDetected(false);
     setSilenceProgress(0);
 
-    const recorder = currentRecorderRef.current;
+    const recorder = mediaRecorderRef.current;
     if (!recorder || recorder.state === 'inactive') {
-      resumeListeningState();
+      startRecordingTurn();
       return;
     }
 
     recorder.onstop = async () => {
       const mimeType = recorder.mimeType || 'audio/webm';
-      const audioBlob = new Blob(currentChunksRef.current, { type: mimeType });
-      currentChunksRef.current = [];
+      const audioBlob = new Blob(recordedChunksRef.current, { type: mimeType });
+      recordedChunksRef.current = [];
 
       if (audioBlob.size < 400) {
-        console.warn('Audio blob too small, resuming listening...');
-        resumeListeningState();
+        console.warn('Audio demasiado corto, reiniciando escucha...');
+        startRecordingTurn();
         return;
       }
 
@@ -361,8 +359,8 @@ export default function LiveChatPage() {
         const text = stt.text?.trim();
 
         if (!text) {
-          toast('No alcancé a captar el audio con claridad. Vuelve a decirme.', { icon: '👂' });
-          resumeListeningState();
+          toast('No alcancé a captar el audio con claridad. Intenta de nuevo.', { icon: '👂' });
+          startRecordingTurn();
           return;
         }
 
@@ -380,8 +378,8 @@ export default function LiveChatPage() {
         });
       } catch (err: any) {
         console.error('STT error:', err);
-        toast.error('Error al transcribir voz.');
-        resumeListeningState();
+        toast.error('Error al procesar voz.');
+        startRecordingTurn();
       }
     };
 
@@ -389,11 +387,11 @@ export default function LiveChatPage() {
       recorder.stop();
     } catch (e) {
       console.error('Error stopping recorder:', e);
-      resumeListeningState();
+      startRecordingTurn();
     }
   };
 
-  // ── 4. Streaming Response with Synchronized Voice ─────────
+  // ── 5. Response Streaming & Synchronized Spoken Audio ─────
   const dispatchTutorResponse = async (history: Message[]) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -423,7 +421,7 @@ export default function LiveChatPage() {
         }
       },
       onClausePlay: (_clauseIdx, clauseText) => {
-        // Spoken words appear in real-time as Guionbajo pronounces them!
+        // Words appear in real-time in sync with Guionbajo pronouncing them
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMsgId
@@ -433,11 +431,14 @@ export default function LiveChatPage() {
         );
       },
       onAllEnded: () => {
-        // Guionbajo finished speaking -> Automatically resume continuous hands-free listening!
+        // Finished speaking -> Automatically return to listening mode!
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantMsgId ? { ...m, isStreaming: false } : m))
         );
-        resumeListeningState();
+        startRecordingTurn();
+        if (!animationFrameRef.current) {
+          startContinuousVadLoop();
+        }
       },
     });
     audioQueueRef.current = audioQueue;
@@ -502,7 +503,7 @@ export default function LiveChatPage() {
           },
           onError: (err) => {
             console.warn('Stream error:', err);
-            resumeListeningState();
+            startRecordingTurn();
           },
         }
       );
@@ -510,33 +511,18 @@ export default function LiveChatPage() {
       if (err.name !== 'AbortError') {
         console.error('Stream dispatch error:', err);
       }
-      resumeListeningState();
-    }
-  };
-
-  // ── 5. Resume Listening Loop ─────────────────────────────
-  const resumeListeningState = () => {
-    if (!isSessionActiveRef.current) return;
-    setTutorState('listening');
-    isRecordingUtteranceRef.current = false;
-    speechStartTimeRef.current = 0;
-    silenceStartRef.current = null;
-    setSilenceProgress(0);
-    setIsSpeechDetected(false);
-
-    if (!animationFrameRef.current) {
-      startContinuousVadLoop();
+      startRecordingTurn();
     }
   };
 
   // ── 6. Stop Hands-Free Session ───────────────────────────
   const stopHandsFreeSession = () => {
     setIsSessionActive(false);
+    isSessionActiveRef.current = false;
     setTutorState('idle');
     setMicVolume(0);
     setIsSpeechDetected(false);
     setSilenceProgress(0);
-    cancelUtteranceRecording();
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -550,6 +536,11 @@ export default function LiveChatPage() {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (_) {}
+    }
     if (audioStreamRef.current) {
       audioStreamRef.current.getTracks().forEach((t) => t.stop());
       audioStreamRef.current = null;
@@ -558,9 +549,12 @@ export default function LiveChatPage() {
       audioContextRef.current.close().catch(() => {});
       audioContextRef.current = null;
     }
+    sourceNodeRef.current = null;
+    analyserRef.current = null;
+    gainNodeRef.current = null;
   };
 
-  // ── 7. Reset Temporary Session Memory ────────────────────
+  // ── 7. Reset Memory ──────────────────────────────────────
   const handleResetSession = () => {
     if (audioQueueRef.current) {
       audioQueueRef.current.stop();
@@ -578,12 +572,12 @@ export default function LiveChatPage() {
     ]);
     setCorrections([]);
     toast.success('Memoria de la conversación reiniciada.');
-    if (isSessionActive) {
-      resumeListeningState();
+    if (isSessionActiveRef.current) {
+      startRecordingTurn();
     }
   };
 
-  // Replay a message
+  // Replay message audio
   const handleReplayMessage = async (msg: Message) => {
     if (!msg.content) return;
     try {
@@ -595,51 +589,35 @@ export default function LiveChatPage() {
       audio.onended = () => {
         URL.revokeObjectURL(url);
         setActiveAudio(null);
-        if (isSessionActive) resumeListeningState();
+        if (isSessionActiveRef.current) startRecordingTurn();
         else setTutorState('idle');
       };
       audio.play();
     } catch (e) {
       console.warn('Replay failed:', e);
-      if (isSessionActive) resumeListeningState();
+      if (isSessionActiveRef.current) startRecordingTurn();
       else setTutorState('idle');
     }
   };
 
   // Quick Starter Prompts
   const handleSendStarter = (promptText: string) => {
-    if (!isSessionActive) {
-      startHandsFreeSession().then(() => {
-        const userMsg: Message = {
-          id: `user-${Date.now()}`,
-          role: 'user',
-          content: promptText,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => {
-          const updated = [...prev, userMsg];
-          dispatchTutorResponse(updated);
-          return updated;
-        });
-      });
-    } else {
-      const userMsg: Message = {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: promptText,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => {
-        const updated = [...prev, userMsg];
-        dispatchTutorResponse(updated);
-        return updated;
-      });
-    }
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: promptText,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => {
+      const updated = [...prev, userMsg];
+      dispatchTutorResponse(updated);
+      return updated;
+    });
   };
 
   return (
     <div className="min-h-screen bg-brand-dark flex flex-col text-white">
-      {/* ─── Top Bar ────────────────────────────────────────── */}
+      {/* ─── Top Header Bar ─────────────────────────────────── */}
       <header className="px-4 py-3 sm:px-6 border-b border-brand-border/40 glass sticky top-0 z-30 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
@@ -668,7 +646,7 @@ export default function LiveChatPage() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Mute Toggle */}
+          {/* Mute Voice */}
           <button
             onClick={() => setIsMuted(!isMuted)}
             className={`p-2 rounded-xl glass border transition-all ${
@@ -781,26 +759,19 @@ export default function LiveChatPage() {
             {isSessionActive && (
               <div className="w-64 max-w-full flex flex-col items-center gap-1 mt-2 z-10">
                 <div className="w-full flex items-center justify-between text-[10px] text-brand-text-muted font-mono-custom">
-                  <span>Voz: {micVolume}%</span>
-                  <span className={micVolume >= speechThreshold ? 'text-emerald-400 font-bold' : ''}>
-                    Umbral: {speechThreshold}%
+                  <span>Nivel de voz: {micVolume}%</span>
+                  <span className={micVolume >= 5 ? 'text-emerald-400 font-bold' : ''}>
+                    {micVolume >= 5 ? 'Hablando' : 'Silencio'}
                   </span>
                 </div>
-                <div className="w-full bg-black/40 rounded-full h-2 p-0.5 border border-white/10 relative overflow-hidden">
-                  {/* Threshold indicator needle */}
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-yellow-400/80 z-20"
-                    style={{ left: `${speechThreshold}%` }}
-                    title={`Umbral de activación: ${speechThreshold}%`}
-                  />
-                  {/* Energy bar */}
+                <div className="w-full bg-black/40 rounded-full h-2.5 p-0.5 border border-white/10 relative overflow-hidden">
                   <motion.div
                     className={`h-full rounded-full transition-all duration-75 ${
-                      micVolume >= speechThreshold
+                      micVolume >= 5
                         ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 shadow-sm shadow-cyan-400/50'
                         : 'bg-brand-border/60'
                     }`}
-                    style={{ width: `${Math.max(2, micVolume)}%` }}
+                    style={{ width: `${Math.max(2, Math.min(100, micVolume * 2))}%` }}
                   />
                 </div>
               </div>

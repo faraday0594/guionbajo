@@ -120,15 +120,19 @@ export default function JourneyVisualStage({
     } catch (_) {}
   };
 
-  // Pleasant victory chime upon arriving at the new flag
-  const playArrivalChime = () => {
+  // Pleasant victory chime upon arriving at the new flag (ascending when forward, descending when backward)
+  const playArrivalChime = (direction: 'forward' | 'backward' = 'forward') => {
     if (!soundEnabled || typeof window === 'undefined') return;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
       const now = ctx.currentTime;
-      [523.25, 659.25, 783.99].forEach((freq, idx) => {
+      const chord = direction === 'forward'
+        ? [523.25, 659.25, 783.99] // C5 -> E5 -> G5 (Ascendente / Victoria)
+        : [783.99, 659.25, 523.25]; // G5 -> E5 -> C5 (Descendente / Regreso)
+
+      chord.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
@@ -164,7 +168,12 @@ export default function JourneyVisualStage({
     stepIntervalRef.current = setInterval(() => {
       playStepSound();
       stepCount++;
-      setLegPhase((stepCount % 4) + 1);
+      if (direction === 'forward') {
+        setLegPhase((stepCount % 4) + 1);
+      } else {
+        // Reverse leg cycle for walking backward
+        setLegPhase(4 - (stepCount % 4));
+      }
     }, 200);
 
     const animate = (currentTime: number) => {
@@ -186,7 +195,7 @@ export default function JourneyVisualStage({
           clearInterval(stepIntervalRef.current);
           stepIntervalRef.current = null;
         }
-        playArrivalChime();
+        playArrivalChime(direction);
         setTravelProgress(0);
         setCurrentIndex(toIdx);
         setIsTraveling(false);
@@ -505,40 +514,48 @@ export default function JourneyVisualStage({
             stroke="#dcc8a8"
             strokeWidth="1.8"
             strokeDasharray="8 10"
-            strokeDashoffset={isTraveling ? -travelProgress * 96 : 0}
+            strokeDashoffset={
+              isTraveling
+                ? travelDirection === 'backward'
+                  ? travelProgress * 96
+                  : -travelProgress * 96
+                : 0
+            }
             opacity={isTraveling ? 0.6 : 0.3}
           />
 
-          {/* 🌟 Speed wind streaks rushing past student during travel */}
+          {/* 🌟 Speed wind streaks rushing past student (reverse stream when backward) */}
           {isTraveling && (
             <g opacity={Math.sin(travelProgress * Math.PI) * 0.6}>
               <line
-                x1={380 - travelProgress * 30}
-                y1={290 + travelProgress * 40}
-                x2={360 - travelProgress * 30}
-                y2={320 + travelProgress * 40}
-                stroke="#ffffff"
+                x1={travelDirection === 'backward' ? 360 + travelProgress * 20 : 380 - travelProgress * 30}
+                y1={travelDirection === 'backward' ? 325 - travelProgress * 55 : 290 + travelProgress * 40}
+                x2={travelDirection === 'backward' ? 375 + travelProgress * 20 : 360 - travelProgress * 30}
+                y2={travelDirection === 'backward' ? 295 - travelProgress * 55 : 320 + travelProgress * 40}
+                stroke={travelDirection === 'backward' ? '#93c5fd' : '#ffffff'}
                 strokeWidth="1.5"
                 strokeLinecap="round"
               />
               <line
-                x1={570 + travelProgress * 30}
-                y1={285 + travelProgress * 40}
-                x2={595 + travelProgress * 30}
-                y2={315 + travelProgress * 40}
-                stroke="#ffffff"
+                x1={travelDirection === 'backward' ? 595 - travelProgress * 20 : 570 + travelProgress * 30}
+                y1={travelDirection === 'backward' ? 320 - travelProgress * 55 : 285 + travelProgress * 40}
+                x2={travelDirection === 'backward' ? 580 - travelProgress * 20 : 595 + travelProgress * 30}
+                y2={travelDirection === 'backward' ? 290 - travelProgress * 55 : 315 + travelProgress * 40}
+                stroke={travelDirection === 'backward' ? '#93c5fd' : '#ffffff'}
                 strokeWidth="1.5"
                 strokeLinecap="round"
               />
             </g>
           )}
 
-          {/* ─── TREES FLANKING PATH (optically drift outward and down during travel) ─── */}
+          {/* ─── TREES FLANKING PATH (optically drift in perspective based on travel direction) ─── */}
           {/* Left Trees Group */}
           <g
             style={{
               transform: isTraveling
-                ? `translate(${-travelProgress * 30}px, ${travelProgress * 18}px)`
+                ? travelDirection === 'backward'
+                  ? `translate(${travelProgress * 20}px, ${-travelProgress * 12}px)`
+                  : `translate(${-travelProgress * 30}px, ${travelProgress * 18}px)`
                 : 'none',
               transformOrigin: '220px 200px',
             }}
@@ -561,7 +578,9 @@ export default function JourneyVisualStage({
           <g
             style={{
               transform: isTraveling
-                ? `translate(${travelProgress * 30}px, ${travelProgress * 18}px)`
+                ? travelDirection === 'backward'
+                  ? `translate(${-travelProgress * 20}px, ${-travelProgress * 12}px)`
+                  : `translate(${travelProgress * 30}px, ${travelProgress * 18}px)`
                 : 'none',
               transformOrigin: '720px 200px',
             }}
@@ -593,77 +612,183 @@ export default function JourneyVisualStage({
              ══════════════════════════════════════════════════════════════ */}
 
           {isTraveling ? (
-            <>
-              {/* 1. DEPARTING FLAG (Station fromIdx):
-                     Slides down and past the student to the right, scaling up and fading out */}
-              <g
-                style={{
-                  transform: `translate(${travelProgress * 80}px, ${travelProgress * 115}px) scale(${1 + travelProgress * 0.35})`,
-                  opacity: Math.max(0, 1 - travelProgress * 1.3),
-                  transformOrigin: '540px 270px',
-                }}
-              >
-                <line x1="540" y1="270" x2="540" y2="216" stroke="#b89a6a" strokeWidth="3" strokeLinecap="round" />
-                <circle cx="540" cy="214" r="3.5" fill={getPalette(JOURNEY_TOPICS[travelFrom]?.levelColor || '#00e676').primary} />
-                <path
-                  d="M 540 218 L 564 226 L 562 232 L 540 238 Z"
-                  fill={getPalette(JOURNEY_TOPICS[travelFrom]?.levelColor || '#00e676').flag}
-                  stroke={getPalette(JOURNEY_TOPICS[travelFrom]?.levelColor || '#00e676').primary}
-                  strokeWidth="0.8"
-                />
-                <text x="552" y="231" fill="#ffffff" fontFamily="sans-serif" fontSize="7" fontWeight="900" textAnchor="middle">
-                  {travelFrom + 1}
-                </text>
-              </g>
+            travelDirection === 'backward' ? (
+              <>
+                {/* ⏪ BACKWARD TRANSITION:
+                     1. DEPARTING FLAG (fromIdx): We are walking backward AWAY from it.
+                        So it recedes into the distance forward towards the horizon (540,216 -> 495,172)
+                        shrinking in perspective from 1.0x to 0.6x and fading into the distance! */}
+                {(() => {
+                  const fromPal = getPalette(JOURNEY_TOPICS[travelFrom]?.levelColor || '#00e676');
+                  const curX = 540 + (495 - 540) * travelProgress;
+                  const curYBottom = 270 + (198 - 270) * travelProgress;
+                  const curYTop = 216 + (172 - 216) * travelProgress;
+                  const flagW = 24 + (15 - 24) * travelProgress;
+                  const flagH = 20 + (10 - 20) * travelProgress;
+                  const curOpacity = Math.max(0.2, 1 - travelProgress * 0.7);
 
-              {/* 2. ARRIVING FLAG (Station toIdx):
-                     Travels down the path from (495, 172) to (540, 216), growing from 0.65x to 1.0x and lighting up */}
-              {(() => {
-                const destPal = getPalette(destinationTopic.levelColor);
-                const curX = 495 + (540 - 495) * travelProgress;
-                const curYBottom = 198 + (270 - 198) * travelProgress;
-                const curYTop = 172 + (216 - 172) * travelProgress;
-                const flagW = 15 + (24 - 15) * travelProgress;
-                const flagH = 10 + (20 - 10) * travelProgress;
-                const curOpacity = 0.6 + 0.4 * travelProgress;
+                  return (
+                    <g opacity={curOpacity}>
+                      <line
+                        x1={curX}
+                        y1={curYBottom}
+                        x2={curX}
+                        y2={curYTop}
+                        stroke="#8b6f47"
+                        strokeWidth={3 - travelProgress * 1}
+                        strokeLinecap="round"
+                      />
+                      <circle cx={curX} cy={curYTop - 2} r={3.5 - travelProgress * 1} fill={fromPal.primary} />
+                      <path
+                        d={`M ${curX} ${curYTop} L ${curX + flagW} ${curYTop + flagH * 0.4} L ${curX + flagW - 2} ${curYTop + flagH * 0.7} L ${curX} ${curYTop + flagH} Z`}
+                        fill={fromPal.flag}
+                        stroke={fromPal.primary}
+                        strokeWidth="0.8"
+                      />
+                      <text
+                        x={curX + flagW * 0.5}
+                        y={curYTop + flagH * 0.65}
+                        fill="#ffffff"
+                        fontFamily="sans-serif"
+                        fontSize={Math.max(5, 7 - travelProgress * 1.5)}
+                        fontWeight="900"
+                        textAnchor="middle"
+                      >
+                        {travelFrom + 1}
+                      </text>
+                    </g>
+                  );
+                })()}
 
-                return (
-                  <g filter="url(#flagGlow)" opacity={curOpacity}>
-                    <line x1={curX} y1={curYBottom} x2={curX} y2={curYTop} stroke="#b89a6a" strokeWidth="3" strokeLinecap="round" />
-                    <circle cx={curX} cy={curYTop - 2} r="3.5" fill={destPal.primary} />
-                    <path
-                      d={`M ${curX} ${curYTop} L ${curX + flagW} ${curYTop + flagH * 0.4} L ${curX + flagW - 2} ${curYTop + flagH * 0.7} L ${curX} ${curYTop + flagH} Z`}
-                      fill={destPal.flag}
-                      stroke={destPal.primary}
-                      strokeWidth="0.8"
-                    />
-                    <text
-                      x={curX + flagW * 0.5}
-                      y={curYTop + flagH * 0.65}
-                      fill="#ffffff"
-                      fontFamily="sans-serif"
-                      fontSize="7"
-                      fontWeight="900"
-                      textAnchor="middle"
-                    >
-                      {travelTo + 1}
-                    </text>
+                {/* 2. ARRIVING FLAG (toIdx): This station was behind us.
+                     As we step backward, it rises from behind/foreground into its pedestal position beside the student! */}
+                {(() => {
+                  const destPal = getPalette(destinationTopic.levelColor);
+                  const isCompleted = travelTo < targetIndex;
+                  const curX = 565 + (540 - 565) * travelProgress;
+                  const curYBottom = 335 + (270 - 335) * travelProgress;
+                  const curYTop = 275 + (216 - 275) * travelProgress;
+                  const flagW = 28 + (24 - 28) * travelProgress;
+                  const flagH = 22 + (20 - 22) * travelProgress;
+                  const curOpacity = Math.min(1, 0.2 + travelProgress * 1.2);
+
+                  return (
+                    <g filter={travelProgress > 0.6 ? 'url(#flagGlow)' : undefined} opacity={curOpacity}>
+                      <line
+                        x1={curX}
+                        y1={curYBottom}
+                        x2={curX}
+                        y2={curYTop}
+                        stroke="#b89a6a"
+                        strokeWidth={3.5 - travelProgress * 0.5}
+                        strokeLinecap="round"
+                      />
+                      <circle
+                        cx={curX}
+                        cy={curYTop - 2}
+                        r="3.5"
+                        fill={isCompleted ? '#94a3b8' : destPal.primary}
+                      />
+                      <path
+                        d={`M ${curX} ${curYTop} L ${curX + flagW} ${curYTop + flagH * 0.4} L ${curX + flagW - 2} ${curYTop + flagH * 0.7} L ${curX} ${curYTop + flagH} Z`}
+                        fill={isCompleted ? '#64748b' : destPal.flag}
+                        stroke={isCompleted ? '#94a3b8' : destPal.primary}
+                        strokeWidth="0.8"
+                      />
+                      <text
+                        x={curX + flagW * 0.5}
+                        y={curYTop + flagH * 0.65}
+                        fill="#ffffff"
+                        fontFamily="sans-serif"
+                        fontSize="7"
+                        fontWeight="900"
+                        textAnchor="middle"
+                      >
+                        {travelTo + 1}
+                      </text>
+                    </g>
+                  );
+                })()}
+
+                {/* 3. PREVIOUS EARLIER FLAG (travelTo - 1): emerges in the foreground behind */}
+                {travelTo > 0 && (
+                  <g opacity={travelProgress * 0.35}>
+                    <line x1="445" y1="310" x2="445" y2="286" stroke="#8b6f47" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M 445 286 L 456 290 L 445 294 Z" fill="#9ca3af" />
                   </g>
-                );
-              })()}
-
-              {/* 3. UPCOMING HORIZON FLAG (Station toIdx + 1):
-                     Gradually emerges at the horizon bend (495, 172) to show the path continues */}
-              {upcomingTopic && (
-                <g opacity={travelProgress * 0.55}>
-                  <line x1="495" y1="198" x2="495" y2="172" stroke="#8b6f47" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M 495 172 L 510 177 L 495 182 Z" fill={getPalette(upcomingTopic.levelColor).flag} opacity="0.8" />
-                  <text x="495" y="168" fill="#374151" fontFamily="sans-serif" fontSize="7" fontWeight="bold" textAnchor="middle">
-                    {travelTo + 2}
+                )}
+              </>
+            ) : (
+              <>
+                {/* ⏩ FORWARD TRANSITION:
+                     1. DEPARTING FLAG (Station fromIdx): Slides down and past the student to the right */}
+                <g
+                  style={{
+                    transform: `translate(${travelProgress * 80}px, ${travelProgress * 115}px) scale(${1 + travelProgress * 0.35})`,
+                    opacity: Math.max(0, 1 - travelProgress * 1.3),
+                    transformOrigin: '540px 270px',
+                  }}
+                >
+                  <line x1="540" y1="270" x2="540" y2="216" stroke="#b89a6a" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="540" cy="214" r="3.5" fill={getPalette(JOURNEY_TOPICS[travelFrom]?.levelColor || '#00e676').primary} />
+                  <path
+                    d="M 540 218 L 564 226 L 562 232 L 540 238 Z"
+                    fill={getPalette(JOURNEY_TOPICS[travelFrom]?.levelColor || '#00e676').flag}
+                    stroke={getPalette(JOURNEY_TOPICS[travelFrom]?.levelColor || '#00e676').primary}
+                    strokeWidth="0.8"
+                  />
+                  <text x="552" y="231" fill="#ffffff" fontFamily="sans-serif" fontSize="7" fontWeight="900" textAnchor="middle">
+                    {travelFrom + 1}
                   </text>
                 </g>
-              )}
-            </>
+
+                {/* 2. ARRIVING FLAG (Station toIdx): Travels down the path from horizon to student */}
+                {(() => {
+                  const destPal = getPalette(destinationTopic.levelColor);
+                  const curX = 495 + (540 - 495) * travelProgress;
+                  const curYBottom = 198 + (270 - 198) * travelProgress;
+                  const curYTop = 172 + (216 - 172) * travelProgress;
+                  const flagW = 15 + (24 - 15) * travelProgress;
+                  const flagH = 10 + (20 - 10) * travelProgress;
+                  const curOpacity = 0.6 + 0.4 * travelProgress;
+
+                  return (
+                    <g filter="url(#flagGlow)" opacity={curOpacity}>
+                      <line x1={curX} y1={curYBottom} x2={curX} y2={curYTop} stroke="#b89a6a" strokeWidth="3" strokeLinecap="round" />
+                      <circle cx={curX} cy={curYTop - 2} r="3.5" fill={destPal.primary} />
+                      <path
+                        d={`M ${curX} ${curYTop} L ${curX + flagW} ${curYTop + flagH * 0.4} L ${curX + flagW - 2} ${curYTop + flagH * 0.7} L ${curX} ${curYTop + flagH} Z`}
+                        fill={destPal.flag}
+                        stroke={destPal.primary}
+                        strokeWidth="0.8"
+                      />
+                      <text
+                        x={curX + flagW * 0.5}
+                        y={curYTop + flagH * 0.65}
+                        fill="#ffffff"
+                        fontFamily="sans-serif"
+                        fontSize="7"
+                        fontWeight="900"
+                        textAnchor="middle"
+                      >
+                        {travelTo + 1}
+                      </text>
+                    </g>
+                  );
+                })()}
+
+                {/* 3. UPCOMING HORIZON FLAG (Station toIdx + 1): Gradually emerges at horizon */}
+                {upcomingTopic && (
+                  <g opacity={travelProgress * 0.55}>
+                    <line x1="495" y1="198" x2="495" y2="172" stroke="#8b6f47" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M 495 172 L 510 177 L 495 182 Z" fill={getPalette(upcomingTopic.levelColor).flag} opacity="0.8" />
+                    <text x="495" y="168" fill="#374151" fontFamily="sans-serif" fontSize="7" fontWeight="bold" textAnchor="middle">
+                      {travelTo + 2}
+                    </text>
+                  </g>
+                )}
+              </>
+            )
           ) : (
             <>
               {/* ─── NEXT FLAG (Distant Milestone) ─── */}

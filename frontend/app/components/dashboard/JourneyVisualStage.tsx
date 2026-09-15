@@ -66,7 +66,12 @@ export default function JourneyVisualStage({
   const [travelTo, setTravelTo] = useState<number>(targetIndex);
   const [travelDirection, setTravelDirection] = useState<'forward' | 'backward'>('forward');
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [legPhase, setLegPhase] = useState(0); // 0=idle, 1..4=walk cycle
+  // Thruster audio: continuous sound during flight
+  const thrusterCtxRef   = useRef<AudioContext | null>(null);
+  const thrusterGainRef  = useRef<GainNode | null>(null);
+  const thrusterOsc1Ref  = useRef<OscillatorNode | null>(null);
+  const thrusterOsc2Ref  = useRef<OscillatorNode | null>(null);
+  const thrusterNoiseRef = useRef<AudioBufferSourceNode | null>(null);
 
   const handleNavigatePrev = () => {
     if (isTraveling || currentIndex <= 0) return;
@@ -78,9 +83,9 @@ export default function JourneyVisualStage({
     triggerAdvance(currentIndex, currentIndex + 1);
   };
 
-  const isTravelingRef = useRef(false);
-  const animFrameRef = useRef<number | null>(null);
-  const stepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isTravelingRef  = useRef(false);
+  const animFrameRef    = useRef<number | null>(null);
+
 
   const currentTopic: JourneyTopic = JOURNEY_TOPICS[currentIndex] || JOURNEY_TOPICS[0];
   const nextTopic: JourneyTopic | null = JOURNEY_TOPICS[currentIndex + 1] || null;
@@ -91,34 +96,77 @@ export default function JourneyVisualStage({
 
   const palette = getPalette(currentTopic.levelColor);
 
-  // Soft footstep sound (dirt / gravel crunch)
-  const playStepSound = () => {
+  // ─── 🚀 THRUSTER SOUND (continuous during flight) ───────────────────────
+  const startThrusterSound = (direction: 'forward' | 'backward') => {
     if (!soundEnabled || typeof window === 'undefined') return;
+    stopThrusterSound();
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      thrusterCtxRef.current = ctx;
       const now = ctx.currentTime;
-      const noise = ctx.createBufferSource();
-      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.12), ctx.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.13;
-      noise.buffer = buf;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(720 + Math.random() * 120, now);
-      filter.Q.setValueAtTime(1.4, now);
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.12, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      noise.start();
-      noise.stop(now + 0.12);
+
+      // Master gain — ramps up on ignition
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(0, now);
+      master.gain.linearRampToValueAtTime(0.22, now + 0.25);
+      master.connect(ctx.destination);
+      thrusterGainRef.current = master;
+
+      // Low rumble oscillator (pitch slightly higher forward)
+      const osc1 = ctx.createOscillator();
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(direction === 'forward' ? 78 : 58, now);
+      const g1 = ctx.createGain(); g1.gain.value = 0.45;
+      osc1.connect(g1); g1.connect(master);
+      osc1.start(); thrusterOsc1Ref.current = osc1;
+
+      // Mid harmonic
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(direction === 'forward' ? 155 : 115, now);
+      const g2 = ctx.createGain(); g2.gain.value = 0.22;
+      osc2.connect(g2); g2.connect(master);
+      osc2.start(); thrusterOsc2Ref.current = osc2;
+
+      // Hot exhaust hiss (2-second looping noise filtered to bandpass)
+      const bufLen = ctx.sampleRate * 2;
+      const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+      const nd = noiseBuf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) nd[i] = Math.random() * 2 - 1;
+      const ns = ctx.createBufferSource();
+      ns.buffer = noiseBuf; ns.loop = true;
+      const nf = ctx.createBiquadFilter();
+      nf.type = 'bandpass';
+      nf.frequency.value = direction === 'forward' ? 2600 : 1900;
+      nf.Q.value = 0.9;
+      const ng = ctx.createGain(); ng.gain.value = 0.14;
+      ns.connect(nf); nf.connect(ng); ng.connect(master);
+      ns.start(); thrusterNoiseRef.current = ns;
     } catch (_) {}
   };
+
+  const stopThrusterSound = () => {
+    try {
+      if (thrusterGainRef.current && thrusterCtxRef.current) {
+        const now = thrusterCtxRef.current.currentTime;
+        thrusterGainRef.current.gain.linearRampToValueAtTime(0, now + 0.35);
+        setTimeout(() => {
+          try { thrusterOsc1Ref.current?.stop(); } catch (_) {}
+          try { thrusterOsc2Ref.current?.stop(); } catch (_) {}
+          try { thrusterNoiseRef.current?.stop(); } catch (_) {}
+          try { thrusterCtxRef.current?.close(); } catch (_) {}
+          thrusterOsc1Ref.current  = null;
+          thrusterOsc2Ref.current  = null;
+          thrusterNoiseRef.current = null;
+          thrusterGainRef.current  = null;
+          thrusterCtxRef.current   = null;
+        }, 400);
+      }
+    } catch (_) {}
+  };
+
 
   // Pleasant victory chime upon arriving at the new flag (ascending when forward, descending when backward)
   const playArrivalChime = (direction: 'forward' | 'backward' = 'forward') => {
@@ -148,7 +196,7 @@ export default function JourneyVisualStage({
     } catch (_) {}
   };
 
-  // 🚶 The smooth advance / retreat animation:
+  // 🚀 The smooth advance / retreat animation:
   const triggerAdvance = (fromIdx: number, toIdx: number) => {
     if (isTravelingRef.current || fromIdx === toIdx) return;
     const direction = toIdx < fromIdx ? 'backward' : 'forward';
@@ -159,22 +207,11 @@ export default function JourneyVisualStage({
     setTravelTo(toIdx);
     setCurrentIndex(fromIdx);
 
-    const startTime = performance.now();
-    const duration = 1450; // 1.45 seconds smooth walking
+    // 🔊 Ignite thruster!
+    startThrusterSound(direction);
 
-    // Play footstep audio in rhythm
-    let stepCount = 0;
-    playStepSound();
-    stepIntervalRef.current = setInterval(() => {
-      playStepSound();
-      stepCount++;
-      if (direction === 'forward') {
-        setLegPhase((stepCount % 4) + 1);
-      } else {
-        // Reverse leg cycle for walking backward
-        setLegPhase(4 - (stepCount % 4));
-      }
-    }, 200);
+    const startTime = performance.now();
+    const duration = 1450; // 1.45 s flight
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
@@ -190,17 +227,13 @@ export default function JourneyVisualStage({
       if (rawProgress < 1) {
         animFrameRef.current = requestAnimationFrame(animate);
       } else {
-        // Arrived at destination!
-        if (stepIntervalRef.current) {
-          clearInterval(stepIntervalRef.current);
-          stepIntervalRef.current = null;
-        }
+        // Landed — cut thruster, play arrival chime
+        stopThrusterSound();
         playArrivalChime(direction);
         setTravelProgress(0);
         setCurrentIndex(toIdx);
         setIsTraveling(false);
         isTravelingRef.current = false;
-        setLegPhase(0);
         localStorage.setItem('guionbajo_last_seen_topic_index', toIdx.toString());
       }
     };
@@ -212,9 +245,10 @@ export default function JourneyVisualStage({
   useEffect(() => {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
+      stopThrusterSound();
     };
   }, []);
+
 
   // 🎯 Check if a class was just completed or needs auto-advance
   const hasCheckedAutoAdvance = useRef(false);
@@ -433,7 +467,31 @@ export default function JourneyVisualStage({
               <stop offset="0%" stopColor="#8a7050" />
               <stop offset="100%" stopColor="#9a8060" />
             </linearGradient>
+
+            {/* 🔥 Thruster flame gradients */}
+            <linearGradient id="flameOuter" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#ffffff"  stopOpacity="0.95" />
+              <stop offset="18%"  stopColor="#fde68a"  stopOpacity="0.9"  />
+              <stop offset="45%"  stopColor="#f97316"  stopOpacity="0.8"  />
+              <stop offset="80%"  stopColor="#dc2626"  stopOpacity="0.4"  />
+              <stop offset="100%" stopColor="#7c3aed"  stopOpacity="0"    />
+            </linearGradient>
+            <linearGradient id="flameCore" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#ffffff"  stopOpacity="1"   />
+              <stop offset="30%"  stopColor="#fef3c7"  stopOpacity="0.9" />
+              <stop offset="70%"  stopColor="#fbbf24"  stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#f97316"  stopOpacity="0"   />
+            </linearGradient>
+            <radialGradient id="jetGlow" cx="0.5" cy="0.1" r="0.9">
+              <stop offset="0%"   stopColor="#00d4ff" stopOpacity="0.55" />
+              <stop offset="100%" stopColor="#00d4ff" stopOpacity="0"    />
+            </radialGradient>
+            <radialGradient id="groundFlameGlow" cx="0.5" cy="0" r="0.7">
+              <stop offset="0%"   stopColor="#f97316" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#f97316" stopOpacity="0"    />
+            </radialGradient>
           </defs>
+
 
           {/* ═══ SKY LAYER (Fixed horizon) ═══ */}
           <rect width="960" height="340" fill="url(#skyWarm)" />
@@ -857,125 +915,244 @@ export default function JourneyVisualStage({
           </g>
 
           {/* ══════════════════════════════════════════════════════════════
-              🚶 THE STUDENT (LOCKED IN PLACE — LEGS & ARMS ANIMATE TO WALK)
+              🚀 GUIONBAJO — Jetpack character (seen from behind)
+              • Idle: gentle hover bob, small idle flame
+              • Forward: tilts forward, flames grow and intensify
+              • Backward: quick half-turn → flies reversed → half-turn back
              ══════════════════════════════════════════════════════════════ */}
-          <g>
-            {/* Shadow beneath student (pulses subtly while walking) */}
-            <ellipse
-              cx="475"
-              cy="330"
-              rx={isTraveling && (legPhase === 1 || legPhase === 3) ? 19 : 17}
-              ry="5"
-              fill="#1a4a2e"
-              opacity="0.35"
-            />
+          {(() => {
+            const p = travelProgress; // 0..1 eased
+            const isFlying = isTraveling;
 
-            {/* Dynamic Walk-cycle variables */}
-            {(() => {
-              // 4-phase leg swing:
-              // Phase 1: Left forward, Right back
-              // Phase 2: Crossing center
-              // Phase 3: Right forward, Left back
-              // Phase 4: Crossing center
-              const isWalking = isTraveling && legPhase > 0;
-              const leftFootX = isWalking
-                ? legPhase === 1 ? 458 : legPhase === 2 ? 463 : legPhase === 3 ? 468 : 463
-                : 463;
-              const rightFootX = isWalking
-                ? legPhase === 1 ? 491 : legPhase === 2 ? 487 : legPhase === 3 ? 482 : 487
-                : 487;
-              const leftLegEndX = isWalking
-                ? legPhase === 1 ? 459 : legPhase === 2 ? 464 : legPhase === 3 ? 467 : 464
-                : 464;
-              const rightLegEndX = isWalking
-                ? legPhase === 1 ? 490 : legPhase === 2 ? 486 : legPhase === 3 ? 483 : 486
-                : 486;
+            // ── Flame intensity (sinusoidal peak at mid-flight) ──────────
+            const flameIntensity = isFlying ? Math.sin(p * Math.PI) : 0.12;
+            const flameLen  = 10 + flameIntensity * 38;    // 10 → 48 px
+            const flameW    = 5  + flameIntensity * 5;     // 5  → 10 px
+            const flameCoreLen = flameLen * 0.55;
+            const flameOpacity = 0.45 + flameIntensity * 0.55;
+            // Slight random shimmer (uses progress as seed, no extra state)
+            const shimmer = Math.sin(p * Math.PI * 11) * 2;
 
-              // Vertical body bobbing on steps
-              const bodyBobY = isWalking && (legPhase === 1 || legPhase === 3) ? -2.5 : 0;
+            // ── Ground glow (visible when flames are hot) ─────────────────
+            const glowR = 18 + flameIntensity * 22;
 
-              // Arm swinging opposite to legs
-              const leftArmTip = isWalking
-                ? legPhase === 1 ? '448 304' : legPhase === 3 ? '456 312' : '452 308'
-                : '452 308';
-              const rightArmTip = isWalking
-                ? legPhase === 1 ? '502 312' : legPhase === 3 ? '494 304' : '498 308'
-                : '498 308';
+            // ── Forward tilt (into flight direction) ─────────────────────
+            const tiltAngle = isFlying
+              ? Math.sin(p * Math.PI) * (travelDirection === 'forward' ? -13 : 13)
+              : 0;
 
-              return (
-                <g style={{ transform: `translateY(${bodyBobY}px)`, transition: 'transform 0.12s ease' }}>
-                  {/* Left Leg */}
-                  <line
-                    x1="467"
-                    y1="312"
-                    x2={leftLegEndX}
-                    y2="330"
-                    stroke="#2c4a6e"
-                    strokeWidth="6"
-                    strokeLinecap="round"
+            // ── Hover bob (gentle when idle, quick turbulence when flying) ─
+            const hoverY = isFlying
+              ? Math.sin(p * Math.PI * 6) * 2.5
+              : 0;
+
+            // ── Flip transform for BACKWARD travel ────────────────────────
+            // 0→0.15 : spin to face us (scaleX 1 → -1)
+            // 0.15→0.85 : fly reversed (scaleX -1)
+            // 0.85→1   : spin back to face away (scaleX -1 → 1)
+            let flipX = 1;
+            if (isFlying && travelDirection === 'backward') {
+              if (p < 0.15)       flipX = 1 - (p / 0.15) * 2;
+              else if (p < 0.85)  flipX = -1;
+              else                flipX = -1 + ((p - 0.85) / 0.15) * 2;
+            }
+
+            // Thruster nozzle positions (relative to character center x=475)
+            const nozL = { x: 461, yTop: 299, yBot: 311 }; // left nozzle exit
+            const nozR = { x: 489, yTop: 299, yBot: 311 }; // right nozzle exit
+
+            return (
+              <g
+                style={{
+                  transform: `translateY(${hoverY}px) rotate(${tiltAngle}deg) scaleX(${flipX})`,
+                  transformOrigin: '475px 290px',
+                  transition: 'none',
+                }}
+              >
+                {/* ── Ground glow cast by flames ───────────────────────── */}
+                {isFlying && (
+                  <ellipse
+                    cx="475" cy="330"
+                    rx={glowR} ry={glowR * 0.28}
+                    fill="url(#groundFlameGlow)"
+                    opacity={flameIntensity * 0.7}
                   />
-                  {/* Right Leg */}
-                  <line
-                    x1="483"
-                    y1="312"
-                    x2={rightLegEndX}
-                    y2="330"
-                    stroke="#2c4a6e"
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                  />
-                  {/* Left Shoe */}
-                  <ellipse cx={leftFootX} cy="332" rx="6" ry="3" fill="#6b3a1e" />
-                  {/* Right Shoe */}
-                  <ellipse cx={rightFootX} cy="332" rx="6" ry="3" fill="#6b3a1e" />
+                )}
 
-                  {/* Body / Jacket */}
-                  <path
-                    d="M 463 278 Q 460 290, 458 305 L 460 312 L 490 312 L 492 305 Q 490 290, 487 278 Z"
-                    fill="#475569"
-                    stroke="#334155"
-                    strokeWidth="0.8"
-                  />
+                {/* ── Shadow (shrinks when airborne) ───────────────────── */}
+                <ellipse
+                  cx="475" cy="332"
+                  rx={isFlying ? 14 - flameIntensity * 6 : 18}
+                  ry={isFlying ? 3.5 - flameIntensity * 1.5 : 5}
+                  fill="#0a2010"
+                  opacity={isFlying ? 0.2 + (1 - flameIntensity) * 0.2 : 0.4}
+                />
 
-                  {/* Backpack */}
-                  <rect x="467" y="274" width="16" height="24" rx="4" fill="#64748b" stroke="#475569" strokeWidth="0.8" />
-                  <rect x="469.5" y="278" width="11" height="5" rx="1.5" fill="#94a3b8" opacity="0.3" />
-                  {/* Straps */}
-                  <path d="M 469 274 Q 466 282, 464 288" fill="none" stroke="#475569" strokeWidth="1.5" />
-                  <path d="M 481 274 Q 484 282, 486 288" fill="none" stroke="#475569" strokeWidth="1.5" />
+                {/* ── LEFT THRUSTER FLAME ──────────────────────────────── */}
+                {/* Outer flame plume */}
+                <path
+                  d={`M ${nozL.x - flameW * 0.5} ${nozL.yBot}
+                      Q ${nozL.x - flameW * 0.3 + shimmer} ${nozL.yBot + flameLen * 0.55}
+                        ${nozL.x} ${nozL.yBot + flameLen}
+                      Q ${nozL.x + flameW * 0.3 + shimmer} ${nozL.yBot + flameLen * 0.55}
+                        ${nozL.x + flameW * 0.5} ${nozL.yBot}`}
+                  fill="url(#flameOuter)"
+                  opacity={flameOpacity}
+                />
+                {/* Inner hot core */}
+                <path
+                  d={`M ${nozL.x - flameW * 0.28} ${nozL.yBot}
+                      Q ${nozL.x} ${nozL.yBot + flameCoreLen * 0.6}
+                        ${nozL.x} ${nozL.yBot + flameCoreLen}
+                      Q ${nozL.x} ${nozL.yBot + flameCoreLen * 0.6}
+                        ${nozL.x + flameW * 0.28} ${nozL.yBot}`}
+                  fill="url(#flameCore)"
+                  opacity={flameOpacity * 0.95}
+                />
 
-                  {/* Arms */}
-                  <path
-                    d={`M 463 282 Q 455 296, ${leftArmTip}`}
-                    fill="none"
-                    stroke="#475569"
-                    strokeWidth="5.5"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d={`M 487 282 Q 495 296, ${rightArmTip}`}
-                    fill="none"
-                    stroke="#475569"
-                    strokeWidth="5.5"
-                    strokeLinecap="round"
-                  />
+                {/* ── RIGHT THRUSTER FLAME ─────────────────────────────── */}
+                <path
+                  d={`M ${nozR.x - flameW * 0.5} ${nozR.yBot}
+                      Q ${nozR.x - flameW * 0.3 - shimmer} ${nozR.yBot + flameLen * 0.55}
+                        ${nozR.x} ${nozR.yBot + flameLen}
+                      Q ${nozR.x + flameW * 0.3 - shimmer} ${nozR.yBot + flameLen * 0.55}
+                        ${nozR.x + flameW * 0.5} ${nozR.yBot}`}
+                  fill="url(#flameOuter)"
+                  opacity={flameOpacity}
+                />
+                <path
+                  d={`M ${nozR.x - flameW * 0.28} ${nozR.yBot}
+                      Q ${nozR.x} ${nozR.yBot + flameCoreLen * 0.6}
+                        ${nozR.x} ${nozR.yBot + flameCoreLen}
+                      Q ${nozR.x} ${nozR.yBot + flameCoreLen * 0.6}
+                        ${nozR.x + flameW * 0.28} ${nozR.yBot}`}
+                  fill="url(#flameCore)"
+                  opacity={flameOpacity * 0.95}
+                />
 
-                  {/* Neck */}
-                  <rect x="471" y="270" width="8" height="6" fill="#b07848" rx="2" />
+                {/* ── LEGS / FLIGHT SUIT LOWER BODY ────────────────────── */}
+                {/* Left leg */}
+                <rect x="463" y="308" width="9" height="18" rx="4.5"
+                  fill="#0f172a" stroke="#1e293b" strokeWidth="0.8" />
+                {/* Right leg */}
+                <rect x="478" y="308" width="9" height="18" rx="4.5"
+                  fill="#0f172a" stroke="#1e293b" strokeWidth="0.8" />
+                {/* Boot left */}
+                <ellipse cx="467" cy="327" rx="7.5" ry="4" fill="#1e293b" />
+                <ellipse cx="467" cy="325" rx="5.5" ry="2.5" fill="#334155" />
+                {/* Boot right */}
+                <ellipse cx="482" cy="327" rx="7.5" ry="4" fill="#1e293b" />
+                <ellipse cx="482" cy="325" rx="5.5" ry="2.5" fill="#334155" />
 
-                  {/* Head */}
-                  <circle cx="475" cy="261" r="12" fill="#b07848" />
-                  {/* Hair */}
-                  <ellipse cx="475" cy="257" rx="12.5" ry="9" fill="#3b1a08" />
-                  <path d="M 463 262 Q 468 254, 475 252 Q 482 254, 487 262" fill="#3b1a08" />
+                {/* ── JETPACK BODY (behind torso, drawn before body) ───── */}
+                {/* Main pack */}
+                <rect x="463" y="265" width="24" height="36" rx="6"
+                  fill="#1e293b" stroke="#334155" strokeWidth="1" />
+                {/* Pack highlight top */}
+                <rect x="466" y="268" width="18" height="9" rx="3"
+                  fill="#0f172a" opacity="0.7" />
+                {/* Cyan indicator lights */}
+                <circle cx="471" cy="281" r="2.8" fill="#00d4ff" opacity={0.7 + flameIntensity * 0.3} />
+                <circle cx="479" cy="281" r="2.8" fill="#00d4ff" opacity={0.5 + flameIntensity * 0.3} />
+                {/* Cyan glow bloom when flying */}
+                {isFlying && (
+                  <ellipse cx="475" cy="281" rx="16" ry="10"
+                    fill="url(#jetGlow)" opacity={flameIntensity * 0.8} />
+                )}
+                {/* Pack vents */}
+                <rect x="465" y="287" width="5" height="10" rx="2" fill="#0a1520" />
+                <rect x="480" y="287" width="5" height="10" rx="2" fill="#0a1520" />
 
-                  {/* Ears */}
-                  <ellipse cx="462.5" cy="262" rx="2.5" ry="3.5" fill="#a06840" />
-                  <ellipse cx="487.5" cy="262" rx="2.5" ry="3.5" fill="#a06840" />
-                </g>
-              );
-            })()}
-          </g>
+                {/* Straps (connecting pack to shoulders) */}
+                <path d="M 465 267 Q 462 278, 461 286" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" />
+                <path d="M 485 267 Q 488 278, 489 286" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" />
+
+                {/* ── LEFT THRUSTER NOZZLE ─────────────────────────────── */}
+                <rect x="457" y="293" width="9" height="16" rx="4"
+                  fill="#334155" stroke="#475569" strokeWidth="0.8" />
+                <ellipse cx="461" cy="309" rx="5" ry="3"
+                  fill="#1a2535" stroke="#475569" strokeWidth="0.6" />
+                {/* Nozzle ring glow */}
+                <ellipse cx="461" cy="309" rx="5" ry="3"
+                  fill="#f97316" opacity={0.1 + flameIntensity * 0.5} />
+
+                {/* ── RIGHT THRUSTER NOZZLE ────────────────────────────── */}
+                <rect x="484" y="293" width="9" height="16" rx="4"
+                  fill="#334155" stroke="#475569" strokeWidth="0.8" />
+                <ellipse cx="489" cy="309" rx="5" ry="3"
+                  fill="#1a2535" stroke="#475569" strokeWidth="0.6" />
+                <ellipse cx="489" cy="309" rx="5" ry="3"
+                  fill="#f97316" opacity={0.1 + flameIntensity * 0.5} />
+
+                {/* ── ARMS ─────────────────────────────────────────────── */}
+                {/* Left arm (slightly raised when flying) */}
+                <path
+                  d={isFlying
+                    ? `M 461 278 Q 447 ${283 - flameIntensity * 8}, 440 ${292 - flameIntensity * 10}`
+                    : 'M 461 278 Q 447 290, 443 300'}
+                  fill="none" stroke="#0f172a" strokeWidth="9" strokeLinecap="round"
+                />
+                {/* Cyan sleeve cuff left */}
+                <circle cx={isFlying ? 440 : 443} cy={isFlying ? 292 - flameIntensity * 10 : 300}
+                  r="4" fill="#0e7490" />
+                {/* Right arm */}
+                <path
+                  d={isFlying
+                    ? `M 489 278 Q 503 ${283 - flameIntensity * 8}, 510 ${292 - flameIntensity * 10}`
+                    : 'M 489 278 Q 503 290, 507 300'}
+                  fill="none" stroke="#0f172a" strokeWidth="9" strokeLinecap="round"
+                />
+                <circle cx={isFlying ? 510 : 507} cy={isFlying ? 292 - flameIntensity * 10 : 300}
+                  r="4" fill="#0e7490" />
+
+                {/* ── TORSO / FLIGHT SUIT ──────────────────────────────── */}
+                <path
+                  d="M 461 272 Q 458 285, 457 300 L 459 308 L 491 308 L 493 300 Q 492 285, 489 272 Z"
+                  fill="#0f172a" stroke="#1e293b" strokeWidth="0.8"
+                />
+                {/* Cyan vertical accent stripes */}
+                <line x1="472" y1="272" x2="470" y2="308"
+                  stroke="#0891b2" strokeWidth="1.2" opacity="0.6" />
+                <line x1="478" y1="272" x2="480" y2="308"
+                  stroke="#0891b2" strokeWidth="1.2" opacity="0.6" />
+                {/* Chest logo — underscore (_) symbol on back */}
+                <rect x="468" y="291" width="14" height="3" rx="1.5"
+                  fill="#00d4ff" opacity={0.55 + flameIntensity * 0.4} />
+
+                {/* ── HELMET (from behind) ─────────────────────────────── */}
+                {/* Neck connector */}
+                <rect x="470" y="266" width="10" height="7" rx="3"
+                  fill="#1e293b" />
+                {/* Main helmet dome */}
+                <circle cx="475" cy="255" r="15" fill="#0f172a" />
+                {/* Helmet shell shading */}
+                <path d="M 461 260 Q 463 244, 475 240 Q 487 244, 489 260 Z"
+                  fill="#0a1520" />
+                {/* Visor back-edge (cyan band visible from behind) */}
+                <path d="M 461 262 Q 475 271, 489 262"
+                  stroke="#00d4ff" strokeWidth="2.2" fill="none"
+                  opacity={0.55 + flameIntensity * 0.35} />
+                {/* Side visor rails */}
+                <path d="M 461.5 256 Q 460 262, 461 268"
+                  stroke="#0891b2" strokeWidth="1.5" fill="none" opacity="0.5" />
+                <path d="M 488.5 256 Q 490 262, 489 268"
+                  stroke="#0891b2" strokeWidth="1.5" fill="none" opacity="0.5" />
+                {/* Helmet fin / ridge */}
+                <path d="M 475 240 L 475 252"
+                  stroke="#1e3a5f" strokeWidth="3" strokeLinecap="round" />
+                {/* Ambient gloss reflection */}
+                <ellipse cx="480" cy="248" rx="5" ry="3"
+                  fill="#60a5fa" opacity="0.18" />
+                {/* Ear pods */}
+                <ellipse cx="460" cy="258" rx="3.5" ry="4.5" fill="#1e293b" stroke="#334155" strokeWidth="0.6" />
+                <ellipse cx="490" cy="258" rx="3.5" ry="4.5" fill="#1e293b" stroke="#334155" strokeWidth="0.6" />
+                {/* Cyan dot on ear pod (antenna) */}
+                <circle cx="460" cy="255" r="1.5" fill="#00d4ff" opacity="0.7" />
+                <circle cx="490" cy="255" r="1.5" fill="#00d4ff" opacity="0.7" />
+              </g>
+            );
+          })()}
+
 
           {/* ══════════════════════════════════════════════════════════════
               ⬅️ ➡️ NAVIGATION ARROWS (DENTRO DEL SVG A ALTURA CENTRAL Y=170)

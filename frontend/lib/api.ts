@@ -336,7 +336,280 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ text: 'Testing TTS connection' }),
     }),
+
+  // ─── Live Voice Chat ─────────────────────────────
+  live: {
+    transcribe: async (audioBlob: Blob): Promise<{ text: string; duration: number; words: Array<{ word: string; start?: number; end?: number }>; engine?: string }> => {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'speech.wav');
+      return fetchWithAuth('/live/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+    },
+
+    synthesizeChunk: (text: string, voice_id?: string, speed = 1.0): Promise<Blob> => {
+      const selectedVoice = voice_id && voice_id !== 'default' ? voice_id : getSavedPreferredVoice();
+      return fetchAudio('/live/synthesize-chunk', {
+        method: 'POST',
+        body: JSON.stringify({ text, voice_id: selectedVoice, speed }),
+      });
+    },
+
+    streamResponse: async (
+      messages: Array<{ role: string; content: string }>,
+      options: {
+        student_name?: string;
+        student_level?: string;
+        voice_id?: string;
+        bilingual_mode?: boolean;
+        signal?: AbortSignal;
+      },
+      callbacks: {
+        onToken?: (token: string) => void;
+        onClause?: (clause: { clause_index: number; text: string }) => void;
+        onCorrection?: (correction: { original: string; corrected: string; explanation: string }) => void;
+        onDone?: (data: { full_text: string; total_clauses: number }) => void;
+        onError?: (error: string) => void;
+      }
+    ): Promise<void> => {
+      const token = getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const response = await fetch(`${API_BASE}/live/respond-stream`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          messages,
+          student_name: options.student_name || 'Estudiante',
+          student_level: options.student_level || 'A1.2',
+          voice_id: options.voice_id || getSavedPreferredVoice(),
+          bilingual_mode: options.bilingual_mode ?? true,
+        }),
+        signal: options.signal,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Live stream error (${response.status}): ${errorText}`);
+      }
+
+      if (!response.body) {
+        throw new Error('No response body received from live stream');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          let currentEvent = 'message';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            if (trimmed.startsWith('event:')) {
+              currentEvent = trimmed.slice(6).trim();
+            } else if (trimmed.startsWith('data:')) {
+              const dataStr = trimmed.slice(5).trim();
+              try {
+                const data = JSON.parse(dataStr);
+                if (currentEvent === 'token' && callbacks.onToken) {
+                  callbacks.onToken(data.token);
+                } else if (currentEvent === 'clause' && callbacks.onClause) {
+                  callbacks.onClause(data);
+                } else if (currentEvent === 'correction' && callbacks.onCorrection) {
+                  callbacks.onCorrection(data);
+                } else if (currentEvent === 'done' && callbacks.onDone) {
+                  callbacks.onDone(data);
+                } else if (currentEvent === 'error' && callbacks.onError) {
+                  callbacks.onError(data.error);
+                }
+              } catch (e) {
+                console.warn('Failed to parse SSE data:', dataStr, e);
+              }
+            }
+          }
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        if (callbacks.onError) callbacks.onError(err.message || 'Stream interrupted');
+        throw err;
+      }
+    },
+  },
 };
+
+export interface AudioQueueItem {
+  clauseIndex: number;
+  text: string;
+  blobPromise: Promise<Blob>;
+  audioUrl?: string;
+  audio?: HTMLAudioElement;
+  status: 'pending' | 'ready' | 'playing' | 'played' | 'failed';
+}
+
+export class LiveAudioStreamQueue {
+  private queue: AudioQueueItem[] = [];
+  private isPlaying = false;
+  private currentItem: AudioQueueItem | null = null;
+  private isStreamDone = false;
+  private isStopped = false;
+  private voiceId?: string;
+  private onAudioElementChange?: (audio: HTMLAudioElement | null) => void;
+  private onStateChange?: (state: 'idle' | 'playing') => void;
+
+  constructor(options?: {
+    voiceId?: string;
+    onAudioElementChange?: (audio: HTMLAudioElement | null) => void;
+    onStateChange?: (state: 'idle' | 'playing') => void;
+  }) {
+    this.voiceId = options?.voiceId;
+    this.onAudioElementChange = options?.onAudioElementChange;
+    this.onStateChange = options?.onStateChange;
+  }
+
+  enqueue(clauseIndex: number, text: string) {
+    if (this.isStopped) return;
+    const blobPromise = api.live.synthesizeChunk(text, this.voiceId);
+    const item: AudioQueueItem = {
+      clauseIndex,
+      text,
+      blobPromise,
+      status: 'pending',
+    };
+
+    blobPromise
+      .then((blob) => {
+        if (this.isStopped) return;
+        item.audioUrl = URL.createObjectURL(blob);
+        item.status = 'ready';
+        this.processNext();
+      })
+      .catch((err) => {
+        console.warn(`Clause synthesis failed for clause ${clauseIndex}:`, err);
+        item.status = 'failed';
+        this.processNext();
+      });
+
+    this.queue.push(item);
+    this.processNext();
+  }
+
+  markStreamComplete() {
+    this.isStreamDone = true;
+    this.processNext();
+  }
+
+  private async processNext() {
+    if (this.isPlaying || this.isStopped) return;
+
+    // Find next pending or ready item in order
+    const nextIndex = this.queue.findIndex((it) => it.status === 'ready' || it.status === 'pending');
+    if (nextIndex === -1) {
+      if (this.isStreamDone) {
+        this.finishPlayback();
+      }
+      return;
+    }
+
+    const item = this.queue[nextIndex];
+    if (item.status === 'pending') {
+      // Still waiting for this chunk's synthesis, do not skip ahead to keep natural sentence order
+      return;
+    }
+
+    if (item.status === 'failed' || !item.audioUrl) {
+      item.status = 'played';
+      this.processNext();
+      return;
+    }
+
+    // Play chunk
+    this.isPlaying = true;
+    item.status = 'playing';
+    this.currentItem = item;
+    this.onStateChange?.('playing');
+
+    const audio = new Audio(item.audioUrl);
+    item.audio = audio;
+    this.onAudioElementChange?.(audio);
+    attachAudioElementToAnalyzer(audio);
+
+    audio.onended = () => {
+      detachAudioElement(audio);
+      if (item.audioUrl) URL.revokeObjectURL(item.audioUrl);
+      item.status = 'played';
+      this.isPlaying = false;
+      this.currentItem = null;
+      this.onAudioElementChange?.(null);
+      this.processNext();
+    };
+
+    audio.onerror = (err) => {
+      console.warn(`Audio playback error on clause ${item.clauseIndex}:`, err);
+      detachAudioElement(audio);
+      if (item.audioUrl) URL.revokeObjectURL(item.audioUrl);
+      item.status = 'failed';
+      this.isPlaying = false;
+      this.currentItem = null;
+      this.onAudioElementChange?.(null);
+      this.processNext();
+    };
+
+    try {
+      await audio.play();
+    } catch (playErr) {
+      console.warn('Autoplay error:', playErr);
+      detachAudioElement(audio);
+      if (item.audioUrl) URL.revokeObjectURL(item.audioUrl);
+      item.status = 'failed';
+      this.isPlaying = false;
+      this.currentItem = null;
+      this.onAudioElementChange?.(null);
+      this.processNext();
+    }
+  }
+
+  private finishPlayback() {
+    this.isPlaying = false;
+    this.currentItem = null;
+    this.onAudioElementChange?.(null);
+    this.onStateChange?.('idle');
+  }
+
+  stop() {
+    this.isStopped = true;
+    this.isPlaying = false;
+    if (this.currentItem?.audio) {
+      this.currentItem.audio.pause();
+      detachAudioElement(this.currentItem.audio);
+    }
+    this.queue.forEach((it) => {
+      if (it.audioUrl) {
+        URL.revokeObjectURL(it.audioUrl);
+      }
+      if (it.audio) {
+        it.audio.pause();
+        detachAudioElement(it.audio);
+      }
+    });
+    this.queue = [];
+    this.currentItem = null;
+    this.onAudioElementChange?.(null);
+    this.onStateChange?.('idle');
+  }
+}
 
 let memoryPreferredVoice = 'female-yujie';
 

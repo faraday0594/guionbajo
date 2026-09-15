@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getToken, clearToken } from '@/lib/auth';
-import { Settings, Lock, Play, CheckCircle2, Flame, Award, Loader2, Sparkles, BookOpen, Layers, Check, ChevronRight, Mic, Activity, LogOut } from 'lucide-react';
+import { Settings, Lock, Play, CheckCircle2, Flame, Award, Loader2, Sparkles, BookOpen, Layers, Check, ChevronRight, Mic, Activity, LogOut, Radio } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
@@ -373,6 +373,45 @@ export default function DashboardPage() {
             </button>
           </div>
         </header>
+
+        {/* 🎙️ Quick Launch Live Voice AI Hero Banner */}
+        <div className="mb-8 p-5 sm:p-6 rounded-3xl glass border border-brand-cyan/40 bg-gradient-to-r from-brand-accent/20 via-brand-surface/40 to-emerald-500/10 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="flex items-center gap-4 z-10">
+            <div className="relative">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-brand-accent to-brand-cyan flex items-center justify-center shadow-lg shadow-brand-cyan/30 text-white shrink-0">
+                <Radio className="w-7 h-7 animate-pulse text-white" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-2 border-brand-dark flex items-center justify-center">
+                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  MiniMax Live Voice AI
+                </span>
+                <span className="text-[10px] text-brand-text-muted">Bilingüe Inglés / Español</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-outfit font-bold text-white">
+                Conversación en Vivo con Guionbajo
+              </h2>
+              <p className="text-xs text-brand-text-secondary max-w-xl">
+                Practica hablando por voz en tiempo real con transcripción continua, correcciones gramaticales sutiles y pronunciación fluida en streaming.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/live"
+            className="z-10 flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-brand-accent to-brand-cyan hover:from-brand-accent-hover hover:to-cyan-400 text-white text-xs sm:text-sm font-bold shadow-xl shadow-brand-accent/25 hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0 w-full md:w-auto justify-center"
+          >
+            <Mic size={16} />
+            <span>Hablar en Vivo Ahora</span>
+            <ChevronRight size={16} />
+          </Link>
+        </div>
 
         {/* Dashboard Top Mode Switcher */}
         <div className="flex items-center gap-3 mb-8">

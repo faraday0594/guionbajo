@@ -29,6 +29,7 @@ from routers import (
     reading_router,
     quest_router,
     speech_router,
+    live_chat_router,
 )
 
 def sync_table_columns(sync_conn):
@@ -155,6 +156,7 @@ app.include_router(phonetics_router)
 app.include_router(reading_router)
 app.include_router(quest_router)
 app.include_router(speech_router)
+app.include_router(live_chat_router)
 
 if __name__ == "__main__":
     import uvicorn

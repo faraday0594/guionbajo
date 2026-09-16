@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, Sparkles, X, Layers, Award, Mic, Info, Play, Loader2 } from 'lucide-react';
-import { api, playEnglishAudio } from '@/lib/api';
+import { api, playEnglishAudio, preloadEnglishAudio } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 import PhoneticLabSession from './PhoneticLabSession';
@@ -81,6 +81,38 @@ export default function PhoneticBoard({ inLessonMode = false, onClose }: Phoneti
       setLoading(false);
     }
   };
+
+  // ── Precarga automática e inmediata de audios al abrir la vista preliminar del fonema ──
+  useEffect(() => {
+    if (!selectedPhoneme) return;
+
+    const wordsToPreload: string[] = [];
+
+    // 1. Pares mínimos (contrast pairs): precargar ambas palabras (pair[0] y pair[1])
+    if (selectedPhoneme.contrast_pairs && Array.isArray(selectedPhoneme.contrast_pairs)) {
+      for (const pair of selectedPhoneme.contrast_pairs) {
+        if (pair && pair[0]) wordsToPreload.push(pair[0]);
+        if (pair && pair[1]) wordsToPreload.push(pair[1]);
+      }
+    }
+
+    // 2. Palabras de ejemplo
+    if (selectedPhoneme.examples && Array.isArray(selectedPhoneme.examples)) {
+      for (const word of selectedPhoneme.examples) {
+        if (word) wordsToPreload.push(word);
+      }
+    }
+
+    // 3. Frase de entrenamiento
+    if (selectedPhoneme.drill_sentence) {
+      wordsToPreload.push(selectedPhoneme.drill_sentence);
+    }
+
+    // Despachar todas las precargas en paralelo sin bloquear la UI (quedan listas en RAM)
+    wordsToPreload.forEach((w) => {
+      preloadEnglishAudio(w).catch(() => {});
+    });
+  }, [selectedPhoneme]);
 
   // Handle for currently active audio playback
   const activeAudioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -598,28 +630,54 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                 {/* Contrast Pairs */}
                 {selectedPhoneme.contrast_pairs && selectedPhoneme.contrast_pairs.length > 0 && (
                   <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-400" />
-                      Pares Mínimos ({selectedPhoneme.ipa} vs {selectedPhoneme.contrast_with})
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {selectedPhoneme.contrast_pairs.map((pair, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-2.5 bg-zinc-950/40 border border-zinc-800 rounded-lg text-xs">
-                          <button
-                            onClick={() => playTTS(pair[0], pair[0])}
-                            className="flex items-center gap-1.5 font-bold text-emerald-400 hover:underline"
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                        Pares Mínimos ({selectedPhoneme.ipa} vs {selectedPhoneme.contrast_with})
+                      </h4>
+                      <span className="text-[10px] text-zinc-500 font-mono">Audio precargado (0ms)</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {selectedPhoneme.contrast_pairs.map((pair, idx) => {
+                        const isPlaying0 = playingAudio === `pair:${pair[0]}` || playingAudio === pair[0];
+                        const isPlaying1 = playingAudio === `pair:${pair[1]}` || playingAudio === pair[1];
+                        return (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2.5 bg-zinc-950/60 border border-zinc-800 rounded-xl text-xs hover:border-zinc-700 transition-colors shadow-sm"
                           >
-                            <Volume2 className="w-3 h-3" /> {pair[0]}
-                          </button>
-                          <span className="text-zinc-600 font-mono">vs</span>
-                          <button
-                            onClick={() => playTTS(pair[1], pair[1])}
-                            className="flex items-center gap-1.5 font-bold text-amber-400 hover:underline"
-                          >
-                            <Volume2 className="w-3 h-3" /> {pair[1]}
-                          </button>
-                        </div>
-                      ))}
+                            <button
+                              type="button"
+                              onClick={() => playTTS(pair[0], `pair:${pair[0]}`)}
+                              className={`flex items-center gap-1.5 font-bold transition-all cursor-pointer px-2 py-1 rounded-lg ${
+                                isPlaying0
+                                  ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20 scale-105'
+                                  : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10'
+                              }`}
+                              title={`Escuchar "${pair[0]}"`}
+                            >
+                              {isPlaying0 ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Volume2 className="w-3.5 h-3.5" />}
+                              <span>{pair[0]}</span>
+                            </button>
+
+                            <span className="text-zinc-600 font-mono font-bold px-1">vs</span>
+
+                            <button
+                              type="button"
+                              onClick={() => playTTS(pair[1], `pair:${pair[1]}`)}
+                              className={`flex items-center gap-1.5 font-bold transition-all cursor-pointer px-2 py-1 rounded-lg ${
+                                isPlaying1
+                                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 scale-105'
+                                  : 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/10'
+                              }`}
+                              title={`Escuchar "${pair[1]}"`}
+                            >
+                              {isPlaying1 ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Volume2 className="w-3.5 h-3.5" />}
+                              <span>{pair[1]}</span>
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -628,19 +686,25 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold text-zinc-200">Palabras de Práctica</h4>
                   <div className="flex flex-wrap gap-2">
-                    {selectedPhoneme.examples.map((word, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => playTTS(word, word)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                          playingAudio === word
-                            ? 'bg-amber-500 text-black border-amber-400'
-                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700'
-                        }`}
-                      >
-                        <Volume2 className="w-3 h-3 text-emerald-400" /> {word}
-                      </button>
-                    ))}
+                    {selectedPhoneme.examples.map((word, idx) => {
+                      const isPlaying = playingAudio === `word:${word}` || playingAudio === word;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => playTTS(word, `word:${word}`)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                            isPlaying
+                              ? 'bg-amber-500 text-black border-amber-400 scale-105 shadow-md shadow-amber-500/20'
+                              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700'
+                          }`}
+                          title={`Escuchar "${word}"`}
+                        >
+                          {isPlaying ? <Loader2 className="w-3 h-3 animate-spin" /> : <Volume2 className="w-3 h-3 text-emerald-400" />}
+                          <span>{word}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

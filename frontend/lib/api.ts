@@ -1115,6 +1115,50 @@ export async function testVoicePreview(voiceId: string, previewText?: string): P
   return createBrowserSpeechAudioAdapter(sampleText, voiceId);
 }
 
+// ─── CACHÉ DE AUDIO EN MEMORIA DEL NAVEGADOR PARA REPRODUCCIÓN INSTANTÁNEA (0ms) ─
+const englishAudioBlobCache = new Map<string, Blob>();
+const englishAudioLoadingPromises = new Map<string, Promise<Blob | null>>();
+
+/**
+ * Precarga el audio de una palabra o frase en memoria en segundo plano.
+ * Permite que cuando el usuario haga clic en cualquier botón de fonética o pares mínimos,
+ * el sonido se reproduzca instantáneamente (0ms) sin esperar 3 segundos por síntesis.
+ */
+export async function preloadEnglishAudio(text: string, preferredVoice = 'en-US-JennyNeural'): Promise<Blob | null> {
+  const speechText = cleanTextForTTS(text);
+  if (!speechText) return null;
+
+  const isFemale = !preferredVoice || preferredVoice.includes('Jenny') || preferredVoice.includes('Aria') || preferredVoice.includes('female');
+  const targetVoice = preferredVoice || (isFemale ? 'en-US-JennyNeural' : 'en-US-RogerNeural');
+  const cacheKey = `${targetVoice}:${speechText.toLowerCase()}`;
+
+  if (englishAudioBlobCache.has(cacheKey)) {
+    return englishAudioBlobCache.get(cacheKey)!;
+  }
+
+  if (englishAudioLoadingPromises.has(cacheKey)) {
+    return englishAudioLoadingPromises.get(cacheKey)!;
+  }
+
+  const loadPromise = (async () => {
+    try {
+      const blob = await api.synthesize(speechText, targetVoice, 'calm', 0.95);
+      if (blob && blob.size > 100) {
+        englishAudioBlobCache.set(cacheKey, blob);
+        return blob;
+      }
+    } catch (e) {
+      // Silencioso en precarga para no contaminar la consola
+    } finally {
+      englishAudioLoadingPromises.delete(cacheKey);
+    }
+    return null;
+  })();
+
+  englishAudioLoadingPromises.set(cacheKey, loadPromise);
+  return loadPromise;
+}
+
 // ─── PLAY ENGLISH AUDIO (Jenny / Roger / Aria Neural HD / Edge-TTS) ───────────
 // High-definition natural English speech for exercise sentences, phonetics, POV companions, and examples.
 export async function playEnglishAudio(text: string, preferredVoice = 'en-US-JennyNeural'): Promise<HTMLAudioElement | void> {
@@ -1125,11 +1169,19 @@ export async function playEnglishAudio(text: string, preferredVoice = 'en-US-Jen
 
   const isFemale = !preferredVoice || preferredVoice.includes('Jenny') || preferredVoice.includes('Aria') || preferredVoice.includes('female');
   const targetVoice = preferredVoice || (isFemale ? 'en-US-JennyNeural' : 'en-US-RogerNeural');
+  const cacheKey = `${targetVoice}:${speechText.toLowerCase()}`;
 
-  // 1. Try Backend Studio Edge Neural TTS
+  // 1. Obtener desde caché en memoria instantánea (0ms) o precarga en progreso
   try {
-    const blob = await api.synthesize(speechText, targetVoice, 'calm', 0.95);
-    if (blob && blob.size > 200) {
+    let blob: Blob | null = englishAudioBlobCache.get(cacheKey) || null;
+    if (!blob && englishAudioLoadingPromises.has(cacheKey)) {
+      blob = await englishAudioLoadingPromises.get(cacheKey)!;
+    }
+    if (!blob) {
+      blob = await preloadEnglishAudio(speechText, targetVoice);
+    }
+
+    if (blob && blob.size > 100) {
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       activeAudioElement = audio;

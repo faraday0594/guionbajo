@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Volume2, Sparkles, Layers, Mic, CheckCircle2, XCircle, RefreshCw, Square, Loader2 } from 'lucide-react';
-import { api, playEnglishAudio } from '@/lib/api';
+import { api, playEnglishAudio, preloadEnglishAudio } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sfx } from '@/lib/soundEffects';
@@ -116,6 +116,30 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
+
+  // ── Precarga automática e instantánea de pares mínimos en la tarjeta fonética ──
+  useEffect(() => {
+    if (!phoneticData) return;
+    const words: string[] = [];
+    if (phoneticData.contrast_pairs && Array.isArray(phoneticData.contrast_pairs)) {
+      for (const pair of phoneticData.contrast_pairs) {
+        if (pair?.[0]) words.push(pair[0]);
+        if (pair?.[1]) words.push(pair[1]);
+      }
+    }
+    const primaryExamples = phoneticData.primary?.examples;
+    if (primaryExamples && Array.isArray(primaryExamples)) {
+      for (const w of primaryExamples) {
+        if (w) words.push(w);
+      }
+    }
+    if (phoneticData.drill_sentence) {
+      words.push(phoneticData.drill_sentence);
+    }
+    words.forEach((w) => {
+      preloadEnglishAudio(w).catch(() => {});
+    });
+  }, [phoneticData]);
 
   if (!phoneticData || (!phoneticData.symbols && !phoneticData.primary)) {
     return null;

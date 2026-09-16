@@ -1,3 +1,5 @@
+import os
+import hashlib
 import httpx
 import re
 import logging
@@ -10,6 +12,12 @@ from config import settings
 from core.tts_normalizer import normalize_tts_text, ENGLISH_TTS_PHONETIC_MAP
 
 logger = logging.getLogger(__name__)
+
+# Directorio de caché persistente en disco y en memoria para palabras y oraciones TTS
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+TTS_WORDS_CACHE_DIR = os.path.join(STATIC_DIR, "tts_words_cache")
+os.makedirs(TTS_WORDS_CACHE_DIR, exist_ok=True)
+TTS_IN_MEMORY_CACHE: Dict[str, bytes] = {}
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CATÁLOGO DE VOCES EN ESPAÑOL E INGLÉS (MiniMax, Google TTS, Edge Studio)
@@ -591,7 +599,7 @@ async def _synthesize_minimax_tts(
 
     return None
 
-async def synthesize_speech(
+async def _synthesize_speech_uncached(
     text: str,
     voice_id: str = "female-yujie",
     emotion: str = "calm",
@@ -599,7 +607,7 @@ async def synthesize_speech(
     api_key: str = None
 ) -> bytes:
     """
-    Master speech synthesis router:
+    Master speech synthesis core router (uncached):
     Respects student's chosen voice persona (MiniMax HD, Edge Neural Studio, Google TTS).
     Guarantees that every voice persona in the catalog has an authentic, distinct voice.
     Ensures smart fallback chaining (MiniMax HD / Edge Studio -> gTTS).
@@ -713,4 +721,61 @@ async def synthesize_speech(
 
     # C) TERTIARY: Google TTS Spanish Fallback
     return await _synthesize_google_tts(speech_text, lang="es", tld="com.mx")
+
+
+async def synthesize_speech(
+    text: str,
+    voice_id: str = "female-yujie",
+    emotion: str = "calm",
+    speed: float = 1.0,
+    api_key: str = None
+) -> bytes:
+    """
+    Public entry point for speech synthesis with ultra-fast multi-tier caching:
+    - Tier 1: In-memory cache (< 1ms)
+    - Tier 2: Disk cache in static/tts_words_cache (< 5ms)
+    - Tier 3: Neural Edge-TTS / MiniMax HD / Google fallback + auto caching
+    """
+    clean_text = (text or "").strip()
+    if not clean_text:
+        return b""
+
+    # Generate unique cache hash based on voice, speed, emotion, and lowercased text
+    cache_key = hashlib.sha256(f"{voice_id}:{speed:.2f}:{emotion}:{clean_text.lower()}".encode("utf-8")).hexdigest()
+
+    # 1. In-memory cache hit
+    if cache_key in TTS_IN_MEMORY_CACHE:
+        return TTS_IN_MEMORY_CACHE[cache_key]
+
+    # 2. Disk cache hit
+    disk_file = os.path.join(TTS_WORDS_CACHE_DIR, f"{cache_key}.mp3")
+    if os.path.exists(disk_file):
+        try:
+            with open(disk_file, "rb") as f:
+                cached_bytes = f.read()
+                if len(cached_bytes) > 100:
+                    TTS_IN_MEMORY_CACHE[cache_key] = cached_bytes
+                    return cached_bytes
+        except Exception as e:
+            logger.warning(f"Error reading TTS disk cache for key {cache_key}: {e}")
+
+    # 3. Fresh synthesis
+    audio_bytes = await _synthesize_speech_uncached(
+        text=clean_text,
+        voice_id=voice_id,
+        emotion=emotion,
+        speed=speed,
+        api_key=api_key
+    )
+
+    # 4. Save to in-memory and disk cache
+    if audio_bytes and len(audio_bytes) > 100:
+        TTS_IN_MEMORY_CACHE[cache_key] = audio_bytes
+        try:
+            with open(disk_file, "wb") as f:
+                f.write(audio_bytes)
+        except Exception as e:
+            logger.warning(f"Error saving TTS disk cache for key {cache_key}: {e}")
+
+    return audio_bytes
 

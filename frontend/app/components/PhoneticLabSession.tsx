@@ -6,7 +6,7 @@ import {
   Volume2, X, ChevronDown, ChevronRight, ArrowRight, Sparkles, 
   Pause, Award, CheckCircle2, User
 } from 'lucide-react';
-import { api, playEnglishAudio } from '@/lib/api';
+import { api, playEnglishAudio, preloadEnglishAudio } from '@/lib/api';
 import { getPhonemeSvgParam } from './phonemeSvgPresets';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -966,6 +966,29 @@ export default function PhoneticLabSession({ phoneme, onClose }: PhoneticLabSess
     } catch (_) {}
     setTimeout(() => setIsPlayingSound(null), 800);
   };
+
+  // ── Precarga automática e instantánea de pares mínimos y palabras del laboratorio ──
+  useEffect(() => {
+    if (!phoneme) return;
+    const words: string[] = [];
+    if (phoneme.contrast_pairs && Array.isArray(phoneme.contrast_pairs)) {
+      for (const pair of phoneme.contrast_pairs) {
+        if (pair?.[0]) words.push(pair[0]);
+        if (pair?.[1]) words.push(pair[1]);
+      }
+    }
+    if (phoneme.examples && Array.isArray(phoneme.examples)) {
+      for (const ex of phoneme.examples) {
+        if (ex) words.push(ex);
+      }
+    }
+    if (phoneme.drill_sentence) {
+      words.push(phoneme.drill_sentence);
+    }
+    words.forEach((w) => {
+      preloadEnglishAudio(w).catch(() => {});
+    });
+  }, [phoneme]);
 
   const handlePlayWord = async (word: string) => {
     setIsPlayingSound(word);

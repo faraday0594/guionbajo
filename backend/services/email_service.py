@@ -287,3 +287,80 @@ async def notify_user_login(
         html_body=html_email,
         text_body=text_body
     )
+
+
+async def send_registered_users_report(users_data: list) -> bool:
+    """
+    Envía un reporte por correo electrónico a megafer1994@gmail.com
+    con la lista completa de usuarios registrados en la base de datos de la nube.
+    """
+    now_str = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S UTC")
+    count = len(users_data)
+    subject = f"📊 [Tutor AI] Reporte de Usuarios Registrados en la Nube ({count} usuarios)"
+
+    rows_html = ""
+    for idx, u in enumerate(users_data, 1):
+        name = u.get("name") or "Sin nombre"
+        email = u.get("email") or ""
+        sublevel = u.get("current_sublevel") or u.get("current_level") or "A1.1"
+        xp = u.get("total_xp", 0)
+        streak = u.get("streak_days", 0)
+        created = u.get("created_at") or "Fecha no registrada"
+        
+        rows_html += f"""
+        <tr style="border-bottom: 1px solid #27272a;">
+            <td style="padding: 12px 10px; color: #a1a1aa; text-align: center; font-weight: 600;">{idx}</td>
+            <td style="padding: 12px 10px; color: #ffffff; font-weight: 700;">{name}</td>
+            <td style="padding: 12px 10px;"><a href="mailto:{email}" style="color: #10b981; text-decoration: none; font-weight: 500;">{email}</a></td>
+            <td style="padding: 12px 10px; color: #38bdf8; text-align: center; font-family: monospace;">{sublevel}</td>
+            <td style="padding: 12px 10px; color: #fbbf24; text-align: center;">{xp} XP · 🔥 {streak}d</td>
+            <td style="padding: 12px 10px; color: #71717a; font-size: 11px;">{created}</td>
+        </tr>
+        """
+
+    content_html = f"""
+        <p style="color: #d4d4d8; font-size: 15px; margin: 0 0 16px 0;">
+            A continuación se detalla la lista de todos los estudiantes y usuarios registrados en la plataforma:
+        </p>
+        <div style="background-color: #09090b; border: 1px solid #27272a; border-radius: 12px; overflow-x: auto; margin: 16px 0;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                <thead>
+                    <tr style="background-color: #18181b; border-bottom: 2px solid #27272a; color: #a1a1aa;">
+                        <th style="padding: 10px; text-align: center;">#</th>
+                        <th style="padding: 10px;">Nombre</th>
+                        <th style="padding: 10px;">Correo</th>
+                        <th style="padding: 10px; text-align: center;">Nivel</th>
+                        <th style="padding: 10px; text-align: center;">XP / Racha</th>
+                        <th style="padding: 10px;">Fecha de Registro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows_html}
+                </tbody>
+            </table>
+        </div>
+        <div style="background-color: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 12px; margin-top: 16px;">
+            <span style="color: #a1a1aa; font-size: 13px;">
+                📈 Total de estudiantes registrados: <strong style="color: #ffffff;">{count}</strong>
+            </span>
+        </div>
+    """
+
+    text_body = f"Reporte de usuarios registrados en Tutor AI ({count} usuarios):\n\n"
+    for idx, u in enumerate(users_data, 1):
+        text_body += f"{idx}. {u.get('name')} | {u.get('email')} | Nivel: {u.get('current_sublevel')} | XP: {u.get('total_xp')} | Fecha: {u.get('created_at')}\n"
+
+    html_email = _render_base_email_template(
+        title=f"Reporte de Usuarios Registrados ({count})",
+        badge_text="Base de Datos",
+        badge_color="#8b5cf6",
+        content_html=content_html
+    )
+
+    return await send_email_async(
+        to_email=settings.NOTIFICATION_EMAIL,
+        subject=subject,
+        html_body=html_email,
+        text_body=text_body
+    )
+

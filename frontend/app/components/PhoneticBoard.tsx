@@ -485,14 +485,14 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                   {/* Clickable IPA badge → isolated sound */}
                   <button
                     onClick={() => playPhoneme(selectedPhoneme.ipa)}
-                    className={`w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${
+                    className={`h-14 min-w-[56px] px-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border flex items-center justify-center transition-all hover:scale-105 active:scale-95 flex-shrink-0 ${
                       playingAudio === `phoneme:${selectedPhoneme.ipa}`
                         ? 'border-emerald-400 shadow-lg shadow-emerald-500/30 animate-pulse'
                         : 'border-emerald-500/30 hover:border-emerald-400'
                     }`}
                     title={`Escuchar sonido aislado ${selectedPhoneme.ipa}`}
                   >
-                    <span className="text-3xl font-black font-mono text-emerald-400">
+                    <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 whitespace-nowrap leading-none">
                       {selectedPhoneme.ipa}
                     </span>
                   </button>

@@ -484,16 +484,25 @@ function AnatomicalPlate({
       `}</style>
 
       {/* View Mode Toggle: Medical HD Plates vs Vector Simulator */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
-        <span className="text-xs text-zinc-400 font-medium">
-          {viewMode === 'hd' 
-            ? '✨ Visualizando atlas anatómico médico en alta definición' 
-            : '⚡ Visualizando simulador vectorial paramétrico en tiempo real'}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 py-2 bg-zinc-950/60 rounded-2xl border border-zinc-800/80">
+        <span className="text-xs text-zinc-300 font-medium flex items-center gap-1.5">
+          {viewMode === 'hd' ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+              <span>✨ <strong>Lámina Médica HD:</strong> Ilustración anatómica de referencia (postura exacta de labios, lengua y paladar)</span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse flex-shrink-0" />
+              <span>⚡ <strong>Simulador Vectorial:</strong> Animación interactiva en vivo del flujo de aire egresivo y vibración de cuerdas</span>
+            </>
+          )}
         </span>
-        <div className="flex items-center gap-1 bg-zinc-950/90 p-1 rounded-xl border border-zinc-800/80 self-start sm:self-auto">
+        <div className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-xl border border-zinc-800/80 self-start sm:self-auto flex-shrink-0">
           <button
             type="button"
             onClick={() => setViewMode('hd')}
+            title="Ver ilustración anatómica médica en alta definición con corte sagital y frontal de referencia"
             className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               viewMode === 'hd'
                 ? 'bg-emerald-500 text-black shadow-md font-bold'
@@ -505,6 +514,7 @@ function AnatomicalPlate({
           <button
             type="button"
             onClick={() => setViewMode('simulator')}
+            title="Ver simulador paramétrico animado con flujo dinámico de aire y vibración de cuerdas vocales"
             className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               viewMode === 'simulator'
                 ? 'bg-cyan-500 text-black shadow-md font-bold'
@@ -970,7 +980,7 @@ export default function PhoneticLabSession({ phoneme, onClose }: PhoneticLabSess
       {/* ─── Top Header & Step Navigation ─── */}
       <div className="relative z-20 bg-zinc-950/90 border-b border-zinc-800/80 px-4 py-3 flex items-center justify-between backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center font-mono font-black text-emerald-400 text-lg">
+          <div className="h-9 min-w-[36px] px-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center font-mono font-black text-emerald-400 text-sm sm:text-base whitespace-nowrap leading-none flex-shrink-0">
             {phoneme.ipa}
           </div>
           <div>
@@ -1098,7 +1108,7 @@ export default function PhoneticLabSession({ phoneme, onClose }: PhoneticLabSess
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => handlePlayPhoneme(phoneme.ipa)}
-                  className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center font-mono font-black text-emerald-400 text-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  className="h-12 min-w-[48px] px-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center font-mono font-black text-emerald-400 text-lg sm:text-xl whitespace-nowrap leading-none hover:scale-105 active:scale-95 transition-all cursor-pointer flex-shrink-0"
                   title="Escuchar fonema de nuevo"
                 >
                   {phoneme.ipa}

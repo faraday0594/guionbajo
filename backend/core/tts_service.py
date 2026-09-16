@@ -656,7 +656,9 @@ async def synthesize_speech(
         return await _synthesize_google_tts(speech_text, lang=lang)
 
     # ── 3. STRICT ENGLISH PRACTICE DRILL ──────────────────────────────────────
-    if is_predominantly_english(text):
+    # Keep consistent neural voice actor if the user selected a MiniMax persona
+    is_minimax_voice = vid_lower.startswith(("male-", "female-", "presenter_", "audiobook_"))
+    if is_predominantly_english(text) and not is_minimax_voice:
         speech_text = preprocess_text_for_tts(text, is_spanish_tutor=False)
         is_explicit_male = persona.get("gender") == "male" or any(m in vid_lower for m in ("male", "roger", "guy", "christopher", "alvaro", "jorge", "alonso"))
         chosen_en_voice = "en-US-RogerNeural" if is_explicit_male else "en-US-JennyNeural"

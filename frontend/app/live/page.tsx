@@ -98,7 +98,7 @@ export default function LiveChatPage() {
   // Playback & Watchdog Refs
   const audioQueueRef = useRef<LiveAudioStreamQueue | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const chatBottomRef = useRef<HTMLDivElement | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     isSessionActiveRef.current = isSessionActive;
@@ -131,10 +131,12 @@ export default function LiveChatPage() {
     };
   }, [router]);
 
-  // Auto-scroll chat
+  // Internal chat box scroll only (does NOT move the window camera or page scroll)
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, silenceProgress]);
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   // ── 1. Start Continuous Hands-Free Session ──────────────────
   const startHandsFreeSession = async () => {
@@ -281,7 +283,6 @@ export default function LiveChatPage() {
               if (utteranceDuration >= 400) {
                 // Legitimate utterance! Stop recorder and commit to STT
                 stopAndCommitUtterance();
-                return;
               } else {
                 // Noise bump (< 400ms): discard and continue listening
                 cancelUtteranceRecording();
@@ -879,7 +880,10 @@ export default function LiveChatPage() {
           </div>
 
           {/* ─── Chat Transcript Stream (Voice-Synchronized) ─── */}
-          <div className="flex-1 glass rounded-3xl border border-brand-border/40 p-4 sm:p-6 overflow-y-auto max-h-[360px] space-y-4 mb-4">
+          <div
+            ref={chatContainerRef}
+            className="flex-1 glass rounded-3xl border border-brand-border/40 p-4 sm:p-6 overflow-y-auto max-h-[360px] space-y-4 mb-4 scroll-smooth"
+          >
             {messages.map((msg) => {
               const isUser = msg.role === 'user';
               return (
@@ -927,7 +931,6 @@ export default function LiveChatPage() {
                 </motion.div>
               );
             })}
-            <div ref={chatBottomRef} />
           </div>
 
           {/* Fallback Text Input Bar */}

@@ -110,9 +110,9 @@ async def transcribe_live_speech(
     files = {
         "file": (filename, audio_bytes, mime_type),
         "model": (None, "asr-1.0"),
+        "language": (None, "es"),
         "response_format": (None, "verbose_json"),
         "timestamp_level": (None, "word"),
-        # Leaving 'language' empty activates mixed Spanish + English recognition
     }
 
     try:
@@ -121,6 +121,11 @@ async def transcribe_live_speech(
             if resp.status_code == 200:
                 data = resp.json()
                 raw_text = data.get("text", "").strip()
+
+                # Discard Chinese characters or subtitle hallucinations on low/silent audio
+                if re.search(r'[\u4e00-\u9fff]', raw_text) or any(h in raw_text.lower() for h in ["thank you for watching", "thanks for watching", "subtitles by", "amara.org"]):
+                    logger.warning(f"Discarded hallucinated ASR output: '{raw_text}'")
+                    raw_text = ""
                 duration = data.get("duration", 0.0)
                 segments = data.get("segments", [])
                 words = []

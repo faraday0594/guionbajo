@@ -489,9 +489,18 @@ export class LiveAudioStreamQueue {
     return this.isPlaying;
   }
 
+  private safeguardTimeout?: any;
+
   enqueue(clauseIndex: number, text: string) {
     if (this.isStopped) return;
-    const blobPromise = api.live.synthesizeChunk(text, this.voiceId);
+    const timeoutPromise = new Promise<Blob>((_, reject) =>
+      setTimeout(() => reject(new Error('TTS chunk synthesis timeout')), 6000)
+    );
+    const blobPromise = Promise.race([
+      api.live.synthesizeChunk(text, this.voiceId),
+      timeoutPromise,
+    ]);
+
     const item: AudioQueueItem = {
       clauseIndex,
       text,
@@ -507,7 +516,7 @@ export class LiveAudioStreamQueue {
         this.processNext();
       })
       .catch((err) => {
-        console.warn(`Clause synthesis failed for clause ${clauseIndex}:`, err);
+        console.warn(`Clause synthesis failed or timed out for clause ${clauseIndex}:`, err);
         item.status = 'failed';
         this.processNext();
       });
@@ -519,6 +528,13 @@ export class LiveAudioStreamQueue {
   markStreamComplete() {
     this.isStreamDone = true;
     this.processNext();
+
+    if (this.safeguardTimeout) clearTimeout(this.safeguardTimeout);
+    this.safeguardTimeout = setTimeout(() => {
+      if (!this.isPlaying || this.queue.every((it) => it.status === 'played' || it.status === 'failed')) {
+        this.finishPlayback();
+      }
+    }, 10000);
   }
 
   private async processNext() {
@@ -593,6 +609,10 @@ export class LiveAudioStreamQueue {
   }
 
   private finishPlayback() {
+    if (this.safeguardTimeout) {
+      clearTimeout(this.safeguardTimeout);
+      this.safeguardTimeout = undefined;
+    }
     this.isPlaying = false;
     this.currentItem = null;
     this.onAudioElementChange?.(null);
@@ -601,6 +621,10 @@ export class LiveAudioStreamQueue {
   }
 
   stop() {
+    if (this.safeguardTimeout) {
+      clearTimeout(this.safeguardTimeout);
+      this.safeguardTimeout = undefined;
+    }
     this.isStopped = true;
     this.isPlaying = false;
     if (this.currentItem?.audio) {

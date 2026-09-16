@@ -50,7 +50,7 @@ const CONVERSATION_STARTERS = [
 export default function LiveChatPage() {
   const router = useRouter();
 
-  // User & Settings
+  // User & Voice Preferences
   const [userName, setUserName] = useState<string>('Estudiante');
   const [userLevel, setUserLevel] = useState<string>('A1.2');
   const [preferredVoice, setPreferredVoice] = useState<string>('male-qn-qingse');
@@ -85,16 +85,17 @@ export default function LiveChatPage() {
   const gainNodeRef = useRef<GainNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // Recorder & VAD Refs
+  // Utterance Recorder & VAD Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
-  const hasSpeechRef = useRef<boolean>(false);
+  const isRecordingUtteranceRef = useRef<boolean>(false);
+  const consecutiveSpeechFramesRef = useRef<number>(0);
   const silenceStartRef = useRef<number | null>(null);
   const speechStartRef = useRef<number>(0);
   const isSessionActiveRef = useRef<boolean>(false);
   const tutorStateRef = useRef<TutorState>('idle');
 
-  // Queue & Stream Refs
+  // Playback & Watchdog Refs
   const audioQueueRef = useRef<LiveAudioStreamQueue | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
@@ -107,7 +108,7 @@ export default function LiveChatPage() {
     tutorStateRef.current = tutorState;
   }, [tutorState]);
 
-  // Initial Auth & Preferences
+  // Initial Profile Load
   useEffect(() => {
     const token = getToken();
     if (!token) {
@@ -166,7 +167,7 @@ export default function LiveChatPage() {
       analyser.smoothingTimeConstant = 0.15;
       analyserRef.current = analyser;
 
-      // Silent gain node to force Chrome/Edge to keep audio thread pulling hardware mic frames
+      // Silent gain sink so Chrome keeps pulling microphone frames
       const gain = ctx.createGain();
       gain.gain.value = 0.0;
       gainNodeRef.current = gain;
@@ -177,70 +178,25 @@ export default function LiveChatPage() {
 
       setIsSessionActive(true);
       isSessionActiveRef.current = true;
+      setTutorState('listening');
 
-      // 3. Start recording turn and continuous VAD
-      startRecordingTurn();
+      // Reset VAD state
+      isRecordingUtteranceRef.current = false;
+      consecutiveSpeechFramesRef.current = 0;
+      silenceStartRef.current = null;
+      speechStartRef.current = 0;
+
       startContinuousVadLoop();
-
-      toast.success('Micrófono activo en Manos Libres. ¡Habla con naturalidad!');
+      toast.success('Micrófono abierto. ¡Habla cuando quieras!');
     } catch (err: any) {
       console.error('Microphone error:', err);
-      toast.error('No se pudo acceder al micrófono. Por favor permite el acceso.');
+      toast.error('No se pudo acceder al micrófono. Por favor permite el acceso en tu navegador.');
       setIsSessionActive(false);
       setTutorState('idle');
     }
   };
 
-  // ── 2. Start a Recording Turn for MediaRecorder ───────────
-  const startRecordingTurn = () => {
-    if (!audioStreamRef.current || !isSessionActiveRef.current) return;
-
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      try {
-        mediaRecorderRef.current.stop();
-      } catch (_) {}
-    }
-
-    recordedChunksRef.current = [];
-    hasSpeechRef.current = false;
-    silenceStartRef.current = null;
-    speechStartRef.current = 0;
-    setSilenceProgress(0);
-    setIsSpeechDetected(false);
-    setTutorState('listening');
-
-    let mimeType = 'audio/webm';
-    if (typeof MediaRecorder.isTypeSupported === 'function') {
-      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        mimeType = 'audio/webm;codecs=opus';
-      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        mimeType = 'audio/mp4';
-      } else if (MediaRecorder.isTypeSupported('audio/wav')) {
-        mimeType = 'audio/wav';
-      }
-    }
-
-    try {
-      const recorder = new MediaRecorder(audioStreamRef.current, { mimeType });
-      mediaRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          recordedChunksRef.current.push(e.data);
-          // If no speech has happened yet and buffer gets long (> 20 chunks / 2s), keep last 5 chunks
-          if (!hasSpeechRef.current && recordedChunksRef.current.length > 20) {
-            recordedChunksRef.current.splice(0, recordedChunksRef.current.length - 5);
-          }
-        }
-      };
-
-      recorder.start(100); // 100ms slices for clean continuous WebM frames
-    } catch (e) {
-      console.error('Failed to start MediaRecorder:', e);
-    }
-  };
-
-  // ── 3. Real-Time RMS VAD & 1.5s Silence Window ─────────────
+  // ── 2. Real-Time RMS VAD Loop ─────────────────────────────
   const startContinuousVadLoop = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -260,17 +216,17 @@ export default function LiveChatPage() {
         sum += diff * diff;
       }
       const rms = Math.sqrt(sum / timeData.length);
+      // Normalized volume (0 to 100). Room silence is typically 1-3. Speech is 15-60.
       const volume = Math.min(100, Math.round(rms * 2.8));
       setMicVolume(volume);
 
-      const SPEECH_THRESHOLD = 5; // Sensitive: whispers are 8-15, normal voice is 25-60
+      const SPEECH_THRESHOLD = 8; // Threshold: normal speech easily exceeds 15-40
       const now = Date.now();
       const currentState = tutorStateRef.current;
 
-      // ── BARGE-IN INTERRUPTION ─────────────────────────────
-      // If Guionbajo is speaking and user speaks (> threshold for > 200ms):
+      // ── BARGE-IN: If Guionbajo is speaking and user speaks clearly (volume >= 14 for > 200ms) ──
       if (currentState === 'speaking' || currentState === 'thinking') {
-        if (volume >= SPEECH_THRESHOLD) {
+        if (volume >= 14) {
           if (!speechStartRef.current) speechStartRef.current = now;
           if (now - speechStartRef.current >= 200) {
             console.log('⚡ Interrupción: el estudiante comenzó a hablar');
@@ -280,9 +236,8 @@ export default function LiveChatPage() {
             if (abortControllerRef.current) {
               abortControllerRef.current.abort();
             }
-            startRecordingTurn();
-            hasSpeechRef.current = true;
-            setIsSpeechDetected(true);
+            setTutorState('listening');
+            startUtteranceRecording();
           }
         } else {
           speechStartRef.current = 0;
@@ -291,20 +246,25 @@ export default function LiveChatPage() {
         return;
       }
 
-      // ── NORMAL LISTENING & SILENCE COMMIT ─────────────────
+      // ── LISTENING STATE ───────────────────────────────────
       if (currentState === 'listening') {
         if (volume >= SPEECH_THRESHOLD) {
-          // Student is actively speaking
-          hasSpeechRef.current = true;
-          if (!speechStartRef.current) speechStartRef.current = now;
-          silenceStartRef.current = null;
+          consecutiveSpeechFramesRef.current += 1;
+
+          // Start recorder cleanly when speech starts (after 2 consecutive frames ~30ms)
+          if (!isRecordingUtteranceRef.current && consecutiveSpeechFramesRef.current >= 2) {
+            startUtteranceRecording();
+          }
+
           setIsSpeechDetected(true);
+          silenceStartRef.current = null;
           setSilenceProgress(0);
         } else {
           // Below speech threshold
+          consecutiveSpeechFramesRef.current = 0;
           setIsSpeechDetected(false);
 
-          if (hasSpeechRef.current) {
+          if (isRecordingUtteranceRef.current) {
             if (silenceStartRef.current === null) {
               silenceStartRef.current = now;
             }
@@ -312,11 +272,20 @@ export default function LiveChatPage() {
             const progress = Math.min(100, Math.round((silenceElapsed / 1500) * 100));
             setSilenceProgress(progress);
 
-            // Exactly 1.5 seconds of silence reached -> Submit speech turn!
+            // Exactly 1.5s of silence after speech -> Commit user utterance!
             if (silenceElapsed >= 1500) {
-              console.log('🎤 1.5s de silencio alcanzado. Enviando audio del estudiante...');
-              commitSpeechTurn();
-              return;
+              const utteranceDuration = now - speechStartRef.current;
+              silenceStartRef.current = null;
+              setSilenceProgress(0);
+
+              if (utteranceDuration >= 400) {
+                // Legitimate utterance! Stop recorder and commit to STT
+                stopAndCommitUtterance();
+                return;
+              } else {
+                // Noise bump (< 400ms): discard and continue listening
+                cancelUtteranceRecording();
+              }
             }
           } else {
             setSilenceProgress(0);
@@ -330,15 +299,65 @@ export default function LiveChatPage() {
     animationFrameRef.current = requestAnimationFrame(checkFrame);
   };
 
-  // ── 4. Commit Audio Turn & Transcribe ─────────────────────
-  const commitSpeechTurn = () => {
+  // ── 3. MediaRecorder Utterance Management ─────────────────
+  const startUtteranceRecording = () => {
+    if (!audioStreamRef.current || isRecordingUtteranceRef.current) return;
+
+    isRecordingUtteranceRef.current = true;
+    speechStartRef.current = Date.now();
+    recordedChunksRef.current = [];
+
+    let mimeType = 'audio/webm';
+    if (typeof MediaRecorder.isTypeSupported === 'function') {
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+        mimeType = 'audio/wav';
+      }
+    }
+
+    try {
+      const recorder = new MediaRecorder(audioStreamRef.current, { mimeType });
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordedChunksRef.current.push(e.data);
+        }
+      };
+
+      // Starts generating clean chunks with complete WebM header at Chunk 0
+      recorder.start(50);
+    } catch (e) {
+      console.error('Failed to start MediaRecorder:', e);
+      isRecordingUtteranceRef.current = false;
+    }
+  };
+
+  const cancelUtteranceRecording = () => {
+    isRecordingUtteranceRef.current = false;
+    speechStartRef.current = 0;
+    silenceStartRef.current = null;
+    setSilenceProgress(0);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (_) {}
+    }
+    recordedChunksRef.current = [];
+  };
+
+  const stopAndCommitUtterance = () => {
+    isRecordingUtteranceRef.current = false;
     setTutorState('thinking');
     setIsSpeechDetected(false);
     setSilenceProgress(0);
 
     const recorder = mediaRecorderRef.current;
     if (!recorder || recorder.state === 'inactive') {
-      startRecordingTurn();
+      resumeListeningState();
       return;
     }
 
@@ -348,8 +367,8 @@ export default function LiveChatPage() {
       recordedChunksRef.current = [];
 
       if (audioBlob.size < 400) {
-        console.warn('Audio demasiado corto, reiniciando escucha...');
-        startRecordingTurn();
+        console.warn('Audio blob too small, resuming listening...');
+        resumeListeningState();
         return;
       }
 
@@ -360,7 +379,7 @@ export default function LiveChatPage() {
 
         if (!text) {
           toast('No alcancé a captar el audio con claridad. Intenta de nuevo.', { icon: '👂' });
-          startRecordingTurn();
+          resumeListeningState();
           return;
         }
 
@@ -379,7 +398,7 @@ export default function LiveChatPage() {
       } catch (err: any) {
         console.error('STT error:', err);
         toast.error('Error al procesar voz.');
-        startRecordingTurn();
+        resumeListeningState();
       }
     };
 
@@ -387,11 +406,11 @@ export default function LiveChatPage() {
       recorder.stop();
     } catch (e) {
       console.error('Error stopping recorder:', e);
-      startRecordingTurn();
+      resumeListeningState();
     }
   };
 
-  // ── 5. Response Streaming & Synchronized Spoken Audio ─────
+  // ── 4. Streaming Response with Synchronized Voice ─────────
   const dispatchTutorResponse = async (history: Message[]) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -410,6 +429,9 @@ export default function LiveChatPage() {
 
     setMessages((prev) => [...prev, initialAssistantMsg]);
 
+    // Map to track spoken clauses by index to completely eliminate duplicate text
+    const spokenClausesMap: Record<number, string> = {};
+
     const audioQueue = new LiveAudioStreamQueue({
       voiceId: preferredVoice || 'male-qn-qingse',
       onAudioElementChange: (audio) => {
@@ -420,25 +442,26 @@ export default function LiveChatPage() {
           setTutorState(state === 'playing' ? 'speaking' : 'idle');
         }
       },
-      onClausePlay: (_clauseIdx, clauseText) => {
-        // Words appear in real-time in sync with Guionbajo pronouncing them
+      onClausePlay: (clauseIdx, clauseText) => {
+        // Words appear in real-time in sync with Guionbajo pronouncing each clause
+        spokenClausesMap[clauseIdx] = clauseText;
+        const assembledText = Object.keys(spokenClausesMap)
+          .sort((a, b) => Number(a) - Number(b))
+          .map((k) => spokenClausesMap[Number(k)])
+          .join(' ');
+
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === assistantMsgId
-              ? { ...m, content: (m.content ? m.content + ' ' : '') + clauseText }
-              : m
+            m.id === assistantMsgId ? { ...m, content: assembledText } : m
           )
         );
       },
       onAllEnded: () => {
-        // Finished speaking -> Automatically return to listening mode!
+        // Guionbajo finished speaking -> Automatically resume continuous hands-free listening!
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantMsgId ? { ...m, isStreaming: false } : m))
         );
-        startRecordingTurn();
-        if (!animationFrameRef.current) {
-          startContinuousVadLoop();
-        }
+        resumeListeningState();
       },
     });
     audioQueueRef.current = audioQueue;
@@ -495,15 +518,18 @@ export default function LiveChatPage() {
           },
           onDone: (doneData) => {
             audioQueue.markStreamComplete();
+            // If no clauses were spoken (e.g. muted), populate content directly
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantMsgId ? { ...m, content: doneData.full_text || m.content } : m
+                m.id === assistantMsgId
+                  ? { ...m, content: m.content || doneData.full_text }
+                  : m
               )
             );
           },
           onError: (err) => {
             console.warn('Stream error:', err);
-            startRecordingTurn();
+            resumeListeningState();
           },
         }
       );
@@ -511,7 +537,23 @@ export default function LiveChatPage() {
       if (err.name !== 'AbortError') {
         console.error('Stream dispatch error:', err);
       }
-      startRecordingTurn();
+      resumeListeningState();
+    }
+  };
+
+  // ── 5. Resume Listening Loop ─────────────────────────────
+  const resumeListeningState = () => {
+    if (!isSessionActiveRef.current) return;
+    setTutorState('listening');
+    isRecordingUtteranceRef.current = false;
+    consecutiveSpeechFramesRef.current = 0;
+    speechStartRef.current = 0;
+    silenceStartRef.current = null;
+    setSilenceProgress(0);
+    setIsSpeechDetected(false);
+
+    if (!animationFrameRef.current) {
+      startContinuousVadLoop();
     }
   };
 
@@ -523,6 +565,7 @@ export default function LiveChatPage() {
     setMicVolume(0);
     setIsSpeechDetected(false);
     setSilenceProgress(0);
+    cancelUtteranceRecording();
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -535,11 +578,6 @@ export default function LiveChatPage() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      try {
-        mediaRecorderRef.current.stop();
-      } catch (_) {}
     }
     if (audioStreamRef.current) {
       audioStreamRef.current.getTracks().forEach((t) => t.stop());
@@ -573,7 +611,7 @@ export default function LiveChatPage() {
     setCorrections([]);
     toast.success('Memoria de la conversación reiniciada.');
     if (isSessionActiveRef.current) {
-      startRecordingTurn();
+      resumeListeningState();
     }
   };
 
@@ -589,13 +627,13 @@ export default function LiveChatPage() {
       audio.onended = () => {
         URL.revokeObjectURL(url);
         setActiveAudio(null);
-        if (isSessionActiveRef.current) startRecordingTurn();
+        if (isSessionActiveRef.current) resumeListeningState();
         else setTutorState('idle');
       };
       audio.play();
     } catch (e) {
       console.warn('Replay failed:', e);
-      if (isSessionActiveRef.current) startRecordingTurn();
+      if (isSessionActiveRef.current) resumeListeningState();
       else setTutorState('idle');
     }
   };
@@ -760,14 +798,14 @@ export default function LiveChatPage() {
               <div className="w-64 max-w-full flex flex-col items-center gap-1 mt-2 z-10">
                 <div className="w-full flex items-center justify-between text-[10px] text-brand-text-muted font-mono-custom">
                   <span>Nivel de voz: {micVolume}%</span>
-                  <span className={micVolume >= 5 ? 'text-emerald-400 font-bold' : ''}>
-                    {micVolume >= 5 ? 'Hablando' : 'Silencio'}
+                  <span className={micVolume >= 8 ? 'text-emerald-400 font-bold' : ''}>
+                    {micVolume >= 8 ? 'Hablando' : 'Silencio'}
                   </span>
                 </div>
                 <div className="w-full bg-black/40 rounded-full h-2.5 p-0.5 border border-white/10 relative overflow-hidden">
                   <motion.div
                     className={`h-full rounded-full transition-all duration-75 ${
-                      micVolume >= 5
+                      micVolume >= 8
                         ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 shadow-sm shadow-cyan-400/50'
                         : 'bg-brand-border/60'
                     }`}

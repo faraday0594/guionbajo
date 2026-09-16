@@ -3394,25 +3394,26 @@ export default function LessonPage() {
 
     const promise = (async () => {
       let finalUrl = '';
-      try {
-        const res: any = await api.generateImage(sanitizedPrompt, '16:9');
-        if (res && res.success && (res.url || res.image_url)) {
-          finalUrl = res.url || res.image_url;
-          console.log(`🎨 MiniMax image-01 generated for slide ${phaseIdx} img ${imageIdx}:`, finalUrl);
-        } else {
-          console.warn(`MiniMax image-01 returned no URL for slide ${phaseIdx} img ${imageIdx}:`, res);
+      for (let attempt = 1; attempt <= 2 && !finalUrl; attempt++) {
+        try {
+          const res: any = await api.generateImage(sanitizedPrompt, '16:9');
+          if (res && res.success && (res.url || res.image_url)) {
+            finalUrl = res.url || res.image_url;
+            console.log(`🎨 MiniMax image-01 generated for slide ${phaseIdx} img ${imageIdx}:`, finalUrl);
+            break;
+          } else {
+            console.warn(`MiniMax image-01 returned no URL (attempt ${attempt}) for slide ${phaseIdx} img ${imageIdx}:`, res);
+          }
+        } catch (err) {
+          console.warn(`MiniMax image generation attempt ${attempt} for slide ${phaseIdx} img ${imageIdx} failed:`, err);
+          if (attempt === 1) await new Promise(r => setTimeout(r, 1200));
         }
-      } catch (err) {
-        console.warn(`MiniMax image generation for slide ${phaseIdx} img ${imageIdx} failed:`, err);
       }
 
-      if (!finalUrl) {
-        // Fallback only if MiniMax generation explicitly failed
-        finalUrl = getFallbackImageUrl(sanitizedPrompt, topic, phaseIdx + imageIdx * 17);
+      if (finalUrl) {
+        await preloadImage(finalUrl, 8000).catch(() => {});
+        setMinimaxImageMap(prev => ({ ...prev, [promptKey]: finalUrl }));
       }
-
-      await preloadImage(finalUrl, 4000).catch(() => {});
-      setMinimaxImageMap(prev => ({ ...prev, [promptKey]: finalUrl }));
       setGeneratingImages(prev => ({ ...prev, [promptKey]: false }));
       delete inFlightImagePromisesRef.current[promptKey];
       return finalUrl;
@@ -3436,21 +3437,23 @@ export default function LessonPage() {
 
     const promise = (async () => {
       let finalUrl = '';
-      try {
-        const res: any = await api.generateImage(sanitizedPrompt, '16:9');
-        if (res && res.success && (res.url || res.image_url)) {
-          finalUrl = res.url || res.image_url;
+      for (let attempt = 1; attempt <= 2 && !finalUrl; attempt++) {
+        try {
+          const res: any = await api.generateImage(sanitizedPrompt, '16:9');
+          if (res && res.success && (res.url || res.image_url)) {
+            finalUrl = res.url || res.image_url;
+            break;
+          }
+        } catch (err) {
+          console.warn(`MiniMax image generation attempt ${attempt} for exercise ${promptKey} failed:`, err);
+          if (attempt === 1) await new Promise(r => setTimeout(r, 1200));
         }
-      } catch (err) {
-        console.warn(`MiniMax image generation for exercise ${promptKey} failed:`, err);
       }
 
-      if (!finalUrl) {
-        finalUrl = getFallbackImageUrl(sanitizedPrompt, topicParam, currentPhaseIdx + 29);
+      if (finalUrl) {
+        await preloadImage(finalUrl, 8000).catch(() => {});
+        setMinimaxImageMap(prev => ({ ...prev, [promptKey]: finalUrl }));
       }
-
-      await preloadImage(finalUrl, 4000).catch(() => {});
-      setMinimaxImageMap(prev => ({ ...prev, [promptKey]: finalUrl }));
       setGeneratingImages(prev => ({ ...prev, [promptKey]: false }));
       delete inFlightImagePromisesRef.current[promptKey];
       return finalUrl;
@@ -4097,10 +4100,9 @@ export default function LessonPage() {
 
         if (isCancelledRef.current) return;
         setLesson(data);
-        setImageLoading(false);
-        setLoadingLesson(false);
 
         // ─── 4. Restore Checkpoint / Savepoint State (Strict Pedagogical Sequence) ───
+        let targetSlide = 0;
         if (restoredCp && isCpMatching(restoredCp)) {
           const isQuizPassed = Boolean(restoredCp.quiz_completed && (restoredCp.quiz_score || 0) >= 80);
           const isReadingPassed = Boolean(restoredCp.reading_completed);
@@ -4117,10 +4119,6 @@ export default function LessonPage() {
           if (restoredCp.pov_quest_completed) setPovQuestCompleted(true);
 
           if (searchParams.get('resume') === 'true' || (restoredCp.current_slide && restoredCp.current_slide > 0) || (restoredCp.view_mode && restoredCp.view_mode !== 'board')) {
-            // STRICT PEDAGOGICAL GATEKEEPER:
-            // 1. Can ONLY be in 'games' if BOTH quiz AND reading are completed!
-            // 2. Can ONLY be in 'reading' if quiz is completed!
-            // 3. Otherwise, MUST be in 'board' at the saved explanation slide!
             if (restoredCp.view_mode === 'games' && isQuizPassed && isReadingPassed) {
               setViewMode('games');
               toast('🎮 Reanudando en la Zona de Juegos.', { icon: '🎮' });
@@ -4130,6 +4128,7 @@ export default function LessonPage() {
             } else {
               setViewMode('board');
               const savedSlide = Math.min(Math.max(0, restoredCp.current_slide || 0), (data.phases?.length || 1) - 1);
+              targetSlide = savedSlide;
               if (!isQuizPassed && data.phases?.[savedSlide]?.is_practice_slide) {
                 setCurrentPhaseIdx(savedSlide);
                 setPracticeProgress({ correctCount: 0, totalCount: data.phases[savedSlide].exercises?.length || 8, isUnlocked: false });
@@ -4147,26 +4146,47 @@ export default function LessonPage() {
           }
         }
 
-        // 🚀 NON-BLOCKING BACKGROUND WORKER: Fetch Phase 0 illustration and remaining slides
-        (async () => {
-          if (data.phases && data.phases[0]) {
-            try {
-              await fetchPhaseImage(0, topicParam, data.phases[0]);
-            } catch (p0Err) {
-              console.warn('Non-blocking Phase 0 image generation error:', p0Err);
+        // 🎨 CRITICAL: Wait for MiniMax image generation before opening the class!
+        // The student must NEVER enter the lesson or have the tutor speak without the visual context ready.
+        setLoadingStage('🎨 Generando ilustraciones didácticas en alta definición con MiniMax image-01...');
+
+        const initialImagePromises: Promise<any>[] = [];
+        const currentP = data.phases?.[targetSlide];
+        if (currentP && !currentP.is_practice_slide) {
+          initialImagePromises.push(fetchPhaseImage(targetSlide, topicParam, currentP, 0));
+          if (currentP.hook_images && Array.isArray(currentP.hook_images) && currentP.hook_images.length > 1) {
+            initialImagePromises.push(fetchPhaseImage(targetSlide, topicParam, currentP, 1));
+          }
+        }
+        if (targetSlide !== 0 && data.phases?.[0] && !data.phases[0].is_practice_slide) {
+          initialImagePromises.push(fetchPhaseImage(0, topicParam, data.phases[0], 0));
+        }
+
+        // Also launch parallel generation for other explanation slides in the background
+        const remainingImagePromises: Promise<any>[] = [];
+        data.phases?.forEach((p: any, idx: number) => {
+          if (idx === targetSlide || (targetSlide !== 0 && idx === 0)) return;
+          if (!p.is_practice_slide && (p.image_prompt || (p.hook_images && p.hook_images.length > 0))) {
+            remainingImagePromises.push(fetchPhaseImage(idx, topicParam, p, 0));
+            if (p.hook_images && Array.isArray(p.hook_images) && p.hook_images.length > 1) {
+              remainingImagePromises.push(fetchPhaseImage(idx, topicParam, p, 1));
             }
           }
-          for (let i = 1; i < (data.phases?.length || 0); i++) {
-            if (isCancelledRef.current) return;
-            try {
-              await new Promise(r => setTimeout(r, 1200));
-              if (isCancelledRef.current) return;
-              await fetchPhaseImage(i, topicParam, data.phases[i]);
-            } catch (err: any) {
-              console.warn(`Background image generation for slide ${i} failed:`, err);
-            }
-          }
-        })();
+        });
+
+        // ⏳ AWAIT strictly until initial slide images are ready before allowing entry
+        try {
+          await Promise.all(initialImagePromises);
+        } catch (imgErr) {
+          console.warn('Initial image generation completed with warnings:', imgErr);
+        }
+
+        if (isCancelledRef.current) return;
+        setImageLoading(false);
+        setLoadingLesson(false);
+
+        // Preload remaining slides in background
+        Promise.allSettled(remainingImagePromises).catch(() => {});
 
       } catch (err: any) {
         if (isCancelledRef.current || err?.name === 'AbortError') return;
@@ -4350,14 +4370,26 @@ export default function LessonPage() {
     }
   }, [lesson, currentPhaseIdx, topicParam]);
 
-  // 3. Auto Play Chunk 1 on Phase Change
+  // 3. Auto Play Chunk 1 on Phase Change (waits until slide image is ready)
   useEffect(() => {
     if (loadingLesson) return;
     if (viewMode === 'games' || viewMode === 'reading') return;
+
+    const currentPhaseObj = lesson?.phases?.[currentPhaseIdx];
+    if (!currentPhaseObj) return;
+
+    // Guard: If the current slide expects an image and it's still being generated, wait so the student sees the visual context
+    const promptKey = `${currentPhaseIdx}-${topicParam}`;
+    const expectsImage = Boolean(
+      currentPhaseObj.image_prompt ||
+      (currentPhaseObj.hook_images && Array.isArray(currentPhaseObj.hook_images) && currentPhaseObj.hook_images.length > 0)
+    );
+    const isWaitingForImage = expectsImage && generatingImages[promptKey] && !minimaxImageMap[promptKey];
+    if (isWaitingForImage) {
+      return;
+    }
+
     if (
-      lesson &&
-      lesson.phases &&
-      lesson.phases[currentPhaseIdx] &&
       !evaluation &&
       lastSpokenPhaseRef.current !== currentPhaseIdx
     ) {
@@ -4365,7 +4397,7 @@ export default function LessonPage() {
       audioFinishedNaturallyRef.current = false;
       playVoiceChunk(0, true);
     }
-  }, [lesson, currentPhaseIdx, evaluation, viewMode, loadingLesson, playVoiceChunk]);
+  }, [lesson, currentPhaseIdx, evaluation, viewMode, loadingLesson, playVoiceChunk, minimaxImageMap, generatingImages, topicParam]);
 
   const speakText = async (text: string, isMainLecture = false) => {
     if (!text || !text.trim()) return;
@@ -5157,14 +5189,13 @@ export default function LessonPage() {
   const cleanImagePrompt = sanitizeImagePrompt(rawImagePrompt, topicParam, currentPhaseIdx);
 
   const promptKey = `${currentPhaseIdx}-${topicParam}`;
-  const fallbackSlideUrl = getFallbackImageUrl(cleanImagePrompt, topicParam, currentPhaseIdx);
-  const minimaxGeneratedUrl = minimaxImageMap[promptKey] || fallbackSlideUrl;
-  const isImageGenerating = generatingImages[promptKey] || !minimaxImageMap[promptKey];
-  const imageUrl = minimaxGeneratedUrl || fallbackSlideUrl;
+  const minimaxGeneratedUrl = minimaxImageMap[promptKey] || null;
+  const isImageGenerating = generatingImages[promptKey] || !minimaxGeneratedUrl;
+  const imageUrl = minimaxGeneratedUrl;
 
   // Dedicated Sentence Image URL for timeline items
   const getSentenceImageUrl = (englishSentence: string, index: number): string => {
-    return imageUrl;
+    return imageUrl || '';
   };
 
   // ─── Reusable Component for Interactive Pronunciation & Speech Card ────────
@@ -5696,7 +5727,7 @@ export default function LessonPage() {
                   <div className={`w-full grid ${hookImagesData.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'} gap-5 my-auto py-5 relative z-10 max-w-5xl mx-auto`}>
                     {hookImagesData.map((hi, hIdx) => {
                       const hKey = `${currentPhaseIdx}-${topicParam}${hIdx > 0 ? `-img${hIdx}` : ''}`;
-                      const hUrl = minimaxImageMap[hKey] || (hIdx === 0 ? imageUrl : getFallbackImageUrl(hi.prompt, topicParam, currentPhaseIdx + 17));
+                      const hUrl = minimaxImageMap[hKey] || (hIdx === 0 ? imageUrl : null);
                       const isHGenerating = generatingImages[hKey] || !hUrl;
 
                       return (
@@ -6693,7 +6724,7 @@ export default function LessonPage() {
               </button>
 
               <img
-                src={zoomedImageUrl || imageUrl}
+                src={zoomedImageUrl || imageUrl || undefined}
                 alt="Vista ampliada de la ilustración"
                 className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-brand-cyan/30"
               />

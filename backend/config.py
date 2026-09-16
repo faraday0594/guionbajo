@@ -18,6 +18,14 @@ class Settings(BaseSettings):
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     GROQ_WHISPER_MODEL: str = "whisper-large-v3-turbo"
     
+    # Notificaciones por correo
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    NOTIFICATION_EMAIL: str = "megafer1994@gmail.com"
+    EMAIL_FROM_NAME: str = "Tutor AI"
+    
     class Config:
         env_file = _env_path
         extra = "ignore"

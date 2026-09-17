@@ -277,7 +277,7 @@ export default function DashboardPage() {
     loadDashboard();
   }, []);
 
-  const [dashboardTab, setDashboardTab] = useState<'curriculum' | 'phonetics'>('curriculum');
+  const [dashboardTab, setDashboardTab] = useState<'curriculum' | 'phonetics' | 'live'>('curriculum');
 
   const handleLaunchMission = (targetSublevel?: string, targetClassIdx?: number) => {
     const sublevel = targetSublevel || userStats.current_sublevel;
@@ -374,199 +374,254 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* 🎙️ Quick Launch Live Voice AI Hero Banner */}
-        <div className="mb-8 p-5 sm:p-6 rounded-3xl glass border border-brand-cyan/40 bg-gradient-to-r from-brand-accent/20 via-brand-surface/40 to-emerald-500/10 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-          <div className="flex items-center gap-4 z-10">
-            <div className="relative">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-brand-accent to-brand-cyan flex items-center justify-center shadow-lg shadow-brand-cyan/30 text-white shrink-0">
-                <Radio className="w-7 h-7 animate-pulse text-white" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-2 border-brand-dark flex items-center justify-center">
-                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+        {/* ── Flex column que en móvil reordena los bloques ── */}
+        <div className="flex flex-col">
+
+          {/* 🗺️ Ruta de Aprendizaje — PRIMERO en móvil (order-1), tercero en desktop (md:order-3) */}
+          {dashboardTab === 'curriculum' && (
+            <div className="order-1 md:order-3">
+              {/* 🌌 Journey Visual Stage */}
+              <JourneyVisualStage
+                sublevel={userStats.current_sublevel}
+                classIndex={currentClassIndex}
+                activeCheckpoint={activeCheckpoint}
+                onLaunchClass={handleLaunchMission}
+              />
+
+              {/* 📍 Checkpoint Timeline Status Bar */}
+              <div className="mb-8 p-6 rounded-3xl glass border border-brand-accent/30 shadow-xl bg-brand-surface/30 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-border/40 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-brand-cyan animate-pulse" />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Estado en Vivo de tu Clase • {userStats.current_sublevel} Clase {currentClassIndex}
+                    </span>
+                  </div>
+                  {activeCheckpoint && (
+                    <div className="flex items-center gap-2 text-xs py-1 px-3 rounded-xl bg-black/40 border border-white/10">
+                      <Activity size={13} className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-400' : 'text-amber-400'} />
+                      <span className="text-brand-text-secondary">Puntaje Global:</span>
+                      <strong className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-300' : 'text-amber-300'}>
+                        {activeCheckpoint.overall_score || 0}%
+                      </strong>
+                      <span className="text-[10px] text-brand-text-muted">
+                        (Requiere ≥ 80% para aprobar)
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Etapa 1: Pizarra Didáctica */}
+                  <div className={`p-3 rounded-2xl border text-xs transition-all ${
+                    activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed
+                      ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300 shadow-sm'
+                      : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                  }`}>
+                    <div className="font-bold flex items-center justify-between gap-1 mb-1">
+                      <span>1. Pizarra</span>
+                      {activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed ? (
+                        <CheckCircle2 size={14} className="text-emerald-400" />
+                      ) : (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-accent/30 text-brand-cyan">Activa</span>
+                      )}
+                    </div>
+                    <div className="text-[11px] opacity-85 truncate">
+                      {activeCheckpoint?.current_slide ? `Diapositiva ${activeCheckpoint.current_slide + 1}` : 'Explicación'}
+                    </div>
+                  </div>
+
+                  {/* Etapa 2: Examen Teórico */}
+                  <div className={`p-3 rounded-2xl border text-xs transition-all ${
+                    activeCheckpoint?.quiz_completed
+                      ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                      : activeCheckpoint && activeCheckpoint.current_slide >= 2
+                        ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                        : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                  }`}>
+                    <div className="font-bold flex items-center justify-between gap-1 mb-1">
+                      <span>2. Examen</span>
+                      {activeCheckpoint?.quiz_completed ? (
+                        <CheckCircle2 size={14} className="text-emerald-400" />
+                      ) : activeCheckpoint && activeCheckpoint.current_slide >= 2 ? (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Repetir</span>
+                      ) : null}
+                    </div>
+                    <div className="text-[11px] opacity-85 truncate">
+                      {activeCheckpoint?.quiz_completed
+                        ? `${activeCheckpoint.quiz_score || 80}% pts`
+                        : activeCheckpoint && activeCheckpoint.current_slide >= 2
+                          ? 'Pendiente de repetir'
+                          : 'Práctica Quiz'}
+                    </div>
+                  </div>
+
+                  {/* Etapa 3: Lectura IPA */}
+                  <div className={`p-3 rounded-2xl border text-xs transition-all ${
+                    activeCheckpoint?.reading_completed
+                      ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                      : activeCheckpoint?.view_mode === 'reading'
+                        ? 'bg-brand-cyan/20 border-brand-cyan/50 text-brand-cyan'
+                        : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                  }`}>
+                    <div className="font-bold flex items-center justify-between gap-1 mb-1">
+                      <span>3. Lectura IPA</span>
+                      {activeCheckpoint?.reading_completed ? (
+                        <CheckCircle2 size={14} className="text-emerald-400" />
+                      ) : null}
+                    </div>
+                    <div className="text-[11px] opacity-85 truncate">
+                      {activeCheckpoint?.reading_completed
+                        ? `${activeCheckpoint.reading_score || 85}% pts`
+                        : '3 Escenas Visuales'}
+                    </div>
+                  </div>
+
+                  {/* Etapa 4: Zona de Juegos */}
+                  <div className={`p-3 rounded-2xl border text-xs transition-all ${
+                    activeCheckpoint?.mystery_word_completed
+                      ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                      : activeCheckpoint?.view_mode === 'games'
+                        ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                        : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
+                  }`}>
+                    <div className="font-bold flex items-center justify-between gap-1 mb-1">
+                      <span>4. Juegos</span>
+                      {activeCheckpoint?.mystery_word_completed ? (
+                        <CheckCircle2 size={14} className="text-emerald-400" />
+                      ) : activeCheckpoint?.view_mode === 'games' ? (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Pendiente</span>
+                      ) : null}
+                    </div>
+                    <div className="text-[11px] opacity-85 truncate">
+                      {activeCheckpoint?.mystery_word_completed
+                        ? 'Palabra Resuelta'
+                        : 'Palabra Misteriosa'}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+          )}
 
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Voz en Vivo HD
-                </span>
-                <span className="text-[10px] text-brand-text-muted">Bilingüe Inglés / Español</span>
+          {dashboardTab === 'phonetics' && (
+            <div className="order-1 md:order-3">
+              <PhoneticBoard />
+            </div>
+          )}
+
+          {dashboardTab === 'live' && (
+            <div className="order-1 md:order-3">
+              {/* 🎙️ Voz en Vivo — Tab Content */}
+              <div className="mb-8 p-6 sm:p-8 rounded-3xl glass border border-brand-cyan/40 bg-gradient-to-br from-brand-accent/15 via-brand-surface/40 to-emerald-500/10 shadow-xl">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                  {/* Icon */}
+                  <div className="relative flex-shrink-0">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-brand-accent to-brand-cyan flex items-center justify-center shadow-lg shadow-brand-cyan/30 text-white">
+                      <Radio className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse text-white" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-2 border-brand-dark flex items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Voz en Vivo HD
+                      </span>
+                      <span className="text-[10px] text-brand-text-muted">Bilingüe Inglés / Español</span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-outfit font-bold text-white mb-2">
+                      Conversación en Vivo con Guionbajo
+                    </h2>
+                    <p className="text-sm text-brand-text-secondary max-w-2xl leading-relaxed">
+                      Practica hablando por voz en tiempo real con transcripción continua, correcciones gramaticales sutiles y pronunciación fluida en streaming. Sin guión, sin presión — solo conversación natural.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Features grid */}
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { icon: '🎙️', label: 'Transcripción en tiempo real', desc: 'Ve lo que dices al instante' },
+                    { icon: '✏️', label: 'Correcciones sutiles', desc: 'Sin interrumpir el flujo' },
+                    { icon: '🔊', label: 'Pronunciación fluida', desc: 'Audio en streaming de baja latencia' },
+                  ].map((f) => (
+                    <div key={f.label} className="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-start gap-3">
+                      <span className="text-xl flex-shrink-0">{f.icon}</span>
+                      <div>
+                        <div className="text-xs font-bold text-white mb-0.5">{f.label}</div>
+                        <div className="text-[11px] text-brand-text-muted">{f.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6">
+                  <Link
+                    href="/live"
+                    className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-brand-accent to-brand-cyan hover:from-brand-accent-hover hover:to-cyan-400 text-white text-sm font-bold shadow-xl shadow-brand-accent/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    <Mic size={18} />
+                    <span>Hablar en Vivo Ahora</span>
+                    <ChevronRight size={16} />
+                  </Link>
+                </div>
               </div>
-              <h2 className="text-lg sm:text-xl font-outfit font-bold text-white">
-                Conversación en Vivo con Guionbajo
-              </h2>
-              <p className="text-xs text-brand-text-secondary max-w-xl">
-                Practica hablando por voz en tiempo real con transcripción continua, correcciones gramaticales sutiles y pronunciación fluida en streaming.
-              </p>
+            </div>
+          )}
+
+          {/* 🗂️ Tab Switcher — SEGUNDO en móvil (order-2), primero en desktop (md:order-1) */}
+          <div className="order-2 md:order-1 mb-6">
+            <div className="flex items-stretch gap-2">
+              {/* Tab 1: Mi Clase */}
+              <button
+                onClick={() => setDashboardTab('curriculum')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+                  dashboardTab === 'curriculum'
+                    ? 'bg-brand-accent border border-brand-cyan text-white shadow-lg shadow-brand-accent/20'
+                    : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
+                }`}
+              >
+                <BookOpen size={15} className={dashboardTab === 'curriculum' ? 'text-brand-cyan flex-shrink-0' : 'flex-shrink-0'} />
+                <span className="truncate">Mi Clase</span>
+              </button>
+
+              {/* Tab 2: Fonética */}
+              <button
+                onClick={() => setDashboardTab('phonetics')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+                  dashboardTab === 'phonetics'
+                    ? 'bg-emerald-600 border border-emerald-400 text-white shadow-lg shadow-emerald-600/20'
+                    : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
+                }`}
+              >
+                <Layers size={15} className={dashboardTab === 'phonetics' ? 'text-emerald-300 flex-shrink-0' : 'flex-shrink-0'} />
+                <span className="truncate">Fonética</span>
+              </button>
+
+              {/* Tab 3: Voz en Vivo */}
+              <button
+                onClick={() => setDashboardTab('live')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+                  dashboardTab === 'live'
+                    ? 'bg-gradient-to-r from-brand-accent to-brand-cyan border border-brand-cyan/60 text-white shadow-lg shadow-brand-cyan/20'
+                    : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
+                }`}
+              >
+                <Radio size={15} className={dashboardTab === 'live' ? 'text-white animate-pulse flex-shrink-0' : 'flex-shrink-0'} />
+                <span className="truncate">Voz en Vivo</span>
+                {dashboardTab !== 'live' && (
+                  <span className="hidden sm:inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                )}
+              </button>
             </div>
           </div>
 
-          <Link
-            href="/live"
-            className="z-10 flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-brand-accent to-brand-cyan hover:from-brand-accent-hover hover:to-cyan-400 text-white text-xs sm:text-sm font-bold shadow-xl shadow-brand-accent/25 hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0 w-full md:w-auto justify-center"
-          >
-            <Mic size={16} />
-            <span>Hablar en Vivo Ahora</span>
-            <ChevronRight size={16} />
-          </Link>
         </div>
-
-        {/* Dashboard Top Mode Switcher */}
-        <div className="flex items-center gap-3 mb-8">
-          <button
-            onClick={() => setDashboardTab('curriculum')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
-              dashboardTab === 'curriculum'
-                ? 'bg-brand-accent border border-brand-cyan text-white shadow-lg shadow-brand-accent/20'
-                : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
-            }`}
-          >
-            <BookOpen size={16} className={dashboardTab === 'curriculum' ? 'text-brand-cyan' : ''} />
-            <span>Tu Clase del Día (Ruta Personalizada)</span>
-          </button>
-
-          <button
-            onClick={() => setDashboardTab('phonetics')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
-              dashboardTab === 'phonetics'
-                ? 'bg-emerald-600 border border-emerald-400 text-white shadow-lg shadow-emerald-600/20'
-                : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
-            }`}
-          >
-            <Mic size={16} className={dashboardTab === 'phonetics' ? 'text-emerald-300' : ''} />
-            <span>Tablero Fonético Explorable (44 Sonidos)</span>
-          </button>
-        </div>
-
-        {dashboardTab === 'phonetics' ? (
-          <PhoneticBoard />
-        ) : (
-          <>
-            {/* 🌌 Cyberpunk 3D Perspective Journey & GPS Radar Stage */}
-            <JourneyVisualStage
-              sublevel={userStats.current_sublevel}
-              classIndex={currentClassIndex}
-              activeCheckpoint={activeCheckpoint}
-              onLaunchClass={handleLaunchMission}
-            />
-
-            {/* 📍 Checkpoint Timeline Status Bar (4 Etapas de la Clase Actual) */}
-            <div className="mb-8 p-6 rounded-3xl glass border border-brand-accent/30 shadow-xl bg-brand-surface/30 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-border/40 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-cyan animate-pulse" />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
-                    Estado en Vivo de tu Clase • {userStats.current_sublevel} Clase {currentClassIndex}
-                  </span>
-                </div>
-                {activeCheckpoint && (
-                  <div className="flex items-center gap-2 text-xs py-1 px-3 rounded-xl bg-black/40 border border-white/10">
-                    <Activity size={13} className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-400' : 'text-amber-400'} />
-                    <span className="text-brand-text-secondary">Puntaje Global:</span>
-                    <strong className={activeCheckpoint.overall_score >= 80 ? 'text-emerald-300' : 'text-amber-300'}>
-                      {activeCheckpoint.overall_score || 0}%
-                    </strong>
-                    <span className="text-[10px] text-brand-text-muted">
-                      (Requiere ≥ 80% para aprobar)
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {/* Etapa 1: Pizarra Didáctica */}
-                <div className={`p-3 rounded-2xl border text-xs transition-all ${
-                  activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300 shadow-sm'
-                    : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
-                }`}>
-                  <div className="font-bold flex items-center justify-between gap-1 mb-1">
-                    <span>1. Pizarra</span>
-                    {activeCheckpoint?.current_slide > 0 || activeCheckpoint?.quiz_completed ? (
-                      <CheckCircle2 size={14} className="text-emerald-400" />
-                    ) : (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand-accent/30 text-brand-cyan">Activa</span>
-                    )}
-                  </div>
-                  <div className="text-[11px] opacity-85 truncate">
-                    {activeCheckpoint?.current_slide ? `Diapositiva ${activeCheckpoint.current_slide + 1}` : 'Explicación'}
-                  </div>
-                </div>
-
-                {/* Etapa 2: Examen Teórico */}
-                <div className={`p-3 rounded-2xl border text-xs transition-all ${
-                  activeCheckpoint?.quiz_completed
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
-                    : activeCheckpoint && activeCheckpoint.current_slide >= 2
-                      ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
-                      : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
-                }`}>
-                  <div className="font-bold flex items-center justify-between gap-1 mb-1">
-                    <span>2. Examen</span>
-                    {activeCheckpoint?.quiz_completed ? (
-                      <CheckCircle2 size={14} className="text-emerald-400" />
-                    ) : activeCheckpoint && activeCheckpoint.current_slide >= 2 ? (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Repetir</span>
-                    ) : null}
-                  </div>
-                  <div className="text-[11px] opacity-85 truncate">
-                    {activeCheckpoint?.quiz_completed
-                      ? `${activeCheckpoint.quiz_score || 80}% pts`
-                      : activeCheckpoint && activeCheckpoint.current_slide >= 2
-                        ? 'Pendiente de repetir'
-                        : 'Práctica Quiz'}
-                  </div>
-                </div>
-
-                {/* Etapa 3: Lectura IPA */}
-                <div className={`p-3 rounded-2xl border text-xs transition-all ${
-                  activeCheckpoint?.reading_completed
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
-                    : activeCheckpoint?.view_mode === 'reading'
-                      ? 'bg-brand-cyan/20 border-brand-cyan/50 text-brand-cyan'
-                      : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
-                }`}>
-                  <div className="font-bold flex items-center justify-between gap-1 mb-1">
-                    <span>3. Lectura IPA</span>
-                    {activeCheckpoint?.reading_completed ? (
-                      <CheckCircle2 size={14} className="text-emerald-400" />
-                    ) : null}
-                  </div>
-                  <div className="text-[11px] opacity-85 truncate">
-                    {activeCheckpoint?.reading_completed
-                      ? `${activeCheckpoint.reading_score || 85}% pts`
-                      : '3 Escenas Visuales'}
-                  </div>
-                </div>
-
-                {/* Etapa 4: Zona de Juegos */}
-                <div className={`p-3 rounded-2xl border text-xs transition-all ${
-                  activeCheckpoint?.mystery_word_completed
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
-                    : activeCheckpoint?.view_mode === 'games'
-                      ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
-                      : 'bg-brand-surface/50 border-brand-border/70 text-brand-text-secondary'
-                }`}>
-                  <div className="font-bold flex items-center justify-between gap-1 mb-1">
-                    <span>4. Juegos</span>
-                    {activeCheckpoint?.mystery_word_completed ? (
-                      <CheckCircle2 size={14} className="text-emerald-400" />
-                    ) : activeCheckpoint?.view_mode === 'games' ? (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/30 text-amber-300">Pendiente</span>
-                    ) : null}
-                  </div>
-                  <div className="text-[11px] opacity-85 truncate">
-                    {activeCheckpoint?.mystery_word_completed
-                      ? 'Palabra Resuelta'
-                      : 'Palabra Misteriosa'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
       </main>
     </div>
   );

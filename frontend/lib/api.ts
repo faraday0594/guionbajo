@@ -1223,7 +1223,18 @@ export async function playEnglishAudio(
   const isFemale = !targetVoice.includes('Roger') && !targetVoice.includes('Guy') && !targetVoice.includes('male') && !isExplicitMale;
   const cacheKey = `${targetVoice}:${speechText.toLowerCase()}`;
 
-  // 1. Si el audio HD ya está en caché de memoria, ¡reproducir inmediatamente a 0ms de latencia!
+  const isWord = speechText.trim().split(/\s+/).length <= 2;
+
+  // 1. Para palabras individuales aisladas en inglés (ej: fonética o vocabulario de lectura):
+  // Si instantSpeechFallback está activo y el navegador tiene síntesis nativa en inglés,
+  // hablar SIEMPRE de forma instantánea a 0ms con pronunciación nativa en inglés coherente,
+  // garantizando que cada clic (el primero, el segundo, etc.) mantenga la misma dicción nativa perfecta.
+  if (isWord && instantSpeechFallback) {
+    const spoke = speakWithBrowserNative(speechText, isFemale);
+    if (spoke) return;
+  }
+
+  // 2. Si el audio HD ya está en caché de memoria, ¡reproducir inmediatamente a 0ms de latencia!
   const cachedBlob = englishAudioBlobCache.get(cacheKey);
   if (cachedBlob && cachedBlob.size > 100) {
     try {
@@ -1249,7 +1260,7 @@ export async function playEnglishAudio(
     } catch (_) {}
   }
 
-  // 2. Si NO está en caché y instantSpeechFallback está activo (comportamiento predeterminado para palabras):
+  // 3. Si NO está en caché y instantSpeechFallback está activo:
   // Pronunciar INMEDIATAMENTE en 0ms con el sintetizador nativo de alta calidad del dispositivo/navegador.
   // Y en segundo plano iniciar la precarga para que las próximas reproducciones usen el audio neuronal HD.
   if (instantSpeechFallback) {

@@ -374,13 +374,25 @@ def is_predominantly_english(text: str) -> bool:
     if not tokens:
         return False
 
+    try:
+        import eng_to_ipa as _eng_ipa
+    except ImportError:
+        _eng_ipa = None
+
     spanish_count = sum(1 for w in tokens if w in spanish_words)
     english_count = sum(1 for w in tokens if w in english_markers)
 
     if spanish_count > 0:
         return False
 
-    # Only consider predominantly English if it has clear English function words and no Spanish markers
+    # Single English words or short vocabulary phrases (e.g. 'keys', 'good morning', 'sandwich')
+    if len(tokens) <= 3 and spanish_count == 0:
+        if _eng_ipa and all(_eng_ipa.isin_cmu(t) for t in tokens):
+            return True
+        if any(t in english_markers for t in tokens):
+            return True
+
+    # Multi-word sentences: require function words and zero Spanish markers
     return english_count >= 2 and spanish_count == 0
 
 VOICE_PERSONA_MAP: Dict[str, Dict[str, Any]] = {
@@ -647,7 +659,12 @@ async def _synthesize_speech_uncached(
         if edge_audio and len(edge_audio) > 100:
             return edge_audio
 
-        # B) Edge blocked on cloud datacenter (e.g. Render) -> use matched MiniMax Neural Persona!
+        # B) Isolated English words (<= 3 words) should NEVER be routed to MiniMax without sentence context
+        # because MiniMax speech-02-hd pronounces isolated English tokens phonetically as Latin/Spanish/pinyin (e.g. "keys" -> "Queis").
+        if is_eng and len(speech_text.split()) <= 3:
+            return await _synthesize_google_tts(speech_text, lang="en")
+
+        # C) Edge blocked on cloud datacenter (e.g. Render) -> use matched MiniMax Neural Persona!
         if key and len(key) >= 10:
             mm_audio = await _synthesize_minimax_tts(
                 text=speech_text,
@@ -659,7 +676,7 @@ async def _synthesize_speech_uncached(
             if mm_audio and len(mm_audio) > 100:
                 return mm_audio
 
-        # C) Emergency fallback: Google TTS with gender awareness
+        # D) Emergency fallback: Google TTS with gender awareness
         lang = "en" if is_eng else "es"
         return await _synthesize_google_tts(speech_text, lang=lang)
 
@@ -676,6 +693,10 @@ async def _synthesize_speech_uncached(
         edge_audio = await _fallback_edge_tts(speech_text, voice_id=chosen_en_voice, speed=speed)
         if edge_audio and len(edge_audio) > 100:
             return edge_audio
+
+        # For short English words (<= 3 words), use Google English TTS for authentic pronunciation
+        if len(speech_text.split()) <= 3:
+            return await _synthesize_google_tts(speech_text, lang="en")
 
         if key and len(key) >= 10:
             mm_en_voice = "presenter_male" if is_explicit_male else "presenter_female"

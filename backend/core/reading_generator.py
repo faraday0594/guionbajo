@@ -1157,7 +1157,9 @@ class ReadingGenerator:
         for idx, word_item in enumerate(chunk_words):
             raw_w = word_item.get("word", "")
             clean_w = word_item.get("clean_word", "")
-            ipa_w = word_item.get("ipa") or get_word_ipa(clean_w)
+            ipa_w = word_item.get("ipa")
+            if not ipa_w or ipa_w.strip("/").lower() == clean_w.lower():
+                ipa_w = get_word_ipa(clean_w)
             is_target = word_item.get("is_target", False)
 
             if idx in matched_target_indices:

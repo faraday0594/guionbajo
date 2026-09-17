@@ -252,6 +252,7 @@ IPA_LOOKUP: Dict[str, str] = {
     "question": "/ˈkwɛstʃən/", "questions": "/ˈkwɛstʃənz/", "idea": "/aɪˈdiːə/", "problem": "/ˈprɒbləm/",
     "weather": "/ˈwɛðər/", "sun": "/sʌn/", "rain": "/reɪn/", "snow": "/snoʊ/", "wind": "/wɪnd/",
     "phone": "/foʊn/", "computer": "/kəmˈpjuːtər/", "laptop": "/ˈlæptɒp/", "message": "/ˈmɛsɪdʒ/", "email": "/ˈiːmeɪl/",
+    "key": "/kiː/", "keys": "/kiːz/", "blanket": "/ˈblæŋkɪt/", "wallet": "/ˈwɒlɪt/", "basket": "/ˈbæskɪt/", "picnic": "/ˈpɪknɪk/",
     "money": "/ˈmʌni/", "dollar": "/ˈdɒlər/", "price": "/praɪs/", "ticket": "/ˈtɪkɪt/",
     "job": "/dʒɒb/", "work": "/wɜːrk/", "doctor": "/ˈdɒktər/", "nurse": "/nɜːrs/", "engineer": "/ˌɛndʒɪˈnɪər/",
 
@@ -399,8 +400,14 @@ def heuristic_ipa_generator(clean_w: str) -> str:
     approx = approx.replace("th", "θ").replace("sh", "ʃ").replace("ch", "tʃ")
     approx = approx.replace("ph", "f").replace("ck", "k").replace("ee", "iː")
     approx = approx.replace("oo", "uː").replace("ea", "iː").replace("ai", "eɪ")
-    approx = approx.replace("ay", "eɪ").replace("ou", "aʊ").replace("ow", "oʊ")
+    approx = approx.replace("ay", "eɪ").replace("ey", "iː").replace("ou", "aʊ").replace("ow", "oʊ")
     return f"/{approx}/"
+
+
+try:
+    import eng_to_ipa as eng_ipa_converter
+except ImportError:
+    eng_ipa_converter = None
 
 
 def get_word_ipa(word: str) -> str:
@@ -412,6 +419,16 @@ def get_word_ipa(word: str) -> str:
         return ""
     if clean in IPA_LOOKUP:
         return IPA_LOOKUP[clean]
+
+    # 1. High-accuracy 130,000+ CMU dictionary lookup via eng-to-ipa
+    if eng_ipa_converter and eng_ipa_converter.isin_cmu(clean):
+        try:
+            converted = eng_ipa_converter.convert(clean)
+            if converted and not converted.endswith("*"):
+                return f"/{converted}/"
+        except Exception:
+            pass
+
     return heuristic_ipa_generator(clean)
 
 

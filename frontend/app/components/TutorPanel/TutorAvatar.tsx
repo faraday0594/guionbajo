@@ -438,7 +438,7 @@ export default function TutorAvatar({
       </div>
 
       {/* ── Torso / Pantalla CRT abombada ── */}
-      {!headOnly && !isToolbar && (
+      {!headOnly && (
         <div className={styles.robotBody}>
           
           {/* Brazos Mecánicos */}

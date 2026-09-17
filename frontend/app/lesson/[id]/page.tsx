@@ -5084,13 +5084,9 @@ export default function LessonPage() {
             <Sparkles className="w-9 h-9 text-brand-cyan animate-pulse" />
           </div>
         </div>
-        <h2 className="text-2xl font-outfit font-bold mb-2 tracking-tight">Preparando clase interactiva...</h2>
-        <p className="text-brand-cyan font-medium text-sm mb-3 animate-pulse text-center">
-          {loadingStage}
-        </p>
-        <p className="text-brand-text-secondary text-xs max-w-sm text-center leading-relaxed mb-6">
-          Lección adaptativa para <strong className="text-white">{topicParam}</strong> ({sublevelParam}).
-        </p>
+        <h2 className="text-2xl sm:text-3xl font-outfit font-bold mb-6 tracking-tight text-center">
+          Preparando clase interactiva...
+        </h2>
         <button
           type="button"
           onClick={handleCancelAndReturnToDashboard}
@@ -5418,7 +5414,7 @@ export default function LessonPage() {
       </div>
 
       {/* 🌟 Top Header Bar with Consolidated Responsive Switcher */}
-      <header className="px-3 sm:px-6 py-2.5 sm:py-3.5 sm:min-h-[70px] border-b border-brand-border/60 flex flex-col sm:flex-row sm:items-center justify-between glass z-20 gap-2 sm:gap-4">
+      <header className="px-3 sm:px-6 py-2 sm:py-3 sm:min-h-[88px] border-b border-brand-border/60 flex flex-col sm:flex-row sm:items-center justify-between glass z-20 gap-2 sm:gap-4">
         {/* Mobile Top Line / Desktop Left Side */}
         <div className="flex items-center justify-between w-full sm:w-auto gap-2 min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
@@ -5469,7 +5465,7 @@ export default function LessonPage() {
         </div>
 
         {/* Mobile Bottom Line / Desktop Right Side */}
-        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-3 w-full sm:w-auto overflow-x-auto custom-scrollbar pb-0.5 sm:pb-0">
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-3 w-full sm:w-auto overflow-x-auto sm:overflow-visible custom-scrollbar pb-0.5 sm:pb-0">
           {/* Segmented View Switcher */}
           <div className="flex items-center p-0.5 sm:p-1 rounded-2xl bg-brand-surface/90 border border-brand-border text-xs gap-0.5 sm:gap-1 shadow-inner flex-nowrap flex-shrink-0">
             <button
@@ -5601,26 +5597,30 @@ export default function LessonPage() {
             </button>
 
             {/* Guionbajo Tutor State */}
-            <div className="hidden lg:flex items-center gap-2.5 px-3 py-1 rounded-full bg-brand-surface/90 border border-brand-border/80 text-xs shadow-inner h-12">
-              <div className="w-12 h-11 flex items-center justify-center relative flex-shrink-0 overflow-visible">
+            <div className="hidden lg:flex items-center gap-3 px-3.5 py-1 rounded-2xl bg-brand-surface/90 border border-brand-border/80 text-xs shadow-inner h-[76px] overflow-visible flex-shrink-0">
+              <div className="w-16 h-[72px] flex items-center justify-center relative flex-shrink-0 overflow-visible">
                 <TutorAvatar
                   state={tutorState}
                   text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
                   audioProgress={audioProgress}
                   size="toolbar"
-                  headOnly={true}
+                  headOnly={false}
                   audioElement={currentAudioRef.current}
                 />
               </div>
-              <span className="text-brand-text-secondary font-medium whitespace-nowrap pr-1">
-                {tutorState === 'speaking'
-                  ? 'Explicando...'
-                  : tutorState === 'thinking'
-                  ? 'Pensando...'
-                  : tutorState === 'listening'
-                  ? 'Escuchando...'
-                  : 'Listo'}
-              </span>
+              <div className="flex flex-col justify-center pr-1.5">
+                <span className="text-white font-bold text-xs tracking-wide">Guionbajo</span>
+                <span className="text-brand-cyan text-[11px] font-semibold flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse inline-block" />
+                  {tutorState === 'speaking'
+                    ? 'Explicando...'
+                    : tutorState === 'thinking'
+                    ? 'Pensando...'
+                    : tutorState === 'listening'
+                    ? 'Escuchando...'
+                    : 'Listo'}
+                </span>
+              </div>
             </div>
 
             {/* Phase Badge */}

@@ -21,7 +21,7 @@ async def get_settings(current_user: User = Depends(get_current_user), db: Async
     groq_k = profile.groq_api_key if profile and hasattr(profile, "groq_api_key") and profile.groq_api_key else app_settings.GROQ_API_KEY
     masked_groq = f"{groq_k[:6]}...{groq_k[-4:]}" if groq_k else None
     
-    preferred_voice = profile.preferred_voice if profile and getattr(profile, "preferred_voice", None) else "female-yujie"
+    preferred_voice = profile.preferred_voice if profile and getattr(profile, "preferred_voice", None) else "es-US-AlonsoNeural"
     
     return {
         "minimax_api_key": masked_key,

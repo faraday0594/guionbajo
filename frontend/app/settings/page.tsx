@@ -274,7 +274,7 @@ const CURATED_VOICES: VoiceItem[] = [
     provider: 'edge',
     gender: 'male',
     lang: 'es-US',
-    badge: 'Bilingüe HD',
+    badge: 'Predeterminada',
     description: 'Voz masculina bilingüe con excelente articulación de ambos idiomas',
     preview_text: 'Hola, soy Alonso. Esta lección te ayudará a pronunciar como un hablante nativo.',
   },
@@ -304,7 +304,7 @@ export default function SettingsPage() {
   const router = useRouter();
 
   const [voices, setVoices] = useState<VoiceItem[]>(CURATED_VOICES);
-  const [selectedVoice, setSelectedVoice] = useState<string>('female-yujie');
+  const [selectedVoice, setSelectedVoice] = useState<string>('es-US-AlonsoNeural');
   const [activeTab, setActiveTab] = useState<'all' | 'minimax' | 'google' | 'edge'>('all');
   
   const [loadingVoiceId, setLoadingVoiceId] = useState<string | null>(null);

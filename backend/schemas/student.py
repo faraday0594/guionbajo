@@ -9,7 +9,7 @@ class StudentProfileResponse(BaseModel):
     streak_days: int
     weak_areas: List[str]
     learning_map: List[Dict[str, Any]]
-    preferred_voice: Optional[str] = "female-yujie"
+    preferred_voice: Optional[str] = "es-US-AlonsoNeural"
     
     class Config:
         from_attributes = True
@@ -25,6 +25,6 @@ class VoicePreferenceUpdate(BaseModel):
 
 class TTSRequest(BaseModel):
     text: str
-    voice: Optional[str] = "female-yujie"
+    voice: Optional[str] = "es-US-AlonsoNeural"
     emotion: Optional[str] = "calm"
     speed: Optional[float] = 1.0

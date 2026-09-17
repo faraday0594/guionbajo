@@ -647,7 +647,7 @@ export class LiveAudioStreamQueue {
   }
 }
 
-let memoryPreferredVoice = 'female-yujie';
+let memoryPreferredVoice = 'es-US-AlonsoNeural';
 
 export function getSavedPreferredVoice(): string {
   if (typeof window === 'undefined') return memoryPreferredVoice;
@@ -1317,7 +1317,7 @@ export async function playTutorVoice(text: string, lang = 'es'): Promise<void> {
     const savedVoice = getSavedPreferredVoice();
     const isEng = lang === 'en';
     const isFemale = !savedVoice.includes('male') && !savedVoice.includes('jorge') && !savedVoice.includes('alvaro') && !savedVoice.includes('alonso') && !savedVoice.includes('qingse') && !savedVoice.includes('jingying') && !savedVoice.includes('daxuesheng');
-    const targetVoice = isEng ? (isFemale ? 'en-US-JennyNeural' : 'en-US-RogerNeural') : (savedVoice || 'female-yujie');
+    const targetVoice = isEng ? (isFemale ? 'en-US-JennyNeural' : 'en-US-RogerNeural') : (savedVoice || 'es-US-AlonsoNeural');
 
     const fallbackToBrowserSpeech = async () => {
       if (typeof window === 'undefined' || !window.speechSynthesis) {

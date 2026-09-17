@@ -65,6 +65,7 @@ async def main():
                 weak_areas=["past_tense", "pronunciation"],
                 learning_map=[],
                 minimax_api_key=None,
+                preferred_voice="es-US-AlonsoNeural",
             )
             db.add(demo_profile)
             await db.commit()

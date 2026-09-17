@@ -90,6 +90,7 @@ async def lifespan(app: FastAPI):
                     knowledge_map={},
                     phonetics_mastery={},
                     minimax_api_key=None,
+                    preferred_voice="es-US-AlonsoNeural",
                 )
                 db.add(demo_profile)
                 await db.commit()

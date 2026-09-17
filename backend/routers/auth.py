@@ -42,6 +42,7 @@ async def register(
         current_level="A1",
         current_sublevel="A1.1",
         learning_map=default_lmap,
+        preferred_voice="es-US-AlonsoNeural",
     )
     db.add(profile)
     await db.commit()

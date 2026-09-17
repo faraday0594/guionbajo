@@ -500,7 +500,7 @@ async def tts_synthesize(
         except Exception:
             pass
 
-    voice_id = req.voice or user_preferred_voice or "female-yujie"
+    voice_id = req.voice or user_preferred_voice or "es-US-AlonsoNeural"
     emotion = req.emotion or "calm"
     speed = req.speed or 1.0
 

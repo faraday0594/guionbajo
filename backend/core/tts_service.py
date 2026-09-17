@@ -244,7 +244,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
         "provider": "edge",
         "gender": "male",
         "lang": "es-US",
-        "badge": "Bilingüe HD",
+        "badge": "Predeterminada",
         "description": "Voz masculina bilingüe con excelente articulación de ambos idiomas",
         "preview_text": "Hola, soy Alonso. Esta lección te ayudará a pronunciar como un hablante nativo."
     },
@@ -601,7 +601,7 @@ async def _synthesize_minimax_tts(
 
 async def _synthesize_speech_uncached(
     text: str,
-    voice_id: str = "female-yujie",
+    voice_id: str = "es-US-AlonsoNeural",
     emotion: str = "calm",
     speed: float = 1.0,
     api_key: str = None
@@ -725,7 +725,7 @@ async def _synthesize_speech_uncached(
 
 async def synthesize_speech(
     text: str,
-    voice_id: str = "female-yujie",
+    voice_id: str = "es-US-AlonsoNeural",
     emotion: str = "calm",
     speed: float = 1.0,
     api_key: str = None

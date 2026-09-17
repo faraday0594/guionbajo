@@ -996,85 +996,7 @@ export default function ReadingPracticeArena({
                   )}
                 </AnimatePresence>
 
-                {/* Live Recording Box for this chunk */}
-                {isRecordingThis && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/50 flex items-center gap-3 text-xs shadow-lg"
-                  >
-                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-rose-400 font-bold uppercase tracking-wider block text-[9px]">
-                        Escuchando... Lee la Parte {chunk.part_number || pIdx + 1} en inglés:
-                      </span>
-                      <p className="font-mono text-white text-xs truncate mt-0.5">
-                        {liveTranscript || 'Habla con naturalidad cerca del micrófono...'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => stopChunkRecognition(chunk)}
-                      className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1 shadow-md flex-shrink-0 cursor-pointer"
-                    >
-                      <Square size={12} className="fill-white" />
-                      <span>Detener</span>
-                    </button>
-                  </motion.div>
-                )}
-
-                {/* Evaluation Feedback & Mispronounced Words */}
-                {evaluation && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`p-3.5 rounded-xl border text-xs sm:text-sm space-y-2 ${
-                      isPassed
-                        ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
-                        : 'bg-rose-950/40 border-rose-500/50 text-rose-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between flex-wrap gap-2 font-bold">
-                      <div className="flex items-center gap-2">
-                        {isPassed ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-rose-400" />
-                        )}
-                        <span className="text-xs sm:text-sm">
-                          {isPassed ? '¡Parte Aprobada! (≥80%)' : 'Puntaje Insuficiente (<80%)'}
-                        </span>
-                      </div>
-
-                      <span className="px-2.5 py-0.5 rounded-lg bg-black/40 border border-white/15 text-yellow-300 font-bold text-xs">
-                        Precisión: {evaluation.accuracy_percent}% ({evaluation.correct_words_count}/{evaluation.total_words_count} palabras)
-                      </span>
-                    </div>
-
-                    <p className="leading-relaxed text-white/90 font-chalk text-xs">
-                      💡 {evaluation.feedback}
-                    </p>
-
-                    {evaluation.mispronounced_words && evaluation.mispronounced_words.length > 0 && (
-                      <div className="pt-1 text-[11px] text-white/80 flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-yellow-300">👉 Toca las palabras en rojo:</span>
-                        {evaluation.mispronounced_words.map((w, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={(e) => handlePlayWordAudio(w, w, e)}
-                            className="px-2 py-0.5 rounded-md bg-rose-500/30 hover:bg-rose-500/50 border border-rose-400 text-rose-100 font-mono flex items-center gap-1 hover:scale-105 transition-all cursor-pointer"
-                          >
-                            <Volume2 size={10} /> {w}
-                          </button>
-                        ))}
-                        <span>para escuchar su sonido antes de volver a grabar.</span>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Per-Chunk Voice Control Bar */}
+                {/* Per-Chunk Voice Control Bar (Always placed directly under the text to read) */}
                 <div className="flex items-center justify-between pt-1">
                   <div className="flex items-center gap-2">
                     {!isPassed ? (
@@ -1125,6 +1047,84 @@ export default function ReadingPracticeArena({
                     {isPassed ? '✅ Parte completada satisfactoriamente' : 'Se requiere al menos 80% de precisión'}
                   </span>
                 </div>
+
+                {/* Live Recording Box for this chunk */}
+                {isRecordingThis && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/50 flex items-center gap-3 text-xs shadow-lg"
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-rose-400 font-bold uppercase tracking-wider block text-[9px]">
+                        Escuchando... Lee la Parte {chunk.part_number || pIdx + 1} en inglés:
+                      </span>
+                      <p className="font-mono text-white text-xs truncate mt-0.5">
+                        {liveTranscript || 'Habla con naturalidad cerca del micrófono...'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => stopChunkRecognition(chunk)}
+                      className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1 shadow-md flex-shrink-0 cursor-pointer"
+                    >
+                      <Square size={12} className="fill-white" />
+                      <span>Detener</span>
+                    </button>
+                  </motion.div>
+                )}
+
+                {/* Evaluation Feedback & Mispronounced Words (Displayed UNDER the action button) */}
+                {evaluation && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-3.5 rounded-xl border text-xs sm:text-sm space-y-2 ${
+                      isPassed
+                        ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
+                        : 'bg-rose-950/40 border-rose-500/50 text-rose-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between flex-wrap gap-2 font-bold">
+                      <div className="flex items-center gap-2">
+                        {isPassed ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-rose-400" />
+                        )}
+                        <span className="text-xs sm:text-sm">
+                          {isPassed ? '¡Parte Aprobada! (≥80%)' : 'Puntaje Insuficiente (<80%)'}
+                        </span>
+                      </div>
+
+                      <span className="px-2.5 py-0.5 rounded-lg bg-black/40 border border-white/15 text-yellow-300 font-bold text-xs">
+                        Precisión: {evaluation.accuracy_percent}% ({evaluation.correct_words_count}/{evaluation.total_words_count} palabras)
+                      </span>
+                    </div>
+
+                    <p className="leading-relaxed text-white/90 font-chalk text-xs">
+                      💡 {evaluation.feedback}
+                    </p>
+
+                    {evaluation.mispronounced_words && evaluation.mispronounced_words.length > 0 && (
+                      <div className="pt-1 text-[11px] text-white/80 flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-yellow-300">👉 Toca las palabras en rojo:</span>
+                        {evaluation.mispronounced_words.map((w, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={(e) => handlePlayWordAudio(w, w, e)}
+                            className="px-2 py-0.5 rounded-md bg-rose-500/30 hover:bg-rose-500/50 border border-rose-400 text-rose-100 font-mono flex items-center gap-1 hover:scale-105 transition-all cursor-pointer"
+                          >
+                            <Volume2 size={10} /> {w}
+                          </button>
+                        ))}
+                        <span>para escuchar su sonido antes de volver a grabar.</span>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
               </div>
             );
           })}

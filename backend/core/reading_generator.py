@@ -167,6 +167,70 @@ DIGIT_MAP = {
 }
 
 
+CONTRACTIONS_MAP = {
+    "don't": "do not", "doesn't": "does not", "didn't": "did not",
+    "can't": "cannot", "couldn't": "could not", "won't": "will not",
+    "wouldn't": "would not", "isn't": "is not", "aren't": "are not",
+    "wasn't": "was not", "weren't": "were not", "haven't": "have not",
+    "hasn't": "has not", "hadn't": "had not", "it's": "it is",
+    "that's": "that is", "what's": "what is", "who's": "who is",
+    "there's": "there is", "here's": "here is", "where's": "where is",
+    "i'm": "i am", "you're": "you are", "we're": "we are", "they're": "they are",
+    "i've": "i have", "you've": "you have", "we've": "we have", "they've": "they have",
+    "i'll": "i will", "you'll": "you will", "he'll": "he will", "she'll": "she will",
+    "we'll": "we will", "they'll": "they will", "let's": "let us",
+}
+
+HOMOPHONE_SETS = [
+    {"their", "there", "they're"},
+    {"to", "too", "two", "2"},
+    {"hear", "here"},
+    {"no", "know"},
+    {"knows", "nose"},
+    {"for", "four", "4"},
+    {"by", "buy", "bye"},
+    {"right", "write"},
+    {"see", "sea"},
+    {"be", "bee"},
+    {"won", "one", "1"},
+    {"its", "it's"},
+    {"your", "you're"},
+    {"meet", "meat"},
+    {"flour", "flower"},
+    {"hour", "our"},
+    {"son", "sun"},
+    {"ate", "eight", "8"},
+    {"piece", "peace"},
+    {"road", "rode"},
+    {"pair", "pear"},
+    {"wear", "where"},
+    {"weather", "whether"},
+    {"which", "witch"},
+    {"whole", "hole"},
+    {"wood", "would"},
+    {"hi", "high"},
+    {"check", "cheque"},
+    {"chilli", "chili"},
+    {"grey", "gray"},
+]
+
+
+def are_words_phonetically_matching(w1: str, w2: str) -> bool:
+    """Checks whether two words sound identical or represent valid English contractions/homophones."""
+    c1 = re.sub(r"[^\w']", "", w1).lower()
+    c2 = re.sub(r"[^\w']", "", w2).lower()
+    if not c1 or not c2:
+        return False
+    if c1 == c2:
+        return True
+    if CONTRACTIONS_MAP.get(c1) == c2 or CONTRACTIONS_MAP.get(c2) == c1:
+        return True
+    for hset in HOMOPHONE_SETS:
+        if c1 in hset and c2 in hset:
+            return True
+    return False
+
+
 def normalize_speech_text(text: str) -> str:
     """Normalizes speech transcript by lowering case, removing punctuation, and converting digits to words."""
     if not text or not isinstance(text, str):
@@ -1036,20 +1100,55 @@ class ReadingGenerator:
         spoken_tokens = [clean_token(w).lower() for w in normalized_transcript.split() if clean_token(w)]
         target_clean_tokens = [w.get("clean_word", "").lower() for w in chunk_words]
 
-        matcher = difflib.SequenceMatcher(None, target_clean_tokens, spoken_tokens)
         matched_target_indices = set()
+        used_spoken_indices = set()
 
-        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-            if tag == 'equal':
-                for idx in range(i1, i2):
-                    matched_target_indices.add(idx)
-            elif tag == 'replace':
-                for t_idx, s_idx in zip(range(i1, i2), range(j1, j2)):
-                    t_word = target_clean_tokens[t_idx]
+        for t_idx, t_word in enumerate(target_clean_tokens):
+            if not t_word:
+                continue
+
+            best_s_idx = -1
+            best_sim = 0.0
+
+            # 1. Nearby sliding window search
+            w_start = max(0, t_idx - 3)
+            w_end = min(len(spoken_tokens), t_idx + 4)
+
+            for s_idx in range(w_start, w_end):
+                if s_idx in used_spoken_indices:
+                    continue
+                s_word = spoken_tokens[s_idx]
+                if are_words_phonetically_matching(t_word, s_word):
+                    best_sim = 1.0
+                    best_s_idx = s_idx
+                    break
+                ratio = difflib.SequenceMatcher(None, t_word, s_word).ratio()
+                if ratio > best_sim:
+                    best_sim = ratio
+                    best_s_idx = s_idx
+
+            # 2. Broader window search if not found
+            if best_sim < 0.70:
+                for s_idx in range(len(spoken_tokens)):
+                    if s_idx in used_spoken_indices:
+                        continue
                     s_word = spoken_tokens[s_idx]
+                    if are_words_phonetically_matching(t_word, s_word):
+                        best_sim = 1.0
+                        best_s_idx = s_idx
+                        break
                     ratio = difflib.SequenceMatcher(None, t_word, s_word).ratio()
-                    if ratio >= 0.82 or (len(t_word) <= 3 and t_word == s_word):
-                        matched_target_indices.add(t_idx)
+                    if ratio > best_sim:
+                        best_sim = ratio
+                        best_s_idx = s_idx
+
+            # Thresholds: short syllables vs standard words
+            is_short = len(t_word) <= 3
+            threshold = 0.70 if is_short else 0.76
+
+            if best_s_idx != -1 and (best_sim >= threshold or are_words_phonetically_matching(t_word, spoken_tokens[best_s_idx])):
+                matched_target_indices.add(t_idx)
+                used_spoken_indices.add(best_s_idx)
 
         words_evaluation = []
         correct_count = 0

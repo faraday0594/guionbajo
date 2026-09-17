@@ -301,6 +301,24 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  evaluateReadingChunkAudio: (
+    audioBlob: Blob,
+    chunkWords: any[],
+    chunkId?: string,
+    lessonId?: string
+  ): Promise<any> => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'reading_attempt.webm');
+    formData.append('chunk_words', JSON.stringify(chunkWords));
+    if (chunkId) formData.append('chunk_id', chunkId);
+    if (lessonId) formData.append('lesson_id', lessonId);
+
+    return fetchWithAuth('/reading/evaluate-chunk-audio', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
   // ─── Progress ────────────────────────────────────
   getLearningMap: () => fetchWithAuth('/progress/map'),
   getHistory: () => fetchWithAuth('/progress/history'),

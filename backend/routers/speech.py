@@ -17,6 +17,7 @@ from config import settings
 from database import get_db
 from models.user import User, StudentProfile
 from auth.dependencies import get_current_user_optional
+from core.stt_service import transcribe_audio_stt
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/speech", tags=["speech"])
@@ -138,6 +139,80 @@ def _levenshtein_ratio(s1: str, s2: str) -> float:
     return max(0.0, min(1.0, 1.0 - (dist / max_len)))
 
 
+CONTRACTIONS_MAP = {
+    "don't": "do not", "doesn't": "does not", "didn't": "did not",
+    "can't": "cannot", "couldn't": "could not", "won't": "will not",
+    "wouldn't": "would not", "isn't": "is not", "aren't": "are not",
+    "wasn't": "was not", "weren't": "were not", "haven't": "have not",
+    "hasn't": "has not", "hadn't": "had not", "it's": "it is",
+    "that's": "that is", "what's": "what is", "who's": "who is",
+    "there's": "there is", "here's": "here is", "where's": "where is",
+    "i'm": "i am", "you're": "you are", "we're": "we are", "they're": "they are",
+    "i've": "i have", "you've": "you have", "we've": "we have", "they've": "they have",
+    "i'll": "i will", "you'll": "you will", "he'll": "he will", "she'll": "she will",
+    "we'll": "we will", "they'll": "they will", "let's": "let us",
+}
+
+HOMOPHONE_SETS = [
+    {"their", "there", "they're"},
+    {"to", "too", "two", "2"},
+    {"hear", "here"},
+    {"no", "know"},
+    {"knows", "nose"},
+    {"for", "four", "4"},
+    {"by", "buy", "bye"},
+    {"right", "write"},
+    {"see", "sea"},
+    {"be", "bee"},
+    {"won", "one", "1"},
+    {"its", "it's"},
+    {"your", "you're"},
+    {"meet", "meat"},
+    {"flour", "flower"},
+    {"hour", "our"},
+    {"son", "sun"},
+    {"ate", "eight", "8"},
+    {"piece", "peace"},
+    {"road", "rode"},
+    {"pair", "pear"},
+    {"wear", "where"},
+    {"weather", "whether"},
+    {"which", "witch"},
+    {"whole", "hole"},
+    {"wood", "would"},
+    {"hi", "high"},
+    {"check", "cheque"},
+    {"chilli", "chili"},
+    {"grey", "gray"},
+]
+
+DIGIT_TO_WORDS = {
+    "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four",
+    "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
+    "10": "ten", "11": "eleven", "12": "twelve", "13": "thirteen",
+    "14": "fourteen", "15": "fifteen", "16": "sixteen", "17": "seventeen",
+    "18": "eighteen", "19": "nineteen", "20": "twenty"
+}
+
+
+def are_phonetically_equivalent(w1: str, w2: str) -> bool:
+    """Checks if two words are pronunciation equivalents, homophones, or digits."""
+    c1 = re.sub(r"[^\w']", "", w1).lower()
+    c2 = re.sub(r"[^\w']", "", w2).lower()
+    if not c1 or not c2:
+        return False
+    if c1 == c2:
+        return True
+    if DIGIT_TO_WORDS.get(c1) == c2 or DIGIT_TO_WORDS.get(c2) == c1:
+        return True
+    if CONTRACTIONS_MAP.get(c1) == c2 or CONTRACTIONS_MAP.get(c2) == c1:
+        return True
+    for hset in HOMOPHONE_SETS:
+        if c1 in hset and c2 in hset:
+            return True
+    return False
+
+
 def _align_words(target_text: str, transcribed_text: str) -> List[Dict[str, Any]]:
     """Aligns target words against the transcribed speech to mark correct/mispronounced words."""
     target_words = target_text.split()
@@ -154,31 +229,45 @@ def _align_words(target_text: str, transcribed_text: str) -> List[Dict[str, Any]
         best_match_idx = -1
         best_ratio = 0.0
 
-        # Search nearby window in transcribed words
-        search_start = max(0, idx - 2)
-        search_end = min(len(trans_words), idx + 3)
+        # 1. Nearby sliding window search
+        search_start = max(0, idx - 3)
+        search_end = min(len(trans_words), idx + 4)
 
         for candidate_idx in range(search_start, search_end):
             if candidate_idx in used_trans_indices:
                 continue
             c_clean = re.sub(r"[^\w']", "", trans_words[candidate_idx]).lower()
+            if are_phonetically_equivalent(t_clean, c_clean):
+                best_ratio = 1.0
+                best_match_idx = candidate_idx
+                break
+
             ratio = _levenshtein_ratio(t_clean, c_clean)
             if ratio > best_ratio:
                 best_ratio = ratio
                 best_match_idx = candidate_idx
 
-        # If not found in narrow window, search anywhere
+        # 2. Broader window search if not found
         if best_ratio < 0.7:
             for candidate_idx in range(len(trans_words)):
                 if candidate_idx in used_trans_indices:
                     continue
                 c_clean = re.sub(r"[^\w']", "", trans_words[candidate_idx]).lower()
+                if are_phonetically_equivalent(t_clean, c_clean):
+                    best_ratio = 1.0
+                    best_match_idx = candidate_idx
+                    break
+
                 ratio = _levenshtein_ratio(t_clean, c_clean)
                 if ratio > best_ratio:
                     best_ratio = ratio
                     best_match_idx = candidate_idx
 
-        if best_match_idx != -1 and best_ratio >= 0.75:
+        # Acoustic thresholds: flexible for short syllables and homophones
+        is_short = len(t_clean) <= 3
+        pass_threshold = 0.70 if is_short else 0.75
+
+        if best_match_idx != -1 and (best_ratio >= pass_threshold or are_phonetically_equivalent(t_clean, trans_words[best_match_idx])):
             used_trans_indices.add(best_match_idx)
             feedback.append({
                 "word": t_word,
@@ -186,7 +275,7 @@ def _align_words(target_text: str, transcribed_text: str) -> List[Dict[str, Any]
                 "similarity": round(best_ratio, 2),
                 "heard_as": trans_words[best_match_idx] if best_ratio < 0.95 else t_word,
             })
-        elif best_match_idx != -1 and best_ratio >= 0.45:
+        elif best_match_idx != -1 and best_ratio >= 0.40:
             used_trans_indices.add(best_match_idx)
             feedback.append({
                 "word": t_word,
@@ -228,17 +317,22 @@ async def transcribe_and_evaluate(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Transcribes audio using Groq Whisper (ultra-fast inference) and aligns with target phrase.
+    Transcribes audio using MiniMax Speech to Text (asr-1.0) as the primary engine
+    (with Groq Whisper fallback) and performs fair word-by-word phonetic alignment.
     """
     start_time = time.time()
 
-    # 1. Resolve Groq API Key (from user profile or global settings)
+    # 1. Resolve API Keys
+    minimax_key = settings.MINIMAX_API_KEY
     groq_key = settings.GROQ_API_KEY
     if current_user:
         result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
         profile = result.scalars().first()
-        if profile and hasattr(profile, "groq_api_key") and profile.groq_api_key:
-            groq_key = profile.groq_api_key
+        if profile:
+            if hasattr(profile, "minimax_api_key") and profile.minimax_api_key:
+                minimax_key = profile.minimax_api_key
+            if hasattr(profile, "groq_api_key") and profile.groq_api_key:
+                groq_key = profile.groq_api_key
 
     # 2. Read uploaded audio bytes
     try:
@@ -247,48 +341,33 @@ async def transcribe_and_evaluate(
         logger.error(f"Failed to read uploaded audio file: {e}")
         raise HTTPException(status_code=400, detail="Could not read uploaded audio file")
 
-    if not audio_bytes or len(audio_bytes) < 100:
+    if not audio_bytes or len(audio_bytes) < 80:
         raise HTTPException(status_code=400, detail="Audio file is empty or corrupted")
 
-    # 3. Handle transcription
-    transcription_text = ""
-    groq_available = bool(groq_key and groq_key.strip())
+    # 3. Transcribe with MiniMax STT (primary) + Groq fallback
+    stt_res = await transcribe_audio_stt(
+        audio_bytes=audio_bytes,
+        filename=audio.filename or "audio.webm",
+        mime_type=audio.content_type or "audio/webm",
+        language="en",
+        minimax_api_key=minimax_key,
+        groq_api_key=groq_key,
+    )
+    transcription_text = stt_res.get("text", "").strip()
+    latency_ms = stt_res.get("latency_ms", int((time.time() - start_time) * 1000))
+    engine_used = stt_res.get("engine", "none")
 
-    if groq_available:
-        try:
-            client = AsyncOpenAI(
-                api_key=groq_key.strip(),
-                base_url=settings.GROQ_BASE_URL,
-            )
-            fname = audio.filename or "audio.webm"
-            ctype = audio.content_type or "audio/webm"
-            
-            whisper_res = await client.audio.transcriptions.create(
-                model=settings.GROQ_WHISPER_MODEL,
-                file=(fname, audio_bytes, ctype),
-                language="en",
-                response_format="verbose_json",
-            )
-            transcription_text = getattr(whisper_res, "text", "") or ""
-            logger.info(f"Groq Whisper transcribed in {round((time.time() - start_time) * 1000, 1)}ms: '{transcription_text}'")
-        except Exception as e:
-            logger.warning(f"Groq Whisper call failed: {e}. Falling back to heuristic audio verification.")
-            groq_available = False
-
-    # Fallback if Groq API key is not configured or failed
-    if not groq_available or not transcription_text.strip():
-        logger.info("Using smart heuristic evaluation mode (Groq key not present or call failed)")
+    # Fallback if no text could be recognized
+    if not transcription_text:
+        logger.info("Using smart heuristic evaluation mode (no STT text returned)")
         transcription_text = target_phrase if target_phrase else "English speech sample received"
 
-    latency_ms = int((time.time() - start_time) * 1000)
-
     # 4. Word-by-word alignment & Score calculation
-    clean_trans = _clean_text(transcription_text)
-    clean_target = _clean_text(target_phrase or "")
-
     word_feedback: List[Dict[str, Any]] = []
     score = 85
     is_correct = True
+
+    clean_target = _clean_text(target_phrase or "")
 
     if clean_target:
         word_feedback = _align_words(target_phrase or "", transcription_text)
@@ -316,5 +395,7 @@ async def transcribe_and_evaluate(
         "word_feedback": word_feedback,
         "phonetic_tip": phonetic_tip,
         "latency_ms": latency_ms,
-        "groq_active": groq_available,
+        "engine": engine_used,
+        "groq_active": engine_used == "minimax-asr-1.0",
     }
+

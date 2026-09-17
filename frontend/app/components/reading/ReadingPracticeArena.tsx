@@ -198,6 +198,9 @@ export default function ReadingPracticeArena({
   const [totalXpEarned, setTotalXpEarned] = useState<number>(0);
 
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioHandleRef = useRef<HTMLAudioElement | null>(null);
   const transcriptRef = useRef<string>('');
   const isEvaluatingRef = useRef<boolean>(false);
@@ -373,90 +376,130 @@ export default function ReadingPracticeArena({
     }
   };
 
-  // Start Speech Recognition for a specific chunk
-  const startChunkRecognition = (chunk: ReadingChunk) => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast.error('Tu navegador no soporta reconocimiento de voz. Usa Google Chrome o Edge.');
-      return;
-    }
+  // Start Speech Recognition & MediaRecorder for a specific chunk
+  const startChunkRecognition = async (chunk: ReadingChunk) => {
+    if (typeof window === 'undefined') return;
 
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (_) {}
+      try { recognitionRef.current.abort(); } catch (_) {}
+      recognitionRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch (_) {}
+      mediaRecorderRef.current = null;
     }
 
     try { sfx.playMicStart(); } catch (_) {}
     transcriptRef.current = '';
     setLiveTranscript('');
+    audioChunksRef.current = [];
     setRecordingChunkId(chunk.chunk_id);
 
-    const rec = new SpeechRecognition();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = 'en-US';
-    recognitionRef.current = rec;
-
-    rec.onresult = (event: any) => {
-      let fullTranscript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        fullTranscript += event.results[i][0].transcript + ' ';
-      }
-      const cleaned = fullTranscript.trim();
-      transcriptRef.current = cleaned;
-      setLiveTranscript(cleaned);
-    };
-
-    rec.onerror = (e: any) => {
-      if (e?.error === 'aborted' || e?.error === 'no-speech') return;
-      if (e?.error === 'not-allowed') {
-        toast.error('Permiso de micrófono denegado en tu navegador.');
-      } else {
-        console.warn('Speech recognition warning:', e?.error || e);
-      }
-    };
-
-    rec.onend = () => {
-      setRecordingChunkId(null);
-      try { sfx.playMicStop(); } catch (_) {}
-      const textToEval = transcriptRef.current.trim();
-      if (textToEval && !isEvaluatingRef.current) {
-        evaluateChunkAttempt(chunk, textToEval);
-      }
-    };
-
+    // 1. Capture microphone stream for MiniMax STT via MediaRecorder
     try {
-      rec.start();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/mp4';
+
+      const mr = new MediaRecorder(stream, { mimeType });
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+      mediaRecorderRef.current = mr;
+      mr.start(100);
     } catch (err) {
-      console.warn('Error starting speech recognition:', err);
-      setRecordingChunkId(null);
+      console.warn('MediaRecorder getUserMedia error:', err);
+    }
+
+    // 2. Start optional live browser speech preview for instant visual transcription
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+      recognitionRef.current = rec;
+
+      rec.onresult = (event: any) => {
+        let fullTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript + ' ';
+        }
+        const cleaned = fullTranscript.trim();
+        transcriptRef.current = cleaned;
+        setLiveTranscript(cleaned);
+      };
+
+      rec.onerror = (e: any) => {
+        if (e?.error === 'aborted' || e?.error === 'no-speech') return;
+        if (e?.error === 'not-allowed') {
+          toast.error('Permiso de micrófono denegado en tu navegador.');
+        } else {
+          console.warn('Speech recognition warning:', e?.error || e);
+        }
+      };
+
+      try {
+        rec.start();
+      } catch (err) {
+        console.warn('SpeechRecognition start error:', err);
+      }
     }
   };
 
   const stopChunkRecognition = (chunk: ReadingChunk) => {
     setRecordingChunkId(null);
-    const textToEval = transcriptRef.current.trim() || liveTranscript.trim();
+    try { sfx.playMicStop(); } catch (_) {}
 
+    // Stop browser speech recognition
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch (_) {}
       recognitionRef.current = null;
     }
 
-    if (textToEval) {
-      evaluateChunkAttempt(chunk, textToEval);
+    const mr = mediaRecorderRef.current;
+    if (mr && mr.state !== 'inactive') {
+      mr.onstop = () => {
+        const mime = mr.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mime });
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(t => t.stop());
+          mediaStreamRef.current = null;
+        }
+        evaluateChunkAttempt(chunk, transcriptRef.current.trim() || liveTranscript.trim(), audioBlob);
+      };
+      mr.stop();
     } else {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+        mediaStreamRef.current = null;
+      }
+      evaluateChunkAttempt(chunk, transcriptRef.current.trim() || liveTranscript.trim());
+    }
+  };
+
+  // Evaluate speech attempt with the backend (MiniMax STT primary)
+  const evaluateChunkAttempt = async (chunk: ReadingChunk, fallbackTranscript: string, audioBlob?: Blob) => {
+    if (!chunk || isEvaluatingRef.current) return;
+
+    const hasAudio = audioBlob && audioBlob.size >= 100;
+    if (!hasAudio && !fallbackTranscript) {
       toast('No se detectó voz. Por favor habla cerca del micrófono.', {
         icon: '🎙️',
         duration: 3500,
       });
+      return;
     }
-  };
-
-  // Evaluate speech attempt with the backend
-  const evaluateChunkAttempt = async (chunk: ReadingChunk, transcript: string) => {
-    if (!chunk || !transcript.trim() || isEvaluatingRef.current) return;
 
     isEvaluatingRef.current = true;
     setEvaluatingChunkId(chunk.chunk_id);
+
     try {
       const chunkWordsToSend = chunk.words.map(w => ({
         word: w.word,
@@ -465,12 +508,18 @@ export default function ReadingPracticeArena({
         is_target: w.is_target,
       }));
 
-      const res = await api.evaluateReadingChunk({
-        chunk_words: chunkWordsToSend,
-        transcript: transcript.trim(),
-        lesson_id: lessonId,
-        chunk_id: chunk.chunk_id,
-      });
+      let res: any;
+      if (hasAudio) {
+        // High accuracy evaluation using MiniMax STT asr-1.0
+        res = await api.evaluateReadingChunkAudio(audioBlob!, chunkWordsToSend, chunk.chunk_id, lessonId);
+      } else {
+        res = await api.evaluateReadingChunk({
+          chunk_words: chunkWordsToSend,
+          transcript: fallbackTranscript,
+          lesson_id: lessonId,
+          chunk_id: chunk.chunk_id,
+        });
+      }
 
       const accuracy = res.accuracy_percent ?? res.overall_score ?? 0;
       const isPassed = accuracy >= 80;
@@ -722,13 +771,9 @@ export default function ReadingPracticeArena({
               <div
                 key={cIdx}
                 className="px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-xs text-white/90 flex items-center gap-1.5 shadow-sm"
-                title={char.description}
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
                 <span className="font-bold text-yellow-300">{char.name}</span>
-                <span className="text-[11px] text-brand-text-secondary truncate max-w-[200px] sm:max-w-xs">
-                  {char.description}
-                </span>
               </div>
             ))}
           </div>
@@ -749,11 +794,6 @@ export default function ReadingPracticeArena({
             <span className="text-xs font-bold uppercase tracking-wider font-chalk text-yellow-300">
               📌 Escena {currentSlideIdx + 1}: {currentSlide.scene_title}
             </span>
-            {currentSlide.scene_context && (
-              <span className="text-[11px] text-white/70 italic hidden md:inline">
-                • {currentSlide.scene_context}
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -775,7 +815,7 @@ export default function ReadingPracticeArena({
               />
               <button
                 type="button"
-                onClick={() => setZoomedImage({ url: currentSlideImage, caption: currentSlide.scene_context || currentSlide.scene_title })}
+                onClick={() => setZoomedImage({ url: currentSlideImage, caption: `Escena ${currentSlideIdx + 1}: ${currentSlide.scene_title}` })}
                 className="absolute bottom-3 right-3 p-2 rounded-xl bg-black/70 hover:bg-black text-white/90 hover:text-white transition-all border border-white/20 shadow-md flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
                 title="Ampliar ilustración"
               >

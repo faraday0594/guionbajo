@@ -392,25 +392,39 @@ function normalizeNumberWords(text: string): string {
 function sanitizeImagePrompt(prompt: string, topic: string, phaseIdx = 0): string {
   let clean = prompt || '';
 
-  // 1. Remove IPA phonetic notations like /e/, /æ/, /iː/, /ʌ/, /ʃ/
+  // 1. Remove any text enclosed in quotation marks or backticks
+  clean = clean.replace(/["'“”‘’`][^"'“”‘’`]*["'“”‘’`]/g, ' ');
+
+  // 2. Remove IPA phonetic notations like /e/, /æ/, /iː/, /ʌ/, /ʃ/
   clean = clean.replace(/\/[A-Za-zʃʊʌæəɪɔɑɜθðʒŋːˈ\.\s]+\//g, ' ');
 
-  // 2. Remove words that trigger fighting cartoon or textual artifacts
-  clean = clean.replace(/\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles)\b/gi, 'educational scene');
+  // 3. Replace text-bearing surfaces & triggers with clean visual equivalents
+  clean = clean.replace(/\b(?:blackboard|whiteboard|chalkboard|bulletin board)\b/gi, 'clean classroom wall');
+  clean = clean.replace(/\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|sign)\b/gi, 'decorative backdrop');
+  clean = clean.replace(/\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon)\b/gi, 'expressive conversational gesture');
+  clean = clean.replace(/\b(?:poster|banner|placard|flyer|pamphlet|brochure)\b/gi, 'decorative wall art');
+  clean = clean.replace(/\b(?:flashcards?|cue cards?)\b/gi, 'colorful study cards');
+  clean = clean.replace(/\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation)\b/gi, 'concept visual');
+  clean = clean.replace(/\b(?:displaying|saying|reading|showing the words?|labeled with|with the phrase|with the letters?|with text)\b/gi, 'illustrating');
 
-  // 3. Remove quotes, symbols, brackets
+  // 4. Remove fighting cartoon or textual artifacts
+  clean = clean.replace(/\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography)\b/gi, 'educational scene');
+
+  // 5. Remove leftover quotes, symbols, brackets
   clean = clean.replace(/[/\\|\[\](){}+=→<>_~*#^"“”‘’`]/g, ' ');
+  clean = clean.replace(/\b(?:strictly\s+)?no\s+(?:text|letters|words|writing|labels|captions|typography|watermarks|alphabets)\b/gi, ' ');
   clean = clean.replace(/\s{2,}/g, ' ').trim();
 
   // If the prompt is too empty or short, build a rich didactic human scene
   if (clean.length < 12) {
     const cleanTopic = topic.replace(/\/[^\/]+\//g, '').replace(/Laboratorio Fonético/i, 'English conversation practice').trim();
-    clean = `vibrant 2D digital vector educational illustration of a student learning ${cleanTopic || 'English language'} in a cozy modern study room with books and laptop, warm atmospheric lighting, colorful aesthetic`;
+    clean = `student learning ${cleanTopic || 'English language'} in a cozy modern study room with books and laptop, warm atmospheric lighting, colorful aesthetic`;
   }
 
-  const negativeSuffix = 'vibrant 2D educational digital illustration, modern relatable setting, warm ambient lighting, expressive characters, rich colors, clean composition, strictly no text, no letters, no words, no writing, no labels, no captions, no typography, no watermarks, no alphabets';
+  const prefix = 'Clean flat 2D vector educational illustration, zero text, completely textless scene, no words anywhere';
+  const suffix = 'clean minimalist art style, strictly no text, no words, no letters, no writing, no labels, no speech bubbles, no signs, no typography';
 
-  return clean.toLowerCase().includes('no text') ? clean : `${clean}, ${negativeSuffix}`;
+  return `${prefix}, ${clean}, ${suffix}`;
 }
 
 function getFallbackImageUrl(prompt: string, topic: string, phaseIdx = 0): string {
@@ -5588,12 +5602,13 @@ export default function LessonPage() {
 
             {/* Guionbajo Tutor State */}
             <div className="hidden lg:flex items-center gap-2.5 px-3 py-1 rounded-full bg-brand-surface/90 border border-brand-border/80 text-xs shadow-inner h-12">
-              <div className="w-10 h-10 flex items-center justify-center relative flex-shrink-0">
+              <div className="w-12 h-11 flex items-center justify-center relative flex-shrink-0 overflow-visible">
                 <TutorAvatar
                   state={tutorState}
                   text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
                   audioProgress={audioProgress}
-                  size="sm"
+                  size="toolbar"
+                  headOnly={true}
                   audioElement={currentAudioRef.current}
                 />
               </div>

@@ -6,7 +6,7 @@ import {
   Volume2, X, ChevronDown, ChevronRight, ArrowRight, Sparkles, 
   Pause, Award, CheckCircle2, User
 } from 'lucide-react';
-import { api, playEnglishAudio, preloadEnglishAudio } from '@/lib/api';
+import { api, playEnglishAudio, preloadEnglishAudio, getSavedPreferredVoice, setSavedPreferredVoice, getBestBrowserVoice, stopTutorVoice as stopGlobalTutorVoice } from '@/lib/api';
 import { getPhonemeSvgParam } from './phonemeSvgPresets';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -821,6 +821,17 @@ export default function PhoneticLabSession({ phoneme, onClose }: PhoneticLabSess
   const voiced = phoneme.voicing === 'voiced';
   const guide = phoneme.mouth_guide_es || phoneme.mouth_guide;
 
+  // 0. Sincronizar voz preferida desde ajustes para garantizar que coincida con la configuración
+  useEffect(() => {
+    api.getSettings()
+      .then((settings: any) => {
+        if (settings?.preferred_voice) {
+          setSavedPreferredVoice(settings.preferred_voice);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // 1. Fetch twin phoneme data
   useEffect(() => {
     if (phoneme.contrast_with) {
@@ -860,6 +871,7 @@ export default function PhoneticLabSession({ phoneme, onClose }: PhoneticLabSess
 
   // 3. Tutor Speech Narrator
   const stopTutorVoice = () => {
+    stopGlobalTutorVoice();
     if (activeAudioRef.current) {
       try {
         activeAudioRef.current.pause();
@@ -882,9 +894,10 @@ export default function PhoneticLabSession({ phoneme, onClose }: PhoneticLabSess
     const frontalText = guide?.frontal || 'Coloca los labios en la posición indicada.';
     const lateralText = guide?.lateral || 'Ajusta la lengua y el flujo de aire.';
     const fullText = customText || `Para pronunciar el sonido ${phoneme.ipa}: ${frontalText} ${lateralText}`;
+    const preferredVoice = getSavedPreferredVoice();
 
     try {
-      const blob = await api.synthesize(fullText, 'female-yujie', 'calm', 0.95);
+      const blob = await api.synthesize(fullText, preferredVoice, 'calm', 0.95);
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       activeAudioRef.current = audio;
@@ -895,19 +908,24 @@ export default function PhoneticLabSession({ phoneme, onClose }: PhoneticLabSess
         activeAudioRef.current = null;
       };
       audio.onerror = () => {
-        playWebSpeechFallback(fullText);
+        playWebSpeechFallback(fullText, preferredVoice);
       };
       await audio.play();
     } catch (err) {
-      playWebSpeechFallback(fullText);
+      playWebSpeechFallback(fullText, preferredVoice);
     }
   }, [guide, phoneme.ipa]);
 
-  const playWebSpeechFallback = (text: string) => {
+  const playWebSpeechFallback = (text: string, preferredVoiceId?: string) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'es-ES';
       utterance.rate = 0.95;
+      const targetVoice = preferredVoiceId || getSavedPreferredVoice();
+      const bestVoice = getBestBrowserVoice('es', targetVoice);
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+      }
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = () => setIsSpeaking(false);
       window.speechSynthesis.speak(utterance);

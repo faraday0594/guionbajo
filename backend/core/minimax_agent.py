@@ -176,11 +176,16 @@ CRITICAL CINEMATIC INTERACTIVE LESSON RULES:
      d) SYNCHRONIZED BOARD MENTIONS: In `tutor_says`, explicitly pronounce and state the EXACT model sentences (e.g. "I jog every morning", "Do you work on weekends?") and formula tokens (e.g. "Sujeto", "Verbo", "Auxiliar", "Complemento") that appear on the board, so each card, token, and rule illuminates on screen at the exact second the tutor utters it.
 
 5. MANDATORY VISUAL ART DIRECTION FOR ILLUSTRATIONS (`image_prompt`, `image_prompts`, `image_style`):
-   - For EACH slide, construct a rich, descriptive `image_prompt` in English illustrating the scene or comparison.
+   - For EACH slide, construct a rich, descriptive `image_prompt` in English illustrating the situation, characters, and action.
    - You can also specify `image_prompts` as an array if a slide contrasts 2 concepts side-by-side.
    - `image_style` MUST be one of: "flat_art" (2D vector), "comic_scene" (comic/narrative panel), "concept_art" (cinematic scenario).
-   - Prompt MUST describe concrete human characters, objects, and actions.
-   - Prompt MUST end with: "no text, no letters, no words, no writing, no labels".
+   - Prompt MUST describe concrete human characters, physical objects, and actions.
+   - STRICT ZERO-TEXT MANDATE (CRITICAL):
+     * The diffusion image model CANNOT render readable text and produces deformed, garbled glyphs.
+     * NEVER put text inside quotes (e.g. NEVER write 'saying "Hello"' or 'sign with "TO BE"').
+     * NEVER depict blackboards with writing, whiteboards with grammar formulas, signs with text, newspapers, posters with slogans, speech bubbles, or flashcards with letters.
+     * Depict PURELY PHYSICAL, SITUATIONAL REAL-WORLD SCENES (e.g., "A cheerful student at an airport counter greeting the airline staff with luggage on a sunny day", NOT "A blackboard showing travel phrases").
+     * Prompt MUST end with: "strictly no text, no words, no letters, no writing, no labels, no signs, no speech bubbles, no typography".
 
 6. MANDATORY STRUCTURED TARGET AUDIO ITEMS (`target_audio_items`):
    - For EVERY phase teaching target English phrases, explicitly define `target_audio_items` with "english", "translation", and "label" ("Vocabulario Target", "Ejemplo Práctico", "Consigna de Práctica").
@@ -642,18 +647,28 @@ class TutorAgent:
     def _sanitize_image_prompt(self, prompt: str, topic: str) -> str:
         """Sanitizes image prompts to eliminate literal phonemes, fighting metaphors, and textual artifacts."""
         if not prompt or not isinstance(prompt, str):
-            return f"vibrant 2D educational vector illustration about {topic}, clean minimalist graphic design, bright clear colors, white background, strictly no text"
+            return f"Clean flat 2D vector educational illustration, zero text, completely textless scene, vibrant educational scene about {topic}, clean minimalist graphic design, bright clear colors, strictly no text, no words, no letters, no labels, no signs"
         clean = prompt.strip()
-        # Remove IPA notation like /e/, /æ/, /iː/, /ʌ/, /ʃ/
+        # 1. Remove any text enclosed in quotation marks or backticks
+        clean = re.sub(r'["\'“‘`][^"\'”’`]*["\'”’`]', ' ', clean)
+        # 2. Remove IPA notation like /e/, /æ/, /iː/, /ʌ/, /ʃ/
         clean = re.sub(r'/[A-Za-zʃʊʌæəɪɔɑɜθðʒŋːˈ\.\s]+/', ' ', clean)
-        # Remove fighting / violent metaphors
-        clean = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves)\b', 'scene', clean, flags=re.IGNORECASE)
-        # Remove symbols and punctuation
+        # 3. Replace text-bearing surfaces & triggers with clean visual equivalents
+        clean = re.sub(r'\b(?:blackboard|whiteboard|chalkboard|bulletin board)\b', 'clean classroom wall', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|sign)\b', 'decorative backdrop', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon)\b', 'expressive conversational gesture', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'\b(?:poster|banner|placard|flyer|pamphlet|brochure)\b', 'decorative wall art', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'\b(?:flashcards?|cue cards?)\b', 'colorful study cards', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation)\b', 'concept visual', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'\b(?:displaying|saying|reading|showing the words?|labeled with|with the phrase|with the letters?|with text)\b', 'illustrating', clean, flags=re.IGNORECASE)
+        # 4. Remove fighting / violent metaphors
+        clean = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography)\b', 'scene visual', clean, flags=re.IGNORECASE)
+        # 5. Remove symbols and punctuation
         clean = re.sub(r'[/\\|\[\](){}+=→<>_~*#^"“”‘’`]', ' ', clean)
-        # Clean repetitive negative prompts
+        # 6. Clean repetitive negative prompts
         clean = re.sub(r'\b(?:strictly\s+)?no\s+(?:text|letters|words|writing|labels|captions|typography|watermarks|alphabets|educational\s+comparison|educational\s+scene)\b,?', ' ', clean, flags=re.IGNORECASE)
         clean = re.sub(r'\s{2,}', ' ', clean).strip(' ,')
-        return f"{clean}, clean 2D vector educational illustration, strictly no text, no letters, no labels"
+        return f"Clean flat 2D vector educational illustration, zero text, completely textless scene, no words anywhere, {clean}, clean minimalist art, strictly no text, no words, no letters, no writing, no labels, no signs, no speech bubbles, no typography"
 
     def _extract_phase_target_audio_items(self, p: dict) -> list:
         """Deterministic extractor of target English audio items from phase content without duplication."""

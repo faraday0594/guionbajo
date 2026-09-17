@@ -181,19 +181,27 @@ def normalize_speech_text(text: str) -> str:
 def sanitize_reading_image_prompt(prompt: str, topic: str, character_desc: str = "") -> str:
     """Cleans and standardizes image prompt with strict non-text mandates."""
     if not prompt or not isinstance(prompt, str) or len(prompt.strip()) < 10:
-        base = f"flat 2D vector educational illustration of {character_desc or 'a student'} in an engaging scene about {topic}, warm cozy setting, clean minimalist graphic design, bright colors"
-        return f"{base}, strictly no text, no letters, no words, no writing, no labels, no captions, no typography"
+        base = f"Clean flat 2D vector educational illustration of {character_desc or 'a student'} in an engaging scene about {topic}, completely textless, warm cozy setting, clean minimalist graphic design, bright colors"
+        return f"{base}, strictly no text, no letters, no words, no writing, no labels, no captions, no typography, no signs, no speech bubbles"
     
     clean = prompt.strip()
+    # 1. Remove text inside quotation marks
+    clean = re.sub(r'["\'“‘`][^"\'”’`]*["\'”’`]', ' ', clean)
+    # 2. Remove IPA notation
     clean = re.sub(r'/[A-Za-zʃʊʌæəɪɔɑɜθðʒŋːˈ\.\s]+/', ' ', clean)
-    clean = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|letters|alphabet|spelling|text|characters|subtitles|captions)\b', 'educational scene', clean, flags=re.IGNORECASE)
+    # 3. Replace text surfaces and triggers
+    clean = re.sub(r'\b(?:blackboard|whiteboard|chalkboard|bulletin board)\b', 'clean classroom wall', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|sign)\b', 'decorative backdrop', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon)\b', 'expressive conversational gesture', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'\b(?:poster|banner|placard|flyer|pamphlet|brochure)\b', 'decorative wall art', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|letters|alphabet|spelling|text|characters|subtitles|captions|typography)\b', 'educational scene', clean, flags=re.IGNORECASE)
     clean = re.sub(r'[/\\|\[\](){}+=→<>_~*#^"“”‘’`]', ' ', clean)
-    clean = re.sub(r'\s{2,}', ' ', clean).strip()
+    clean = re.sub(r'\b(?:strictly\s+)?no\s+(?:text|letters|words|writing|labels|captions|typography|watermarks|alphabets)\b,?', ' ', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'\s{2,}', ' ', clean).strip(' ,')
 
-    negative_mandate = "vibrant 2D educational digital vector illustration, clean lines, warm atmospheric lighting, strictly no text, no letters, no words, no writing, no labels, no captions, no typography, no watermarks, no alphabets"
-    if "no text" not in clean.lower():
-        clean = f"{clean}, {negative_mandate}"
-    return clean
+    prefix = "Clean flat 2D vector educational illustration, zero text, completely textless scene, no words anywhere"
+    suffix = "clean minimalist art style, strictly no text, no words, no letters, no writing, no labels, no captions, no typography, no watermarks, no signs, no speech bubbles"
+    return f"{prefix}, {clean}, {suffix}"
 
 
 class ReadingGenerator:

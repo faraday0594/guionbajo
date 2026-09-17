@@ -27,5 +27,6 @@ build/
 *.log
 .DS_Store
 scratch_output.txt
+scratch/
 backend/static/tts_words_cache/
 backend/static/phonemes_cache/

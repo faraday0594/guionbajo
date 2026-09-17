@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, Sparkles, X, Layers, Award, Mic, Info, Play, Loader2 } from 'lucide-react';
-import { api, playEnglishAudio, preloadEnglishAudio } from '@/lib/api';
+import { api, playEnglishAudio, preloadEnglishAudio, setSavedPreferredVoice } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 import PhoneticLabSession from './PhoneticLabSession';
@@ -61,6 +61,9 @@ export default function PhoneticBoard({ inLessonMode = false, onClose }: Phoneti
   useEffect(() => {
     if (getToken()) {
       fetchBoard();
+      api.getSettings().then((s: any) => {
+        if (s?.preferred_voice) setSavedPreferredVoice(s.preferred_voice);
+      }).catch(() => {});
     } else {
       setLoading(false);
     }
@@ -149,7 +152,7 @@ export default function PhoneticBoard({ inLessonMode = false, onClose }: Phoneti
     setPlayingAudio(key);
 
     try {
-      await playEnglishAudio(text, 'en-US-JennyNeural', true);
+      await playEnglishAudio(text, undefined, true);
       setTimeout(() => setPlayingAudio(null), 900);
     } catch (err) {
       console.error('Error playing TTS in PhoneticBoard:', err);

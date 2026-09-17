@@ -34,6 +34,115 @@
   transform-origin: center center;
 }
 
+.sizeToolbar {
+  --avatar-scale: 1;
+  transform: none;
+  margin: 0;
+  padding-top: 13px;
+  animation: hoverFloatToolbar 3.6s ease-in-out infinite;
+}
+
+@keyframes hoverFloatToolbar {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-2px); }
+}
+
+/* Head Toolbar */
+.sizeToolbar .robotHead {
+  width: 44px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1.5px solid #4b5563;
+  gap: 2px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.2);
+}
+
+/* Antenna Toolbar */
+.sizeToolbar .robotAntenna {
+  top: -12px;
+}
+.sizeToolbar .antennaStem {
+  height: 5px;
+  width: 2px;
+}
+.sizeToolbar .vacuumBulb {
+  width: 8px;
+  height: 8px;
+  border-width: 1px;
+}
+.sizeToolbar .bulbFilament {
+  width: 3px;
+  height: 3px;
+}
+
+/* Ear dials Toolbar */
+.sizeToolbar .earDial {
+  width: 4px;
+  height: 11px;
+}
+.sizeToolbar .earLeft { left: -5px; }
+.sizeToolbar .earRight { right: -5px; }
+.sizeToolbar .dialNotch {
+  width: 2px;
+  height: 1.5px;
+}
+
+/* Rivets Toolbar */
+.sizeToolbar .rivet {
+  width: 2.5px;
+  height: 2.5px;
+}
+.sizeToolbar .rTl { top: 3px; left: 3px; }
+.sizeToolbar .rTr { top: 3px; right: 3px; }
+.sizeToolbar .rBl { bottom: 3px; left: 3px; }
+.sizeToolbar .rBr { bottom: 3px; right: 3px; }
+
+/* Eyes Toolbar */
+.sizeToolbar .robotEyes {
+  gap: 5px;
+  margin-top: 1px;
+}
+.sizeToolbar .eyeSocket {
+  width: 12px;
+  height: 12px;
+  border-width: 1px;
+}
+.sizeToolbar .pupil {
+  width: 5.5px;
+  height: 5.5px;
+}
+.sizeToolbar .eyeGlint {
+  width: 1.5px;
+  height: 1.5px;
+}
+
+/* Mouth Toolbar */
+.sizeToolbar .mouthFrame {
+  width: 26px;
+  padding: 0 1px;
+}
+.sizeToolbar .mouthClosed {
+  height: 5px !important;
+  border-radius: 2px;
+}
+.sizeToolbar .terminalCursorMouth {
+  font-size: 0.65rem;
+}
+.sizeToolbar .toothBar {
+  width: 2px;
+  border-radius: 1px;
+}
+
+/* Steam Toolbar */
+.sizeToolbar .steamContainer {
+  top: 4px;
+  width: 56px;
+}
+.sizeToolbar .steamJet {
+  width: 12px;
+  height: 6px;
+}
+
 /* â”€â”€ Chorro de Vapor (Angry) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .steamContainer {
   position: absolute;

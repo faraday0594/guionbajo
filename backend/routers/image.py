@@ -54,30 +54,58 @@ async def generate_image(
 
     import re
     raw = req.prompt.strip()
+
+    # 1. Strip any quoted text strings (e.g. 'Hello', "Subject + Verb", etc.)
+    sanitized = re.sub(r'["\'“‘`][^"\'”’`]*["\'”’`]', ' ', raw)
     
+    # 2. Strip IPA phonetic transcriptions like /e/, /æ/, /iː/, etc.
+    sanitized = re.sub(r'/[A-Za-zʃʊʌæəɪɔɑɜθðʒŋːˈ\.\s]+/', ' ', sanitized)
+
+    # 3. Replace text-bearing surfaces & text triggers with clean visual equivalents
+    sanitized = re.sub(r'\b(?:blackboard|whiteboard|chalkboard|bulletin board)\b', 'clean classroom wall', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|sign)\b', 'decorative backdrop', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon)\b', 'expressive conversational gesture', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:poster|banner|placard|flyer|pamphlet|brochure)\b', 'decorative wall art', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:flashcards?|cue cards?)\b', 'colorful study cards', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation)\b', 'concept visual', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:displaying|saying|reading|showing the words?|labeled with|with the phrase|with the letters?|with text)\b', 'illustrating', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography)\b', 'scene visual', sanitized, flags=re.IGNORECASE)
+
+    # 4. Remove leftover quotes and brackets
+    sanitized = re.sub(r'[/\\|\[\](){}+=→<>_~*#^"“”‘’`]', ' ', sanitized)
+    # Remove existing redundant negative text tags to avoid chaotic repetitions
+    sanitized = re.sub(r'\b(?:strictly\s+)?no\s+(?:text|letters|words|writing|labels|captions|typography|watermarks|alphabets)\b,?', ' ', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\s{2,}', ' ', sanitized).strip(' ,')
+
     # Detect if prompt is for conversational POV / Visual Novel or companion scene
-    is_pov = any(k in raw.lower() for k in ("first-person", "pov", "classmate", "companion", "barista", "officer", "interviewer", "talking to", "sitting across", "visual novel", "emma", "lucas"))
+    is_pov = any(k in sanitized.lower() for k in ("first-person", "pov", "classmate", "companion", "barista", "officer", "interviewer", "talking to", "sitting across", "visual novel", "emma", "lucas"))
     
     if is_pov:
         # Determine companion gender for solo character tag
-        is_female = any(f in raw.lower() for f in ("female", "girl", "woman", "emma", "carter", "sarah", "anna", "she", "her"))
+        is_female = any(f in sanitized.lower() for f in ("female", "girl", "woman", "emma", "carter", "sarah", "anna", "she", "her"))
         char_tag = "solo, 1girl, single female character only" if is_female else "solo, 1boy, single male character only"
         
         # Remove mentions of player's hands that confuse the diffusion model into generating couples holding hands
-        sanitized = re.sub(r"player's (own )?hands (and arms )?(visible in (the )?bottom foreground )?(holding|resting|reaching|gesturing)?", "wooden table edge in foreground", raw, flags=re.IGNORECASE)
+        sanitized = re.sub(r"player's (own )?hands (and arms )?(visible in (the )?bottom foreground )?(holding|resting|reaching|gesturing)?", "wooden table edge in foreground", sanitized, flags=re.IGNORECASE)
         sanitized = re.sub(r'realistic photography|photorealistic|photorealism|realistic photo|photo|realism|hyperrealistic', '2D anime game CG art', sanitized, flags=re.IGNORECASE)
         
         # Construct strong Anime Visual Novel prompt with upfront style tokens and strict negative guidance
         clean_prompt = (
-            f"Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai vibrant aesthetic, Kyoto Animation style, "
-            f"{char_tag}, facing camera directly with friendly eye contact, centered waist-up portrait, "
+            f"Masterpiece 2D Japanese anime visual novel game CG, completely textless, zero text, "
+            f"Makoto Shinkai vibrant aesthetic, Kyoto Animation style, {char_tag}, "
+            f"facing camera directly with friendly eye contact, centered waist-up portrait, "
             f"{sanitized}, bright cheerful daylight, colorful anime digital illustration, "
             f"strictly 2D anime drawing, flat vibrant coloring, clean anime line art, "
-            f"single person only, no second person, no couple, no romance, no holding hands, no kissing, no photorealism, not a photo, no 3D render, no live action, no text, no words"
+            f"single person only, no second person, no couple, no romance, no holding hands, no kissing, "
+            f"no photorealism, not a photo, no 3D render, no live action, strictly no text, no words, no letters, no signs, no speech bubbles, no typography"
         )
     else:
-        # Standard educational concept prompt
-        clean_prompt = f"Clean flat 2D vector educational illustration, vibrant colors, {raw}, no text, no letters, no words, no writing, no labels"
+        # Standard educational concept prompt - STRICT TEXTLESS
+        clean_prompt = (
+            f"Clean flat 2D vector educational illustration, zero text, completely textless scene, no words anywhere, "
+            f"{sanitized}, vibrant colors, clean minimalist art style, "
+            f"strictly no text, no words, no letters, no writing, no labels, no signs, no speech bubbles, no typography, no watermarks"
+        )
 
     cache_key = f"{clean_prompt[:400]}_{req.aspect_ratio or '16:9'}"
     if cache_key in _IMAGE_CACHE:

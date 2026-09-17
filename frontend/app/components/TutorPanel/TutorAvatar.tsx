@@ -16,7 +16,8 @@ export interface TutorAvatarProps {
   text?: string;
   audioProgress?: number; // 0 to 100 (sincronizado con DynamicSubtitles / Audio)
   emotion?: TutorEmotion;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'toolbar';
+  headOnly?: boolean;
   className?: string;
   audioElement?: HTMLAudioElement | null;
   crtLabel?: string;
@@ -124,6 +125,7 @@ export default function TutorAvatar({
   audioProgress = 0,
   emotion: explicitEmotion,
   size = 'md', // callers can use lg for hero sections
+  headOnly = false,
   className = '',
   audioElement,
   crtLabel,
@@ -226,14 +228,22 @@ export default function TutorAvatar({
   const isMouthArticulating = isSpeaking && speechAperture > 0.04;
 
   // Alturas dinámicas de boca según tamaño
-  const minMouthHeight = size === 'sm' ? 6 : size === 'lg' ? 10 : 8;
-  const maxMouthHeight = size === 'sm' ? 18 : size === 'lg' ? 32 : 24;
+  const isToolbar = size === 'toolbar';
+  const minMouthHeight = (size === 'sm' || isToolbar) ? 6 : size === 'lg' ? 10 : 8;
+  const maxMouthHeight = isToolbar ? 12 : size === 'sm' ? 18 : size === 'lg' ? 32 : 24;
   const dynamicMouthHeight = !isMouthArticulating
     ? minMouthHeight
     : Math.round(minMouthHeight + speechAperture * (maxMouthHeight - minMouthHeight));
 
   // Clases por tamaño
-  const sizeClass = size === 'sm' ? styles.sizeSm : size === 'lg' ? styles.sizeLg : styles.sizeMd;
+  const sizeClass =
+    isToolbar
+      ? styles.sizeToolbar
+      : size === 'sm'
+      ? styles.sizeSm
+      : size === 'lg'
+      ? styles.sizeLg
+      : styles.sizeMd;
 
   // Clases por emoción en cabeza
   const headEmotionClass =
@@ -428,56 +438,58 @@ export default function TutorAvatar({
       </div>
 
       {/* ── Torso / Pantalla CRT abombada ── */}
-      <div className={styles.robotBody}>
-        
-        {/* Brazos Mecánicos */}
-        {['left', 'right'].map((side) => {
-          const isLeft = side === 'left';
-          const armClass = isLeft ? styles.armLeft : styles.armRight;
-          let animClass = '';
-          if (panickedArms && !drowned) {
-            animClass = isLeft ? styles.armPanicLeft : styles.armPanicRight;
-          } else if (currentEmotion === 'happy' || currentEmotion === 'victory') {
-            animClass = isLeft ? styles.armCelebrateLeft : styles.armCelebrateRight;
-          } else if (isMouthArticulating) {
-            animClass = isLeft ? styles.armSpeakingLeft : styles.armSpeakingRight;
-          }
-          return (
-            <div key={side} className={`${styles.robotArm} ${armClass} ${animClass}`}>
-              <div className={styles.armUpper} />
-              <div className={styles.armJoint} />
-              <div className={styles.armForearm} />
-            </div>
-          );
-        })}
-
-        <div className={`${styles.crtMonitor} ${styles.crtFlicker}`}>
-          <div className={styles.crtScanlines} />
-          <div className={styles.crtContent} style={{ color: crtColor }}>
-            {state === 'speaking' ? (
-              <div className={styles.eqContainer}>
-                <div className={styles.eqBar} />
-                <div className={styles.eqBar} />
-                <div className={styles.eqBar} />
+      {!headOnly && !isToolbar && (
+        <div className={styles.robotBody}>
+          
+          {/* Brazos Mecánicos */}
+          {['left', 'right'].map((side) => {
+            const isLeft = side === 'left';
+            const armClass = isLeft ? styles.armLeft : styles.armRight;
+            let animClass = '';
+            if (panickedArms && !drowned) {
+              animClass = isLeft ? styles.armPanicLeft : styles.armPanicRight;
+            } else if (currentEmotion === 'happy' || currentEmotion === 'victory') {
+              animClass = isLeft ? styles.armCelebrateLeft : styles.armCelebrateRight;
+            } else if (isMouthArticulating) {
+              animClass = isLeft ? styles.armSpeakingLeft : styles.armSpeakingRight;
+            }
+            return (
+              <div key={side} className={`${styles.robotArm} ${armClass} ${animClass}`}>
+                <div className={styles.armUpper} />
+                <div className={styles.armJoint} />
+                <div className={styles.armForearm} />
               </div>
-            ) : state === 'thinking' ? (
-              <span className={styles.loadingDots} />
-            ) : state === 'listening' ? (
-              <span className={styles.pulseRec}>●REC</span>
-            ) : (
-              crtLabel || crtGlyph
+            );
+          })}
+
+          <div className={`${styles.crtMonitor} ${styles.crtFlicker}`}>
+            <div className={styles.crtScanlines} />
+            <div className={styles.crtContent} style={{ color: crtColor }}>
+              {state === 'speaking' ? (
+                <div className={styles.eqContainer}>
+                  <div className={styles.eqBar} />
+                  <div className={styles.eqBar} />
+                  <div className={styles.eqBar} />
+                </div>
+              ) : state === 'thinking' ? (
+                <span className={styles.loadingDots} />
+              ) : state === 'listening' ? (
+                <span className={styles.pulseRec}>●REC</span>
+              ) : (
+                crtLabel || crtGlyph
+              )}
+            </div>
+          </div>
+
+          {/* Micropropulsor Magnético Inferior */}
+          <div className={styles.hoverThruster}>
+            <div className={styles.thrusterNozzle} />
+            {!drowned && (
+              <div className={`${styles.plasmaFlame} ${isMouthArticulating ? styles.plasmaHigh : ''}`} />
             )}
           </div>
         </div>
-
-        {/* Micropropulsor Magnético Inferior */}
-        <div className={styles.hoverThruster}>
-          <div className={styles.thrusterNozzle} />
-          {!drowned && (
-            <div className={`${styles.plasmaFlame} ${isMouthArticulating ? styles.plasmaHigh : ''}`} />
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

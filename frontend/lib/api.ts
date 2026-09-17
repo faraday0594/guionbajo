@@ -1124,12 +1124,14 @@ const englishAudioLoadingPromises = new Map<string, Promise<Blob | null>>();
  * Permite que cuando el usuario haga clic en cualquier botón de fonética o pares mínimos,
  * el sonido se reproduzca instantáneamente (0ms) sin esperar 3 segundos por síntesis.
  */
-export async function preloadEnglishAudio(text: string, preferredVoice = 'en-US-JennyNeural'): Promise<Blob | null> {
+export async function preloadEnglishAudio(text: string, preferredVoice?: string): Promise<Blob | null> {
   const speechText = cleanTextForTTS(text);
   if (!speechText) return null;
 
-  const isFemale = !preferredVoice || preferredVoice.includes('Jenny') || preferredVoice.includes('Aria') || preferredVoice.includes('female');
-  const targetVoice = preferredVoice || (isFemale ? 'en-US-JennyNeural' : 'en-US-RogerNeural');
+  const savedVoice = getSavedPreferredVoice();
+  const isExplicitMale = savedVoice.includes('male') || savedVoice.includes('jorge') || savedVoice.includes('alvaro') || savedVoice.includes('alonso') || savedVoice.includes('roger') || savedVoice.includes('guy') || savedVoice.includes('qingse') || savedVoice.includes('jingying') || savedVoice.includes('daxuesheng');
+  const defaultVoice = isExplicitMale ? 'en-US-RogerNeural' : 'en-US-JennyNeural';
+  const targetVoice = preferredVoice || defaultVoice;
   const cacheKey = `${targetVoice}:${speechText.toLowerCase()}`;
 
   if (englishAudioBlobCache.has(cacheKey)) {
@@ -1188,7 +1190,7 @@ export function speakWithBrowserNative(text: string, isFemale = true): boolean {
 // High-definition natural English speech for exercise sentences, phonetics, POV companions, and examples.
 export async function playEnglishAudio(
   text: string,
-  preferredVoice = 'en-US-JennyNeural',
+  preferredVoice?: string,
   instantSpeechFallback = true
 ): Promise<HTMLAudioElement | void> {
   const speechText = cleanTextForTTS(text);
@@ -1196,8 +1198,11 @@ export async function playEnglishAudio(
 
   stopTutorVoice();
 
-  const isFemale = !preferredVoice || preferredVoice.includes('Jenny') || preferredVoice.includes('Aria') || preferredVoice.includes('female');
-  const targetVoice = preferredVoice || (isFemale ? 'en-US-JennyNeural' : 'en-US-RogerNeural');
+  const savedVoice = getSavedPreferredVoice();
+  const isExplicitMale = savedVoice.includes('male') || savedVoice.includes('jorge') || savedVoice.includes('alvaro') || savedVoice.includes('alonso') || savedVoice.includes('roger') || savedVoice.includes('guy') || savedVoice.includes('qingse') || savedVoice.includes('jingying') || savedVoice.includes('daxuesheng');
+  const defaultVoice = isExplicitMale ? 'en-US-RogerNeural' : 'en-US-JennyNeural';
+  const targetVoice = preferredVoice || defaultVoice;
+  const isFemale = !targetVoice.includes('Roger') && !targetVoice.includes('Guy') && !targetVoice.includes('male') && !isExplicitMale;
   const cacheKey = `${targetVoice}:${speechText.toLowerCase()}`;
 
   // 1. Si el audio HD ya está en caché de memoria, ¡reproducir inmediatamente a 0ms de latencia!

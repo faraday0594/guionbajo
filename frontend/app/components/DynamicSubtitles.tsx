@@ -194,89 +194,92 @@ export default function DynamicSubtitles({
 
   return (
     <AnimatePresence>
-      <motion.div
-        key={`subtitles-${positionKey}`}
-        drag
-        dragMomentum={false}
-        dragElastic={0.08}
-        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 8, transition: { duration: 0.15 } }}
-        whileDrag={{ scale: 1.04, cursor: 'grabbing' }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-        className={`fixed ${
+      <div
+        className={`fixed inset-x-0 ${
           isHookMode
             ? 'bottom-16 sm:bottom-20 md:bottom-24'
             : 'bottom-20 sm:bottom-24'
-        } left-1/2 -translate-x-1/2 z-50 cursor-grab select-none pointer-events-auto max-w-2xl px-3 group`}
-        title="Arrastra para mover a cualquier espacio en blanco de la pantalla"
+        } z-50 pointer-events-none flex justify-center items-end px-3 sm:px-4`}
       >
-        <div className="relative flex flex-col items-center justify-center">
-          {/* Top Floating Mini-Toolbar on Hover */}
-          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 bg-black/85 px-3 py-0.5 rounded-full border border-white/20 text-[11px] text-white/80 backdrop-blur-md shadow-lg">
-            <div className="flex items-center gap-1 text-brand-cyan">
-              <GripHorizontal size={12} />
-              <span className="font-mono text-[10px]">Arrastrar</span>
+        <motion.div
+          key={`subtitles-${positionKey}`}
+          drag
+          dragMomentum={false}
+          dragElastic={0.08}
+          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 8, transition: { duration: 0.15 } }}
+          whileDrag={{ scale: 1.04, cursor: 'grabbing' }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="pointer-events-auto select-none cursor-grab active:cursor-grabbing touch-none max-w-[95vw] sm:max-w-2xl group flex flex-col items-center justify-center"
+          title="Arrastra para mover a cualquier espacio en blanco de la pantalla"
+        >
+          <div className="relative flex flex-col items-center justify-center w-full">
+            {/* Top Floating Mini-Toolbar on Hover */}
+            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 bg-black/85 px-3 py-0.5 rounded-full border border-white/20 text-[11px] text-white/80 backdrop-blur-md shadow-lg">
+              <div className="flex items-center gap-1 text-brand-cyan">
+                <GripHorizontal size={12} />
+                <span className="font-mono text-[10px]">Arrastrar</span>
+              </div>
+
+              <span className="text-white/20">•</span>
+
+              {/* Font Style Switcher */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cycleStyle();
+                }}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-white/10 text-yellow-300 hover:text-yellow-200 transition-colors font-medium text-[10px]"
+                title="Cambiar estilo de letra del subtítulo"
+              >
+                <Type size={11} />
+                <span>{styleConfig.badge}</span>
+              </button>
+
+              <span className="text-white/20">•</span>
+
+              {/* Reset Position Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPositionKey((prev) => prev + 1);
+                }}
+                className="p-0.5 hover:text-white text-white/60 transition-colors"
+                title="Centrar abajo"
+              >
+                <RotateCcw size={11} />
+              </button>
+
+              {onClose && (
+                <>
+                  <span className="text-white/20">•</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClose();
+                    }}
+                    className="p-0.5 hover:text-red-400 text-white/60 transition-colors"
+                    title="Ocultar subtítulos"
+                  >
+                    <X size={11} />
+                  </button>
+                </>
+              )}
             </div>
 
-            <span className="text-white/20">•</span>
-
-            {/* Font Style Switcher */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                cycleStyle();
-              }}
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-white/10 text-yellow-300 hover:text-yellow-200 transition-colors font-medium text-[10px]"
-              title="Cambiar estilo de letra del subtítulo"
+            {/* Kinetic 3-Word Display Box with Zero Vibration */}
+            <div
+              className={`px-4 py-2.5 sm:px-8 sm:py-3.5 rounded-2xl sm:rounded-3xl ${styleConfig.containerClass} text-center min-w-[180px] max-w-full transition-all duration-200 ${
+                isHookMode ? 'shadow-[0_15px_60px_rgba(0,0,0,0.9)] ring-1 ring-white/15' : ''
+              }`}
             >
-              <Type size={11} />
-              <span>{styleConfig.badge}</span>
-            </button>
-
-            <span className="text-white/20">•</span>
-
-            {/* Reset Position Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setPositionKey((prev) => prev + 1);
-              }}
-              className="p-0.5 hover:text-white text-white/60 transition-colors"
-              title="Centrar abajo"
-            >
-              <RotateCcw size={11} />
-            </button>
-
-            {onClose && (
-              <>
-                <span className="text-white/20">•</span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClose();
-                  }}
-                  className="p-0.5 hover:text-red-400 text-white/60 transition-colors"
-                  title="Ocultar subtítulos"
-                >
-                  <X size={11} />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Kinetic 3-Word Display Box with Zero Vibration */}
-          <div
-            className={`px-6 py-3 sm:px-8 sm:py-3.5 rounded-3xl ${styleConfig.containerClass} text-center min-w-[220px] max-w-xl transition-all duration-200 ${
-              isHookMode ? 'shadow-[0_15px_60px_rgba(0,0,0,0.9)] ring-1 ring-white/15' : ''
-            }`}
-          >
-            <p
-              className={`${styleConfig.textClass} leading-tight flex flex-wrap items-center justify-center gap-x-3 gap-y-0`}
-            >
+              <p
+                className={`${styleConfig.textClass} leading-tight flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-3 gap-y-0`}
+              >
               {currentChunkWords.map((word, relIdx) => {
                 const globalIdx = currentChunkStart + relIdx;
                 const isActive = globalIdx === activeWordIdx;
@@ -301,6 +304,7 @@ export default function DynamicSubtitles({
           </div>
         </div>
       </motion.div>
-    </AnimatePresence>
-  );
+    </div>
+  </AnimatePresence>
+);
 }

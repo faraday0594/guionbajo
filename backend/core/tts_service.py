@@ -23,10 +23,10 @@ TTS_IN_MEMORY_CACHE: Dict[str, bytes] = {}
 # CATÁLOGO DE VOCES EN ESPAÑOL E INGLÉS (MiniMax, Google TTS, Edge Studio)
 # ══════════════════════════════════════════════════════════════════════════════
 AVAILABLE_VOICES: List[Dict[str, Any]] = [
-    # ─── 1. MINIMAX NEURAL HD (speech-02-hd / t2a_v2) ─────────────────────────
+    # ─── 1. VOCES DE ESTUDIO HD ───────────────────────────────────────────
     {
         "id": "female-yujie",
-        "name": "Yujie (MiniMax - Madura / Elegante)",
+        "name": "Yujie (Madura / Elegante)",
         "provider": "minimax",
         "gender": "female",
         "lang": "es",
@@ -36,7 +36,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "female-chengshu",
-        "name": "Chengshu (MiniMax - Profesional)",
+        "name": "Chengshu (Profesional)",
         "provider": "minimax",
         "gender": "female",
         "lang": "es",
@@ -46,7 +46,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "female-tianmei",
-        "name": "Tianmei (MiniMax - Dulce)",
+        "name": "Tianmei (Dulce)",
         "provider": "minimax",
         "gender": "female",
         "lang": "es",
@@ -56,7 +56,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "female-shaonv",
-        "name": "Shaonv (MiniMax - Juvenil)",
+        "name": "Shaonv (Juvenil)",
         "provider": "minimax",
         "gender": "female",
         "lang": "es",
@@ -66,7 +66,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "audiobook_female_1",
-        "name": "Narradora Audiobook (MiniMax)",
+        "name": "Narradora Estudio (Didáctica)",
         "provider": "minimax",
         "gender": "female",
         "lang": "es",
@@ -76,7 +76,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "presenter_female",
-        "name": "Locutora HD (MiniMax)",
+        "name": "Locutora HD (Clara)",
         "provider": "minimax",
         "gender": "female",
         "lang": "es",
@@ -86,7 +86,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "male-qn-qingse",
-        "name": "Qingse (MiniMax - Joven)",
+        "name": "Qingse (Joven)",
         "provider": "minimax",
         "gender": "male",
         "lang": "es",
@@ -96,7 +96,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "male-qn-jingying",
-        "name": "Jingying (MiniMax - Ejecutivo)",
+        "name": "Jingying (Ejecutivo)",
         "provider": "minimax",
         "gender": "male",
         "lang": "es",
@@ -106,7 +106,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "male-qn-daxuesheng",
-        "name": "College Male (MiniMax - Universitario)",
+        "name": "Universitario (Dinámico)",
         "provider": "minimax",
         "gender": "male",
         "lang": "es",
@@ -116,7 +116,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "presenter_male",
-        "name": "Locutor HD (MiniMax)",
+        "name": "Locutor HD (Claro)",
         "provider": "minimax",
         "gender": "male",
         "lang": "es",
@@ -126,7 +126,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "audiobook_male_1",
-        "name": "Narrador Audiobook (MiniMax)",
+        "name": "Narrador Estudio (Profundo)",
         "provider": "minimax",
         "gender": "male",
         "lang": "es",
@@ -135,62 +135,62 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
         "preview_text": "Cada palabra que practicamos hoy te acerca más a tu meta de dominar el inglés."
     },
 
-    # ─── 2. GOOGLE TTS (gTTS) ────────────────────────────────────────────────
+    # ─── 2. VOCES NATURALES ───────────────────────────────────────────────
     {
         "id": "google-es",
-        "name": "Google Español (Latinoamérica)",
+        "name": "Español (Latinoamérica)",
         "provider": "google",
         "gender": "female",
         "lang": "es-419",
-        "badge": "Google Oficial",
-        "description": "Voz clásica y natural de Google en español latinoamericano, limpia y nítida",
-        "preview_text": "Hola, soy la voz de Google. Estoy lista para guiarte en tu aprendizaje de inglés."
+        "badge": "Latinoamérica",
+        "description": "Voz clásica y natural en español latinoamericano, limpia y nítida",
+        "preview_text": "Hola, estoy lista para guiarte en tu aprendizaje de inglés."
     },
     {
         "id": "google-es-mx",
-        "name": "Google Español (México)",
+        "name": "Español (México)",
         "provider": "google",
         "gender": "female",
         "lang": "es-MX",
         "badge": "México",
-        "description": "Voz oficial de Google con entonación de México",
-        "preview_text": "Hola, esta es la voz de Google México. Practiquemos juntos tus frases de inglés."
+        "description": "Voz natural con entonación de México",
+        "preview_text": "Hola, practiquemos juntos tus frases de inglés con acento mexicano."
     },
     {
         "id": "google-es-es",
-        "name": "Google Español (España)",
+        "name": "Español (España)",
         "provider": "google",
         "gender": "female",
         "lang": "es-ES",
         "badge": "España",
-        "description": "Voz clásica de Google con acento castellano de España",
-        "preview_text": "Hola, soy la voz de Google en español de España. Practiquemos juntos esta lección."
+        "description": "Voz clásica con acento castellano de España",
+        "preview_text": "Hola, soy tu voz en español de España. Practiquemos juntos esta lección."
     },
     {
         "id": "google-en-us",
-        "name": "Google English (Estados Unidos)",
+        "name": "English (Estados Unidos)",
         "provider": "google",
         "gender": "female",
         "lang": "en-US",
-        "badge": "Google US",
-        "description": "Voz estándar de Google en inglés americano para entrenamiento",
-        "preview_text": "Hello! I am the Google English voice. Let's practice your pronunciation together."
+        "badge": "Inglés US",
+        "description": "Voz estándar en inglés americano para entrenamiento",
+        "preview_text": "Hello! I am ready to practice your pronunciation together."
     },
     {
         "id": "google-en-uk",
-        "name": "Google English (Reino Unido / British)",
+        "name": "English (Reino Unido)",
         "provider": "google",
         "gender": "female",
         "lang": "en-GB",
-        "badge": "Google UK",
-        "description": "Voz estándar de Google en inglés británico",
-        "preview_text": "Hello! I am the Google British English voice. Let's practice your pronunciation."
+        "badge": "Inglés UK",
+        "description": "Voz estándar en inglés británico",
+        "preview_text": "Hello! Let's practice your British English pronunciation."
     },
 
-    # ─── 3. MICROSOFT EDGE NEURAL STUDIO (Español e Inglés HD) ───────────────
+    # ─── 3. VOCES NEURONALES ULTRA (Español e Inglés HD) ──────────────────
     {
         "id": "es-MX-DaliaNeural",
-        "name": "Dalia (Edge Neural - México Femenina)",
+        "name": "Dalia (México - Femenina)",
         "provider": "edge",
         "gender": "female",
         "lang": "es-MX",
@@ -200,7 +200,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "es-MX-JorgeNeural",
-        "name": "Jorge (Edge Neural - México Masculino)",
+        "name": "Jorge (México - Masculino)",
         "provider": "edge",
         "gender": "male",
         "lang": "es-MX",
@@ -210,7 +210,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "es-ES-ElviraNeural",
-        "name": "Elvira (Edge Neural - España Femenina)",
+        "name": "Elvira (España - Femenina)",
         "provider": "edge",
         "gender": "female",
         "lang": "es-ES",
@@ -220,7 +220,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "es-ES-AlvaroNeural",
-        "name": "Álvaro (Edge Neural - España Masculino)",
+        "name": "Álvaro (España - Masculino)",
         "provider": "edge",
         "gender": "male",
         "lang": "es-ES",
@@ -230,7 +230,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "es-US-PalomaNeural",
-        "name": "Paloma (Edge Neural - US Spanish Bilingüe)",
+        "name": "Paloma (Bilingüe - Femenina)",
         "provider": "edge",
         "gender": "female",
         "lang": "es-US",
@@ -240,7 +240,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "es-US-AlonsoNeural",
-        "name": "Alonso (Edge Neural - US Spanish Bilingüe)",
+        "name": "Alonso (Bilingüe - Masculino)",
         "provider": "edge",
         "gender": "male",
         "lang": "es-US",
@@ -250,7 +250,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "en-US-RogerNeural",
-        "name": "Roger (Edge Neural - Inglés Estudio HD)",
+        "name": "Roger (Inglés Americano - Coach)",
         "provider": "edge",
         "gender": "male",
         "lang": "en-US",
@@ -260,7 +260,7 @@ AVAILABLE_VOICES: List[Dict[str, Any]] = [
     },
     {
         "id": "en-US-JennyNeural",
-        "name": "Jenny (Edge Neural - Inglés Estudio HD)",
+        "name": "Jenny (Inglés Americano - Coach)",
         "provider": "edge",
         "gender": "female",
         "lang": "en-US",

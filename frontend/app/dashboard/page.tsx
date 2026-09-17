@@ -390,7 +390,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  MiniMax Live Voice AI
+                  Voz en Vivo HD
                 </span>
                 <span className="text-[10px] text-brand-text-muted">Bilingüe Inglés / Español</span>
               </div>

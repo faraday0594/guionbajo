@@ -881,7 +881,7 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
                 <Loader2 className="w-4 h-4 text-cyan-400 animate-spin flex-shrink-0" />
                 <div className="flex-1">
                   <span className="font-bold text-cyan-300">Analizando pronunciación acústica: </span>
-                  <span className="italic text-cyan-100">Evaluando fonemas con Groq Whisper...</span>
+                  <span className="italic text-cyan-100">Evaluando fonemas con precisión acústica...</span>
                 </div>
               </motion.div>
             )}
@@ -913,7 +913,7 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
                   {evaluationData.isGroq && (
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
                       <Sparkles size={11} className="text-cyan-400" />
-                      Groq Whisper LPU
+                      Análisis Acústico HD
                     </span>
                   )}
                   <span className={`px-3 py-1 rounded-full text-xs font-black font-mono border ${
@@ -979,7 +979,7 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
                 className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl text-xs font-black bg-zinc-800 text-zinc-400 border border-zinc-700 cursor-not-allowed opacity-80"
               >
                 <Loader2 size={15} className="animate-spin text-cyan-400" />
-                <span>Evaluando con Whisper... 🧠</span>
+                <span>Evaluando tu pronunciación... 🧠</span>
               </button>
             ) : isRecording ? (
               <motion.button

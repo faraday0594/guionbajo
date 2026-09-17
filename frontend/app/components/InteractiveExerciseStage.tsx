@@ -503,13 +503,8 @@ export default function InteractiveExerciseStage({
                 <div className="w-12 h-12 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/30 flex items-center justify-center mb-3">
                   <Loader2 size={24} className="text-brand-cyan animate-spin" />
                 </div>
-                <p className="text-xs font-semibold text-white font-outfit">Generando ilustración didáctica...</p>
-                <p className="text-[11px] text-zinc-400 mt-1">MiniMax está creando la escena para esta actividad</p>
-                {currentEx.image_prompt && (
-                  <span className="text-[10px] text-zinc-500 mt-3 max-w-xs truncate font-mono bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
-                    {currentEx.image_prompt}
-                  </span>
-                )}
+                <p className="text-xs font-semibold text-white font-outfit">Preparando ilustración didáctica...</p>
+                <p className="text-[11px] text-zinc-400 mt-1">Creando el contexto visual para esta actividad</p>
               </div>
             )}
           </div>
@@ -646,7 +641,7 @@ export default function InteractiveExerciseStage({
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-brand-cyan uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles size={12} className="text-brand-cyan" />
-                    <span>Alineación Fonética Acústica (Groq Whisper)</span>
+                    <span>Evaluación Fonética Detallada</span>
                   </span>
                   <span className="text-[10px] text-zinc-400 font-mono">Evaluación palabra por palabra</span>
                 </div>

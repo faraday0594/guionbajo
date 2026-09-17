@@ -3999,7 +3999,7 @@ export default function LessonPage() {
         // ─── 3. Adaptive Lesson Generator with MiniMax M3 (70-second Safeguard) ─
         if (!data) {
           try {
-            setLoadingStage('Diseñando guion didáctico y plan pedagógico con MiniMax M3...');
+            setLoadingStage('Diseñando guion didáctico y plan pedagógico adaptativo...');
             const genPromise = api.generateAdaptiveLesson(sublevelParam, classIndexParam, topicParam, loadAbortControllerRef.current?.signal);
             const timeoutPromise = new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Adaptive generation timed out (70s limit)')), 70000)
@@ -6157,10 +6157,10 @@ export default function LessonPage() {
                         ) : (
                           <div className="h-48 sm:h-56 flex flex-col items-center justify-center p-4 text-center bg-brand-dark/60 border border-brand-cyan/20 rounded-2xl">
                             <Sparkles className="w-6 h-6 text-brand-cyan animate-pulse mb-2" />
-                            <span className="text-xs font-semibold text-white font-chalk">Generando ilustración MiniMax...</span>
+                            <span className="text-xs font-semibold text-white font-chalk">Generando ilustración didáctica...</span>
                             <div className="flex items-center gap-1.5 mt-2 text-[11px] text-brand-cyan font-mono">
                               <Loader2 className="w-3 h-3 animate-spin" />
-                              <span>image-01</span>
+                              <span>Ilustración HD</span>
                             </div>
                           </div>
                         )}

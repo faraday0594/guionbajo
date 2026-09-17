@@ -705,7 +705,7 @@ export default function OnboardingPage() {
             {/* Resumen Curricular */}
             <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-brand-text-muted">
               <span>Respuestas evaluadas: <strong>{answers.length || 80} Preguntas</strong></span>
-              <span>Reconocimiento: <strong className="text-emerald-400">Groq Whisper Activo</strong></span>
+              <span>Reconocimiento de voz: <strong className="text-emerald-400">Calibrado</strong></span>
               <span>Recompensa: <strong className="text-brand-gold">+100 XP</strong></span>
             </div>
           </div>

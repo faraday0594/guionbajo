@@ -82,36 +82,46 @@ export default function PhoneticBoard({ inLessonMode = false, onClose }: Phoneti
     }
   };
 
-  // ── Precarga automática e inmediata de audios al abrir la vista preliminar del fonema ──
+  // ── Precarga automática inteligente y ordenada de audios al abrir la vista preliminar del fonema ──
   useEffect(() => {
     if (!selectedPhoneme) return;
 
-    const wordsToPreload: string[] = [];
+    let isCancelled = false;
 
-    // 1. Pares mínimos (contrast pairs): precargar ambas palabras (pair[0] y pair[1])
-    if (selectedPhoneme.contrast_pairs && Array.isArray(selectedPhoneme.contrast_pairs)) {
-      for (const pair of selectedPhoneme.contrast_pairs) {
-        if (pair && pair[0]) wordsToPreload.push(pair[0]);
-        if (pair && pair[1]) wordsToPreload.push(pair[1]);
+    const runPreload = async () => {
+      const wordsToPreload: string[] = [];
+
+      // 1. Pares mínimos (contrast pairs): dar prioridad número uno
+      if (selectedPhoneme.contrast_pairs && Array.isArray(selectedPhoneme.contrast_pairs)) {
+        for (const pair of selectedPhoneme.contrast_pairs) {
+          if (pair && pair[0]) wordsToPreload.push(pair[0]);
+          if (pair && pair[1]) wordsToPreload.push(pair[1]);
+        }
       }
-    }
 
-    // 2. Palabras de ejemplo
-    if (selectedPhoneme.examples && Array.isArray(selectedPhoneme.examples)) {
-      for (const word of selectedPhoneme.examples) {
-        if (word) wordsToPreload.push(word);
+      // 2. Palabras de ejemplo
+      if (selectedPhoneme.examples && Array.isArray(selectedPhoneme.examples)) {
+        for (const word of selectedPhoneme.examples) {
+          if (word) wordsToPreload.push(word);
+        }
       }
-    }
 
-    // 3. Frase de entrenamiento
-    if (selectedPhoneme.drill_sentence) {
-      wordsToPreload.push(selectedPhoneme.drill_sentence);
-    }
+      // Deduplicar palabras
+      const uniqueWords = Array.from(new Set(wordsToPreload.map((w) => w.trim().toLowerCase())));
 
-    // Despachar todas las precargas en paralelo sin bloquear la UI (quedan listas en RAM)
-    wordsToPreload.forEach((w) => {
-      preloadEnglishAudio(w).catch(() => {});
-    });
+      // Precargar en lotes controlados de 2 para no saturar las conexiones HTTP
+      for (let i = 0; i < uniqueWords.length; i += 2) {
+        if (isCancelled) break;
+        const batch = uniqueWords.slice(i, i + 2);
+        await Promise.all(batch.map((w) => preloadEnglishAudio(w).catch(() => {})));
+      }
+    };
+
+    runPreload();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [selectedPhoneme]);
 
   // Handle for currently active audio playback
@@ -132,15 +142,15 @@ export default function PhoneticBoard({ inLessonMode = false, onClose }: Phoneti
     }
   };
 
-  /** Speak word/sentence via Studio Neural Backend (primary) with Web Speech fallback. */
+  /** Speak word/sentence con reproducción inmediata a 0ms (Web Speech nativo + Neural HD en caché). */
   const playTTS = async (text: string, id?: string) => {
     stopActiveAudio();
     const key = id || text;
     setPlayingAudio(key);
 
     try {
-      await playEnglishAudio(text);
-      setTimeout(() => setPlayingAudio(null), 1200);
+      await playEnglishAudio(text, 'en-US-JennyNeural', true);
+      setTimeout(() => setPlayingAudio(null), 900);
     } catch (err) {
       console.error('Error playing TTS in PhoneticBoard:', err);
       setPlayingAudio(null);
@@ -464,6 +474,7 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                       <div className="my-1 flex items-center justify-between gap-1">
                         <button
                           type="button"
+                          onMouseEnter={() => preloadEnglishAudio(exampleWord).catch(() => {})}
                           onClick={(e) => {
                             e.stopPropagation();
                             playTTS(exampleWord, `word:${exampleWord}`);
@@ -648,6 +659,7 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                           >
                             <button
                               type="button"
+                              onMouseEnter={() => preloadEnglishAudio(pair[0]).catch(() => {})}
                               onClick={() => playTTS(pair[0], `pair:${pair[0]}`)}
                               className={`flex items-center gap-1.5 font-bold transition-all cursor-pointer px-2 py-1 rounded-lg ${
                                 isPlaying0
@@ -664,6 +676,7 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
 
                             <button
                               type="button"
+                              onMouseEnter={() => preloadEnglishAudio(pair[1]).catch(() => {})}
                               onClick={() => playTTS(pair[1], `pair:${pair[1]}`)}
                               className={`flex items-center gap-1.5 font-bold transition-all cursor-pointer px-2 py-1 rounded-lg ${
                                 isPlaying1
@@ -692,6 +705,7 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                         <button
                           key={idx}
                           type="button"
+                          onMouseEnter={() => preloadEnglishAudio(word).catch(() => {})}
                           onClick={() => playTTS(word, `word:${word}`)}
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                             isPlaying
@@ -714,6 +728,7 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-emerald-400">Frase de Entrenamiento</span>
                       <button
+                        onMouseEnter={() => preloadEnglishAudio(selectedPhoneme.drill_sentence).catch(() => {})}
                         onClick={() => playTTS(selectedPhoneme.drill_sentence, `drill:${selectedPhoneme.ipa}`)}
                         className={`flex items-center gap-1 text-xs font-medium ${
                           playingAudio === `drill:${selectedPhoneme.ipa}`

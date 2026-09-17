@@ -1159,9 +1159,38 @@ export async function preloadEnglishAudio(text: string, preferredVoice = 'en-US-
   return loadPromise;
 }
 
-// ─── PLAY ENGLISH AUDIO (Jenny / Roger / Aria Neural HD / Edge-TTS) ───────────
+/**
+ * Reproducción de voz nativa ultra-rápida (0ms de latencia) usando el motor de voz del dispositivo/navegador.
+ * Se activa de inmediato para que el usuario NUNCA experimente retardos al tocar una palabra.
+ */
+export function speakWithBrowserNative(text: string, isFemale = true): boolean {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return false;
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.88;
+    utterance.pitch = isFemale ? 1.05 : 0.92;
+
+    const enVoice = getBestBrowserVoice('en', isFemale ? 'Jenny' : 'Roger');
+    if (enVoice) {
+      utterance.voice = enVoice;
+    }
+    window.speechSynthesis.speak(utterance);
+    return true;
+  } catch (err) {
+    console.warn('speakWithBrowserNative error:', err);
+    return false;
+  }
+}
+
+// ─── PLAY ENGLISH AUDIO (Jenny / Roger / Aria Neural HD / Edge-TTS + 0ms Native) ───
 // High-definition natural English speech for exercise sentences, phonetics, POV companions, and examples.
-export async function playEnglishAudio(text: string, preferredVoice = 'en-US-JennyNeural'): Promise<HTMLAudioElement | void> {
+export async function playEnglishAudio(
+  text: string,
+  preferredVoice = 'en-US-JennyNeural',
+  instantSpeechFallback = true
+): Promise<HTMLAudioElement | void> {
   const speechText = cleanTextForTTS(text);
   if (!speechText) return;
 
@@ -1171,10 +1200,46 @@ export async function playEnglishAudio(text: string, preferredVoice = 'en-US-Jen
   const targetVoice = preferredVoice || (isFemale ? 'en-US-JennyNeural' : 'en-US-RogerNeural');
   const cacheKey = `${targetVoice}:${speechText.toLowerCase()}`;
 
-  // 1. Obtener desde caché en memoria instantánea (0ms) o precarga en progreso
+  // 1. Si el audio HD ya está en caché de memoria, ¡reproducir inmediatamente a 0ms de latencia!
+  const cachedBlob = englishAudioBlobCache.get(cacheKey);
+  if (cachedBlob && cachedBlob.size > 100) {
+    try {
+      const url = URL.createObjectURL(cachedBlob);
+      const audio = new Audio(url);
+      activeAudioElement = audio;
+      attachAudioElementToAnalyzer(audio);
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          if (err && err.name !== 'AbortError') {
+            console.warn('English Audio play error:', err);
+          }
+        });
+      }
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        detachAudioElement(audio);
+        if (activeAudioElement === audio) activeAudioElement = null;
+      };
+      return audio;
+    } catch (_) {}
+  }
+
+  // 2. Si NO está en caché y instantSpeechFallback está activo (comportamiento predeterminado para palabras):
+  // Pronunciar INMEDIATAMENTE en 0ms con el sintetizador nativo de alta calidad del dispositivo/navegador.
+  // Y en segundo plano iniciar la precarga para que las próximas reproducciones usen el audio neuronal HD.
+  if (instantSpeechFallback) {
+    speakWithBrowserNative(speechText, isFemale);
+    // En segundo plano descargar el audio HD para siguientes reproducciones
+    preloadEnglishAudio(speechText, targetVoice).catch(() => {});
+    return;
+  }
+
+  // 3. Si instantSpeechFallback es false, esperar la descarga del audio HD
   try {
-    let blob: Blob | null = englishAudioBlobCache.get(cacheKey) || null;
-    if (!blob && englishAudioLoadingPromises.has(cacheKey)) {
+    let blob: Blob | null = null;
+    if (englishAudioLoadingPromises.has(cacheKey)) {
       blob = await englishAudioLoadingPromises.get(cacheKey)!;
     }
     if (!blob) {
@@ -1206,23 +1271,8 @@ export async function playEnglishAudio(text: string, preferredVoice = 'en-US-Jen
     console.warn('Backend English TTS synthesis fallback to browser:', e);
   }
 
-  // 2. Fallback to Browser Web Speech API strictly in English with matching gender
-  if (typeof window !== 'undefined' && window.speechSynthesis) {
-    try {
-      window.speechSynthesis.cancel();
-      await ensureBrowserVoices();
-      const utterance = new SpeechSynthesisUtterance(speechText);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.88;
-      utterance.pitch = isFemale ? 1.08 : 0.95;
-
-      const enVoice = getBestBrowserVoice('en', isFemale ? 'Jenny' : 'Roger');
-      if (enVoice) {
-        utterance.voice = enVoice;
-      }
-      window.speechSynthesis.speak(utterance);
-    } catch (_) {}
-  }
+  // 4. Respaldo final con motor del navegador
+  speakWithBrowserNative(speechText, isFemale);
 }
 
 // ─── ASYNC TUTOR VOICE MOTOR (playTutorVoice) ──────────────────────────────────

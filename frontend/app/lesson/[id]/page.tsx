@@ -3377,6 +3377,7 @@ export default function LessonPage() {
   const [minimaxImageMap, setMinimaxImageMap] = useState<Record<string, string>>({});
   const [generatingImages, setGeneratingImages] = useState<Record<string, boolean>>({});
   const inFlightImagePromisesRef = useRef<{ [key: string]: Promise<string> | undefined }>({});
+  const failedImagesRef = useRef<Set<string>>(new Set());
 
   const fetchPhaseImage = useCallback(async (phaseIdx: number, topic: string, phaseObj?: any, imageIdx = 0, customPrompt?: string): Promise<string> => {
     const promptKey = `${phaseIdx}-${topic}${imageIdx > 0 ? `-img${imageIdx}` : ''}`;
@@ -3427,6 +3428,8 @@ export default function LessonPage() {
       if (finalUrl) {
         await preloadImage(finalUrl, 8000).catch(() => {});
         setMinimaxImageMap(prev => ({ ...prev, [promptKey]: finalUrl }));
+      } else {
+        failedImagesRef.current.add(promptKey);
       }
       setGeneratingImages(prev => ({ ...prev, [promptKey]: false }));
       delete inFlightImagePromisesRef.current[promptKey];
@@ -3467,6 +3470,8 @@ export default function LessonPage() {
       if (finalUrl) {
         await preloadImage(finalUrl, 8000).catch(() => {});
         setMinimaxImageMap(prev => ({ ...prev, [promptKey]: finalUrl }));
+      } else {
+        failedImagesRef.current.add(promptKey);
       }
       setGeneratingImages(prev => ({ ...prev, [promptKey]: false }));
       delete inFlightImagePromisesRef.current[promptKey];
@@ -3482,19 +3487,37 @@ export default function LessonPage() {
     if (!lesson?.phases) return;
     const currentP = lesson.phases[currentPhaseIdx];
     if (currentP) {
-      fetchPhaseImage(currentPhaseIdx, topicParam, currentP, 0);
-      if (currentP.hook_images && Array.isArray(currentP.hook_images) && currentP.hook_images.length > 1) {
-        fetchPhaseImage(currentPhaseIdx, topicParam, currentP, 1);
+      if (currentP.is_practice_slide || currentP.interaction_type === 'quiz' || (currentP.exercises && currentP.exercises.length > 0)) {
+        const firstEx = currentP.exercises?.[0];
+        const exPrompt = firstEx?.image_prompt || currentP.image_prompt;
+        const exPromptKey = `ex-${currentPhaseIdx}-${firstEx?.id || 0}`;
+        if (exPrompt && !minimaxImageMap[exPromptKey]) {
+          fetchExerciseImage(exPrompt, exPromptKey);
+        }
+      } else {
+        fetchPhaseImage(currentPhaseIdx, topicParam, currentP, 0);
+        if (currentP.hook_images && Array.isArray(currentP.hook_images) && currentP.hook_images.length > 1) {
+          fetchPhaseImage(currentPhaseIdx, topicParam, currentP, 1);
+        }
       }
     }
     if (currentPhaseIdx + 1 < lesson.phases.length) {
       const nextP = lesson.phases[currentPhaseIdx + 1];
-      fetchPhaseImage(currentPhaseIdx + 1, topicParam, nextP, 0);
-      if (nextP.hook_images && Array.isArray(nextP.hook_images) && nextP.hook_images.length > 1) {
-        fetchPhaseImage(currentPhaseIdx + 1, topicParam, nextP, 1);
+      if (nextP.is_practice_slide || nextP.interaction_type === 'quiz' || (nextP.exercises && nextP.exercises.length > 0)) {
+        const firstEx = nextP.exercises?.[0];
+        const exPrompt = firstEx?.image_prompt || nextP.image_prompt;
+        const exPromptKey = `ex-${currentPhaseIdx + 1}-${firstEx?.id || 0}`;
+        if (exPrompt && !minimaxImageMap[exPromptKey]) {
+          fetchExerciseImage(exPrompt, exPromptKey);
+        }
+      } else {
+        fetchPhaseImage(currentPhaseIdx + 1, topicParam, nextP, 0);
+        if (nextP.hook_images && Array.isArray(nextP.hook_images) && nextP.hook_images.length > 1) {
+          fetchPhaseImage(currentPhaseIdx + 1, topicParam, nextP, 1);
+        }
       }
     }
-  }, [lesson, currentPhaseIdx, topicParam, fetchPhaseImage]);
+  }, [lesson, currentPhaseIdx, topicParam, fetchPhaseImage, fetchExerciseImage, minimaxImageMap]);
 
   // 🎬 Cinema mode & audio tracking
   const [cinemaModeActive, setCinemaModeActive] = useState(false);
@@ -4162,25 +4185,44 @@ export default function LessonPage() {
 
         // 🎨 CRITICAL: Wait for MiniMax image generation before opening the class!
         // The student must NEVER enter the lesson or have the tutor speak without the visual context ready.
-        setLoadingStage('🎨 Generando ilustraciones didácticas en alta definición con MiniMax image-01...');
+        setLoadingStage('Preparando clase interactiva...');
 
         const initialImagePromises: Promise<any>[] = [];
         const currentP = data.phases?.[targetSlide];
-        if (currentP && !currentP.is_practice_slide) {
-          initialImagePromises.push(fetchPhaseImage(targetSlide, topicParam, currentP, 0));
-          if (currentP.hook_images && Array.isArray(currentP.hook_images) && currentP.hook_images.length > 1) {
-            initialImagePromises.push(fetchPhaseImage(targetSlide, topicParam, currentP, 1));
+        if (currentP) {
+          if (currentP.is_practice_slide || currentP.interaction_type === 'quiz' || (currentP.exercises && currentP.exercises.length > 0)) {
+            const firstEx = currentP.exercises?.[0];
+            const exPrompt = firstEx?.image_prompt || currentP.image_prompt;
+            const exPromptKey = `ex-${targetSlide}-${firstEx?.id || 0}`;
+            if (exPrompt) {
+              initialImagePromises.push(fetchExerciseImage(exPrompt, exPromptKey));
+            }
+          } else {
+            initialImagePromises.push(fetchPhaseImage(targetSlide, topicParam, currentP, 0));
+            if (currentP.hook_images && Array.isArray(currentP.hook_images) && currentP.hook_images.length > 1) {
+              initialImagePromises.push(fetchPhaseImage(targetSlide, topicParam, currentP, 1));
+            }
           }
         }
-        if (targetSlide !== 0 && data.phases?.[0] && !data.phases[0].is_practice_slide) {
-          initialImagePromises.push(fetchPhaseImage(0, topicParam, data.phases[0], 0));
+        if (targetSlide !== 0 && data.phases?.[0]) {
+          const firstP = data.phases[0];
+          if (!firstP.is_practice_slide && firstP.interaction_type !== 'quiz') {
+            initialImagePromises.push(fetchPhaseImage(0, topicParam, firstP, 0));
+          }
         }
 
-        // Also launch parallel generation for other explanation slides in the background
+        // Also launch parallel generation for other slides (including practice slides) in the background
         const remainingImagePromises: Promise<any>[] = [];
         data.phases?.forEach((p: any, idx: number) => {
           if (idx === targetSlide || (targetSlide !== 0 && idx === 0)) return;
-          if (!p.is_practice_slide && (p.image_prompt || (p.hook_images && p.hook_images.length > 0))) {
+          if (p.is_practice_slide || p.interaction_type === 'quiz' || (p.exercises && p.exercises.length > 0)) {
+            const firstEx = p.exercises?.[0];
+            const exPrompt = firstEx?.image_prompt || p.image_prompt;
+            const exPromptKey = `ex-${idx}-${firstEx?.id || 0}`;
+            if (exPrompt) {
+              remainingImagePromises.push(fetchExerciseImage(exPrompt, exPromptKey));
+            }
+          } else if (p.image_prompt || (p.hook_images && p.hook_images.length > 0)) {
             remainingImagePromises.push(fetchPhaseImage(idx, topicParam, p, 0));
             if (p.hook_images && Array.isArray(p.hook_images) && p.hook_images.length > 1) {
               remainingImagePromises.push(fetchPhaseImage(idx, topicParam, p, 1));
@@ -4384,7 +4426,7 @@ export default function LessonPage() {
     }
   }, [lesson, currentPhaseIdx, topicParam]);
 
-  // 3. Auto Play Chunk 1 on Phase Change (waits until slide image is ready)
+  // 3. Auto Play Chunk 1 on Phase Change (strictly waits until slide/exercise image is ready)
   useEffect(() => {
     if (loadingLesson) return;
     if (viewMode === 'games' || viewMode === 'reading') return;
@@ -4392,13 +4434,48 @@ export default function LessonPage() {
     const currentPhaseObj = lesson?.phases?.[currentPhaseIdx];
     if (!currentPhaseObj) return;
 
-    // Guard: If the current slide expects an image and it's still being generated, wait so the student sees the visual context
-    const promptKey = `${currentPhaseIdx}-${topicParam}`;
-    const expectsImage = Boolean(
-      currentPhaseObj.image_prompt ||
-      (currentPhaseObj.hook_images && Array.isArray(currentPhaseObj.hook_images) && currentPhaseObj.hook_images.length > 0)
+    // Check if this is a practice / quiz slide
+    const isPracticeSlide = Boolean(
+      currentPhaseObj.is_practice_slide ||
+      currentPhaseObj.interaction_type === 'quiz' ||
+      (currentPhaseObj.exercises && currentPhaseObj.exercises.length > 0)
     );
-    const isWaitingForImage = expectsImage && generatingImages[promptKey] && !minimaxImageMap[promptKey];
+
+    let isWaitingForImage = false;
+
+    if (isPracticeSlide) {
+      const firstEx = currentPhaseObj.exercises?.[0];
+      const exPrompt = firstEx?.image_prompt || currentPhaseObj.image_prompt;
+      const exPromptKey = `ex-${currentPhaseIdx}-${firstEx?.id || 0}`;
+
+      if (exPrompt) {
+        const hasImage = Boolean(minimaxImageMap[exPromptKey] || firstEx?.image_url);
+        const isFailed = failedImagesRef.current?.has(exPromptKey);
+        if (!hasImage && !isFailed) {
+          isWaitingForImage = true;
+          if (!generatingImages[exPromptKey]) {
+            fetchExerciseImage(exPrompt, exPromptKey);
+          }
+        }
+      }
+    } else {
+      const promptKey = `${currentPhaseIdx}-${topicParam}`;
+      const expectsImage = Boolean(
+        currentPhaseObj.image_prompt ||
+        (currentPhaseObj.hook_images && Array.isArray(currentPhaseObj.hook_images) && currentPhaseObj.hook_images.length > 0)
+      );
+      if (expectsImage) {
+        const hasImage = Boolean(minimaxImageMap[promptKey] || currentPhaseObj.image_url);
+        const isFailed = failedImagesRef.current?.has(promptKey);
+        if (!hasImage && !isFailed) {
+          isWaitingForImage = true;
+          if (!generatingImages[promptKey]) {
+            fetchPhaseImage(currentPhaseIdx, topicParam, currentPhaseObj, 0);
+          }
+        }
+      }
+    }
+
     if (isWaitingForImage) {
       return;
     }
@@ -4411,7 +4488,19 @@ export default function LessonPage() {
       audioFinishedNaturallyRef.current = false;
       playVoiceChunk(0, true);
     }
-  }, [lesson, currentPhaseIdx, evaluation, viewMode, loadingLesson, playVoiceChunk, minimaxImageMap, generatingImages, topicParam]);
+  }, [
+    lesson,
+    currentPhaseIdx,
+    evaluation,
+    viewMode,
+    loadingLesson,
+    playVoiceChunk,
+    minimaxImageMap,
+    generatingImages,
+    topicParam,
+    fetchExerciseImage,
+    fetchPhaseImage,
+  ]);
 
   const speakText = async (text: string, isMainLecture = false) => {
     if (!text || !text.trim()) return;
@@ -5852,6 +5941,7 @@ export default function LessonPage() {
                         : "Pasar a la Práctica de Lectura 📖"
                     }
                     onProgressChange={handlePracticeProgressChange}
+                    isTutorSpeaking={tutorState === 'speaking' || tutorState === 'thinking' || (!audioFinishedNaturallyRef.current && lastSpokenPhaseRef.current !== currentPhaseIdx)}
                   />
                 </motion.div>
               ) : isPhoneticBonus ? (

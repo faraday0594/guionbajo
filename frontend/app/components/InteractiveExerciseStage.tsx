@@ -48,6 +48,7 @@ interface InteractiveExerciseStageProps {
   onNextSlide: () => void;
   nextSlideLabel?: string;
   onProgressChange?: (correctCount: number, totalCount: number, isUnlocked: boolean) => void;
+  isTutorSpeaking?: boolean;
 }
 
 export default function InteractiveExerciseStage({
@@ -62,6 +63,7 @@ export default function InteractiveExerciseStage({
   onNextSlide,
   nextSlideLabel = "Pasar a la Práctica de Lectura 📖",
   onProgressChange,
+  isTutorSpeaking = false,
 }: InteractiveExerciseStageProps) {
   const [currentExIdx, setCurrentExIdx] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
@@ -124,6 +126,7 @@ export default function InteractiveExerciseStage({
   const latestSpokenRef = useRef<string>('');
 
   const validateAnswer = async (answerText: string) => {
+    if (isTutorSpeaking) return;
     if (!answerText || !answerText.trim()) {
       toast('Por favor di o escribe tu respuesta primero ✍️', { icon: '💡' });
       return;
@@ -204,6 +207,7 @@ export default function InteractiveExerciseStage({
   };
 
   const handleSelectOption = (option: string) => {
+    if (isTutorSpeaking) return;
     sfx.playPop();
     setSelectedAnswers(prev => ({ ...prev, [currentEx.id]: option }));
     setTextInputs(prev => ({ ...prev, [currentEx.id]: option }));
@@ -212,6 +216,7 @@ export default function InteractiveExerciseStage({
 
   // High-accuracy voice recording with Groq Whisper & Web Speech API preview
   const startVoiceRecording = async () => {
+    if (isTutorSpeaking) return;
     if (typeof window === 'undefined') return;
 
     sfx.playMicStart();
@@ -377,6 +382,7 @@ export default function InteractiveExerciseStage({
   }, [completedCount, totalExercises, is80PercentMet]);
 
   const handleNextClick = () => {
+    if (isTutorSpeaking) return;
     if (!is80PercentMet) {
       sfx.playMistake();
       toast.error(
@@ -444,16 +450,19 @@ export default function InteractiveExerciseStage({
               <button
                 key={idx}
                 type="button"
+                disabled={isTutorSpeaking}
                 onClick={() => {
                   if (isRecording) stopVoiceRecording();
                   setCurrentExIdx(idx);
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 ${
-                  isSelected
+                  isTutorSpeaking
+                    ? 'text-zinc-600 cursor-not-allowed opacity-40'
+                    : isSelected
                     ? 'bg-brand-cyan text-black shadow-md shadow-brand-cyan/30 scale-105'
                     : isEvaluated
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/5 cursor-pointer'
                 }`}
               >
                 <span>{idx + 1}</span>
@@ -468,20 +477,20 @@ export default function InteractiveExerciseStage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-auto py-2 relative z-10 items-stretch">
         {/* LEFT: Contextual Scene Illustration */}
         <div className="lg:col-span-5 flex flex-col">
-          <div className="relative rounded-3xl overflow-hidden bg-black/70 border border-white/15 shadow-xl flex-1 flex flex-col justify-end min-h-[260px] sm:min-h-[320px] group">
+          <div className="relative rounded-3xl overflow-hidden bg-zinc-950/80 border border-white/15 shadow-2xl flex-1 min-h-[320px] sm:min-h-[440px] flex flex-col group">
             {exerciseImageUrl ? (
               <>
                 <img
                   src={exerciseImageUrl}
                   alt={`Situación para ejercicio ${currentExIdx + 1}`}
-                  className="w-full h-full max-h-[340px] object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent pointer-events-none" />
 
                 {/* Caption Tag */}
                 <div className="absolute bottom-3 left-3 right-3 z-10">
-                  <div className="flex items-center gap-2 p-3 rounded-2xl bg-black/85 backdrop-blur-md border border-white/15 shadow-lg">
+                  <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-zinc-950/85 backdrop-blur-md border border-white/15 shadow-xl">
                     <ImageIcon size={14} className="text-brand-cyan flex-shrink-0" />
                     <p className="text-xs text-zinc-200 leading-snug line-clamp-2">
                       {currentEx.spanish_translation || `Situación ilustrada para ${topicParam}`}
@@ -490,10 +499,17 @@ export default function InteractiveExerciseStage({
                 </div>
               </>
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-black/60 min-h-[280px]">
-                <Loader2 size={28} className="text-brand-cyan animate-spin mb-3" />
-                <p className="text-xs text-white/70 font-mono">Generando ilustración de la escena...</p>
-                <span className="text-[11px] text-zinc-500 mt-1 max-w-xs truncate">{currentEx.image_prompt}</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-zinc-950/90 backdrop-blur-sm z-10">
+                <div className="w-12 h-12 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/30 flex items-center justify-center mb-3">
+                  <Loader2 size={24} className="text-brand-cyan animate-spin" />
+                </div>
+                <p className="text-xs font-semibold text-white font-outfit">Generando ilustración didáctica...</p>
+                <p className="text-[11px] text-zinc-400 mt-1">MiniMax está creando la escena para esta actividad</p>
+                {currentEx.image_prompt && (
+                  <span className="text-[10px] text-zinc-500 mt-3 max-w-xs truncate font-mono bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+                    {currentEx.image_prompt}
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -511,11 +527,14 @@ export default function InteractiveExerciseStage({
               {fullSentenceSpoken && (
                 <button
                   type="button"
+                  disabled={isTutorSpeaking || playingAudio === fullSentenceSpoken}
                   onClick={() => handlePlayAudio(fullSentenceSpoken)}
                   className={`px-3 py-1 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    playingAudio === fullSentenceSpoken
+                    isTutorSpeaking
+                      ? 'bg-white/5 border-white/5 text-zinc-500 cursor-not-allowed opacity-40'
+                      : playingAudio === fullSentenceSpoken
                       ? 'bg-brand-cyan text-black border-brand-cyan'
-                      : 'bg-white/10 hover:bg-white/20 border-white/20 text-brand-cyan'
+                      : 'bg-white/10 hover:bg-white/20 border-white/20 text-brand-cyan cursor-pointer'
                   }`}
                   title="Escuchar oración completa con pronunciación nativa"
                 >
@@ -524,6 +543,27 @@ export default function InteractiveExerciseStage({
                 </button>
               )}
             </div>
+
+            {/* Presentation In-Progress Alert Banner */}
+            {isTutorSpeaking && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-200 text-xs shadow-inner"
+              >
+                <div className="relative flex items-center justify-center w-5 h-5 flex-shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-cyan opacity-60"></span>
+                  <Volume2 size={16} className="text-brand-cyan relative" />
+                </div>
+                <div className="flex-1 text-xs">
+                  <span className="font-bold text-white block">Guionbajo está explicando la actividad:</span>
+                  <p className="text-cyan-200/90 text-[11px] leading-snug">
+                    Escucha las indicaciones del tutor. Los controles y opciones se habilitarán automáticamente al terminar.
+                  </p>
+                </div>
+              </motion.div>
+            )}
 
             {/* Complete Sentence Card with stylized blank */}
             <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-2 shadow-inner">
@@ -552,10 +592,12 @@ export default function InteractiveExerciseStage({
                       <button
                         key={oIdx}
                         type="button"
-                        disabled={Boolean(currentEval?.isCorrect)}
+                        disabled={isTutorSpeaking || Boolean(currentEval?.isCorrect)}
                         onClick={() => handleSelectOption(opt)}
                         className={`p-3 rounded-xl border text-xs font-bold text-left transition-all flex items-center justify-between gap-2 shadow-sm ${
-                          isEvaluated && isCorrectOption
+                          isTutorSpeaking
+                            ? 'bg-zinc-900/40 border-white/5 text-zinc-500 cursor-not-allowed opacity-60'
+                            : isEvaluated && isCorrectOption
                             ? 'bg-emerald-500/25 border-emerald-500 text-emerald-300 ring-2 ring-emerald-500/40 cursor-default'
                             : isEvaluated && isSelected && !isCorrectOption
                             ? 'bg-rose-500/25 border-rose-500 text-rose-300'
@@ -664,31 +706,41 @@ export default function InteractiveExerciseStage({
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder={currentEval?.isCorrect ? "Respuesta correcta registrada ✓" : "Escribe tu respuesta o presiona el micrófono..."}
-                disabled={Boolean(currentEval?.isCorrect)}
+                placeholder={
+                  isTutorSpeaking
+                    ? "Guionbajo está explicando la actividad..."
+                    : currentEval?.isCorrect
+                    ? "Respuesta correcta registrada ✓"
+                    : "Escribe tu respuesta o presiona el micrófono..."
+                }
+                disabled={isTutorSpeaking || Boolean(currentEval?.isCorrect)}
                 value={textInputs[currentEx.id] || ''}
                 onChange={(e) => setTextInputs(prev => ({ ...prev, [currentEx.id]: e.target.value }))}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !currentEval?.isCorrect) {
+                  if (e.key === 'Enter' && !currentEval?.isCorrect && !isTutorSpeaking) {
                     validateAnswer(textInputs[currentEx.id] || '');
                   }
                 }}
                 className={`flex-1 bg-black/70 border rounded-xl px-3.5 py-2.5 text-xs placeholder-zinc-500 focus:outline-none transition-all ${
-                  currentEval?.isCorrect
+                  isTutorSpeaking
+                    ? 'border-white/5 text-zinc-500 bg-black/40 cursor-not-allowed opacity-60'
+                    : currentEval?.isCorrect
                     ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/20'
                     : 'border-white/15 text-white focus:border-brand-cyan'
                 }`}
               />
               <button
                 type="button"
-                disabled={isEvaluatingSpeech || Boolean(currentEval?.isCorrect) || !(textInputs[currentEx.id] || '').trim()}
+                disabled={isTutorSpeaking || isEvaluatingSpeech || Boolean(currentEval?.isCorrect) || !(textInputs[currentEx.id] || '').trim()}
                 onClick={() => validateAnswer(textInputs[currentEx.id] || '')}
                 className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-md ${
-                  currentEval?.isCorrect
+                  isTutorSpeaking
+                    ? 'bg-zinc-800 text-zinc-500 border border-white/5 cursor-not-allowed opacity-50'
+                    : currentEval?.isCorrect
                     ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 cursor-not-allowed opacity-90'
                     : 'bg-brand-cyan hover:bg-cyan-400 text-black shadow-brand-cyan/20 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
                 }`}
-                title={currentEval?.isCorrect ? 'Respuesta ya validada con éxito' : 'Validar respuesta escrita'}
+                title={isTutorSpeaking ? 'Controles bloqueados mientras el tutor explica' : currentEval?.isCorrect ? 'Respuesta ya validada con éxito' : 'Validar respuesta escrita'}
               >
                 {isEvaluatingSpeech ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -705,17 +757,19 @@ export default function InteractiveExerciseStage({
             <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
               <motion.button
                 type="button"
-                disabled={Boolean(currentEval?.isCorrect)}
-                whileTap={{ scale: 0.95 }}
+                disabled={isTutorSpeaking || Boolean(currentEval?.isCorrect)}
+                whileTap={isTutorSpeaking || currentEval?.isCorrect ? {} : { scale: 0.95 }}
                 onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
                 className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 shadow-lg ${
-                  currentEval?.isCorrect
+                  isTutorSpeaking
+                    ? 'bg-white/5 text-zinc-500 border border-white/5 cursor-not-allowed opacity-50'
+                    : currentEval?.isCorrect
                     ? 'bg-white/10 text-zinc-500 border border-white/5 cursor-not-allowed opacity-60'
                     : isRecording
-                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/40 animate-pulse'
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/40 animate-pulse cursor-pointer'
                     : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20 cursor-pointer'
                 }`}
-                title={currentEval?.isCorrect ? 'Ejercicio ya aprobado' : 'Grabar tu respuesta oral con voz'}
+                title={isTutorSpeaking ? 'Controles bloqueados mientras el tutor explica' : currentEval?.isCorrect ? 'Ejercicio ya aprobado' : 'Grabar tu respuesta oral con voz'}
               >
                 {isRecording ? <Square size={14} className="fill-current" /> : <Mic size={14} />}
                 <span>{isRecording ? 'Detener y Calificar ⏹️' : 'Responder por Voz 🎤'}</span>
@@ -725,12 +779,16 @@ export default function InteractiveExerciseStage({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  disabled={currentExIdx === 0}
+                  disabled={isTutorSpeaking || currentExIdx === 0}
                   onClick={() => {
                     if (isRecording) stopVoiceRecording();
                     setCurrentExIdx(prev => Math.max(0, prev - 1));
                   }}
-                  className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold disabled:opacity-25 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1 ${
+                    isTutorSpeaking || currentExIdx === 0
+                      ? 'bg-white/5 text-zinc-600 cursor-not-allowed opacity-30'
+                      : 'bg-white/10 hover:bg-white/20 text-white cursor-pointer'
+                  }`}
                   title="Ejercicio anterior"
                 >
                   <ChevronLeft size={16} />
@@ -740,14 +798,17 @@ export default function InteractiveExerciseStage({
                 {currentExIdx < exercises.length - 1 ? (
                   <button
                     type="button"
+                    disabled={isTutorSpeaking}
                     onClick={() => {
                       if (isRecording) stopVoiceRecording();
                       setCurrentExIdx(prev => Math.min(exercises.length - 1, prev + 1));
                     }}
-                    className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-xl cursor-pointer ${
-                      currentEval?.isCorrect
-                        ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 shadow-emerald-500/30 scale-105 animate-pulse'
-                        : 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                    className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-xl ${
+                      isTutorSpeaking
+                        ? 'bg-white/5 text-zinc-500 border border-white/5 cursor-not-allowed opacity-40'
+                        : currentEval?.isCorrect
+                        ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 shadow-emerald-500/30 scale-105 animate-pulse cursor-pointer'
+                        : 'bg-white/15 hover:bg-white/25 text-white border border-white/20 cursor-pointer'
                     }`}
                     title="Pasar al siguiente ejercicio"
                   >
@@ -757,11 +818,14 @@ export default function InteractiveExerciseStage({
                 ) : (
                   <button
                     type="button"
+                    disabled={isTutorSpeaking}
                     onClick={handleNextClick}
-                    className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-xl cursor-pointer ${
-                      is80PercentMet
-                        ? 'bg-gradient-to-r from-brand-gold via-amber-400 to-emerald-400 text-slate-950 shadow-amber-500/30 scale-105 animate-pulse'
-                        : 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                    className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-xl ${
+                      isTutorSpeaking
+                        ? 'bg-white/5 text-zinc-500 border border-white/5 cursor-not-allowed opacity-40'
+                        : is80PercentMet
+                        ? 'bg-gradient-to-r from-brand-gold via-amber-400 to-emerald-400 text-slate-950 shadow-amber-500/30 scale-105 animate-pulse cursor-pointer'
+                        : 'bg-white/15 hover:bg-white/25 text-white border border-white/20 cursor-pointer'
                     }`}
                     title={is80PercentMet ? "Completar práctica y avanzar" : "Revisar ejercicios pendientes"}
                   >
@@ -801,16 +865,21 @@ export default function InteractiveExerciseStage({
 
         <motion.button
           type="button"
+          disabled={isTutorSpeaking || !is80PercentMet}
           onClick={handleNextClick}
-          whileHover={is80PercentMet ? { scale: 1.03 } : { scale: 1.01 }}
-          whileTap={is80PercentMet ? { scale: 0.97 } : {}}
+          whileHover={is80PercentMet && !isTutorSpeaking ? { scale: 1.03 } : { scale: 1.01 }}
+          whileTap={is80PercentMet && !isTutorSpeaking ? { scale: 0.97 } : {}}
           className={`w-full sm:w-auto px-7 py-3 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2.5 transition-all shadow-lg ${
-            is80PercentMet
+            isTutorSpeaking
+              ? 'bg-zinc-800/60 text-zinc-500 border border-zinc-700/30 cursor-not-allowed opacity-50'
+              : is80PercentMet
               ? 'bg-gradient-to-r from-brand-gold via-amber-400 to-brand-cyan text-black shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:shadow-[0_0_40px_rgba(251,191,36,0.7)] cursor-pointer'
               : 'bg-zinc-800/90 text-zinc-400 border border-zinc-700/60 cursor-not-allowed opacity-80'
           }`}
           title={
-            is80PercentMet
+            isTutorSpeaking
+              ? 'Bloqueado mientras el tutor explica'
+              : is80PercentMet
               ? (isAllCompleted ? 'Práctica completada al 100%. Avanzar al siguiente paso.' : 'Avanzar al siguiente paso (80% superado).')
               : `Bloqueado: Requiere al menos ${minRequired} de ${totalExercises} ejercicios correctos (80%)`
           }

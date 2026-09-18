@@ -359,15 +359,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <Link
-              href="/celebration-preview"
-              className="flex items-center gap-1.5 px-3 py-2 glass rounded-2xl border border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/15 hover:border-yellow-400/50 transition-all text-xs font-bold shadow-lg shadow-yellow-500/10"
-              title="Laboratorio de Animación de Celebración (100%)"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-yellow-400 animate-pulse" />
-              <span className="hidden sm:inline font-mono text-[11px]">Demo 100% 🎬</span>
-            </Link>
-
             <Link href="/settings" className="p-2.5 glass rounded-2xl hover:bg-brand-surface border border-brand-border transition-colors" title="Configuración">
               <Settings className="w-4 h-4 text-brand-text-secondary hover:text-white" />
             </Link>

@@ -52,6 +52,7 @@ import { toast } from 'react-hot-toast';
 import { sfx } from '@/lib/soundEffects';
 import GameArena from '@/app/components/games/GameArena';
 import ReadingPracticeArena from '@/app/components/reading/ReadingPracticeArena';
+import CelebrationModal from '@/app/components/games/CelebrationModal';
 import { getTopicQuizExercises, DO_DOES_QUESTIONS_NEGATIVES_BANK } from '@/lib/curriculumQuizBanks';
 
 // ─── HELPER: Strict English Phrase & Pronunciation Target Validator ──────────
@@ -3158,6 +3159,7 @@ export default function LessonPage() {
   const [povQuestScore, setPovQuestScore] = useState<number>(0);
   const [povQuestCompleted, setPovQuestCompleted] = useState<boolean>(false);
   const [showGraduationModal, setShowGraduationModal] = useState<boolean>(false);
+  const [showCelebrationModal, setShowCelebrationModal] = useState<boolean>(false);
   const [showFailedScoreModal, setShowFailedScoreModal] = useState<boolean>(false);
   const [calculatedOverallScore, setCalculatedOverallScore] = useState<number>(0);
 
@@ -3274,7 +3276,7 @@ export default function LessonPage() {
 
     if (compositeScore >= 80) {
       sfx.playStreakFanfare();
-      setShowGraduationModal(true);
+      setShowCelebrationModal(true);
       try {
         localStorage.setItem('guionbajo_class_just_completed', JSON.stringify({
           sublevel: sublevelParam || 'A1.1',
@@ -3381,7 +3383,8 @@ export default function LessonPage() {
       } catch (_) {}
     }
 
-    router.push('/dashboard');
+    setCalculatedOverallScore(Math.max(82, compositeScore));
+    setShowCelebrationModal(true);
   };
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [zoomedImageUrl, setZoomedImageUrl] = useState<string>('');
@@ -6616,6 +6619,23 @@ export default function LessonPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* 🏆 Guionbajo Cinematic Celebration Animation (Score >= 80% on Class Finish) */}
+      <CelebrationModal
+        isOpen={showCelebrationModal}
+        score={calculatedOverallScore || 90}
+        topic={topicParam || lesson?.topic || 'Clase Oficial CEFR'}
+        sublevel={sublevelParam || 'A1.1'}
+        xpEarned={150}
+        onClose={() => {
+          setShowCelebrationModal(false);
+          router.push('/dashboard');
+        }}
+        onContinue={() => {
+          setShowCelebrationModal(false);
+          router.push('/dashboard');
+        }}
+      />
 
       {/* 🏆 Graduation / Class Approved Modal (Score >= 80%) */}
       <AnimatePresence>

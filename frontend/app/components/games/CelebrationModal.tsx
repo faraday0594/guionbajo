@@ -194,83 +194,32 @@ export default function CelebrationModal({
             </div>
 
             {/* ══════════════════════════════════════════════════════════
-                🪢 THE ROPE (Taut golden braided rope in pulling, loose on floor)
+                🪢 SLACK ROPE ON FLOOR (Appears when Guionbajo releases it)
                ══════════════════════════════════════════════════════════ */}
-            <svg
-              viewBox="0 0 800 420"
-              preserveAspectRatio="none"
-              className="absolute inset-0 w-full h-full pointer-events-none z-15"
-            >
-              <defs>
-                <filter id="ropeNeonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-
-                <linearGradient id="mainRopeGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#d97706" />
-                  <stop offset="30%" stopColor="#fef08a" />
-                  <stop offset="70%" stopColor="#f59e0b" />
-                  <stop offset="100%" stopColor="#b45309" />
-                </linearGradient>
-              </defs>
-
-              {stage === 'pulling' && (
-                <g>
-                  {/* Outer Golden Aura Glow */}
-                  <motion.path
-                    d="M 175 328 Q 450 290 850 250"
+            {stage !== 'pulling' && (
+              <div className="absolute bottom-12 left-28 right-16 sm:right-28 h-6 pointer-events-none z-15">
+                <svg viewBox="0 0 600 24" preserveAspectRatio="none" className="w-full h-full">
+                  <path
+                    d="M 10 14 Q 100 22 180 10 Q 260 22 360 8 Q 460 20 590 14"
                     fill="none"
-                    stroke="#f59e0b"
-                    strokeWidth="9"
+                    stroke="#d97706"
+                    strokeWidth="5"
                     strokeLinecap="round"
-                    opacity="0.45"
-                    filter="url(#ropeNeonGlow)"
-                    animate={{
-                      d: [
-                        'M 175 328 Q 450 290 850 250',
-                        'M 175 330 Q 450 286 850 250',
-                        'M 175 326 Q 450 294 850 250',
-                      ],
-                    }}
-                    transition={{ repeat: Infinity, duration: 0.1 }}
+                    strokeDasharray="9 3"
+                    opacity={stage === 'celebrate' ? 0.35 : 0.85}
                   />
-                  {/* Heavy Braided Rope Core */}
-                  <motion.path
-                    d="M 175 328 Q 450 290 850 250"
+                  <path
+                    d="M 10 14 Q 100 22 180 10 Q 260 22 360 8 Q 460 20 590 14"
                     fill="none"
-                    stroke="url(#mainRopeGrad)"
-                    strokeWidth="6"
+                    stroke="#fef08a"
+                    strokeWidth="2.5"
                     strokeLinecap="round"
-                    strokeDasharray="12 4"
-                    animate={{
-                      d: [
-                        'M 175 328 Q 450 290 850 250',
-                        'M 175 330 Q 450 286 850 250',
-                        'M 175 326 Q 450 294 850 250',
-                      ],
-                    }}
-                    transition={{ repeat: Infinity, duration: 0.1 }}
+                    strokeDasharray="9 3"
+                    opacity={stage === 'celebrate' ? 0.25 : 0.6}
                   />
-                </g>
-              )}
-
-              {/* Loose rope lying slack on the floor between Guionbajo and the card */}
-              {(stage === 'snap' || stage === 'fall' || stage === 'landed' || stage === 'look_score' || stage === 'celebrate') && (
-                <path
-                  d="M 160 372 Q 240 382 310 370 Q 370 380 430 372"
-                  fill="none"
-                  stroke="url(#mainRopeGrad)"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray="9 3"
-                  opacity={stage === 'celebrate' ? 0.35 : 0.85}
-                />
-              )}
-            </svg>
+                </svg>
+              </div>
+            )}
 
             {/* ══════════════════════════════════════════════════════════
                 🤖 GUIONBAJO (LEFT SIDE, GROUNDED AT bottom-12 ON THE FLOOR)
@@ -429,17 +378,58 @@ export default function CelebrationModal({
                 <rect x="59" y="146" width="22" height="6" rx="2" fill="url(#gbStemGrad)" stroke="#334155" strokeWidth="1" />
                 <rect x="62" y="150" width="16" height="2" rx="1" fill="#00D4FF" opacity={stage === 'pulling' ? 0.9 : 0.3} />
 
-                {/* ── MECHANICAL ARMS ── */}
+                {/* ── MECHANICAL ARMS & PULLING ROPE ── */}
                 {stage === 'pulling' ? (
                   /* Grasping the rope forward */
                   <g>
-                    {/* Rope segment gripped firmly in clamps */}
-                    <path d="M 80 125 L 140 125" stroke="#f59e0b" strokeWidth="6" strokeLinecap="round" />
-                    <path d="M 80 125 L 140 125" stroke="#fef08a" strokeWidth="4" strokeLinecap="round" strokeDasharray="6 2" />
+                    {/* Upper and forearms */}
                     <path d="M 50 117 Q 80 120 105 125" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="105" cy="125" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
                     <path d="M 90 117 Q 110 120 125 125" fill="none" stroke="#475569" strokeWidth="5" strokeLinecap="round" />
+
+                    {/* 🪢 THE TAUT ROPE: Originates directly inside hands and shoots across to the right */}
+                    {/* Outer glowing aura */}
+                    <motion.path
+                      d="M 85 125 L 125 125 Q 500 115 1200 65"
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth="10"
+                      strokeLinecap="round"
+                      opacity="0.45"
+                      filter="url(#gbCyanGlow)"
+                      animate={{
+                        d: [
+                          'M 85 125 L 125 125 Q 500 115 1200 65',
+                          'M 85 125 L 125 125 Q 500 110 1200 65',
+                          'M 85 125 L 125 125 Q 500 120 1200 65',
+                        ],
+                      }}
+                      transition={{ repeat: Infinity, duration: 0.1 }}
+                    />
+                    {/* Braided rope core */}
+                    <motion.path
+                      d="M 85 125 L 125 125 Q 500 115 1200 65"
+                      fill="none"
+                      stroke="url(#gbPlasmaOuter)"
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                      strokeDasharray="12 4"
+                      animate={{
+                        d: [
+                          'M 85 125 L 125 125 Q 500 115 1200 65',
+                          'M 85 125 L 125 125 Q 500 110 1200 65',
+                          'M 85 125 L 125 125 Q 500 120 1200 65',
+                        ],
+                      }}
+                      transition={{ repeat: Infinity, duration: 0.1 }}
+                    />
+
+                    {/* Wrist Knuckles */}
+                    <circle cx="105" cy="125" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
                     <circle cx="125" cy="125" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
+
+                    {/* Cyan Pincer Clamps tightly closed over the rope */}
+                    <path d="M 102 120 Q 109 125 102 130" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" filter="url(#gbCyanGlow)" />
+                    <path d="M 122 120 Q 129 125 122 130" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" filter="url(#gbCyanGlow)" />
                   </g>
                 ) : stage === 'snap' || stage === 'fall' ? (
                   /* Arms thrown open in shock */

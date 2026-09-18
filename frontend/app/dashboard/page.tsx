@@ -374,12 +374,54 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* ── Flex column que en móvil reordena los bloques ── */}
-        <div className="flex flex-col">
+        {/* 🗂️ Tab Switcher — Arriba debajo del toolbar */}
+        <div className="flex items-stretch gap-2 mb-6">
+          {/* Tab 1: Mi Clase */}
+          <button
+            onClick={() => setDashboardTab('curriculum')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+              dashboardTab === 'curriculum'
+                ? 'bg-brand-accent border border-brand-cyan text-white shadow-lg shadow-brand-accent/20'
+                : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
+            }`}
+          >
+            <BookOpen size={15} className={dashboardTab === 'curriculum' ? 'text-brand-cyan flex-shrink-0' : 'flex-shrink-0'} />
+            <span className="truncate">Mi Clase</span>
+          </button>
 
-          {/* 🗺️ Ruta de Aprendizaje — PRIMERO en móvil (order-1), tercero en desktop (md:order-3) */}
-          {dashboardTab === 'curriculum' && (
-            <div className="order-1 md:order-3">
+          {/* Tab 2: Fonética */}
+          <button
+            onClick={() => setDashboardTab('phonetics')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+              dashboardTab === 'phonetics'
+                ? 'bg-emerald-600 border border-emerald-400 text-white shadow-lg shadow-emerald-600/20'
+                : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
+            }`}
+          >
+            <Layers size={15} className={dashboardTab === 'phonetics' ? 'text-emerald-300 flex-shrink-0' : 'flex-shrink-0'} />
+            <span className="truncate">Fonética</span>
+          </button>
+
+          {/* Tab 3: Voz en Vivo */}
+          <button
+            onClick={() => setDashboardTab('live')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+              dashboardTab === 'live'
+                ? 'bg-gradient-to-r from-brand-accent to-brand-cyan border border-brand-cyan/60 text-white shadow-lg shadow-brand-cyan/20'
+                : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
+            }`}
+          >
+            <Radio size={15} className={dashboardTab === 'live' ? 'text-white animate-pulse flex-shrink-0' : 'flex-shrink-0'} />
+            <span className="truncate">Voz en Vivo</span>
+            {dashboardTab !== 'live' && (
+              <span className="hidden sm:inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+            )}
+          </button>
+        </div>
+
+        {/* 🗺️ Contenido de Tabs */}
+        {dashboardTab === 'curriculum' && (
+          <div>
               {/* 🌌 Journey Visual Stage */}
               <JourneyVisualStage
                 sublevel={userStats.current_sublevel}
@@ -505,13 +547,13 @@ export default function DashboardPage() {
           )}
 
           {dashboardTab === 'phonetics' && (
-            <div className="order-1 md:order-3">
+            <div>
               <PhoneticBoard />
             </div>
           )}
 
           {dashboardTab === 'live' && (
-            <div className="order-1 md:order-3">
+            <div>
               {/* 🎙️ Voz en Vivo — Tab Content */}
               <div className="mb-8 p-6 sm:p-8 rounded-3xl glass border border-brand-cyan/40 bg-gradient-to-br from-brand-accent/15 via-brand-surface/40 to-emerald-500/10 shadow-xl">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
@@ -573,56 +615,8 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-
-          {/* 🗂️ Tab Switcher — SEGUNDO en móvil (order-2), primero en desktop (md:order-1) */}
-          <div className="order-2 md:order-1 mb-6">
-            <div className="flex items-stretch gap-2">
-              {/* Tab 1: Mi Clase */}
-              <button
-                onClick={() => setDashboardTab('curriculum')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
-                  dashboardTab === 'curriculum'
-                    ? 'bg-brand-accent border border-brand-cyan text-white shadow-lg shadow-brand-accent/20'
-                    : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
-                }`}
-              >
-                <BookOpen size={15} className={dashboardTab === 'curriculum' ? 'text-brand-cyan flex-shrink-0' : 'flex-shrink-0'} />
-                <span className="truncate">Mi Clase</span>
-              </button>
-
-              {/* Tab 2: Fonética */}
-              <button
-                onClick={() => setDashboardTab('phonetics')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
-                  dashboardTab === 'phonetics'
-                    ? 'bg-emerald-600 border border-emerald-400 text-white shadow-lg shadow-emerald-600/20'
-                    : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
-                }`}
-              >
-                <Layers size={15} className={dashboardTab === 'phonetics' ? 'text-emerald-300 flex-shrink-0' : 'flex-shrink-0'} />
-                <span className="truncate">Fonética</span>
-              </button>
-
-              {/* Tab 3: Voz en Vivo */}
-              <button
-                onClick={() => setDashboardTab('live')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
-                  dashboardTab === 'live'
-                    ? 'bg-gradient-to-r from-brand-accent to-brand-cyan border border-brand-cyan/60 text-white shadow-lg shadow-brand-cyan/20'
-                    : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
-                }`}
-              >
-                <Radio size={15} className={dashboardTab === 'live' ? 'text-white animate-pulse flex-shrink-0' : 'flex-shrink-0'} />
-                <span className="truncate">Voz en Vivo</span>
-                {dashboardTab !== 'live' && (
-                  <span className="hidden sm:inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                )}
-              </button>
-            </div>
-          </div>
-
-        </div>
       </main>
     </div>
   );
 }
+

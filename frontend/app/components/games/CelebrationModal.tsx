@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sfx } from '@/lib/soundEffects';
-import { Trophy, ArrowRight, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { Trophy, ArrowRight, RotateCcw, Volume2, VolumeX, Sparkles, Award } from 'lucide-react';
 
 export interface CelebrationModalProps {
   isOpen: boolean;
@@ -51,56 +51,56 @@ export default function CelebrationModal({
     clearAllTimers();
     setStage('pulling');
 
-    // 0.25s: Mechanical strain sound (heaving on the rope)
+    // 0.25s: Strain ratchet (Guionbajo heaving on the rope)
     timeoutRefs.current.push(
       setTimeout(() => {
         playSfx(() => sfx.playStrainRatchet());
       }, 250)
     );
 
-    // 1.1s: Second strain ratchet
+    // 1.0s: Second strain ratchet
     timeoutRefs.current.push(
       setTimeout(() => {
         playSfx(() => sfx.playStrainRatchet());
-      }, 1100)
+      }, 1000)
     );
 
-    // 1.9s: Sudden SNAP / Whoosh! The score breaks loose and slides in
+    // 1.85s: Sudden SNAP! Tension gives way, score card rushes in from the right
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('snap');
         playSfx(() => sfx.playWhoosh());
-      }, 1900)
+      }, 1850)
     );
 
-    // 2.25s: Guionbajo loses balance and falls backward directly to the ground
+    // 2.2s: Loses balance backwards directly on the floor
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('fall');
-      }, 2250)
+      }, 2200)
     );
 
-    // 2.65s: THUD! Hits the floor seated ("pegado al piso") with squash & stretch
+    // 2.6s: THUD! Lands seated flat on the ground plane ("pegado al piso")
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('landed');
         playSfx(() => sfx.playCartoonThud());
-      }, 2650)
+      }, 2600)
     );
 
-    // 3.3s: Turns head to the right to inspect the giant score card beside him
+    // 3.25s: Turns head right to inspect the giant 100% score card beside him
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('look_score');
-      }, 3300)
+      }, 3250)
     );
 
-    // 4.0s: Turns head to the student, eyes morph to ^_^, smiles & confetti fanfare!
+    // 3.95s: Turns head to the student, eyes morph to ^_^, beaming smile & confetti!
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('celebrate');
         playSfx(() => sfx.playVictoryFanfare());
-      }, 4000)
+      }, 3950)
     );
   };
 
@@ -172,131 +172,61 @@ export default function CelebrationModal({
           </div>
 
           {/* ══════════════════════════════════════════════════════════════
-              🎨 THE CINEMATIC SVG STAGE (800 x 440)
+              🎬 THE CINEMATIC STAGE (Grounded, Side-by-Side Architecture)
              ══════════════════════════════════════════════════════════════ */}
-          <div className="relative w-full aspect-[16/9] max-h-[460px] bg-[#070814] select-none overflow-hidden">
-            <svg
-              viewBox="0 0 800 440"
-              className="w-full h-full"
-              preserveAspectRatio="xMidYMid meet"
-            >
+          <div className="relative w-full h-[360px] sm:h-[420px] bg-[#070814] select-none overflow-hidden flex items-end">
+            
+            {/* Stage Ambient Radial Glows */}
+            <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute bottom-10 left-1/4 w-80 h-80 bg-cyan-500/15 rounded-full blur-[90px] pointer-events-none" />
+
+            {/* Cyber Floor Line & Perspective Grid at bottom-12 (48px from bottom) */}
+            <div className="absolute left-0 right-0 bottom-12 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#00D4FF] z-10" />
+            <div className="absolute left-0 right-0 bottom-0 h-12 bg-gradient-to-b from-[#090d1a] to-[#04060b] border-t border-cyan-500/20">
+              {/* Floor grid lines */}
+              <div className="w-full h-full flex justify-around opacity-20">
+                <div className="w-px h-full bg-cyan-400 transform -skew-x-12" />
+                <div className="w-px h-full bg-cyan-400 transform -skew-x-6" />
+                <div className="w-px h-full bg-cyan-400" />
+                <div className="w-px h-full bg-cyan-400 transform skew-x-6" />
+                <div className="w-px h-full bg-cyan-400 transform skew-x-12" />
+              </div>
+            </div>
+
+            {/* ══════════════════════════════════════════════════════════
+                🪢 THE ROPE (Direct vector connecting Guionbajo hands to Card)
+               ══════════════════════════════════════════════════════════ */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-15">
               <defs>
-                {/* Glow Filters */}
-                <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-
-                <filter id="goldGlow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="3.5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-
-                {/* Robot Gradients */}
-                <linearGradient id="robotChassis" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#374151" />
-                  <stop offset="55%" stopColor="#1f2937" />
-                  <stop offset="100%" stopColor="#0f172a" />
-                </linearGradient>
-
-                <linearGradient id="antennaStemGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#94a3b8" />
-                  <stop offset="100%" stopColor="#475569" />
-                </linearGradient>
-
-                <radialGradient id="vacuumBulbGrad" cx="0.35" cy="0.35" r="0.65">
-                  <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-                  <stop offset="35%" stopColor="#00d4ff" stopOpacity="0.85" />
-                  <stop offset="75%" stopColor="#6366f1" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#090d14" stopOpacity="0.9" />
-                </radialGradient>
-
-                <linearGradient id="earDialGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#64748b" />
-                  <stop offset="50%" stopColor="#334155" />
-                  <stop offset="100%" stopColor="#1e293b" />
-                </linearGradient>
-
-                {/* Plasma Thruster */}
-                <linearGradient id="plasmaFlameCore" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-                  <stop offset="20%" stopColor="#00d4ff" stopOpacity="0.95" />
-                  <stop offset="65%" stopColor="#6366f1" stopOpacity="0.85" />
-                  <stop offset="100%" stopColor="#00d4ff" stopOpacity="0" />
-                </linearGradient>
-
-                <linearGradient id="plasmaFlameOuter" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-                  <stop offset="25%" stopColor="#fef08a" stopOpacity="0.9" />
-                  <stop offset="55%" stopColor="#f97316" stopOpacity="0.85" />
-                  <stop offset="85%" stopColor="#00d4ff" stopOpacity="0.6" />
-                  <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
-                </linearGradient>
-
-                {/* Rope Texture */}
                 <linearGradient id="ropeGrad" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor="#d97706" />
                   <stop offset="50%" stopColor="#fef08a" />
                   <stop offset="100%" stopColor="#b45309" />
                 </linearGradient>
-
-                {/* Monolith Gradient */}
-                <linearGradient id="cardBgGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#13182b" />
-                  <stop offset="50%" stopColor="#0a0e19" />
-                  <stop offset="100%" stopColor="#05070e" />
-                </linearGradient>
               </defs>
 
-              {/* ── STAGE BACKGROUND & CYBER GRID FLOOR ── */}
-              <rect width="800" height="440" fill="#070914" />
-              {/* Background ambient radial glow */}
-              <circle cx="560" cy="220" r="280" fill="#1e1b4b" opacity="0.35" />
-              <circle cx="160" cy="360" r="180" fill="#083344" opacity="0.25" />
-
-              {/* Floor Horizon Line & Grid at Y = 360 */}
-              <line x1="0" y1="360" x2="800" y2="360" stroke="#1e293b" strokeWidth="2" />
-              <line x1="0" y1="361" x2="800" y2="361" stroke="#00D4FF" strokeWidth="1" opacity="0.45" filter="url(#cyanGlow)" />
-
-              {/* Floor Perspective Lines */}
-              <line x1="120" y1="360" x2="60" y2="440" stroke="#0e1726" strokeWidth="1.5" />
-              <line x1="280" y1="360" x2="250" y2="440" stroke="#0e1726" strokeWidth="1.5" />
-              <line x1="440" y1="360" x2="440" y2="440" stroke="#0e1726" strokeWidth="1.5" />
-              <line x1="600" y1="360" x2="630" y2="440" stroke="#0e1726" strokeWidth="1.5" />
-              <line x1="740" y1="360" x2="790" y2="440" stroke="#0e1726" strokeWidth="1.5" />
-
-              {/* ══════════════════════════════════════════════════════════
-                  🪢 THE ROPE (Directly links Guionbajo hands to the Score Card)
-                 ══════════════════════════════════════════════════════════ */}
               {stage === 'pulling' && (
                 <g>
                   {/* Outer glow shadow */}
                   <motion.path
-                    d="M 215 315 Q 310 300 860 220"
+                    d="M 175 calc(100% - 105px) Q 350 calc(100% - 140px) calc(100% + 50px) calc(100% - 180px)"
                     fill="none"
                     stroke="#f59e0b"
                     strokeWidth="7"
                     strokeLinecap="round"
-                    opacity="0.3"
-                    filter="url(#goldGlow)"
+                    opacity="0.35"
                     animate={{
                       d: [
-                        'M 215 315 Q 310 300 860 220',
-                        'M 215 317 Q 310 296 860 220',
-                        'M 215 313 Q 310 304 860 220',
+                        'M 175 calc(100% - 105px) Q 350 calc(100% - 140px) calc(100% + 50px) calc(100% - 180px)',
+                        'M 175 calc(100% - 107px) Q 350 calc(100% - 136px) calc(100% + 50px) calc(100% - 180px)',
+                        'M 175 calc(100% - 103px) Q 350 calc(100% - 144px) calc(100% + 50px) calc(100% - 180px)',
                       ],
                     }}
-                    transition={{ repeat: Infinity, duration: 0.12 }}
+                    transition={{ repeat: Infinity, duration: 0.1 }}
                   />
-                  {/* Twisted rope strand */}
+                  {/* Main twisted rope */}
                   <motion.path
-                    d="M 215 315 Q 310 300 860 220"
+                    d="M 175 calc(100% - 105px) Q 350 calc(100% - 140px) calc(100% + 50px) calc(100% - 180px)"
                     fill="none"
                     stroke="url(#ropeGrad)"
                     strokeWidth="5"
@@ -304,521 +234,453 @@ export default function CelebrationModal({
                     strokeDasharray="9 3"
                     animate={{
                       d: [
-                        'M 215 315 Q 310 300 860 220',
-                        'M 215 317 Q 310 296 860 220',
-                        'M 215 313 Q 310 304 860 220',
+                        'M 175 calc(100% - 105px) Q 350 calc(100% - 140px) calc(100% + 50px) calc(100% - 180px)',
+                        'M 175 calc(100% - 107px) Q 350 calc(100% - 136px) calc(100% + 50px) calc(100% - 180px)',
+                        'M 175 calc(100% - 103px) Q 350 calc(100% - 144px) calc(100% + 50px) calc(100% - 180px)',
                       ],
                     }}
-                    transition={{ repeat: Infinity, duration: 0.12 }}
+                    transition={{ repeat: Infinity, duration: 0.1 }}
                   />
                 </g>
               )}
 
+              {/* Loose rope lying slack on the floor */}
               {(stage === 'snap' || stage === 'fall' || stage === 'landed' || stage === 'look_score' || stage === 'celebrate') && (
-                <motion.g
-                  initial={{ opacity: 1 }}
-                  animate={{ opacity: stage === 'celebrate' ? 0.3 : 0.65 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  {/* Loose rope lying slack on the floor */}
-                  <path
-                    d="M 195 358 C 230 370, 270 355, 310 360 C 340 364, 360 357, 378 359"
-                    fill="none"
-                    stroke="url(#ropeGrad)"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeDasharray="8 3"
-                  />
-                </motion.g>
-              )}
-
-              {/* ══════════════════════════════════════════════════════════
-                  🏆 THE SCORE MONOLITH (Rushed in to X=380, BESIDE Guionbajo)
-                 ══════════════════════════════════════════════════════════ */}
-              <motion.g
-                initial={{ x: 880, y: 105 }}
-                animate={
-                  stage === 'pulling'
-                    ? { x: 860, y: 105 }
-                    : {
-                        x: 375, // Positioned on right half (375 to 725), completely beside Guionbajo
-                        y: 105,
-                        transition: {
-                          type: 'spring',
-                          stiffness: 160,
-                          damping: 17,
-                          mass: 1.1,
-                        },
-                      }
-                }
-              >
-                {/* Monolith ground shadow */}
-                <ellipse cx="170" cy="254" rx="155" ry="14" fill="#030712" opacity="0.8" />
-
-                {/* Monolith Card Body (Width 350 x Height 245) */}
-                <rect
-                  x="0"
-                  y="0"
-                  width="350"
-                  height="245"
-                  rx="24"
-                  fill="url(#cardBgGrad)"
-                  stroke={isPerfect ? '#F59E0B' : '#00D4FF'}
-                  strokeWidth="2.5"
-                  filter={isPerfect ? 'url(#goldGlow)' : 'url(#cyanGlow)'}
-                />
-
-                {/* Inner Tech Frame */}
-                <rect
-                  x="10"
-                  y="10"
-                  width="330"
-                  height="225"
-                  rx="18"
+                <path
+                  d="M 140 calc(100% - 50px) Q 220 calc(100% - 46px) 300 calc(100% - 50px) T 420 calc(100% - 50px)"
                   fill="none"
-                  stroke="#334155"
-                  strokeWidth="1"
-                  strokeDasharray="6 4"
+                  stroke="url(#ropeGrad)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray="8 3"
+                  opacity={stage === 'celebrate' ? 0.35 : 0.7}
                 />
+              )}
+            </svg>
 
-                {/* Heavy Eyelet Ring on Left Edge (Where the rope pulled!) */}
-                <circle cx="10" cy="122" r="8" fill="#1e293b" stroke="#64748b" strokeWidth="2" />
-                <circle cx="10" cy="122" r="3.5" fill="#00D4FF" />
-                <path d="M 0 122 L -18 130" stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" />
+            {/* ══════════════════════════════════════════════════════════
+                🤖 GUIONBAJO (LEFT SIDE, GROUNDED AT bottom-12 ON THE FLOOR)
+               ══════════════════════════════════════════════════════════ */}
+            <motion.div
+              className="absolute bottom-12 left-8 sm:left-14 md:left-20 z-20 w-36 sm:w-40 h-48 flex items-end justify-center"
+              style={{ transformOrigin: '70px 152px' }}
+              animate={
+                stage === 'pulling'
+                  ? {
+                      x: [0, -8, 0],
+                      y: 0,
+                      rotate: [-20, -23, -20],
+                      scaleY: 1,
+                      scaleX: 1,
+                    }
+                  : stage === 'snap'
+                  ? {
+                      x: -12,
+                      y: 0,
+                      rotate: -28,
+                      scaleY: 1.04,
+                      scaleX: 0.96,
+                    }
+                  : stage === 'fall'
+                  ? {
+                      // Loses balance backwards right onto the floor
+                      x: -24,
+                      y: 0,
+                      rotate: [14, 2, 0],
+                      scaleY: 0.95,
+                      scaleX: 1.05,
+                    }
+                  : stage === 'landed'
+                  ? {
+                      // Sits flat on the floor plane with squash & stretch
+                      x: -20,
+                      y: 0,
+                      rotate: 0,
+                      scaleY: [1, 0.78, 1.08, 1],
+                      scaleX: [1, 1.22, 0.95, 1],
+                      transition: { duration: 0.42, ease: 'easeOut' },
+                    }
+                  : stage === 'look_score'
+                  ? {
+                      x: -20,
+                      y: 0,
+                      rotate: 0,
+                      scaleY: 1,
+                      scaleX: 1,
+                    }
+                  : {
+                      // CELEBRATING: Resting seated on floor, breathing softly
+                      x: -20,
+                      y: [0, -3, 0],
+                      rotate: 0,
+                      scaleY: 1,
+                      scaleX: 1,
+                      transition: { repeat: Infinity, duration: 2.2, ease: 'easeInOut' },
+                    }
+              }
+              transition={
+                stage === 'pulling'
+                  ? { repeat: Infinity, duration: 0.45, ease: 'easeInOut' }
+                  : { duration: 0.28 }
+              }
+            >
+              <svg viewBox="0 0 140 180" className="w-full h-full overflow-visible">
+                <defs>
+                  <filter id="gbCyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
 
-                {/* Top Badge Banner */}
-                <rect
-                  x="35"
-                  y="22"
-                  width="280"
-                  height="30"
-                  rx="9"
-                  fill={isPerfect ? 'rgba(234, 179, 8, 0.15)' : 'rgba(0, 212, 255, 0.15)'}
-                  stroke={isPerfect ? '#fde047' : '#00D4FF'}
-                  strokeWidth="1"
-                />
-                <text
-                  x="175"
-                  y="42"
-                  textAnchor="middle"
-                  fill={isPerfect ? '#fef08a' : '#67e8f9'}
-                  fontFamily="monospace"
-                  fontSize="12.5"
-                  fontWeight="bold"
-                  letterSpacing="1"
-                >
-                  {isPerfect ? '★ 100% PERFECT SCORE ★' : '★ EXCELENTE RENDIMIENTO ★'}
-                </text>
+                  <linearGradient id="gbChassis" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#374151" />
+                    <stop offset="55%" stopColor="#1f2937" />
+                    <stop offset="100%" stopColor="#0f172a" />
+                  </linearGradient>
 
-                {/* Giant Percentage */}
-                <text
-                  x="175"
-                  y="124"
-                  textAnchor="middle"
-                  fill="#ffffff"
-                  fontFamily="system-ui, sans-serif"
-                  fontSize="64"
-                  fontWeight="900"
-                  letterSpacing="-1"
-                >
-                  {score}
-                  <tspan fontSize="40" fill={isPerfect ? '#facc15' : '#00D4FF'}>
-                    %
-                  </tspan>
-                </text>
+                  <linearGradient id="gbStemGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#94a3b8" />
+                    <stop offset="100%" stopColor="#475569" />
+                  </linearGradient>
 
-                {/* Subtitle / Topic Pill */}
-                <rect
-                  x="30"
-                  y="146"
-                  width="290"
-                  height="24"
-                  rx="7"
-                  fill="#0e1322"
-                  stroke="#1e293b"
-                  strokeWidth="1"
-                />
-                <text
-                  x="175"
-                  y="162"
-                  textAnchor="middle"
-                  fill="#94a3b8"
-                  fontSize="11.5"
-                  fontWeight="600"
-                >
-                  {sublevel} • 3/3 Retos Superados
-                </text>
+                  <radialGradient id="gbVacuumBulb" cx="0.35" cy="0.35" r="0.65">
+                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+                    <stop offset="35%" stopColor="#00d4ff" stopOpacity="0.85" />
+                    <stop offset="75%" stopColor="#6366f1" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#090d14" stopOpacity="0.9" />
+                  </radialGradient>
 
-                {/* Bottom Rewards Row */}
-                <g transform="translate(35, 186)">
-                  {/* XP Badge */}
-                  <rect x="0" y="0" width="132" height="34" rx="10" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" strokeWidth="1" />
-                  <text x="66" y="22" textAnchor="middle" fill="#6ee7b7" fontSize="13" fontWeight="bold">
-                    +{xpEarned} XP
-                  </text>
+                  <linearGradient id="gbPlasmaOuter" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+                    <stop offset="25%" stopColor="#fef08a" stopOpacity="0.9" />
+                    <stop offset="55%" stopColor="#f97316" stopOpacity="0.85" />
+                    <stop offset="85%" stopColor="#00d4ff" stopOpacity="0.6" />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                  </linearGradient>
 
-                  {/* Status Badge */}
-                  <rect x="148" y="0" width="132" height="34" rx="10" fill="rgba(245, 158, 11, 0.15)" stroke="#f59e0b" strokeWidth="1" />
-                  <text x="214" y="22" textAnchor="middle" fill="#fde047" fontSize="12" fontWeight="bold">
-                    ✓ Graduado
-                  </text>
-                </g>
+                  <linearGradient id="gbPlasmaCore" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+                    <stop offset="20%" stopColor="#00d4ff" stopOpacity="0.95" />
+                    <stop offset="65%" stopColor="#6366f1" stopOpacity="0.85" />
+                    <stop offset="100%" stopColor="#00d4ff" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
 
-                {/* Corner Tech Rivets */}
-                <circle cx="18" cy="18" r="3" fill="#64748b" />
-                <circle cx="332" cy="18" r="3" fill="#64748b" />
-                <circle cx="18" cy="227" r="3" fill="#64748b" />
-                <circle cx="332" cy="227" r="3" fill="#64748b" />
-              </motion.g>
-
-
-              {/* ══════════════════════════════════════════════════════════
-                  🤖 GUIONBAJO (Normalized (0,0) Rig, Seated Firmly on Floor)
-                  - Positioned on LEFT side (x ≈ 155), beside the card
-                  - In landed/celebrate stage: sits directly on floor (y = 317)
-                 ══════════════════════════════════════════════════════════ */}
-              <motion.g
-                // Kinematics: pulling -> snap -> fall to ground -> seated flat on floor
-                animate={
-                  stage === 'pulling'
-                    ? {
-                        x: [170, 164, 170],
-                        y: 304,
-                        rotate: [-18, -21, -18],
-                        scaleY: 1,
-                        scaleX: 1,
-                      }
-                    : stage === 'snap'
-                    ? {
-                        x: 156,
-                        y: 300,
-                        rotate: -26,
-                        scaleY: 1.05,
-                        scaleX: 0.95,
-                      }
-                    : stage === 'fall'
-                    ? {
-                        // Slips and tilts backwards directly towards the floor (no flying launch)
-                        x: 146,
-                        y: 312,
-                        rotate: 16,
-                        scaleY: 0.95,
-                        scaleX: 1.05,
-                      }
-                    : stage === 'landed'
-                    ? {
-                        // Impact flat on the floor plane ("pegado al piso") at y = 317
-                        x: 148,
-                        y: 317,
-                        rotate: 0,
-                        scaleY: [1, 0.78, 1.06, 1],
-                        scaleX: [1, 1.22, 0.96, 1],
-                        transition: { duration: 0.45, ease: 'easeOut' },
-                      }
-                    : stage === 'look_score'
-                    ? {
-                        x: 148,
-                        y: 317,
-                        rotate: 0,
-                        scaleY: 1,
-                        scaleX: 1,
-                      }
-                    : {
-                        // CELEBRATING: Resting seated on floor, breathing softly
-                        x: 148,
-                        y: [317, 314, 317],
-                        rotate: 0,
-                        scaleY: 1,
-                        scaleX: 1,
-                        transition: { repeat: Infinity, duration: 2.2, ease: 'easeInOut' },
-                      }
-                }
-                transition={
-                  stage === 'pulling'
-                    ? { repeat: Infinity, duration: 0.5, ease: 'easeInOut' }
-                    : { duration: 0.28 }
-                }
-                style={{ transformOrigin: '0px 43px' }}
-              >
                 {/* ── Ground Shadow directly under chassis ── */}
-                <ellipse
-                  cx="0"
-                  cy="43"
-                  rx={stage === 'pulling' ? 28 : 34}
-                  ry={stage === 'pulling' ? 6 : 8}
-                  fill="#030712"
-                  opacity="0.75"
-                />
+                <ellipse cx="70" cy="154" rx="36" ry="7" fill="#030712" opacity="0.75" />
 
                 {/* ── Impact Dust Puff Circles (Appears on landing) ── */}
                 {(stage === 'landed' || stage === 'look_score') && (
                   <motion.g
-                    initial={{ opacity: 0.85, scale: 0.3 }}
-                    animate={{ opacity: 0, scale: 1.7 }}
+                    initial={{ opacity: 0.9, scale: 0.3 }}
+                    animate={{ opacity: 0, scale: 1.8 }}
                     transition={{ duration: 0.55 }}
-                    style={{ transformOrigin: '0px 43px' }}
+                    style={{ transformOrigin: '70px 154px' }}
                   >
-                    <circle cx="-25" cy="42" r="10" fill="#94a3b8" opacity="0.35" />
-                    <circle cx="25" cy="42" r="12" fill="#94a3b8" opacity="0.35" />
-                    <circle cx="0" cy="43" r="8" fill="#cbd5e1" opacity="0.45" />
+                    <circle cx="45" cy="153" r="10" fill="#94a3b8" opacity="0.4" />
+                    <circle cx="95" cy="153" r="12" fill="#94a3b8" opacity="0.4" />
+                    <circle cx="70" cy="154" r="8" fill="#cbd5e1" opacity="0.5" />
                   </motion.g>
                 )}
 
                 {/* ── PLASMA HOVER THRUSTER (Firing only during pull) ── */}
                 {stage === 'pulling' && (
                   <g>
-                    {/* Flame plume shooting forward/downward */}
                     <path
-                      d="M -11 43 Q 0 85 0 92 Q 0 85 11 43 Z"
-                      fill="url(#plasmaFlameOuter)"
+                      d="M 60 152 Q 70 178 70 182 Q 70 178 80 152 Z"
+                      fill="url(#gbPlasmaOuter)"
                       opacity="0.85"
-                      filter="url(#cyanGlow)"
+                      filter="url(#gbCyanGlow)"
                     />
                     <path
-                      d="M -6 43 Q 0 74 0 78 Q 0 74 6 43 Z"
-                      fill="url(#plasmaFlameCore)"
+                      d="M 64 152 Q 70 172 70 175 Q 70 172 76 152 Z"
+                      fill="url(#gbPlasmaCore)"
                       opacity="0.95"
                     />
                     {/* Sparks */}
                     <motion.circle
-                      cx="0"
-                      cy="78"
+                      cx="70"
+                      cy="175"
                       r="2"
                       fill="#fef08a"
-                      animate={{ cx: [0, 20], cy: [78, 85], opacity: [1, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.2 }}
+                      animate={{ cx: [70, 88], cy: [175, 180], opacity: [1, 0] }}
+                      transition={{ repeat: Infinity, duration: 0.18 }}
                     />
                   </g>
                 )}
 
-                {/* Thruster Nozzle (Rests firmly on ground in seated pose) */}
-                <rect x="-11" y="37" width="22" height="6" rx="2" fill="url(#antennaStemGrad)" stroke="#334155" strokeWidth="1" />
-                <rect x="-8" y="41" width="16" height="2" rx="1" fill="#00D4FF" opacity={stage === 'pulling' ? 0.9 : 0.3} />
+                {/* Thruster Nozzle (Rests firmly flat on ground plane) */}
+                <rect x="59" y="146" width="22" height="6" rx="2" fill="url(#gbStemGrad)" stroke="#334155" strokeWidth="1" />
+                <rect x="62" y="150" width="16" height="2" rx="1" fill="#00D4FF" opacity={stage === 'pulling' ? 0.9 : 0.3} />
 
                 {/* ── MECHANICAL ARMS ── */}
                 {stage === 'pulling' ? (
                   /* Grasping the rope forward */
                   <g>
-                    <path d="M -20 8 Q 10 12 45 15" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="45" cy="15" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
-                    <path d="M 12 8 Q 35 12 65 15" fill="none" stroke="#475569" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="65" cy="15" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
+                    <path d="M 50 117 Q 80 120 105 125" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="105" cy="125" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
+                    <path d="M 90 117 Q 110 120 125 125" fill="none" stroke="#475569" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="125" cy="125" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
                   </g>
                 ) : stage === 'snap' || stage === 'fall' ? (
-                  /* Arms thrown open in surprise */
+                  /* Arms thrown open in shock */
                   <g>
-                    <path d="M -24 8 Q -45 -10 -55 -20" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="-55" cy="-20" r="4.5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
-                    <path d="M 24 8 Q 45 -10 55 -20" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="55" cy="-20" r="4.5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
+                    <path d="M 46 117 Q 25 100 15 90" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="15" cy="90" r="4.5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
+                    <path d="M 94 117 Q 115 100 125 90" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="125" cy="90" r="4.5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
                   </g>
                 ) : stage === 'celebrate' ? (
-                  /* Left arm resting on floor, Right arm waving happily */
+                  /* Left arm resting on floor, Right arm waving high! */
                   <g>
                     {/* Left arm resting on floor */}
-                    <path d="M -24 8 Q -38 22 -32 40" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="-32" cy="40" r="4.5" fill="#334155" />
-                    {/* Right arm waving high to the student! */}
+                    <path d="M 46 117 Q 35 132 40 152" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="40" cy="152" r="4.5" fill="#334155" />
+                    {/* Right arm waving to the student */}
                     <motion.g
                       animate={{ rotate: [-8, 14, -8] }}
                       transition={{ repeat: Infinity, duration: 0.8, ease: 'easeInOut' }}
-                      style={{ transformOrigin: '24px 8px' }}
+                      style={{ transformOrigin: '94px 117px' }}
                     >
-                      <path d="M 24 8 Q 42 -12 50 -32" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                      <circle cx="50" cy="-32" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
-                      <path d="M 46 -37 Q 50 -44 57 -37" fill="none" stroke="#00D4FF" strokeWidth="2" />
+                      <path d="M 94 117 Q 115 95 120 75" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                      <circle cx="120" cy="75" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
+                      <path d="M 116 70 Q 120 63 127 70" fill="none" stroke="#00D4FF" strokeWidth="2" />
                     </motion.g>
                   </g>
                 ) : (
                   /* Seated on floor: resting both hands beside base on floor */
                   <g>
-                    <path d="M -24 8 Q -38 24 -32 41" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="-32" cy="41" r="4" fill="#334155" />
-                    <path d="M 24 8 Q 38 24 32 41" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="32" cy="41" r="4" fill="#334155" />
+                    <path d="M 46 117 Q 35 135 40 152" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="40" cy="152" r="4" fill="#334155" />
+                    <path d="M 94 117 Q 105 135 100 152" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="100" cy="152" r="4" fill="#334155" />
                   </g>
                 )}
 
                 {/* ── ROBOT TORSO ── */}
-                <rect x="-24" y="3" width="48" height="34" rx="10" fill="url(#robotChassis)" stroke="#4b5563" strokeWidth="1.8" />
+                <rect x="46" y="112" width="48" height="34" rx="10" fill="url(#gbChassis)" stroke="#4b5563" strokeWidth="1.8" />
                 {/* Torso CRT Screen */}
-                <rect x="-18" y="8" width="36" height="23" rx="5" fill="#020617" stroke="#334155" strokeWidth="1.2" />
-                {/* Horizontal Scanlines */}
-                <line x1="-16" y1="12" x2="16" y2="12" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
-                <line x1="-16" y1="17" x2="16" y2="17" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
-                <line x1="-16" y1="22" x2="16" y2="22" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
-                <line x1="-16" y1="27" x2="16" y2="27" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
-
-                {/* Torso Underscore Insignia */}
-                <text x="0" y="24" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="10" fontWeight="900" filter="url(#cyanGlow)">
+                <rect x="52" y="117" width="36" height="23" rx="5" fill="#020617" stroke="#334155" strokeWidth="1.2" />
+                {/* Scanlines */}
+                <line x1="54" y1="121" x2="86" y2="121" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
+                <line x1="54" y1="126" x2="86" y2="126" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
+                <line x1="54" y1="131" x2="86" y2="131" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
+                <line x1="54" y1="136" x2="86" y2="136" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
+                {/* Underscore Insignia */}
+                <text x="70" y="133" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="10" fontWeight="900" filter="url(#gbCyanGlow)">
                   _
                 </text>
 
                 {/* Mechanical Neck */}
-                <rect x="-5" y="-3" width="10" height="7" rx="2" fill="#1e293b" stroke="#334155" strokeWidth="0.8" />
+                <rect x="65" y="106" width="10" height="7" rx="2" fill="#1e293b" stroke="#334155" strokeWidth="0.8" />
 
                 {/* ── LATERAL EAR DIALS ── */}
-                <rect x="-37" y="-34" width="7" height="18" rx="2" fill="url(#earDialGrad)" stroke="#475569" strokeWidth="0.8" />
-                <rect x="-36" y="-26" width="3.5" height="2" rx="1" fill="#00D4FF" filter="url(#cyanGlow)" />
-                <rect x="30" y="-34" width="7" height="18" rx="2" fill="url(#earDialGrad)" stroke="#475569" strokeWidth="0.8" />
-                <rect x="32.5" y="-26" width="3.5" height="2" rx="1" fill="#00D4FF" filter="url(#cyanGlow)" />
+                <rect x="33" y="75" width="7" height="18" rx="2" fill="url(#gbStemGrad)" stroke="#475569" strokeWidth="0.8" />
+                <rect x="34" y="83" width="3.5" height="2" rx="1" fill="#00D4FF" filter="url(#gbCyanGlow)" />
+                <rect x="100" y="75" width="7" height="18" rx="2" fill="url(#gbStemGrad)" stroke="#475569" strokeWidth="0.8" />
+                <rect x="102.5" y="83" width="3.5" height="2" rx="1" fill="#00D4FF" filter="url(#gbCyanGlow)" />
 
                 {/* ── ROBOT HEAD ── */}
                 <g
-                  // Turns to look at the Score Card on the right (18deg) vs facing front (0deg)
+                  // Turns to look right at the Score Card (18deg) vs facing front (0deg)
                   style={{
                     transform: stage === 'look_score' ? 'rotate(18deg)' : 'rotate(0deg)',
-                    transformOrigin: '0px -25px',
+                    transformOrigin: '70px 84px',
                     transition: 'transform 0.4s ease',
                   }}
                 >
-                  <rect x="-30" y="-50" width="60" height="48" rx="12" fill="url(#robotChassis)" stroke="#4b5563" strokeWidth="2" />
+                  <rect x="40" y="60" width="60" height="48" rx="12" fill="url(#gbChassis)" stroke="#4b5563" strokeWidth="2" />
 
                   {/* 4 Corner Rivets */}
-                  <circle cx="-24" cy="-44" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
-                  <circle cx="24" cy="-44" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
-                  <circle cx="-24" cy="-8" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
-                  <circle cx="24" cy="-8" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="46" cy="66" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="94" cy="66" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="46" cy="102" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="94" cy="102" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
 
                   {/* ── ROBOT EYES ── */}
                   {stage === 'pulling' ? (
                     /* Straining concentrated eyes (> <) */
                     <g>
-                      <path d="M -17 -36 L -9 -31 L -17 -26" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#cyanGlow)" />
-                      <path d="M 17 -36 L 9 -31 L 17 -26" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#cyanGlow)" />
+                      <path d="M 53 75 L 61 80 L 53 85" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#gbCyanGlow)" />
+                      <path d="M 87 75 L 79 80 L 87 85" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#gbCyanGlow)" />
                     </g>
                   ) : stage === 'snap' || stage === 'fall' ? (
                     /* Shocked wide open eyes (O O) */
                     <g>
-                      <circle cx="-12" cy="-31" r="8" fill="#090d14" stroke="#00D4FF" strokeWidth="2" filter="url(#cyanGlow)" />
-                      <circle cx="-12" cy="-31" r="3.5" fill="#ffffff" />
-                      <circle cx="12" cy="-31" r="8" fill="#090d14" stroke="#00D4FF" strokeWidth="2" filter="url(#cyanGlow)" />
-                      <circle cx="12" cy="-31" r="3.5" fill="#ffffff" />
+                      <circle cx="58" cy="80" r="8" fill="#090d14" stroke="#00D4FF" strokeWidth="2" filter="url(#gbCyanGlow)" />
+                      <circle cx="58" cy="80" r="3.5" fill="#ffffff" />
+                      <circle cx="82" cy="80" r="8" fill="#090d14" stroke="#00D4FF" strokeWidth="2" filter="url(#gbCyanGlow)" />
+                      <circle cx="82" cy="80" r="3.5" fill="#ffffff" />
                     </g>
                   ) : stage === 'look_score' ? (
                     /* Looking to the right at the Score Card */
                     <g>
-                      <circle cx="-12" cy="-31" r="8" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
-                      <circle cx="-8" cy="-31" r="4.5" fill="#00D4FF" filter="url(#cyanGlow)" />
-                      <circle cx="12" cy="-31" r="8" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
-                      <circle cx="16" cy="-31" r="4.5" fill="#00D4FF" filter="url(#cyanGlow)" />
+                      <circle cx="58" cy="80" r="8" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
+                      <circle cx="62" cy="80" r="4.5" fill="#00D4FF" filter="url(#gbCyanGlow)" />
+                      <circle cx="82" cy="80" r="8" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
+                      <circle cx="86" cy="80" r="4.5" fill="#00D4FF" filter="url(#gbCyanGlow)" />
                     </g>
                   ) : (
                     /* CELEBRATING: Smiling glowing arc eyes (^ ^) looking at the student */
                     <g>
-                      <path d="M -18 -29 Q -12 -39 -6 -29" fill="none" stroke="#00D4FF" strokeWidth="3" strokeLinecap="round" filter="url(#cyanGlow)" />
-                      <path d="M 6 -29 Q 12 -39 18 -29" fill="none" stroke="#00D4FF" strokeWidth="3" strokeLinecap="round" filter="url(#cyanGlow)" />
+                      <path d="M 52 82 Q 58 72 64 82" fill="none" stroke="#00D4FF" strokeWidth="3" strokeLinecap="round" filter="url(#gbCyanGlow)" />
+                      <path d="M 76 82 Q 82 72 88 82" fill="none" stroke="#00D4FF" strokeWidth="3" strokeLinecap="round" filter="url(#gbCyanGlow)" />
                     </g>
                   )}
 
                   {/* ── ROBOT MOUTH ── */}
-                  <rect x="-18" y="-16" width="36" height="8" rx="3" fill="#090d14" stroke="#334155" strokeWidth="1.2" />
+                  <rect x="52" y="94" width="36" height="8" rx="3" fill="#090d14" stroke="#334155" strokeWidth="1.2" />
 
                   {stage === 'pulling' ? (
-                    /* Tight terminal cursor */
-                    <text x="0" y="-9" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="11" fontWeight="900" filter="url(#cyanGlow)">
+                    <text x="70" y="101" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="11" fontWeight="900" filter="url(#gbCyanGlow)">
                       _
                     </text>
                   ) : stage === 'snap' || stage === 'fall' ? (
-                    /* Surprise O */
-                    <circle cx="0" cy="-12" r="2.5" fill="#00D4FF" filter="url(#cyanGlow)" />
+                    <circle cx="70" cy="98" r="2.5" fill="#00D4FF" filter="url(#gbCyanGlow)" />
                   ) : stage === 'celebrate' ? (
-                    /* BIG BEAMING SMILE (‿) */
-                    <path
-                      d="M -9 -13 Q 0 -8 9 -13"
-                      fill="none"
-                      stroke="#00D4FF"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      filter="url(#cyanGlow)"
-                    />
+                    <path d="M 61 97 Q 70 102 79 97" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" filter="url(#gbCyanGlow)" />
                   ) : (
-                    /* Normal underscore */
-                    <text x="0" y="-9" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="11" fontWeight="900" filter="url(#cyanGlow)">
+                    <text x="70" y="101" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="11" fontWeight="900" filter="url(#gbCyanGlow)">
                       _
                     </text>
                   )}
 
                   {/* ── TOP ANTENNA & VACUUM BULB ── */}
-                  <rect x="-1.5" y="-66" width="3" height="16" rx="1.5" fill="url(#antennaStemGrad)" />
-                  <circle cx="0" cy="-73" r="7.5" fill="url(#vacuumBulbGrad)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" />
-
-                  {/* Glowing Bulb Bloom */}
+                  <rect x="68.5" y="44" width="3" height="16" rx="1.5" fill="url(#gbStemGrad)" />
+                  <circle cx="70" cy="37" r="7.5" fill="url(#gbVacuumBulb)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" />
                   <circle
-                    cx="0"
-                    cy="-73"
+                    cx="70"
+                    cy="37"
                     r={stage === 'celebrate' ? 14 : 9}
                     fill={stage === 'celebrate' ? '#fde047' : '#00D4FF'}
                     opacity={stage === 'celebrate' ? 0.6 : 0.4}
-                    filter="url(#cyanGlow)"
+                    filter="url(#gbCyanGlow)"
                   />
-                  {/* Filament */}
-                  <path d="M -2 -71 C -2 -76 2 -76 2 -71" fill="none" stroke={stage === 'celebrate' ? '#fef08a' : '#00D4FF'} strokeWidth="1.2" />
+                  <path d="M 68 39 C 68 34 72 34 72 39" fill="none" stroke={stage === 'celebrate' ? '#fef08a' : '#00D4FF'} strokeWidth="1.2" />
                 </g>
-              </motion.g>
+              </svg>
+            </motion.div>
 
-              {/* ══════════════════════════════════════════════════════════
-                  🎉 CONFETTI SHOWER (Erupts during celebration stage)
-                 ══════════════════════════════════════════════════════════ */}
-              {stage === 'celebrate' && (
-                <g>
-                  {[
-                    { cx: 520, cy: 70, color: '#f59e0b', r: 4.5, dx: -40, dy: 200 },
-                    { cx: 560, cy: 60, color: '#00D4FF', r: 5, dx: 40, dy: 220 },
-                    { cx: 480, cy: 90, color: '#ec4899', r: 4.5, dx: -70, dy: 180 },
-                    { cx: 620, cy: 80, color: '#10b981', r: 4, dx: 70, dy: 210 },
-                    { cx: 540, cy: 50, color: '#a855f7', r: 5, dx: 15, dy: 240 },
-                    { cx: 660, cy: 90, color: '#fbbf24', r: 4.5, dx: 60, dy: 190 },
-                    { cx: 420, cy: 110, color: '#38bdf8', r: 4, dx: -80, dy: 170 },
-                    { cx: 700, cy: 100, color: '#f43f5e', r: 5, dx: 60, dy: 180 },
-                    { cx: 500, cy: 40, color: '#fde047', r: 4, dx: -35, dy: 250 },
-                    { cx: 580, cy: 45, color: '#34d399', r: 4.5, dx: 45, dy: 245 },
-                    { cx: 160, cy: 190, color: '#00D4FF', r: 4.5, dx: -30, dy: 130 },
-                    { cx: 180, cy: 180, color: '#f59e0b', r: 4, dx: 30, dy: 140 },
-                    { cx: 140, cy: 210, color: '#ec4899', r: 4, dx: -20, dy: 110 },
-                  ].map((p, idx) => (
-                    <motion.circle
-                      key={idx}
-                      cx={p.cx}
-                      cy={p.cy}
-                      r={p.r}
-                      fill={p.color}
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{
-                        opacity: [0, 1, 1, 0],
-                        scale: [0, 1.2, 1, 0.8],
-                        cx: p.cx + p.dx,
-                        cy: p.cy + p.dy,
-                      }}
-                      transition={{
-                        duration: 2.2,
-                        delay: idx * 0.05,
-                        repeat: Infinity,
-                        repeatDelay: 0.8,
-                        ease: 'easeOut',
-                      }}
-                    />
-                  ))}
-                </g>
-              )}
-            </svg>
+            {/* ══════════════════════════════════════════════════════════
+                🏆 THE SCORE MONOLITH (RIGHT SIDE, BESIDE GUIONBAJO)
+                - Stays off-screen to the right during pulling
+                - Snaps in smoothly beside Guionbajo on the right side
+               ══════════════════════════════════════════════════════════ */}
+            <motion.div
+              className="absolute bottom-12 right-6 sm:right-12 md:right-16 z-20 w-[290px] sm:w-[360px] md:w-[400px]"
+              initial={{ x: 600, opacity: 0 }}
+              animate={
+                stage === 'pulling'
+                  ? { x: 500, opacity: 0 }
+                  : {
+                      x: 0,
+                      opacity: 1,
+                      transition: {
+                        type: 'spring',
+                        stiffness: 160,
+                        damping: 17,
+                        mass: 1.1,
+                      },
+                    }
+              }
+            >
+              <div className="relative bg-gradient-to-b from-[#13182b]/95 via-[#0a0e19]/95 to-[#05070e]/95 border-2 border-amber-400/80 rounded-3xl p-5 sm:p-6 shadow-[0_0_50px_rgba(245,158,11,0.22)] backdrop-blur-xl flex flex-col gap-3">
+                {/* Tech Eyelet on Left Edge (Where rope connected) */}
+                <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#1e293b] border-2 border-slate-400 flex items-center justify-center">
+                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00D4FF]" />
+                </div>
 
-            {/* Stage narrative status pill */}
-            <div className="absolute top-4 left-4 pointer-events-none">
+                {/* Top Badge Banner */}
+                <div className="self-center px-4 py-1 rounded-xl bg-amber-500/15 border border-amber-400/60 text-amber-300 font-mono text-[11px] sm:text-xs font-bold tracking-wider text-center shadow-lg shadow-amber-500/10 flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-yellow-400" />
+                  <span>{isPerfect ? '★ 100% PERFECT SCORE ★' : '★ EXCELENTE RENDIMIENTO ★'}</span>
+                </div>
+
+                {/* Giant Percentage */}
+                <div className="text-center">
+                  <span className="text-5xl sm:text-6xl md:text-7xl font-black text-white tracking-tight drop-shadow-[0_0_25px_rgba(255,255,255,0.2)]">
+                    {score}
+                    <span className="text-3xl sm:text-4xl text-amber-400 ml-0.5">%</span>
+                  </span>
+                </div>
+
+                {/* Subtitle / Retos Superados */}
+                <div className="bg-[#0e1322] border border-white/10 px-3 py-1.5 rounded-xl text-center">
+                  <span className="text-xs sm:text-sm font-semibold text-zinc-300">
+                    {sublevel} • 3/3 Retos Superados
+                  </span>
+                </div>
+
+                {/* Rewards Grid */}
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-2 text-center">
+                    <span className="text-[10px] text-emerald-400 block font-mono">RECOMPENSA</span>
+                    <span className="text-sm font-black text-emerald-300">+{xpEarned} XP</span>
+                  </div>
+                  <div className="bg-amber-500/15 border border-amber-500/30 rounded-xl p-2 text-center">
+                    <span className="text-[10px] text-amber-400 block font-mono">ESTADO</span>
+                    <span className="text-sm font-black text-amber-300">✓ Graduado</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* ══════════════════════════════════════════════════════════
+                🎉 CONFETTI SHOWER (Erupts during celebration stage)
+               ══════════════════════════════════════════════════════════ */}
+            {stage === 'celebrate' && (
+              <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                {[
+                  { left: '20%', color: '#00D4FF', delay: 0 },
+                  { left: '35%', color: '#F59E0B', delay: 0.1 },
+                  { left: '50%', color: '#EC4899', delay: 0.05 },
+                  { left: '65%', color: '#10B981', delay: 0.15 },
+                  { left: '80%', color: '#A855F7', delay: 0.08 },
+                  { left: '28%', color: '#FBBF24', delay: 0.2 },
+                  { left: '42%', color: '#38BDF8', delay: 0.25 },
+                  { left: '72%', color: '#F43F5E', delay: 0.18 },
+                  { left: '88%', color: '#34D399', delay: 0.3 },
+                ].map((p, idx) => (
+                  <motion.div
+                    key={idx}
+                    className="absolute w-3 h-3 rounded-sm"
+                    style={{ left: p.left, top: '-20px', backgroundColor: p.color }}
+                    animate={{
+                      y: [0, 420],
+                      x: [0, idx % 2 === 0 ? 30 : -30],
+                      rotate: [0, 360 * (idx % 2 === 0 ? 2 : -2)],
+                      opacity: [1, 1, 0],
+                    }}
+                    transition={{
+                      duration: 2.4,
+                      delay: p.delay,
+                      repeat: Infinity,
+                      repeatDelay: 0.6,
+                      ease: 'easeOut',
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Narrative Status Pill */}
+            <div className="absolute top-4 left-4 z-30 pointer-events-none">
               <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-black/60 border border-white/10 text-zinc-300 backdrop-blur-md">
-                {stage === 'pulling' && '⏳ Guionbajo arrastrando tu resultado...'}
+                {stage === 'pulling' && '⏳ Guionbajo jalando con fuerza la cuerda...'}
                 {stage === 'snap' && '⚡ ¡TIRÓN MÁXIMO!'}
-                {stage === 'fall' && '💨 ¡Woooah!'}
-                {stage === 'landed' && '💥 ¡Plop! Cae sentado en el piso'}
+                {stage === 'fall' && '💨 ¡Woooah! Cae sentado en el piso'}
+                {stage === 'landed' && '💥 ¡Plop!'}
                 {stage === 'look_score' && '👀 ¡Mira el puntaje que trajiste!'}
                 {stage === 'celebrate' && '🎉 ¡MISIÓN CUMPLIDA!'}
               </span>
             </div>
           </div>
 
-          {/* ══════════════════════════════════════════════════════════════
+          {/* ══════════════════════════════════════════════════════════
               🚀 BOTTOM ACTION BAR & DASHBOARD TRANSITION
-             ══════════════════════════════════════════════════════════════ */}
+             ══════════════════════════════════════════════════════════ */}
           <div className="p-5 sm:p-6 bg-gradient-to-t from-black via-[#080a14] to-transparent border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-center sm:text-left">
               <h3 className="text-base sm:text-lg font-black text-white flex items-center justify-center sm:justify-start gap-2">

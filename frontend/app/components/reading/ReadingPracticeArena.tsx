@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, playEnglishAudio, cleanTextForTTS } from '@/lib/api';
 import {
@@ -204,6 +204,44 @@ export default function ReadingPracticeArena({
   const audioHandleRef = useRef<HTMLAudioElement | null>(null);
   const transcriptRef = useRef<string>('');
   const isEvaluatingRef = useRef<boolean>(false);
+  const arenaTopRef = useRef<HTMLDivElement | null>(null);
+
+  // 📜 Smooth Auto-scroll to Top of Reading Arena on Slide Transitions
+  const scrollToTop = useCallback(() => {
+    // 1. Native element scrollIntoView (aligns to viewport top smoothly)
+    if (arenaTopRef.current) {
+      arenaTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // 2. Locate and scroll any ancestor container with overflow-y (e.g. div.overflow-y-auto in lesson page)
+    if (typeof window !== 'undefined' && arenaTopRef.current) {
+      let el: HTMLElement | null = arenaTopRef.current.parentElement;
+      while (el) {
+        const style = window.getComputedStyle(el);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+          el.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        el = el.parentElement;
+      }
+    }
+
+    // 3. Fallback for window and root document
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.documentElement?.scrollTo({ top: 0, behavior: 'smooth' });
+      document.body?.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  // Automatically scroll to the top of the reading arena whenever currentSlideIdx changes
+  useEffect(() => {
+    scrollToTop();
+    // Secondary delayed check to compensate for dynamic Framer Motion layout mounting
+    const timer = setTimeout(() => {
+      scrollToTop();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [currentSlideIdx, scrollToTop]);
 
   // 🎨 Generates & preloads image for a slide
   const generateSlideImage = async (sIdx: number, rawPrompt: string, topicName: string): Promise<string> => {
@@ -584,10 +622,11 @@ export default function ReadingPracticeArena({
     if (currentSlideIdx < normalizedSlides.length - 1) {
       sfx.playPop();
       setCurrentSlideIdx(prev => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToTop();
     } else {
       sfx.playStreakFanfare();
       setIsStoryCompleted(true);
+      scrollToTop();
     }
   };
 
@@ -595,7 +634,7 @@ export default function ReadingPracticeArena({
     if (currentSlideIdx > 0) {
       sfx.playPop();
       setCurrentSlideIdx(prev => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToTop();
     }
   };
 
@@ -698,7 +737,7 @@ export default function ReadingPracticeArena({
   const isCurrentImgLoading = imageLoading[currentSlideIdx];
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full py-1">
+    <div ref={arenaTopRef} className="flex flex-col gap-6 max-w-5xl mx-auto w-full py-1">
       {/* 📖 Header Bar: Story Title, Character Bible & Slide Stepper */}
       <div className="flex flex-col gap-3.5 glass p-4 sm:p-5 rounded-3xl border border-brand-border/80 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

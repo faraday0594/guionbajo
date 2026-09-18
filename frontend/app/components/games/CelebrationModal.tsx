@@ -194,49 +194,63 @@ export default function CelebrationModal({
             </div>
 
             {/* ══════════════════════════════════════════════════════════
-                🪢 THE ROPE (Direct vector connecting Guionbajo hands to Card)
+                🪢 THE ROPE (Taut golden braided rope in pulling, loose on floor)
                ══════════════════════════════════════════════════════════ */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-15">
+            <svg
+              viewBox="0 0 800 420"
+              preserveAspectRatio="none"
+              className="absolute inset-0 w-full h-full pointer-events-none z-15"
+            >
               <defs>
-                <linearGradient id="ropeGrad" x1="0" y1="0" x2="1" y2="0">
+                <filter id="ropeNeonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                <linearGradient id="mainRopeGrad" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor="#d97706" />
-                  <stop offset="50%" stopColor="#fef08a" />
+                  <stop offset="30%" stopColor="#fef08a" />
+                  <stop offset="70%" stopColor="#f59e0b" />
                   <stop offset="100%" stopColor="#b45309" />
                 </linearGradient>
               </defs>
 
               {stage === 'pulling' && (
                 <g>
-                  {/* Outer glow shadow */}
+                  {/* Outer Golden Aura Glow */}
                   <motion.path
-                    d="M 175 calc(100% - 105px) Q 350 calc(100% - 140px) calc(100% + 50px) calc(100% - 180px)"
+                    d="M 175 328 Q 450 290 850 250"
                     fill="none"
                     stroke="#f59e0b"
-                    strokeWidth="7"
+                    strokeWidth="9"
                     strokeLinecap="round"
-                    opacity="0.35"
+                    opacity="0.45"
+                    filter="url(#ropeNeonGlow)"
                     animate={{
                       d: [
-                        'M 175 calc(100% - 105px) Q 350 calc(100% - 140px) calc(100% + 50px) calc(100% - 180px)',
-                        'M 175 calc(100% - 107px) Q 350 calc(100% - 136px) calc(100% + 50px) calc(100% - 180px)',
-                        'M 175 calc(100% - 103px) Q 350 calc(100% - 144px) calc(100% + 50px) calc(100% - 180px)',
+                        'M 175 328 Q 450 290 850 250',
+                        'M 175 330 Q 450 286 850 250',
+                        'M 175 326 Q 450 294 850 250',
                       ],
                     }}
                     transition={{ repeat: Infinity, duration: 0.1 }}
                   />
-                  {/* Main twisted rope */}
+                  {/* Heavy Braided Rope Core */}
                   <motion.path
-                    d="M 175 calc(100% - 105px) Q 350 calc(100% - 140px) calc(100% + 50px) calc(100% - 180px)"
+                    d="M 175 328 Q 450 290 850 250"
                     fill="none"
-                    stroke="url(#ropeGrad)"
-                    strokeWidth="5"
+                    stroke="url(#mainRopeGrad)"
+                    strokeWidth="6"
                     strokeLinecap="round"
-                    strokeDasharray="9 3"
+                    strokeDasharray="12 4"
                     animate={{
                       d: [
-                        'M 175 calc(100% - 105px) Q 350 calc(100% - 140px) calc(100% + 50px) calc(100% - 180px)',
-                        'M 175 calc(100% - 107px) Q 350 calc(100% - 136px) calc(100% + 50px) calc(100% - 180px)',
-                        'M 175 calc(100% - 103px) Q 350 calc(100% - 144px) calc(100% + 50px) calc(100% - 180px)',
+                        'M 175 328 Q 450 290 850 250',
+                        'M 175 330 Q 450 286 850 250',
+                        'M 175 326 Q 450 294 850 250',
                       ],
                     }}
                     transition={{ repeat: Infinity, duration: 0.1 }}
@@ -244,16 +258,16 @@ export default function CelebrationModal({
                 </g>
               )}
 
-              {/* Loose rope lying slack on the floor */}
+              {/* Loose rope lying slack on the floor between Guionbajo and the card */}
               {(stage === 'snap' || stage === 'fall' || stage === 'landed' || stage === 'look_score' || stage === 'celebrate') && (
                 <path
-                  d="M 140 calc(100% - 50px) Q 220 calc(100% - 46px) 300 calc(100% - 50px) T 420 calc(100% - 50px)"
+                  d="M 160 372 Q 240 382 310 370 Q 370 380 430 372"
                   fill="none"
-                  stroke="url(#ropeGrad)"
-                  strokeWidth="4"
+                  stroke="url(#mainRopeGrad)"
+                  strokeWidth="5"
                   strokeLinecap="round"
-                  strokeDasharray="8 3"
-                  opacity={stage === 'celebrate' ? 0.35 : 0.7}
+                  strokeDasharray="9 3"
+                  opacity={stage === 'celebrate' ? 0.35 : 0.85}
                 />
               )}
             </svg>
@@ -419,6 +433,9 @@ export default function CelebrationModal({
                 {stage === 'pulling' ? (
                   /* Grasping the rope forward */
                   <g>
+                    {/* Rope segment gripped firmly in clamps */}
+                    <path d="M 80 125 L 140 125" stroke="#f59e0b" strokeWidth="6" strokeLinecap="round" />
+                    <path d="M 80 125 L 140 125" stroke="#fef08a" strokeWidth="4" strokeLinecap="round" strokeDasharray="6 2" />
                     <path d="M 50 117 Q 80 120 105 125" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
                     <circle cx="105" cy="125" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
                     <path d="M 90 117 Q 110 120 125 125" fill="none" stroke="#475569" strokeWidth="5" strokeLinecap="round" />

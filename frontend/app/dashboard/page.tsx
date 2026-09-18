@@ -572,15 +572,15 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        Voz en Vivo HD
+                        Voz en Vivo HD • Modo Manos Libres
                       </span>
-                      <span className="text-[10px] text-brand-text-muted">Bilingüe Inglés / Español</span>
+                      <span className="text-[10px] text-brand-text-muted">100% Por Voz (Sin Chat) • Inglés y Español</span>
                     </div>
                     <h2 className="text-xl sm:text-2xl font-outfit font-bold text-white mb-2">
                       Conversación en Vivo con Guionbajo
                     </h2>
                     <p className="text-sm text-brand-text-secondary max-w-2xl leading-relaxed">
-                      Practica hablando por voz en tiempo real con transcripción continua, correcciones gramaticales sutiles y pronunciación fluida en streaming. Sin guión, sin presión — solo conversación natural.
+                      Practica hablando de viva voz en tiempo real con respuestas ágiles, subtítulos automáticos y streaming de audio continuo. Sin teclado, sin chat de texto — solo una llamada natural y fluida con tu tutor.
                     </p>
                   </div>
                 </div>
@@ -588,9 +588,9 @@ export default function DashboardPage() {
                 {/* Features grid */}
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
-                    { icon: '🎙️', label: 'Transcripción en tiempo real', desc: 'Ve lo que dices al instante' },
-                    { icon: '✏️', label: 'Correcciones sutiles', desc: 'Sin interrumpir el flujo' },
-                    { icon: '🔊', label: 'Pronunciación fluida', desc: 'Audio en streaming de baja latencia' },
+                    { icon: '⚡', label: 'Audio Pipelined en Streaming', desc: 'Escuchas la primera parte mientras se procesa la siguiente' },
+                    { icon: '🗣️', label: 'Bilingüe Estricto', desc: '100% enfocado en inglés y español' },
+                    { icon: '🎙️', label: 'Detección Rápida de Voz', desc: 'Micrófono inteligente sin demoras' },
                   ].map((f) => (
                     <div key={f.label} className="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-start gap-3">
                       <span className="text-xl flex-shrink-0">{f.icon}</span>
@@ -608,7 +608,7 @@ export default function DashboardPage() {
                     className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-brand-accent to-brand-cyan hover:from-brand-accent-hover hover:to-cyan-400 text-white text-sm font-bold shadow-xl shadow-brand-accent/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
                   >
                     <Mic size={18} />
-                    <span>Hablar en Vivo Ahora</span>
+                    <span>Iniciar Conversación por Voz</span>
                     <ChevronRight size={16} />
                   </Link>
                 </div>

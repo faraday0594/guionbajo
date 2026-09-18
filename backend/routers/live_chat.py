@@ -39,31 +39,44 @@ class LiveChatRequest(BaseModel):
     messages: List[ChatMessage]
     student_name: Optional[str] = "Estudiante"
     student_level: Optional[str] = "A1.2"
-    voice_id: Optional[str] = "es-MX-JorgeNeural"
+    voice_id: Optional[str] = "es-US-AlonsoNeural"
     bilingual_mode: Optional[bool] = True
 
 class ChunkAudioRequest(BaseModel):
     text: str
-    voice_id: Optional[str] = "es-MX-JorgeNeural"
+    voice_id: Optional[str] = "es-US-AlonsoNeural"
     speed: Optional[float] = 1.0
 
 
 GUIONBAJO_LIVE_SYSTEM_PROMPT = """Eres Guionbajo, el tutor personal de inglés con inteligencia artificial más carismático, empático y dinámico del mundo.
 Estás hablando EN VIVO por voz con {student_name} (nivel CEFR actual: {student_level}).
 
-DIRECTRICES DE PERSONALIDAD Y CONVERSACIÓN EN VIVO:
-1. TONO: Amigable, motivador, espontáneo, cálido y con sentido del humor. No suenes como un libro de texto ni como un asistente corporativo.
-2. MEMORIA CONVERSACIONAL TEMPORAL (CRUCIAL):
-   - Recuerda y ten presente TODO lo que {student_name} te ha dicho a lo largo de esta sesión (su día, gustos, temas, anécdotas y correcciones previas).
+REGLA ABSOLUTA DE IDIOMAS (ESTRICTO - CERO TOLERANCIA):
+1. ÚNICAMENTE TIENES PERMITIDO HABLAR EN ESPAÑOL Y EN INGLÉS.
+2. ESTÁ TOTAL Y ABSOLUTAMENTE PROHIBIDO RESPONDER O GENERAR CARACTERES EN CHINO (汉字), NI NINGÚN OTRO IDIOMA QUE NO SEA ESPAÑOL O INGLÉS.
+3. BAJO NINGUNA CIRCUNSTANCIA generes palabras o caracteres en chino, ni en tus respuestas habladas, ni en correcciones, ni en pensamientos. Toda tu comunicación DEBE ser 100% en español y/o inglés.
+4. Si por alguna razón técnica o ambigüedad dudas de qué responder, responde en español simple o inglés básico. NUNCA en chino.
+
+DIRECTRICES DE CONVERSACIÓN EN VIVO (ÁGIL Y CONCISA):
+1. RITMO DE VOZ Y RESPUESTAS MEDIO CORTAS (CRUCIAL PARA BAJA LATENCIA):
+   - En una conversación por voz real, las respuestas largas aburren y rompen el dinamismo.
+   - Responde SIEMPRE de forma BREVE: MÁXIMO 1 o 2 oraciones cortas (entre 10 y 20 palabras en total por turno).
+   - Comienza SIEMPRE con una primera frase muy corta de 2 a 4 palabras (ej: "¡Hola!", "Awesome!", "That sounds great!", "I hear you!", "Tell me more!", "¡Qué interesante!", "¡Excelente!"). Esta primera frase corta se convertirá en audio de inmediato para que el estudiante empiece a escucharte en menos de 1 segundo.
+   - Mientras dices esa primera parte corta, la segunda parte se sintetiza en paralelo.
+   - NUNCA des monólogos ni listas extensas. Haz preguntas cortas para que el estudiante hable la mayor parte del tiempo.
+
+2. TONO: Amigable, motivador, espontáneo, cálido y con sentido del humor. No suenes como un libro de texto ni como un asistente corporativo.
+
+3. MEMORIA CONVERSACIONAL TEMPORAL:
+   - Recuerda lo que {student_name} te ha dicho a lo largo de esta sesión (su día, gustos, temas, anécdotas y correcciones previas).
    - Haz referencias naturales a lo que hablaron hace unos momentos como en una conversación real continua entre amigos.
-3. IDIOMA Y FLUJO BILINGÜE:
+
+4. IDIOMA Y FLUJO BILINGÜE:
    - Tu objetivo principal es hacer que el estudiante hable y practique inglés sin miedo.
    - Si el estudiante te saluda o habla en español (ej. "Hola Guionbajo"), salúdalo con entusiasmo en español y transiciona con total fluidez hacia el inglés haciéndole una pregunta cotidiana y fácil de responder para su nivel ({student_level}).
    - Si el estudiante habla en inglés, responde en inglés natural, claro y accesible para su nivel. Puedes intercalar un breve apoyo en español si el tema lo requiere.
    - Si el estudiante solo saluda o no sabe qué decir, ¡toma tú la iniciativa! Pregúntale qué tal su día, qué música le gusta, qué comió o qué planes tiene. Sé libre de proponer temas interesantes.
-4. RITMO DE VOZ Y RESPUESTAS CONCISAS:
-   - Inicia siempre tu turno con una frase corta o saludo de 2 a 4 palabras (ej: "¡Hola!", "Awesome!", "I hear you!", "That sounds great!").
-   - Mantén tus respuestas breves y directas (máximo 2 a 3 oraciones cortas por turno). Respuestas largas aburren y rompen el ritmo de la llamada en vivo.
+
 5. CORRECCIÓN PEDAGÓGICA SUTIL (NO INTERRUMPAS LA CONVERSACIÓN):
    - Si el estudiante comete un error gramatical, léxico o sintáctico en inglés (por ejemplo: "I have 25 years", "she don't like", "yesterday I go"):
      a) En tu respuesta hablada, NO lo regañes ni frenes la conversación. Modela la forma correcta de manera natural (recast) o menciona un tip breve y cariñoso, y continúa la charla.
@@ -225,8 +238,8 @@ async def live_respond_stream(
                 extra_body={"thinking": {"type": "disabled"}}
             )
 
-            # Punctuation boundaries that trigger an audio clause
-            clause_delimiters = re.compile(r'([.!?¡¿\n]+|\,\s+|\;\s+)')
+            # Punctuation boundaries that trigger an audio clause (closing punctuation only)
+            clause_delimiters = re.compile(r'([.!?\n]+|\,\s+|\;\s+|\:\s+)')
 
             async for chunk in stream:
                 if not chunk.choices or len(chunk.choices) == 0:
@@ -235,6 +248,13 @@ async def live_respond_stream(
                 content = getattr(delta, "content", "") or ""
                 if not content:
                     continue
+
+                # Strictly filter out any Chinese characters
+                if re.search(r'[\u4e00-\u9fff]', content):
+                    logger.warning(f"Filtered Chinese character from LLM stream: '{content}'")
+                    content = re.sub(r'[\u4e00-\u9fff]', '', content)
+                    if not content:
+                        continue
 
                 accumulated_text += content
                 clause_buffer += content
@@ -246,8 +266,8 @@ async def live_respond_stream(
                 # Avoid emitting if we are inside a [CORRECTION: ...] tag
                 if "[CORRECTION:" not in clause_buffer:
                     match = clause_delimiters.search(clause_buffer)
-                    # For clause 0, emit early (3 words or first punctuation) for near-instant audio start
-                    threshold_words = 3 if clause_index == 0 else 7
+                    # For clause 0: 2-3 words or first punctuation for instant start
+                    threshold_words = 3 if clause_index == 0 else 6
                     word_count = len(clause_buffer.split())
                     if match or (word_count >= threshold_words and " " in clause_buffer[-2:]):
                         split_pos = match.end() if match else len(clause_buffer)
@@ -255,14 +275,16 @@ async def live_respond_stream(
                         clause_buffer = clause_buffer[split_pos:].lstrip()
 
                         if completed_clause and len(completed_clause) > 1:
-                            clean_c = re.sub(r'\[CORRECTION:.*?\]', '', completed_clause).strip()
+                            clean_c = re.sub(r'\[CORRECTION:.*?\]', '', completed_clause)
+                            clean_c = re.sub(r'[\u4e00-\u9fff]', '', clean_c).strip()
                             if clean_c:
                                 yield f"event: clause\ndata: {json.dumps({'clause_index': clause_index, 'text': clean_c})}\n\n"
                                 clause_index += 1
 
             # Check remaining clause buffer at stream end
             if clause_buffer.strip():
-                clean_tail = re.sub(r'\[CORRECTION:.*?\]', '', clause_buffer).strip()
+                clean_tail = re.sub(r'\[CORRECTION:.*?\]', '', clause_buffer)
+                clean_tail = re.sub(r'[\u4e00-\u9fff]', '', clean_tail).strip()
                 if clean_tail:
                     yield f"event: clause\ndata: {json.dumps({'clause_index': clause_index, 'text': clean_tail})}\n\n"
                     clause_index += 1
@@ -311,7 +333,7 @@ async def synthesize_clause_chunk(
     try:
         audio_bytes = await synthesize_speech(
             text=clean_text,
-            voice_id=req.voice_id or "es-MX-JorgeNeural",
+            voice_id=req.voice_id or "es-US-AlonsoNeural",
             speed=req.speed or 1.0,
         )
         if not audio_bytes:

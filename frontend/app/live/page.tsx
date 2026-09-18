@@ -53,7 +53,7 @@ export default function LiveChatPage() {
   // User & Voice Preferences
   const [userName, setUserName] = useState<string>('Estudiante');
   const [userLevel, setUserLevel] = useState<string>('A1.2');
-  const [preferredVoice, setPreferredVoice] = useState<string>('male-qn-qingse');
+  const [preferredVoice, setPreferredVoice] = useState<string>('es-US-AlonsoNeural');
 
   // Hands-Free State Machine
   const [isSessionActive, setIsSessionActive] = useState<boolean>(false);
@@ -63,9 +63,12 @@ export default function LiveChatPage() {
   const [silenceProgress, setSilenceProgress] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [activeAudio, setActiveAudio] = useState<HTMLAudioElement | null>(null);
-  const [textInput, setTextInput] = useState<string>('');
 
-  // Messages & Session Memory
+  // Live Speech Subtitles (Voice-Only Mode, replaces chat UI)
+  const [currentTutorSubtitle, setCurrentTutorSubtitle] = useState<string>('¡Hola! Estoy listo para conversar contigo por voz. Haz clic en Iniciar y habla con libertad.');
+  const [lastUserUtterance, setLastUserUtterance] = useState<string>('');
+
+  // Messages & Session Memory (preserved in background for AI context)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome-msg',
@@ -271,20 +274,21 @@ export default function LiveChatPage() {
               silenceStartRef.current = now;
             }
             const silenceElapsed = now - silenceStartRef.current;
-            const progress = Math.min(100, Math.round((silenceElapsed / 1500) * 100));
+            const SILENCE_TIMEOUT_MS = 750;
+            const progress = Math.min(100, Math.round((silenceElapsed / SILENCE_TIMEOUT_MS) * 100));
             setSilenceProgress(progress);
 
-            // Exactly 1.5s of silence after speech -> Commit user utterance!
-            if (silenceElapsed >= 1500) {
+            // Fast 750ms silence commit after speech -> Commit user utterance immediately!
+            if (silenceElapsed >= SILENCE_TIMEOUT_MS) {
               const utteranceDuration = now - speechStartRef.current;
               silenceStartRef.current = null;
               setSilenceProgress(0);
 
-              if (utteranceDuration >= 400) {
+              if (utteranceDuration >= 350) {
                 // Legitimate utterance! Stop recorder and commit to STT
                 stopAndCommitUtterance();
               } else {
-                // Noise bump (< 400ms): discard and continue listening
+                // Noise bump (< 350ms): discard and continue listening
                 cancelUtteranceRecording();
               }
             }
@@ -384,6 +388,9 @@ export default function LiveChatPage() {
           return;
         }
 
+        setLastUserUtterance(text);
+        setCurrentTutorSubtitle('Guionbajo está pensando...');
+
         const userMsg: Message = {
           id: `user-${Date.now()}`,
           role: 'user',
@@ -434,7 +441,7 @@ export default function LiveChatPage() {
     const spokenClausesMap: Record<number, string> = {};
 
     const audioQueue = new LiveAudioStreamQueue({
-      voiceId: preferredVoice || 'male-qn-qingse',
+      voiceId: preferredVoice || 'es-US-AlonsoNeural',
       onAudioElementChange: (audio) => {
         setActiveAudio(audio);
       },
@@ -451,6 +458,7 @@ export default function LiveChatPage() {
           .map((k) => spokenClausesMap[Number(k)])
           .join(' ');
 
+        setCurrentTutorSubtitle(assembledText);
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMsgId ? { ...m, content: assembledText } : m
@@ -478,7 +486,7 @@ export default function LiveChatPage() {
         {
           student_name: userName,
           student_level: userLevel,
-          voice_id: preferredVoice || 'male-qn-qingse',
+          voice_id: preferredVoice || 'es-US-AlonsoNeural',
           signal: abortController.signal,
         },
         {
@@ -519,7 +527,9 @@ export default function LiveChatPage() {
           },
           onDone: (doneData) => {
             audioQueue.markStreamComplete();
-            // If no clauses were spoken (e.g. muted), populate content directly
+            if (doneData?.full_text) {
+              setCurrentTutorSubtitle(doneData.full_text);
+            }
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMsgId
@@ -610,37 +620,18 @@ export default function LiveChatPage() {
       },
     ]);
     setCorrections([]);
+    setCurrentTutorSubtitle('¡Conversación reiniciada! Estoy listo para escucharte.');
+    setLastUserUtterance('');
     toast.success('Memoria de la conversación reiniciada.');
     if (isSessionActiveRef.current) {
       resumeListeningState();
     }
   };
 
-  // Replay message audio
-  const handleReplayMessage = async (msg: Message) => {
-    if (!msg.content) return;
-    try {
-      setTutorState('speaking');
-      const blob = await api.live.synthesizeChunk(msg.content, preferredVoice);
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      setActiveAudio(audio);
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        setActiveAudio(null);
-        if (isSessionActiveRef.current) resumeListeningState();
-        else setTutorState('idle');
-      };
-      audio.play();
-    } catch (e) {
-      console.warn('Replay failed:', e);
-      if (isSessionActiveRef.current) resumeListeningState();
-      else setTutorState('idle');
-    }
-  };
-
   // Quick Starter Prompts
   const handleSendStarter = (promptText: string) => {
+    setLastUserUtterance(promptText);
+    setCurrentTutorSubtitle('Guionbajo está pensando...');
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -856,120 +847,46 @@ export default function LiveChatPage() {
 
               <p className="text-[11px] text-brand-text-secondary text-center max-w-md">
                 {isSessionActive
-                  ? 'El micrófono permanece abierto automáticamente. Guionbajo procesa cuando dejas de hablar por 1.5s y se pausa si lo interrumpes.'
+                  ? 'El micrófono permanece abierto. Guionbajo procesa cuando haces una pausa breve y se pausa si lo interrumpes.'
                   : 'Haz clic para abrir el micrófono continuo. No necesitarás presionar ningún botón más.'}
               </p>
             </div>
           </div>
 
+          {/* ── Subtítulos Dinámicos en Vivo (Modo Voz Pura — Sin Chat) ── */}
+          <div className="w-full max-w-xl mx-auto text-center mt-2 mb-4 p-5 rounded-3xl glass border border-brand-cyan/30 bg-black/40 backdrop-blur-md shadow-2xl space-y-2">
+            <div className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider text-brand-cyan">
+              <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse" />
+              <span>Guionbajo en Tiempo Real</span>
+            </div>
+            <p className="text-base sm:text-lg text-white font-medium leading-relaxed min-h-[52px] flex items-center justify-center px-2">
+              {currentTutorSubtitle}
+            </p>
+
+            {lastUserUtterance && (
+              <div className="pt-2.5 border-t border-white/10 text-xs text-brand-text-secondary flex items-center justify-center gap-1.5 truncate">
+                <Mic size={13} className="text-emerald-400 shrink-0" />
+                <span className="truncate">Tú: "{lastUserUtterance}"</span>
+              </div>
+            )}
+          </div>
+
           {/* Quick Icebreaker Starter Prompts */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none">
+          <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 mb-2 scrollbar-none flex-wrap">
             <span className="text-xs text-brand-text-muted flex items-center gap-1 shrink-0">
-              <Sparkles size={12} className="text-brand-gold" /> Temas:
+              <Sparkles size={12} className="text-brand-gold" /> Temas sugeridos:
             </span>
             {CONVERSATION_STARTERS.map((starter, i) => (
               <button
                 key={i}
                 onClick={() => handleSendStarter(starter.prompt)}
                 disabled={tutorState === 'thinking'}
-                className="shrink-0 text-xs px-3 py-1.5 rounded-xl glass border border-brand-border/60 hover:border-brand-cyan/60 hover:text-white text-brand-text-secondary transition-all disabled:opacity-50"
+                className="shrink-0 text-xs px-3 py-1.5 rounded-xl glass border border-brand-border/60 hover:border-brand-cyan/60 hover:text-white text-brand-text-secondary transition-all disabled:opacity-50 active:scale-95"
               >
                 {starter.label}
               </button>
             ))}
           </div>
-
-          {/* ─── Chat Transcript Stream (Voice-Synchronized) ─── */}
-          <div
-            ref={chatContainerRef}
-            className="flex-1 glass rounded-3xl border border-brand-border/40 p-4 sm:p-6 overflow-y-auto max-h-[360px] space-y-4 mb-4 scroll-smooth"
-          >
-            {messages.map((msg) => {
-              const isUser = msg.role === 'user';
-              return (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
-                >
-                  {/* Avatar Mini Icon */}
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
-                      isUser
-                        ? 'bg-brand-accent text-white'
-                        : 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
-                    }`}
-                  >
-                    {isUser ? userName.slice(0, 1).toUpperCase() : 'GB'}
-                  </div>
-
-                  {/* Message Bubble */}
-                  <div
-                    className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl text-sm leading-relaxed ${
-                      isUser
-                        ? 'bg-brand-accent text-white rounded-tr-none'
-                        : 'bg-brand-surface/80 border border-brand-border/60 text-white rounded-tl-none shadow-md'
-                    }`}
-                  >
-                    <p>{msg.content || (msg.isStreaming ? 'Guionbajo está pensando...' : '')}</p>
-
-                    {/* Replay voice button */}
-                    {!isUser && msg.content && (
-                      <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-brand-text-muted">
-                        <span>Guionbajo AI</span>
-                        <button
-                          onClick={() => handleReplayMessage(msg)}
-                          className="flex items-center gap-1 hover:text-brand-cyan transition-colors"
-                          title="Volver a escuchar audio"
-                        >
-                          <Volume1 size={13} /> Escuchar
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Fallback Text Input Bar */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!textInput.trim() || tutorState === 'thinking') return;
-              const text = textInput.trim();
-              setTextInput('');
-              const userMsg: Message = {
-                id: `user-${Date.now()}`,
-                role: 'user',
-                content: text,
-                timestamp: new Date(),
-              };
-              setMessages((prev) => {
-                const updated = [...prev, userMsg];
-                dispatchTutorResponse(updated);
-                return updated;
-              });
-            }}
-            className="flex items-center gap-2 glass rounded-2xl border border-brand-border/60 p-1.5"
-          >
-            <input
-              type="text"
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="O escribe un mensaje si prefieres..."
-              disabled={tutorState === 'thinking'}
-              className="flex-1 bg-transparent px-3 py-1.5 text-sm text-white placeholder-brand-text-muted focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!textInput.trim() || tutorState === 'thinking'}
-              className="p-2.5 rounded-xl bg-brand-accent text-white hover:bg-brand-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Send size={16} />
-            </button>
-          </form>
         </div>
 
         {/* RIGHT: Pedagogical Feedback & Grammar Drawer */}

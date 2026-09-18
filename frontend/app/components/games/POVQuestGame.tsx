@@ -67,34 +67,8 @@ interface POVQuestGameProps {
   onSwitchGame?: () => void;
 }
 
-// ─── HELPER: Fallback Anime POV Scene Generator ─────────────────────────────────
-function getFallbackPovUrl(prompt: string, companionName = 'Emma', index = 0): string {
-  const clean = (prompt || '')
-    .replace(/[/\\|\[\](){}+=→<>_~*#^"“”‘’`]/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-  const isMale = ['lucas', 'alex', 'carlos', 'davies', 'john'].some((n) =>
-    companionName.toLowerCase().includes(n)
-  );
-  const charTag = isMale
-    ? 'solo, 1boy, handsome anime male companion'
-    : 'solo, 1girl, cute anime female companion';
-
-  const fullPrompt = `Masterpiece 2D Japanese anime visual novel game CG, ${charTag} named ${companionName} facing camera with direct friendly eye contact, centered waist-up portrait, ${
-    clean || 'sitting across table talking in cozy atmosphere'
-  }, Kyoto Animation Makoto Shinkai aesthetic, bright cheerful daylight, colorful anime digital illustration, strictly 2D anime drawing, flat vibrant coloring, clean anime line art, single person only, no second person, not a photo, no text, no captions`;
-
-  const seed = (clean + companionName + index)
-    .split('')
-    .reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) & 0x7fffffff, 42);
-
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(
-    fullPrompt
-  )}?width=1024&height=576&model=flux&nologo=true&enhance=false&seed=${seed}`;
-}
-
 // ─── HELPER: Preload Image Bitmap in Browser Memory ────────────────────────────
-function preloadImageBitmap(url: string, timeoutMs = 6000): Promise<boolean> {
+function preloadImageBitmap(url: string, timeoutMs = 15000): Promise<boolean> {
   return new Promise((resolve) => {
     if (!url || typeof window === 'undefined') {
       resolve(false);
@@ -127,38 +101,30 @@ function preloadImageBitmap(url: string, timeoutMs = 6000): Promise<boolean> {
   });
 }
 
-// ─── HELPER: Generate Node Image with Rapid Fallback Race ───────────────────────
-async function generateNodeImageWithFallback(
+// ─── HELPER: Generate Node Image Exclusively with MiniMax image-01 ──────────────
+async function generateNodeImageWithMiniMax(
   node: QuestNodeData,
   companionName = 'Emma',
   index = 0
 ): Promise<string> {
   if (node.image_url) {
-    await preloadImageBitmap(node.image_url, 4000);
+    await preloadImageBitmap(node.image_url, 6000);
     return node.image_url;
   }
 
-  const fallbackUrl = getFallbackPovUrl(node.pov_image_prompt, companionName, index);
-
   try {
-    // Race MiniMax generation with a 6-second timeout so the student never hangs
-    const minimaxPromise = api.generateImage(node.pov_image_prompt, '16:9').then((res) => {
-      if (res && res.url) return res.url as string;
-      throw new Error('No URL in MiniMax response');
-    });
-
-    const timeoutPromise = new Promise<string>((_, reject) => {
-      setTimeout(() => reject(new Error('MiniMax timeout (6s)')), 6000);
-    });
-
-    const resultUrl = await Promise.race([minimaxPromise, timeoutPromise]);
-    await preloadImageBitmap(resultUrl, 4000);
-    return resultUrl;
-  } catch (_err) {
-    // Fallback to instant Flux POV image and preload it
-    await preloadImageBitmap(fallbackUrl, 5000);
-    return fallbackUrl;
+    const res: any = await api.generateImage(node.pov_image_prompt, '16:9');
+    if (res && (res.url || res.image_url)) {
+      const finalUrl = (res.url || res.image_url) as string;
+      await preloadImageBitmap(finalUrl, 10000);
+      return finalUrl;
+    }
+    console.warn(`MiniMax image-01 returned no URL for scene ${index}:`, res);
+  } catch (err) {
+    console.warn(`MiniMax image-01 generation error for scene ${index}:`, err);
   }
+
+  return '';
 }
 
 export default function POVQuestGame({
@@ -200,6 +166,7 @@ export default function POVQuestGame({
     is_correct: boolean;
     feedback: string;
     correction?: string | null;
+    suggested_enhancement?: string | null;
     detected_grammar_rule?: string;
   } | null>(null);
 
@@ -244,7 +211,7 @@ export default function POVQuestGame({
       setImageLoading((prev) => ({ ...prev, [currentNode.node_id]: true }));
 
       try {
-        const url = await generateNodeImageWithFallback(
+        const url = await generateNodeImageWithMiniMax(
           currentNode,
           questData.companion_name || 'Emma',
           currentNodeIndex
@@ -253,11 +220,14 @@ export default function POVQuestGame({
         if (!isCancelled && url) {
           setImageCache((prev) => ({ ...prev, [currentNode.node_id]: url }));
           setIsSceneReady(true);
+        } else if (!isCancelled) {
+          // If no image URL, set scene ready so user can still progress
+          setIsSceneReady(true);
         }
       } catch (e) {
         console.warn('Error preparing scene image:', e);
         if (!isCancelled) {
-          // If all fails, still allow scene to open so user isn't permanently stuck
+          // If error occurs, still allow scene to open so user isn't permanently stuck
           setIsSceneReady(true);
         }
       } finally {
@@ -274,7 +244,7 @@ export default function POVQuestGame({
   }, [currentNodeIndex, currentNode?.node_id]);
 
   // ─── Background Sequential Pre-generation for Remaining Scenes ───────────────
-  // Pre-generates images for scenes 1, 2, ... N-1 while the student plays scene 0
+  // Pre-generates images with MiniMax for scenes 1, 2, ... N-1 while the student plays scene 0
   useEffect(() => {
     if (!nodes || nodes.length <= 1) return;
     let isCancelled = false;
@@ -291,7 +261,7 @@ export default function POVQuestGame({
         backgroundPreloadedRef.current.add(n.node_id);
 
         try {
-          const url = await generateNodeImageWithFallback(
+          const url = await generateNodeImageWithMiniMax(
             n,
             questData.companion_name || 'Emma',
             i
@@ -300,7 +270,7 @@ export default function POVQuestGame({
             setImageCache((prev) => ({ ...prev, [n.node_id]: url }));
           }
         } catch (e) {
-          console.warn(`Error pre-generating scene ${i}:`, e);
+          console.warn(`Error pre-generating scene ${i} with MiniMax:`, e);
         }
       }
     }
@@ -483,9 +453,10 @@ export default function POVQuestGame({
           feedback:
             res.feedback ||
             (res.is_correct
-              ? '¡Excelente respuesta!'
-              : 'Intenta de nuevo aplicando la estructura.'),
+              ? '¡Excelente respuesta! Tu mensaje se entendió con claridad.'
+              : 'Intenta de nuevo elaborando tu respuesta en inglés.'),
           correction: res.correction,
+          suggested_enhancement: res.suggested_enhancement,
           detected_grammar_rule: res.detected_grammar_rule,
         });
 
@@ -502,18 +473,20 @@ export default function POVQuestGame({
       }
     } catch (err) {
       console.warn('Backend evaluation error, applying local validator:', err);
-      // Local fallback evaluation
+      // Local communicative fallback evaluation
       const clean = studentTranscript.toLowerCase();
       const rules = currentNode.validation_rules?.must_include || [];
+      const wordCount = clean.trim().split(/\s+/).filter(Boolean).length;
       const isMatch =
-        rules.length === 0 || rules.some((r) => clean.includes(r.toLowerCase()));
+        rules.length === 0 || rules.some((r) => clean.includes(r.toLowerCase())) || wordCount >= 3;
 
       setEvalResult({
         is_correct: isMatch,
         feedback: isMatch
-          ? `¡Excelente! Cumpliste con el objetivo de ${topic}.`
-          : `Recuerda incluir la regla esperada (${rules.join(', ')}) para continuar.`,
+          ? `¡Respuesta válida y comunicativa! Expresaste tu idea con claridad.`
+          : `Por favor elabora una oración completa en inglés para continuar la historia.`,
         correction: currentNode.example_phrase,
+        suggested_enhancement: currentNode.example_phrase,
       });
 
       if (isMatch) {
@@ -627,14 +600,28 @@ export default function POVQuestGame({
               className="w-full h-full object-cover object-center"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-zinc-950 via-slate-900 to-black">
-              <Loader2 size={36} className="text-brand-cyan animate-spin mb-3" />
-              <p className="text-xs sm:text-sm font-bold text-white tracking-wide">
-                Preparando escena con {questData.companion_name || 'Emma'}...
-              </p>
-              <span className="text-[11px] text-zinc-400 mt-1 max-w-xs line-clamp-2">
-                Cargando ambientación de la historia en primera persona (POV)
-              </span>
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-zinc-950 via-purple-950/40 to-black relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand-accent/20 via-transparent to-transparent animate-pulse" />
+              <div className="relative z-10 flex flex-col items-center max-w-md">
+                <div className="relative mb-3">
+                  <div className="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center animate-pulse">
+                    <Sparkles size={26} className="text-purple-300 animate-spin" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-brand-cyan text-black font-extrabold text-[9px] uppercase tracking-wider shadow">
+                    MiniMax AI
+                  </div>
+                </div>
+                <h4 className="text-sm sm:text-base font-extrabold text-white tracking-wide">
+                  Generando Escena con MiniMax image-01...
+                </h4>
+                <p className="text-xs text-purple-200/80 mt-1 max-w-sm">
+                  Pintando el entorno interactivo en primera persona (POV) con <strong className="text-white">{questData.companion_name || 'Emma'}</strong>.
+                </p>
+                <div className="flex items-center gap-2 mt-4 px-3 py-1.5 rounded-full bg-black/70 border border-white/10 text-[11px] text-zinc-300">
+                  <Loader2 size={12} className="animate-spin text-brand-cyan" />
+                  <span>Esperando creación de la foto para iniciar la escena...</span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -685,7 +672,9 @@ export default function POVQuestGame({
             disabled={!isSceneReady}
             onClick={() => playDialogueAudio(currentNode.companion_dialogue)}
             className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg backdrop-blur-md ${
-              isPlayingDialogue
+              !isSceneReady
+                ? 'bg-black/40 text-zinc-500 border-white/10 cursor-not-allowed opacity-50'
+                : isPlayingDialogue
                 ? 'bg-brand-cyan text-black border-brand-cyan animate-pulse'
                 : 'bg-black/75 hover:bg-black/95 border-white/20 text-white'
             }`}
@@ -739,7 +728,11 @@ export default function POVQuestGame({
                 {questData.companion_name || 'Emma'}
               </span>
               <span className="text-[10px] text-zinc-400">
-                {isPlayingDialogue ? 'Hablando en inglés...' : 'Esperando tu respuesta'}
+                {!isSceneReady
+                  ? 'Esperando foto de la escena...'
+                  : isPlayingDialogue
+                  ? 'Hablando en inglés...'
+                  : 'Esperando tu respuesta'}
               </span>
             </div>
           </div>
@@ -748,7 +741,7 @@ export default function POVQuestGame({
             type="button"
             disabled={!isSceneReady}
             onClick={() => playDialogueAudio(currentNode.companion_dialogue)}
-            className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-white/10"
+            className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Volume2 size={13} />
             <span className="hidden sm:inline">Repetir</span>
@@ -756,9 +749,21 @@ export default function POVQuestGame({
         </div>
 
         {/* Dialogue Text Subtitle */}
-        <p className="text-base sm:text-lg font-bold font-outfit text-white leading-relaxed">
-          "{currentNode.companion_dialogue}"
-        </p>
+        {isSceneReady ? (
+          <motion.p
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-base sm:text-lg font-bold font-outfit text-white leading-relaxed"
+          >
+            "{currentNode.companion_dialogue}"
+          </motion.p>
+        ) : (
+          <div className="flex items-center gap-2 text-zinc-400 text-sm italic py-1">
+            <Loader2 size={14} className="animate-spin text-brand-cyan" />
+            <span>{questData.companion_name || 'Emma'} está entrando en escena (esperando foto de MiniMax AI)...</span>
+          </div>
+        )}
       </div>
 
       {/* ── 5. Student Interaction Bar (Mic Push-to-Talk + Text Input) ── */}
@@ -775,37 +780,55 @@ export default function POVQuestGame({
         {/* Primary Action: High-Contrast Prominent Microphone Button */}
         <motion.button
           type="button"
-          whileTap={{ scale: 0.97 }}
+          disabled={!isSceneReady || isEvaluating}
+          whileTap={isSceneReady ? { scale: 0.97 } : undefined}
           onClick={isRecording ? stopRecording : startRecording}
-          className={`w-full py-3.5 sm:py-4 rounded-xl text-sm sm:text-base font-extrabold transition-all flex items-center justify-center gap-2.5 shadow-xl cursor-pointer ${
-            isRecording
-              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/40 animate-pulse ring-4 ring-rose-400'
-              : 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-black shadow-emerald-500/30'
+          className={`w-full py-3.5 sm:py-4 rounded-xl text-sm sm:text-base font-extrabold transition-all flex items-center justify-center gap-2.5 shadow-xl ${
+            !isSceneReady
+              ? 'bg-zinc-800 text-zinc-500 border border-white/10 cursor-not-allowed opacity-60'
+              : isRecording
+              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/40 animate-pulse ring-4 ring-rose-400 cursor-pointer'
+              : 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-black shadow-emerald-500/30 cursor-pointer'
           }`}
         >
-          {isRecording ? <Square size={17} className="fill-current" /> : <Mic size={18} className="stroke-[2.5]" />}
-          <span>{isRecording ? 'Detener y Validar Respuesta ⏹️' : 'Hablar por Micrófono 🎤'}</span>
+          {isRecording ? (
+            <Square size={17} className="fill-current" />
+          ) : (
+            <Mic size={18} className="stroke-[2.5]" />
+          )}
+          <span>
+            {!isSceneReady
+              ? 'Esperando creación de la foto 🎨...'
+              : isRecording
+              ? 'Detener y Validar Respuesta ⏹️'
+              : 'Hablar por Micrófono 🎤'}
+          </span>
         </motion.button>
 
         {/* Secondary Alternative: Text Input for typing */}
         <div className="flex items-center gap-2 pt-1 border-t border-white/10">
           <input
             type="text"
-            placeholder="O escribe tu respuesta en inglés aquí..."
+            disabled={!isSceneReady || isEvaluating}
+            placeholder={
+              !isSceneReady
+                ? 'Esperando creación de la foto para responder...'
+                : 'O escribe tu respuesta en inglés aquí...'
+            }
             value={textFallback}
             onChange={(e) => setTextFallback(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && textFallback.trim() && !isEvaluating) {
+              if (e.key === 'Enter' && textFallback.trim() && !isEvaluating && isSceneReady) {
                 handleEvaluateResponse(textFallback);
               }
             }}
-            className="flex-1 bg-black/70 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-brand-cyan"
+            className="flex-1 bg-black/70 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-brand-cyan disabled:opacity-40 disabled:cursor-not-allowed"
           />
           <button
             type="button"
-            disabled={isEvaluating || !textFallback.trim()}
+            disabled={!isSceneReady || isEvaluating || !textFallback.trim()}
             onClick={() => handleEvaluateResponse(textFallback)}
-            className="px-4 py-2.5 rounded-xl bg-brand-cyan hover:bg-cyan-400 text-black font-extrabold text-xs disabled:opacity-40 transition-all flex items-center gap-1.5 shadow-md cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-brand-cyan hover:bg-cyan-400 text-black font-extrabold text-xs disabled:opacity-40 transition-all flex items-center gap-1.5 shadow-md cursor-pointer disabled:cursor-not-allowed"
             title="Validar respuesta escrita"
           >
             {isEvaluating ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
@@ -859,14 +882,31 @@ export default function POVQuestGame({
                 </p>
               </div>
 
-              {/* Suggested English correction if incorrect */}
-              {!evalResult.is_correct && evalResult.correction && (
-                <div className="p-3 rounded-xl sm:rounded-2xl bg-zinc-900/90 border border-white/10 text-left space-y-1">
+              {/* Formative Pedagogical Enhancement / Suggested Alternative */}
+              {evalResult.is_correct && (evalResult.suggested_enhancement || evalResult.correction) && (
+                <div className="p-3.5 rounded-xl sm:rounded-2xl bg-zinc-900/90 border border-brand-cyan/30 text-left space-y-1.5 shadow-lg">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-brand-cyan uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-brand-cyan animate-pulse" />
+                    <span>
+                      {evalResult.correction
+                        ? 'Corrección sugerida de tu oración:'
+                        : 'Sugerencia para sonar más nativo / colaborativo:'}
+                    </span>
+                  </span>
+                  <p className="text-xs sm:text-sm text-white font-medium italic">
+                    "{evalResult.suggested_enhancement || evalResult.correction}"
+                  </p>
+                </div>
+              )}
+
+              {/* Retry Guidance when incorrect */}
+              {!evalResult.is_correct && (evalResult.suggested_enhancement || evalResult.correction) && (
+                <div className="p-3 rounded-xl sm:rounded-2xl bg-zinc-900/90 border border-amber-500/30 text-left space-y-1">
                   <span className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase block">
                     Ejemplo de respuesta sugerida:
                   </span>
                   <p className="text-xs sm:text-sm text-white font-medium italic">
-                    "{evalResult.correction}"
+                    "{evalResult.suggested_enhancement || evalResult.correction}"
                   </p>
                 </div>
               )}

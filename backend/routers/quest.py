@@ -216,6 +216,7 @@ async def evaluate_quest_response(
         "detected_grammar_rule": evaluation.get("detected_grammar_rule"),
         "feedback": evaluation.get("feedback"),
         "correction": evaluation.get("correction"),
+        "suggested_enhancement": evaluation.get("suggested_enhancement"),
         "next_node_id": evaluation.get("next_node_id"),
         "current_node_index": req.node_index,
     }

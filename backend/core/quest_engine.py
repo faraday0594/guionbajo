@@ -443,6 +443,7 @@ class QuestEvaluator:
     ) -> Dict[str, Any]:
         """
         Fast, robust deterministic heuristic evaluator for offline/fallback scenarios.
+        Prioritizes communicative competence: allows valid sentences while providing enhancements.
         """
         clean_text = transcript.strip().lower()
         words = re.findall(r"\b\w+(?:'\w+)?\b", clean_text)
@@ -457,6 +458,7 @@ class QuestEvaluator:
                 "detected_grammar_rule": topic,
                 "feedback": f"Tu respuesta es muy corta ({len(words)} palabras). Por favor elabora una oración completa en inglés.",
                 "correction": node.get("example_phrase", "Please formulate a complete sentence."),
+                "suggested_enhancement": node.get("example_phrase"),
                 "next_node_id": None
             }
 
@@ -471,17 +473,30 @@ class QuestEvaluator:
                 "detected_grammar_rule": topic,
                 "feedback": f"¡Excelente trabajo! Has respondido de forma natural aplicando la estructura de {topic}.",
                 "correction": None,
+                "suggested_enhancement": None,
                 "next_node_id": None
             }
         else:
-            required_str = " / ".join(must_include[:3])
-            return {
-                "is_correct": False,
-                "detected_grammar_rule": topic,
-                "feedback": f"Respuesta incompleta: Recuerda incluir la estructura objetivo ({required_str}) para continuar la historia.",
-                "correction": node.get("example_phrase"),
-                "next_node_id": None
-            }
+            # If the student formulated a coherent sentence of 3+ words, accept it and offer the target structure as an enhancement
+            if len(words) >= 3:
+                return {
+                    "is_correct": True,
+                    "detected_grammar_rule": topic,
+                    "feedback": f"¡Muy bien! Tu respuesta es comprensible y comunicativa. Como sugerencia para practicar la estructura meta de {topic}, también podrías decir: '{node.get('example_phrase', '')}'.",
+                    "correction": None,
+                    "suggested_enhancement": node.get("example_phrase"),
+                    "next_node_id": None
+                }
+            else:
+                required_str = " / ".join(must_include[:3])
+                return {
+                    "is_correct": False,
+                    "detected_grammar_rule": topic,
+                    "feedback": f"Respuesta incompleta: Recuerda responder con una oración en inglés ({required_str}) para continuar la historia.",
+                    "correction": node.get("example_phrase"),
+                    "suggested_enhancement": node.get("example_phrase"),
+                    "next_node_id": None
+                }
 
     async def evaluate_node_response(
         self,
@@ -492,7 +507,9 @@ class QuestEvaluator:
         current_node_index: int = 0
     ) -> Dict[str, Any]:
         """
-        Evaluates the student's spoken response using LLM and returns structured feedback.
+        Evaluates the student's spoken response using LLM and returns structured pedagogical feedback.
+        Prioritizes communicative competence: accepts valid answers, corrects errors constructively,
+        and suggests native enhancements without artificially blocking the student.
         """
         next_node_id = None
         if all_nodes and current_node_index + 1 < len(all_nodes):
@@ -502,8 +519,9 @@ class QuestEvaluator:
             return {
                 "is_correct": False,
                 "detected_grammar_rule": topic,
-                "feedback": "No se detectó audio ni respuesta. Por favor presiona el micrófono y habla.",
+                "feedback": "No se detectó audio ni respuesta. Por favor presiona el micrófono y habla o escribe en inglés.",
                 "correction": node.get("example_phrase"),
+                "suggested_enhancement": node.get("example_phrase"),
                 "next_node_id": None
             }
 
@@ -514,32 +532,52 @@ class QuestEvaluator:
             return res
 
         system_prompt = (
-            "You are an expert, encouraging ESL evaluator. Compare the student's spoken transcript "
-            "with the required pedagogical goal and context. "
-            "Output strictly valid JSON with no extraneous text."
+            "You are an expert, encouraging, pedagogically modern ESL tutor in an interactive Visual Novel game. "
+            "PHILOSOPHY: Prioritize COMMUNICATIVE COMPETENCE and positive reinforcement over rigid, mechanical formulaic repetition. "
+            "Human conversations naturally allow multiple valid ways to express the same thought. "
+            "Output strictly valid JSON with no extra text."
         )
 
-        user_prompt = f"""Evaluate the student's response in this conversational scene:
+        user_prompt = f"""Evaluate the student's spoken/typed response in this Visual Novel conversational scene:
 
 TOPIC / GRAMMAR TARGET: {topic}
 COMPANION DIALOGUE: "{node.get('companion_dialogue', '')}"
 PEDAGOGICAL GOAL: {node.get('pedagogical_goal', '')}
 VALIDATION RULES: {json.dumps(node.get('validation_rules', {}))}
-STUDENT TRANSCRIPT: "{transcript}"
+STUDENT'S ACTUAL RESPONSE: "{transcript}"
 EXAMPLE TARGET ANSWER: "{node.get('example_phrase', '')}"
 
-CRITICAL EVALUATION CRITERIA:
-1. Is the student's response grammatically plausible in English for this CEFR target?
-2. Does it fulfill the pedagogical goal (e.g. using the required grammar structure or intent)?
-3. If correct, provide supportive praising feedback in Spanish and set "is_correct": true.
-4. If incorrect, provide warm, constructive feedback in Spanish explaining what was missing, provide a "correction" in English, and set "is_correct": false.
+PEDAGOGICAL EVALUATION RULES:
+1. COMMUNICATIVE SUCCESS FIRST (DO NOT BLOCK VALID RESPONSES):
+   - Does the student's response make communicative sense in the context of the companion's question or statement?
+   - If the student answered in English with a meaningful, comprehensible reply (e.g. Companion: "What time do you think we should meet?" -> Student: "I think I will meet you at seven am tomorrow" or "Let's meet at 7 am" or "I can meet at 7 tomorrow"), THIS IS A VALID COMMUNICATIVE RESPONSE!
+   - DO NOT fail or block the student simply because they used a different valid phrasing or didn't use the exact grammatical formula suggested!
+   - In all such cases, set "is_correct": true so the student can continue the story!
+
+2. CONSTRUCTIVE ENHANCEMENT & CORRECTION:
+   - Case A (Valid answer, but uses a different structure than the topic's target):
+     Set "is_correct": true.
+     In "feedback", celebrate that their message was understood, and explain warmly in Spanish how to elevate it or use the target structure:
+     e.g., "¡Excelente! Tu respuesta es clara y comprensible. Para proponer planes de forma más colaborativa y casual en inglés, también es muy común usar 'Let's': 'Let's meet at 7:00 a.m. tomorrow'."
+     Provide the suggested target alternative in "suggested_enhancement": "Let's meet at 7:00 a.m. tomorrow."
+   - Case B (Sentence has minor grammar, spelling, or preposition errors):
+     If communicative intent is clear, set "is_correct": true.
+     In "feedback", gently explain the grammar fix in Spanish.
+     In "correction", provide the corrected version of the student's sentence (e.g. "I think I will meet you at 7:00 a.m.").
+   - Case C (Needs Retry - ONLY for non-communicative inputs):
+     Set "is_correct": false ONLY if:
+     - The response is in Spanish instead of English (e.g. "vamos a las siete").
+     - The response is completely off-topic or nonsensical (e.g. Companion asks about meeting time and student says "I like bananas").
+     - The response is empty or just random letters/gibberish.
+     In "feedback", explain kindly what happened and guide them with an example in "suggested_enhancement".
 
 OUTPUT JSON SCHEMA:
 {{
   "is_correct": true,
   "detected_grammar_rule": "{topic}",
-  "feedback": "¡Excelente respuesta! Usaste 'will' de manera correcta.",
-  "correction": null
+  "feedback": "¡Excelente respuesta! Tu mensaje se entiende con claridad...",
+  "correction": "Versión corregida si tuvo errores gramaticales (o null)",
+  "suggested_enhancement": "Oración alternativa más natural o aplicando la meta didáctica (o null)"
 }}
 """
         try:
@@ -562,7 +600,7 @@ OUTPUT JSON SCHEMA:
             if not result.get("detected_grammar_rule"):
                 result["detected_grammar_rule"] = topic
             if not result.get("feedback"):
-                result["feedback"] = "¡Muy bien!" if is_correct else "Intenta de nuevo aplicando la estructura."
+                result["feedback"] = "¡Muy bien! Respuesta comunicada con éxito." if is_correct else "Intenta de nuevo elaborando tu respuesta en inglés."
 
             return result
         except Exception as e:

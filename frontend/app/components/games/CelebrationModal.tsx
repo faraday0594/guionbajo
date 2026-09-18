@@ -389,7 +389,7 @@ export default function CelebrationModal({
                     {/* 🪢 THE TAUT ROPE: Originates directly inside hands and shoots across to the right */}
                     {/* Outer glowing aura */}
                     <motion.path
-                      d="M 85 125 L 125 125 Q 500 115 1200 65"
+                      d="M 85 125 L 125 125 Q 500 255 1000 440"
                       fill="none"
                       stroke="#f59e0b"
                       strokeWidth="10"
@@ -398,16 +398,16 @@ export default function CelebrationModal({
                       filter="url(#gbCyanGlow)"
                       animate={{
                         d: [
-                          'M 85 125 L 125 125 Q 500 115 1200 65',
-                          'M 85 125 L 125 125 Q 500 110 1200 65',
-                          'M 85 125 L 125 125 Q 500 120 1200 65',
+                          'M 85 125 L 125 125 Q 500 255 1000 440',
+                          'M 85 125 L 125 125 Q 500 248 1000 440',
+                          'M 85 125 L 125 125 Q 500 262 1000 440',
                         ],
                       }}
                       transition={{ repeat: Infinity, duration: 0.1 }}
                     />
                     {/* Braided rope core */}
                     <motion.path
-                      d="M 85 125 L 125 125 Q 500 115 1200 65"
+                      d="M 85 125 L 125 125 Q 500 255 1000 440"
                       fill="none"
                       stroke="url(#gbPlasmaOuter)"
                       strokeWidth="6"
@@ -415,9 +415,9 @@ export default function CelebrationModal({
                       strokeDasharray="12 4"
                       animate={{
                         d: [
-                          'M 85 125 L 125 125 Q 500 115 1200 65',
-                          'M 85 125 L 125 125 Q 500 110 1200 65',
-                          'M 85 125 L 125 125 Q 500 120 1200 65',
+                          'M 85 125 L 125 125 Q 500 255 1000 440',
+                          'M 85 125 L 125 125 Q 500 248 1000 440',
+                          'M 85 125 L 125 125 Q 500 262 1000 440',
                         ],
                       }}
                       transition={{ repeat: Infinity, duration: 0.1 }}

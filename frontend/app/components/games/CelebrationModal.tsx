@@ -51,7 +51,7 @@ export default function CelebrationModal({
     clearAllTimers();
     setStage('pulling');
 
-    // 0.25s: Mechanical strain sound
+    // 0.25s: Mechanical strain sound (heaving on the rope)
     timeoutRefs.current.push(
       setTimeout(() => {
         playSfx(() => sfx.playStrainRatchet());
@@ -65,7 +65,7 @@ export default function CelebrationModal({
       }, 1100)
     );
 
-    // 1.9s: Sudden SNAP / Whoosh!
+    // 1.9s: Sudden SNAP / Whoosh! The score breaks loose and slides in
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('snap');
@@ -73,34 +73,34 @@ export default function CelebrationModal({
       }, 1900)
     );
 
-    // 2.3s: Guionbajo recoils & falls backward
+    // 2.25s: Guionbajo loses balance and falls backward directly to the ground
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('fall');
-      }, 2300)
+      }, 2250)
     );
 
-    // 2.85s: THUD / Lands seated on floor with squash & stretch
+    // 2.65s: THUD! Hits the floor seated ("pegado al piso") with squash & stretch
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('landed');
         playSfx(() => sfx.playCartoonThud());
-      }, 2850)
+      }, 2650)
     );
 
-    // 3.4s: Turns head to inspect the heavy score card he dragged in
+    // 3.3s: Turns head to the right to inspect the giant score card beside him
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('look_score');
-      }, 3400)
+      }, 3300)
     );
 
-    // 4.15s: Turns head directly to student, eyes morph to ^_^, smiles & confetti fanfare!
+    // 4.0s: Turns head to the student, eyes morph to ^_^, smiles & confetti fanfare!
     timeoutRefs.current.push(
       setTimeout(() => {
         setStage('celebrate');
         playSfx(() => sfx.playVictoryFanfare());
-      }, 4150)
+      }, 4000)
     );
   };
 
@@ -115,7 +115,6 @@ export default function CelebrationModal({
 
   if (!isOpen) return null;
 
-  // Visual score badge colors
   const isPerfect = score >= 100;
 
   return (
@@ -182,7 +181,7 @@ export default function CelebrationModal({
               preserveAspectRatio="xMidYMid meet"
             >
               <defs>
-                {/* Filters */}
+                {/* Glow Filters */}
                 <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
                   <feGaussianBlur stdDeviation="3" result="blur" />
                   <feMerge>
@@ -253,23 +252,17 @@ export default function CelebrationModal({
                   <stop offset="50%" stopColor="#0a0e19" />
                   <stop offset="100%" stopColor="#05070e" />
                 </linearGradient>
-
-                <linearGradient id="goldBadgeGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#fde047" />
-                  <stop offset="40%" stopColor="#eab308" />
-                  <stop offset="100%" stopColor="#ca8a04" />
-                </linearGradient>
               </defs>
 
               {/* ── STAGE BACKGROUND & CYBER GRID FLOOR ── */}
               <rect width="800" height="440" fill="#070914" />
               {/* Background ambient radial glow */}
-              <circle cx="480" cy="220" r="260" fill="#1e1b4b" opacity="0.3" />
-              <circle cx="200" cy="360" r="160" fill="#083344" opacity="0.25" />
+              <circle cx="560" cy="220" r="280" fill="#1e1b4b" opacity="0.35" />
+              <circle cx="160" cy="360" r="180" fill="#083344" opacity="0.25" />
 
               {/* Floor Horizon Line & Grid at Y = 360 */}
               <line x1="0" y1="360" x2="800" y2="360" stroke="#1e293b" strokeWidth="2" />
-              <line x1="0" y1="361" x2="800" y2="361" stroke="#00D4FF" strokeWidth="1" opacity="0.4" filter="url(#cyanGlow)" />
+              <line x1="0" y1="361" x2="800" y2="361" stroke="#00D4FF" strokeWidth="1" opacity="0.45" filter="url(#cyanGlow)" />
 
               {/* Floor Perspective Lines */}
               <line x1="120" y1="360" x2="60" y2="440" stroke="#0e1726" strokeWidth="1.5" />
@@ -279,13 +272,13 @@ export default function CelebrationModal({
               <line x1="740" y1="360" x2="790" y2="440" stroke="#0e1726" strokeWidth="1.5" />
 
               {/* ══════════════════════════════════════════════════════════
-                  🪢 THE ROPE (Taut when pulling, snapped/loose when released)
+                  🪢 THE ROPE (Directly links Guionbajo hands to the Score Card)
                  ══════════════════════════════════════════════════════════ */}
               {stage === 'pulling' && (
                 <g>
                   {/* Outer glow shadow */}
                   <motion.path
-                    d="M 270 292 Q 480 290 850 255"
+                    d="M 215 315 Q 310 300 860 220"
                     fill="none"
                     stroke="#f59e0b"
                     strokeWidth="7"
@@ -294,16 +287,16 @@ export default function CelebrationModal({
                     filter="url(#goldGlow)"
                     animate={{
                       d: [
-                        'M 270 292 Q 480 290 850 255',
-                        'M 270 294 Q 480 286 850 255',
-                        'M 270 290 Q 480 292 850 255',
+                        'M 215 315 Q 310 300 860 220',
+                        'M 215 317 Q 310 296 860 220',
+                        'M 215 313 Q 310 304 860 220',
                       ],
                     }}
                     transition={{ repeat: Infinity, duration: 0.12 }}
                   />
                   {/* Twisted rope strand */}
                   <motion.path
-                    d="M 270 292 Q 480 290 850 255"
+                    d="M 215 315 Q 310 300 860 220"
                     fill="none"
                     stroke="url(#ropeGrad)"
                     strokeWidth="5"
@@ -311,9 +304,9 @@ export default function CelebrationModal({
                     strokeDasharray="9 3"
                     animate={{
                       d: [
-                        'M 270 292 Q 480 290 850 255',
-                        'M 270 294 Q 480 286 850 255',
-                        'M 270 290 Q 480 292 850 255',
+                        'M 215 315 Q 310 300 860 220',
+                        'M 215 317 Q 310 296 860 220',
+                        'M 215 313 Q 310 304 860 220',
                       ],
                     }}
                     transition={{ repeat: Infinity, duration: 0.12 }}
@@ -324,12 +317,12 @@ export default function CelebrationModal({
               {(stage === 'snap' || stage === 'fall' || stage === 'landed' || stage === 'look_score' || stage === 'celebrate') && (
                 <motion.g
                   initial={{ opacity: 1 }}
-                  animate={{ opacity: stage === 'celebrate' ? 0.2 : 0.6 }}
+                  animate={{ opacity: stage === 'celebrate' ? 0.3 : 0.65 }}
                   transition={{ duration: 0.6 }}
                 >
-                  {/* Loose rope lying on the floor */}
+                  {/* Loose rope lying slack on the floor */}
                   <path
-                    d="M 210 358 C 240 370, 270 355, 310 360 C 350 365, 370 356, 400 359"
+                    d="M 195 358 C 230 370, 270 355, 310 360 C 340 364, 360 357, 378 359"
                     fill="none"
                     stroke="url(#ropeGrad)"
                     strokeWidth="4"
@@ -340,19 +333,19 @@ export default function CelebrationModal({
               )}
 
               {/* ══════════════════════════════════════════════════════════
-                  🏆 THE SCORE MONOLITH (Rushed in from off-screen right)
+                  🏆 THE SCORE MONOLITH (Rushed in to X=380, BESIDE Guionbajo)
                  ══════════════════════════════════════════════════════════ */}
               <motion.g
-                initial={{ x: 880, y: 130 }}
+                initial={{ x: 880, y: 105 }}
                 animate={
                   stage === 'pulling'
-                    ? { x: 860, y: 130 }
+                    ? { x: 860, y: 105 }
                     : {
-                        x: 430,
-                        y: 130,
+                        x: 375, // Positioned on right half (375 to 725), completely beside Guionbajo
+                        y: 105,
                         transition: {
                           type: 'spring',
-                          stiffness: 170,
+                          stiffness: 160,
                           damping: 17,
                           mass: 1.1,
                         },
@@ -360,15 +353,15 @@ export default function CelebrationModal({
                 }
               >
                 {/* Monolith ground shadow */}
-                <ellipse cx="140" cy="235" rx="130" ry="12" fill="#030712" opacity="0.75" />
+                <ellipse cx="170" cy="254" rx="155" ry="14" fill="#030712" opacity="0.8" />
 
-                {/* Monolith Card Body */}
+                {/* Monolith Card Body (Width 350 x Height 245) */}
                 <rect
                   x="0"
                   y="0"
-                  width="290"
-                  height="225"
-                  rx="22"
+                  width="350"
+                  height="245"
+                  rx="24"
                   fill="url(#cardBgGrad)"
                   stroke={isPerfect ? '#F59E0B' : '#00D4FF'}
                   strokeWidth="2.5"
@@ -377,40 +370,40 @@ export default function CelebrationModal({
 
                 {/* Inner Tech Frame */}
                 <rect
-                  x="8"
-                  y="8"
-                  width="274"
-                  height="209"
-                  rx="16"
+                  x="10"
+                  y="10"
+                  width="330"
+                  height="225"
+                  rx="18"
                   fill="none"
                   stroke="#334155"
                   strokeWidth="1"
                   strokeDasharray="6 4"
                 />
 
-                {/* Heavy Eyelet Rings on Left Edge (Where the rope was tied!) */}
-                <circle cx="8" cy="112" r="7" fill="#1e293b" stroke="#64748b" strokeWidth="2" />
-                <circle cx="8" cy="112" r="3" fill="#00D4FF" />
-                <path d="M 0 112 L -20 120" stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" />
+                {/* Heavy Eyelet Ring on Left Edge (Where the rope pulled!) */}
+                <circle cx="10" cy="122" r="8" fill="#1e293b" stroke="#64748b" strokeWidth="2" />
+                <circle cx="10" cy="122" r="3.5" fill="#00D4FF" />
+                <path d="M 0 122 L -18 130" stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" />
 
                 {/* Top Badge Banner */}
                 <rect
-                  x="30"
-                  y="20"
-                  width="230"
-                  height="28"
-                  rx="8"
+                  x="35"
+                  y="22"
+                  width="280"
+                  height="30"
+                  rx="9"
                   fill={isPerfect ? 'rgba(234, 179, 8, 0.15)' : 'rgba(0, 212, 255, 0.15)'}
                   stroke={isPerfect ? '#fde047' : '#00D4FF'}
                   strokeWidth="1"
                 />
                 <text
-                  x="145"
-                  y="39"
+                  x="175"
+                  y="42"
                   textAnchor="middle"
                   fill={isPerfect ? '#fef08a' : '#67e8f9'}
                   fontFamily="monospace"
-                  fontSize="12"
+                  fontSize="12.5"
                   fontWeight="bold"
                   letterSpacing="1"
                 >
@@ -419,330 +412,320 @@ export default function CelebrationModal({
 
                 {/* Giant Percentage */}
                 <text
-                  x="145"
-                  y="112"
+                  x="175"
+                  y="124"
                   textAnchor="middle"
                   fill="#ffffff"
                   fontFamily="system-ui, sans-serif"
-                  fontSize="58"
+                  fontSize="64"
                   fontWeight="900"
                   letterSpacing="-1"
                 >
                   {score}
-                  <tspan fontSize="36" fill={isPerfect ? '#facc15' : '#00D4FF'}>
+                  <tspan fontSize="40" fill={isPerfect ? '#facc15' : '#00D4FF'}>
                     %
                   </tspan>
                 </text>
 
                 {/* Subtitle / Topic Pill */}
                 <rect
-                  x="20"
-                  y="132"
-                  width="250"
-                  height="22"
-                  rx="6"
+                  x="30"
+                  y="146"
+                  width="290"
+                  height="24"
+                  rx="7"
                   fill="#0e1322"
                   stroke="#1e293b"
                   strokeWidth="1"
                 />
                 <text
-                  x="145"
-                  y="147"
+                  x="175"
+                  y="162"
                   textAnchor="middle"
                   fill="#94a3b8"
-                  fontSize="11"
+                  fontSize="11.5"
                   fontWeight="600"
                 >
                   {sublevel} • 3/3 Retos Superados
                 </text>
 
                 {/* Bottom Rewards Row */}
-                <g transform="translate(25, 170)">
+                <g transform="translate(35, 186)">
                   {/* XP Badge */}
-                  <rect x="0" y="0" width="112" height="30" rx="8" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" strokeWidth="1" />
-                  <text x="56" y="20" textAnchor="middle" fill="#6ee7b7" fontSize="12" fontWeight="bold">
+                  <rect x="0" y="0" width="132" height="34" rx="10" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" strokeWidth="1" />
+                  <text x="66" y="22" textAnchor="middle" fill="#6ee7b7" fontSize="13" fontWeight="bold">
                     +{xpEarned} XP
                   </text>
 
                   {/* Status Badge */}
-                  <rect x="126" y="0" width="112" height="30" rx="8" fill="rgba(245, 158, 11, 0.15)" stroke="#f59e0b" strokeWidth="1" />
-                  <text x="182" y="20" textAnchor="middle" fill="#fde047" fontSize="11" fontWeight="bold">
+                  <rect x="148" y="0" width="132" height="34" rx="10" fill="rgba(245, 158, 11, 0.15)" stroke="#f59e0b" strokeWidth="1" />
+                  <text x="214" y="22" textAnchor="middle" fill="#fde047" fontSize="12" fontWeight="bold">
                     ✓ Graduado
                   </text>
                 </g>
 
                 {/* Corner Tech Rivets */}
-                <circle cx="16" cy="16" r="2.5" fill="#64748b" />
-                <circle cx="274" cy="16" r="2.5" fill="#64748b" />
-                <circle cx="16" cy="209" r="2.5" fill="#64748b" />
-                <circle cx="274" cy="209" r="2.5" fill="#64748b" />
+                <circle cx="18" cy="18" r="3" fill="#64748b" />
+                <circle cx="332" cy="18" r="3" fill="#64748b" />
+                <circle cx="18" cy="227" r="3" fill="#64748b" />
+                <circle cx="332" cy="227" r="3" fill="#64748b" />
               </motion.g>
 
+
               {/* ══════════════════════════════════════════════════════════
-                  🤖 GUIONBAJO (Multi-Stage Rig: Pulling, Snap, Fall, Smile)
+                  🤖 GUIONBAJO (Normalized (0,0) Rig, Seated Firmly on Floor)
+                  - Positioned on LEFT side (x ≈ 155), beside the card
+                  - In landed/celebrate stage: sits directly on floor (y = 317)
                  ══════════════════════════════════════════════════════════ */}
               <motion.g
-                // Dynamic kinematics driven by sequence state
+                // Kinematics: pulling -> snap -> fall to ground -> seated flat on floor
                 animate={
                   stage === 'pulling'
                     ? {
-                        x: [190, 205, 190],
-                        y: 250,
-                        rotate: [-20, -23, -20],
+                        x: [170, 164, 170],
+                        y: 304,
+                        rotate: [-18, -21, -18],
                         scaleY: 1,
                         scaleX: 1,
                       }
                     : stage === 'snap'
                     ? {
-                        x: 160,
-                        y: 240,
-                        rotate: -34,
+                        x: 156,
+                        y: 300,
+                        rotate: -26,
                         scaleY: 1.05,
                         scaleX: 0.95,
                       }
                     : stage === 'fall'
                     ? {
-                        x: 95,
-                        y: 220,
-                        rotate: 32,
-                        scaleY: 1,
-                        scaleX: 1,
+                        // Slips and tilts backwards directly towards the floor (no flying launch)
+                        x: 146,
+                        y: 312,
+                        rotate: 16,
+                        scaleY: 0.95,
+                        scaleX: 1.05,
                       }
                     : stage === 'landed'
                     ? {
-                        x: 110,
-                        y: 310,
+                        // Impact flat on the floor plane ("pegado al piso") at y = 317
+                        x: 148,
+                        y: 317,
                         rotate: 0,
-                        scaleY: [1, 0.76, 1.08, 1],
-                        scaleX: [1, 1.25, 0.95, 1],
+                        scaleY: [1, 0.78, 1.06, 1],
+                        scaleX: [1, 1.22, 0.96, 1],
                         transition: { duration: 0.45, ease: 'easeOut' },
                       }
                     : stage === 'look_score'
                     ? {
-                        x: 110,
-                        y: 310,
+                        x: 148,
+                        y: 317,
                         rotate: 0,
                         scaleY: 1,
                         scaleX: 1,
                       }
                     : {
-                        // Celebrating (Seated proudly smiling at student)
-                        x: 110,
-                        y: [310, 306, 310],
+                        // CELEBRATING: Resting seated on floor, breathing softly
+                        x: 148,
+                        y: [317, 314, 317],
                         rotate: 0,
                         scaleY: 1,
                         scaleX: 1,
-                        transition: { repeat: Infinity, duration: 1.8, ease: 'easeInOut' },
+                        transition: { repeat: Infinity, duration: 2.2, ease: 'easeInOut' },
                       }
                 }
                 transition={
                   stage === 'pulling'
                     ? { repeat: Infinity, duration: 0.5, ease: 'easeInOut' }
-                    : { duration: 0.3 }
+                    : { duration: 0.28 }
                 }
-                style={{ transformOrigin: '475px 300px' }}
+                style={{ transformOrigin: '0px 43px' }}
               >
-                {/* ── Ground Shadow / Plasma bloom ── */}
+                {/* ── Ground Shadow directly under chassis ── */}
                 <ellipse
-                  cx="475"
-                  cy="338"
-                  rx={stage === 'pulling' ? 32 : stage === 'fall' ? 12 : 38}
-                  ry={stage === 'pulling' ? 7 : stage === 'fall' ? 3 : 9}
+                  cx="0"
+                  cy="43"
+                  rx={stage === 'pulling' ? 28 : 34}
+                  ry={stage === 'pulling' ? 6 : 8}
                   fill="#030712"
-                  opacity="0.6"
+                  opacity="0.75"
                 />
 
                 {/* ── Impact Dust Puff Circles (Appears on landing) ── */}
                 {(stage === 'landed' || stage === 'look_score') && (
                   <motion.g
-                    initial={{ opacity: 0.8, scale: 0.4 }}
-                    animate={{ opacity: 0, scale: 1.6 }}
-                    transition={{ duration: 0.6 }}
-                    style={{ transformOrigin: '475px 335px' }}
+                    initial={{ opacity: 0.85, scale: 0.3 }}
+                    animate={{ opacity: 0, scale: 1.7 }}
+                    transition={{ duration: 0.55 }}
+                    style={{ transformOrigin: '0px 43px' }}
                   >
-                    <circle cx="445" cy="335" r="10" fill="#94a3b8" opacity="0.3" />
-                    <circle cx="505" cy="335" r="12" fill="#94a3b8" opacity="0.3" />
-                    <circle cx="475" cy="338" r="8" fill="#cbd5e1" opacity="0.4" />
+                    <circle cx="-25" cy="42" r="10" fill="#94a3b8" opacity="0.35" />
+                    <circle cx="25" cy="42" r="12" fill="#94a3b8" opacity="0.35" />
+                    <circle cx="0" cy="43" r="8" fill="#cbd5e1" opacity="0.45" />
                   </motion.g>
                 )}
 
-                {/* ── PLASMA HOVER THRUSTER ── */}
+                {/* ── PLASMA HOVER THRUSTER (Firing only during pull) ── */}
                 {stage === 'pulling' && (
                   <g>
-                    {/* Flame plume */}
+                    {/* Flame plume shooting forward/downward */}
                     <path
-                      d="M 462 318 Q 475 365 475 372 Q 475 365 488 318 Z"
+                      d="M -11 43 Q 0 85 0 92 Q 0 85 11 43 Z"
                       fill="url(#plasmaFlameOuter)"
                       opacity="0.85"
                       filter="url(#cyanGlow)"
                     />
                     <path
-                      d="M 467 318 Q 475 352 475 356 Q 475 352 483 318 Z"
+                      d="M -6 43 Q 0 74 0 78 Q 0 74 6 43 Z"
                       fill="url(#plasmaFlameCore)"
                       opacity="0.95"
                     />
-                    {/* Strain Sparks shooting forward */}
+                    {/* Sparks */}
                     <motion.circle
-                      cx="475"
-                      cy="360"
+                      cx="0"
+                      cy="78"
                       r="2"
                       fill="#fef08a"
-                      animate={{ cx: [475, 495], cy: [360, 365], opacity: [1, 0] }}
+                      animate={{ cx: [0, 20], cy: [78, 85], opacity: [1, 0] }}
                       transition={{ repeat: Infinity, duration: 0.2 }}
-                    />
-                    <motion.circle
-                      cx="472"
-                      cy="355"
-                      r="1.8"
-                      fill="#00D4FF"
-                      animate={{ cx: [472, 450], cy: [355, 368], opacity: [1, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.25 }}
                     />
                   </g>
                 )}
 
-                {/* Thruster Nozzle */}
-                <rect x="464" y="312" width="22" height="6" rx="2" fill="url(#antennaStemGrad)" stroke="#334155" strokeWidth="1" />
-                <rect x="467" y="316" width="16" height="2" rx="1" fill="#00D4FF" opacity={stage === 'pulling' ? 0.9 : 0.3} />
+                {/* Thruster Nozzle (Rests firmly on ground in seated pose) */}
+                <rect x="-11" y="37" width="22" height="6" rx="2" fill="url(#antennaStemGrad)" stroke="#334155" strokeWidth="1" />
+                <rect x="-8" y="41" width="16" height="2" rx="1" fill="#00D4FF" opacity={stage === 'pulling' ? 0.9 : 0.3} />
 
                 {/* ── MECHANICAL ARMS ── */}
                 {stage === 'pulling' ? (
-                  /* Arms grasping the rope tightly forward */
+                  /* Grasping the rope forward */
                   <g>
-                    {/* Left Arm grasping */}
-                    <path d="M 456 282 Q 475 288 510 292" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="510" cy="292" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
-                    {/* Right Arm grasping */}
-                    <path d="M 488 282 Q 510 286 535 292" fill="none" stroke="#475569" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="535" cy="292" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
+                    <path d="M -20 8 Q 10 12 45 15" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="45" cy="15" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
+                    <path d="M 12 8 Q 35 12 65 15" fill="none" stroke="#475569" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="65" cy="15" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
                   </g>
                 ) : stage === 'snap' || stage === 'fall' ? (
-                  /* Arms flying back in shock */
+                  /* Arms thrown open in surprise */
                   <g>
-                    <path d="M 451 282 Q 430 260 415 250" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="415" cy="250" r="4.5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
-                    <path d="M 499 282 Q 520 260 535 250" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="535" cy="250" r="4.5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
+                    <path d="M -24 8 Q -45 -10 -55 -20" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="-55" cy="-20" r="4.5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
+                    <path d="M 24 8 Q 45 -10 55 -20" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="55" cy="-20" r="4.5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
                   </g>
                 ) : stage === 'celebrate' ? (
-                  /* Right arm waving happily, Left arm resting on ground */
+                  /* Left arm resting on floor, Right arm waving happily */
                   <g>
-                    {/* Left arm resting */}
-                    <path d="M 451 282 Q 436 295 440 318" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="440" cy="318" r="4" fill="#334155" />
-                    {/* Right arm waving high! */}
+                    {/* Left arm resting on floor */}
+                    <path d="M -24 8 Q -38 22 -32 40" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="-32" cy="40" r="4.5" fill="#334155" />
+                    {/* Right arm waving high to the student! */}
                     <motion.g
-                      animate={{ rotate: [-8, 12, -8] }}
+                      animate={{ rotate: [-8, 14, -8] }}
                       transition={{ repeat: Infinity, duration: 0.8, ease: 'easeInOut' }}
-                      style={{ transformOrigin: '499px 282px' }}
+                      style={{ transformOrigin: '24px 8px' }}
                     >
-                      <path d="M 499 282 Q 518 260 528 238" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                      <circle cx="528" cy="238" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
-                      {/* Pincer clamp open waving */}
-                      <path d="M 524 233 Q 528 226 535 233" fill="none" stroke="#00D4FF" strokeWidth="2" />
+                      <path d="M 24 8 Q 42 -12 50 -32" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                      <circle cx="50" cy="-32" r="5" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
+                      <path d="M 46 -37 Q 50 -44 57 -37" fill="none" stroke="#00D4FF" strokeWidth="2" />
                     </motion.g>
                   </g>
                 ) : (
-                  /* Seated on floor resting hands */
+                  /* Seated on floor: resting both hands beside base on floor */
                   <g>
-                    <path d="M 451 282 Q 438 300 445 320" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="445" cy="320" r="4" fill="#334155" />
-                    <path d="M 499 282 Q 512 300 505 320" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
-                    <circle cx="505" cy="320" r="4" fill="#334155" />
+                    <path d="M -24 8 Q -38 24 -32 41" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="-32" cy="41" r="4" fill="#334155" />
+                    <path d="M 24 8 Q 38 24 32 41" fill="none" stroke="#64748b" strokeWidth="5" strokeLinecap="round" />
+                    <circle cx="32" cy="41" r="4" fill="#334155" />
                   </g>
                 )}
 
                 {/* ── ROBOT TORSO ── */}
-                <rect x="451" y="278" width="48" height="34" rx="10" fill="url(#robotChassis)" stroke="#4b5563" strokeWidth="1.8" />
+                <rect x="-24" y="3" width="48" height="34" rx="10" fill="url(#robotChassis)" stroke="#4b5563" strokeWidth="1.8" />
                 {/* Torso CRT Screen */}
-                <rect x="457" y="283" width="36" height="23" rx="5" fill="#020617" stroke="#334155" strokeWidth="1.2" />
+                <rect x="-18" y="8" width="36" height="23" rx="5" fill="#020617" stroke="#334155" strokeWidth="1.2" />
                 {/* Horizontal Scanlines */}
-                <line x1="459" y1="287" x2="491" y2="287" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
-                <line x1="459" y1="292" x2="491" y2="292" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
-                <line x1="459" y1="297" x2="491" y2="297" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
-                <line x1="459" y1="302" x2="491" y2="302" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
+                <line x1="-16" y1="12" x2="16" y2="12" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
+                <line x1="-16" y1="17" x2="16" y2="17" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
+                <line x1="-16" y1="22" x2="16" y2="22" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
+                <line x1="-16" y1="27" x2="16" y2="27" stroke="rgba(0,212,255,0.2)" strokeWidth="0.8" />
 
                 {/* Torso Underscore Insignia */}
-                <text x="475" y="299" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="10" fontWeight="900" filter="url(#cyanGlow)">
+                <text x="0" y="24" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="10" fontWeight="900" filter="url(#cyanGlow)">
                   _
                 </text>
 
                 {/* Mechanical Neck */}
-                <rect x="470" y="272" width="10" height="7" rx="2" fill="#1e293b" stroke="#334155" strokeWidth="0.8" />
+                <rect x="-5" y="-3" width="10" height="7" rx="2" fill="#1e293b" stroke="#334155" strokeWidth="0.8" />
 
                 {/* ── LATERAL EAR DIALS ── */}
-                <rect x="438" y="241" width="7" height="18" rx="2" fill="url(#earDialGrad)" stroke="#475569" strokeWidth="0.8" />
-                <rect x="439" y="249" width="3.5" height="2" rx="1" fill="#00D4FF" filter="url(#cyanGlow)" />
-                <rect x="505" y="241" width="7" height="18" rx="2" fill="url(#earDialGrad)" stroke="#475569" strokeWidth="0.8" />
-                <rect x="507.5" y="249" width="3.5" height="2" rx="1" fill="#00D4FF" filter="url(#cyanGlow)" />
+                <rect x="-37" y="-34" width="7" height="18" rx="2" fill="url(#earDialGrad)" stroke="#475569" strokeWidth="0.8" />
+                <rect x="-36" y="-26" width="3.5" height="2" rx="1" fill="#00D4FF" filter="url(#cyanGlow)" />
+                <rect x="30" y="-34" width="7" height="18" rx="2" fill="url(#earDialGrad)" stroke="#475569" strokeWidth="0.8" />
+                <rect x="32.5" y="-26" width="3.5" height="2" rx="1" fill="#00D4FF" filter="url(#cyanGlow)" />
 
                 {/* ── ROBOT HEAD ── */}
                 <g
-                  // Dynamic head angle (looking at score vs looking forward)
+                  // Turns to look at the Score Card on the right (18deg) vs facing front (0deg)
                   style={{
-                    transform: stage === 'look_score' ? 'rotate(15deg)' : 'rotate(0deg)',
-                    transformOrigin: '475px 250px',
+                    transform: stage === 'look_score' ? 'rotate(18deg)' : 'rotate(0deg)',
+                    transformOrigin: '0px -25px',
                     transition: 'transform 0.4s ease',
                   }}
                 >
-                  <rect x="445" y="226" width="60" height="48" rx="12" fill="url(#robotChassis)" stroke="#4b5563" strokeWidth="2" />
+                  <rect x="-30" y="-50" width="60" height="48" rx="12" fill="url(#robotChassis)" stroke="#4b5563" strokeWidth="2" />
 
                   {/* 4 Corner Rivets */}
-                  <circle cx="451" cy="232" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
-                  <circle cx="499" cy="232" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
-                  <circle cx="451" cy="268" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
-                  <circle cx="499" cy="268" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="-24" cy="-44" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="24" cy="-44" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="-24" cy="-8" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="24" cy="-8" r="1.8" fill="#788a9e" stroke="#334155" strokeWidth="0.6" />
 
-                  {/* ── ROBOT EYES (Contextual Emotions) ── */}
+                  {/* ── ROBOT EYES ── */}
                   {stage === 'pulling' ? (
                     /* Straining concentrated eyes (> <) */
                     <g>
-                      {/* Left eye: > */}
-                      <path d="M 458 241 L 466 246 L 458 251" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#cyanGlow)" />
-                      {/* Right eye: < */}
-                      <path d="M 492 241 L 484 246 L 492 251" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#cyanGlow)" />
+                      <path d="M -17 -36 L -9 -31 L -17 -26" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#cyanGlow)" />
+                      <path d="M 17 -36 L 9 -31 L 17 -26" fill="none" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#cyanGlow)" />
                     </g>
                   ) : stage === 'snap' || stage === 'fall' ? (
                     /* Shocked wide open eyes (O O) */
                     <g>
-                      <circle cx="463" cy="246" r="8" fill="#090d14" stroke="#00D4FF" strokeWidth="2" filter="url(#cyanGlow)" />
-                      <circle cx="463" cy="246" r="3.5" fill="#ffffff" />
-                      <circle cx="487" cy="246" r="8" fill="#090d14" stroke="#00D4FF" strokeWidth="2" filter="url(#cyanGlow)" />
-                      <circle cx="487" cy="246" r="3.5" fill="#ffffff" />
+                      <circle cx="-12" cy="-31" r="8" fill="#090d14" stroke="#00D4FF" strokeWidth="2" filter="url(#cyanGlow)" />
+                      <circle cx="-12" cy="-31" r="3.5" fill="#ffffff" />
+                      <circle cx="12" cy="-31" r="8" fill="#090d14" stroke="#00D4FF" strokeWidth="2" filter="url(#cyanGlow)" />
+                      <circle cx="12" cy="-31" r="3.5" fill="#ffffff" />
                     </g>
                   ) : stage === 'look_score' ? (
-                    /* Looking sideways at the score */
+                    /* Looking to the right at the Score Card */
                     <g>
-                      <circle cx="463" cy="246" r="8" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
-                      <circle cx="467" cy="246" r="4" fill="#00D4FF" filter="url(#cyanGlow)" />
-                      <circle cx="487" cy="246" r="8" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
-                      <circle cx="491" cy="246" r="4" fill="#00D4FF" filter="url(#cyanGlow)" />
+                      <circle cx="-12" cy="-31" r="8" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
+                      <circle cx="-8" cy="-31" r="4.5" fill="#00D4FF" filter="url(#cyanGlow)" />
+                      <circle cx="12" cy="-31" r="8" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
+                      <circle cx="16" cy="-31" r="4.5" fill="#00D4FF" filter="url(#cyanGlow)" />
                     </g>
                   ) : (
-                    /* CELEBRATING: Smiling glowing arc eyes (^ ^) */
+                    /* CELEBRATING: Smiling glowing arc eyes (^ ^) looking at the student */
                     <g>
-                      {/* Left Happy Arc */}
-                      <path d="M 457 248 Q 463 238 469 248" fill="none" stroke="#00D4FF" strokeWidth="3" strokeLinecap="round" filter="url(#cyanGlow)" />
-                      {/* Right Happy Arc */}
-                      <path d="M 481 248 Q 487 238 493 248" fill="none" stroke="#00D4FF" strokeWidth="3" strokeLinecap="round" filter="url(#cyanGlow)" />
+                      <path d="M -18 -29 Q -12 -39 -6 -29" fill="none" stroke="#00D4FF" strokeWidth="3" strokeLinecap="round" filter="url(#cyanGlow)" />
+                      <path d="M 6 -29 Q 12 -39 18 -29" fill="none" stroke="#00D4FF" strokeWidth="3" strokeLinecap="round" filter="url(#cyanGlow)" />
                     </g>
                   )}
 
-                  {/* ── ROBOT MOUTH (Contextual) ── */}
-                  <rect x="457" y="260" width="36" height="8" rx="3" fill="#090d14" stroke="#334155" strokeWidth="1.2" />
+                  {/* ── ROBOT MOUTH ── */}
+                  <rect x="-18" y="-16" width="36" height="8" rx="3" fill="#090d14" stroke="#334155" strokeWidth="1.2" />
 
                   {stage === 'pulling' ? (
                     /* Tight terminal cursor */
-                    <text x="475" y="267" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="11" fontWeight="900" filter="url(#cyanGlow)">
+                    <text x="0" y="-9" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="11" fontWeight="900" filter="url(#cyanGlow)">
                       _
                     </text>
                   ) : stage === 'snap' || stage === 'fall' ? (
                     /* Surprise O */
-                    <circle cx="475" cy="264" r="2.5" fill="#00D4FF" filter="url(#cyanGlow)" />
+                    <circle cx="0" cy="-12" r="2.5" fill="#00D4FF" filter="url(#cyanGlow)" />
                   ) : stage === 'celebrate' ? (
-                    /* BIG CHEERFUL BEAMING SMILE (‿) */
+                    /* BIG BEAMING SMILE (‿) */
                     <path
-                      d="M 466 263 Q 475 268 484 263"
+                      d="M -9 -13 Q 0 -8 9 -13"
                       fill="none"
                       stroke="#00D4FF"
                       strokeWidth="2.5"
@@ -751,26 +734,26 @@ export default function CelebrationModal({
                     />
                   ) : (
                     /* Normal underscore */
-                    <text x="475" y="267" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="11" fontWeight="900" filter="url(#cyanGlow)">
+                    <text x="0" y="-9" textAnchor="middle" fill="#00D4FF" fontFamily="monospace" fontSize="11" fontWeight="900" filter="url(#cyanGlow)">
                       _
                     </text>
                   )}
 
                   {/* ── TOP ANTENNA & VACUUM BULB ── */}
-                  <rect x="473.5" y="210" width="3" height="16" rx="1.5" fill="url(#antennaStemGrad)" />
-                  <circle cx="475" cy="203" r="7.5" fill="url(#vacuumBulbGrad)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" />
+                  <rect x="-1.5" y="-66" width="3" height="16" rx="1.5" fill="url(#antennaStemGrad)" />
+                  <circle cx="0" cy="-73" r="7.5" fill="url(#vacuumBulbGrad)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" />
 
                   {/* Glowing Bulb Bloom */}
                   <circle
-                    cx="475"
-                    cy="203"
+                    cx="0"
+                    cy="-73"
                     r={stage === 'celebrate' ? 14 : 9}
                     fill={stage === 'celebrate' ? '#fde047' : '#00D4FF'}
                     opacity={stage === 'celebrate' ? 0.6 : 0.4}
                     filter="url(#cyanGlow)"
                   />
                   {/* Filament */}
-                  <path d="M 473 205 C 473 200 477 200 477 205" fill="none" stroke={stage === 'celebrate' ? '#fef08a' : '#00D4FF'} strokeWidth="1.2" />
+                  <path d="M -2 -71 C -2 -76 2 -76 2 -71" fill="none" stroke={stage === 'celebrate' ? '#fef08a' : '#00D4FF'} strokeWidth="1.2" />
                 </g>
               </motion.g>
 
@@ -780,20 +763,19 @@ export default function CelebrationModal({
               {stage === 'celebrate' && (
                 <g>
                   {[
-                    { cx: 480, cy: 90, color: '#f59e0b', r: 4, dx: -30, dy: 180 },
-                    { cx: 520, cy: 80, color: '#00D4FF', r: 5, dx: 40, dy: 200 },
-                    { cx: 450, cy: 110, color: '#ec4899', r: 4.5, dx: -70, dy: 160 },
-                    { cx: 570, cy: 95, color: '#10b981', r: 4, dx: 80, dy: 190 },
-                    { cx: 500, cy: 70, color: '#a855f7', r: 5, dx: 15, dy: 220 },
-                    { cx: 620, cy: 100, color: '#fbbf24', r: 4.5, dx: 60, dy: 170 },
-                    { cx: 400, cy: 130, color: '#38bdf8', r: 4, dx: -90, dy: 150 },
-                    { cx: 660, cy: 120, color: '#f43f5e', r: 5, dx: 70, dy: 160 },
-                    { cx: 460, cy: 60, color: '#fde047', r: 4, dx: -45, dy: 230 },
-                    { cx: 540, cy: 65, color: '#34d399', r: 4.5, dx: 55, dy: 225 },
-                    { cx: 330, cy: 150, color: '#818cf8', r: 4, dx: -80, dy: 140 },
-                    { cx: 360, cy: 180, color: '#fb7185', r: 4.5, dx: -50, dy: 120 },
-                    { cx: 240, cy: 220, color: '#00D4FF', r: 4, dx: -40, dy: 90 },
-                    { cx: 280, cy: 210, color: '#f59e0b', r: 4, dx: -30, dy: 100 },
+                    { cx: 520, cy: 70, color: '#f59e0b', r: 4.5, dx: -40, dy: 200 },
+                    { cx: 560, cy: 60, color: '#00D4FF', r: 5, dx: 40, dy: 220 },
+                    { cx: 480, cy: 90, color: '#ec4899', r: 4.5, dx: -70, dy: 180 },
+                    { cx: 620, cy: 80, color: '#10b981', r: 4, dx: 70, dy: 210 },
+                    { cx: 540, cy: 50, color: '#a855f7', r: 5, dx: 15, dy: 240 },
+                    { cx: 660, cy: 90, color: '#fbbf24', r: 4.5, dx: 60, dy: 190 },
+                    { cx: 420, cy: 110, color: '#38bdf8', r: 4, dx: -80, dy: 170 },
+                    { cx: 700, cy: 100, color: '#f43f5e', r: 5, dx: 60, dy: 180 },
+                    { cx: 500, cy: 40, color: '#fde047', r: 4, dx: -35, dy: 250 },
+                    { cx: 580, cy: 45, color: '#34d399', r: 4.5, dx: 45, dy: 245 },
+                    { cx: 160, cy: 190, color: '#00D4FF', r: 4.5, dx: -30, dy: 130 },
+                    { cx: 180, cy: 180, color: '#f59e0b', r: 4, dx: 30, dy: 140 },
+                    { cx: 140, cy: 210, color: '#ec4899', r: 4, dx: -20, dy: 110 },
                   ].map((p, idx) => (
                     <motion.circle
                       key={idx}
@@ -821,14 +803,14 @@ export default function CelebrationModal({
               )}
             </svg>
 
-            {/* Stage narrative status pill (floating overlay) */}
+            {/* Stage narrative status pill */}
             <div className="absolute top-4 left-4 pointer-events-none">
               <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-black/60 border border-white/10 text-zinc-300 backdrop-blur-md">
                 {stage === 'pulling' && '⏳ Guionbajo arrastrando tu resultado...'}
                 {stage === 'snap' && '⚡ ¡TIRÓN MÁXIMO!'}
                 {stage === 'fall' && '💨 ¡Woooah!'}
-                {stage === 'landed' && '💥 ¡Plop!'}
-                {stage === 'look_score' && '👀 ¡Mira lo que trajiste!'}
+                {stage === 'landed' && '💥 ¡Plop! Cae sentado en el piso'}
+                {stage === 'look_score' && '👀 ¡Mira el puntaje que trajiste!'}
                 {stage === 'celebrate' && '🎉 ¡MISIÓN CUMPLIDA!'}
               </span>
             </div>

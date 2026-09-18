@@ -64,6 +64,20 @@ export default function GameArena({
   const [mysteryWordData, setMysteryWordData] = useState<MysteryWordData | null>(null);
   const [twinCardsPairs, setTwinCardsPairs] = useState<TwinCardPairData[]>([]);
   const [questData, setQuestData] = useState<StoryQuestData | null>(null);
+  const [isRetryingWord, setIsRetryingWord] = useState(false);
+  const [usedMysteryWords, setUsedMysteryWords] = useState<string[]>([]);
+
+  // Track used words so retries always pick a new, different word
+  useEffect(() => {
+    if (mysteryWordData?.target_word) {
+      setUsedMysteryWords((prev) => {
+        if (!prev.includes(mysteryWordData.target_word)) {
+          return [...prev, mysteryWordData.target_word];
+        }
+        return prev;
+      });
+    }
+  }, [mysteryWordData?.target_word]);
 
   // Review modal state
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -72,57 +86,189 @@ export default function GameArena({
   const [maxStreak, setMaxStreak] = useState(0);
   const [earnedXp, setEarnedXp] = useState(35);
 
+  // Fallback vocabulary bank with multiple distinct words per CEFR level
+  const getFallbackWordsForLevel = (lvl: string, top: string): MysteryWordData[] => {
+    const isA2 = lvl.includes('A2');
+    const isB1 = lvl.includes('B1') || lvl.includes('B2');
+
+    if (isB1) {
+      return [
+        {
+          target_word: 'EXPERIENCE',
+          category: 'Vida y Present Perfect',
+          clue_definition: 'Conocimiento o habilidad práctica adquirida a través de la vivencia directa de eventos.',
+          clue_synonym: "Familia léxica: knowledge, background, skill, trial. Colocación: 'work experience'.",
+          image_prompt: 'Clean 2D vector flat art of a young professional climbing stairs towards goals, achieving milestones, bright vector style, no text, no words.',
+          clue_first_letter: "La palabra empieza con la letra 'E' y tiene 10 letras.",
+          example_sentence: 'Traveling abroad gives you unforgettable life experience.',
+          example_translation: 'Viajar al extranjero te brinda una experiencia de vida inolvidable.',
+          tutor_clue_speeches: [
+            '¡Pista 1! Es aquello que ganas al vivir situaciones y superar desafíos.',
+            'Segunda pista: Es fundamental en entrevistas laborales y en el Present Perfect.',
+            'Observa la ilustración generada para inspirarte.',
+            'Última pista: Comienza con la letra E y tiene 10 letras.'
+          ]
+        },
+        {
+          target_word: 'CHALLENGE',
+          category: 'Metas y Superación',
+          clue_definition: 'Una tarea o situación que pone a prueba las habilidades o el valor de alguien.',
+          clue_synonym: "Familia léxica: obstacle, test, achievement, goal. Colocación: 'face a challenge'.",
+          image_prompt: 'Clean 2D vector educational art of an athlete looking at a mountain peak, bright colors, no text, no words.',
+          clue_first_letter: "La palabra empieza con la letra 'C' y tiene 9 letras.",
+          example_sentence: 'Learning a new language is a great challenge.',
+          example_translation: 'Aprender un nuevo idioma es un gran desafío.',
+          tutor_clue_speeches: [
+            'Primera pista: Es una meta difícil que te impulsa a crecer.',
+            'Segunda pista: Sinónimo de reto o desafío en inglés.',
+            'Mira la ilustración en pantalla.',
+            'Última pista: Empieza con C y tiene 9 letras.'
+          ]
+        },
+        {
+          target_word: 'OPPORTUNITY',
+          category: 'Carrera y Oportunidades',
+          clue_definition: 'Una serie de circunstancias favorables para hacer algo provechoso.',
+          clue_synonym: "Familia léxica: chance, possibility, future, opening. Colocación: 'golden opportunity'.",
+          image_prompt: 'Clean flat vector art of an open door with light coming through into a bright room, no text, no words.',
+          clue_first_letter: "La palabra empieza con la letra 'O' y tiene 11 letras.",
+          example_sentence: 'This new job is a wonderful career opportunity.',
+          example_translation: 'Este nuevo empleo es una maravillosa oportunidad profesional.',
+          tutor_clue_speeches: [
+            'Primera pista: Es una ocasión dorada para progresar.',
+            'Segunda pista: Se abre como una puerta hacia el futuro.',
+            'Observa la ilustración que preparé.',
+            'Última pista: Empieza con O y tiene 11 letras.'
+          ]
+        }
+      ];
+    }
+
+    if (isA2) {
+      return [
+        {
+          target_word: 'YESTERDAY',
+          category: 'Marcadores de Tiempo Pasado',
+          clue_definition: 'El día inmediatamente anterior al día de hoy.',
+          clue_synonym: "Familia léxica: past, time, morning, last night. Colocación: 'yesterday afternoon'.",
+          image_prompt: 'Clean 2D vector educational calendar illustration showing a past highlighted day marked with a checkmark, clean vector art, no text, no words.',
+          clue_first_letter: "La palabra empieza con la letra 'Y' y tiene 9 letras.",
+          example_sentence: 'Yesterday I visited my grandparents and watched a movie.',
+          example_translation: 'Ayer visité a mis abuelos y vi una película.',
+          tutor_clue_speeches: [
+            '¡Pista 1! Es un marcador temporal que nos lleva al pasado reciente.',
+            'Segunda pista: Se refiere al día que terminó hace unas horas.',
+            'Revisa la ilustración que apareció en pantalla.',
+            'Última pista: Comienza con la letra Y y tiene 9 letras.'
+          ]
+        },
+        {
+          target_word: 'TOMORROW',
+          category: 'Tiempo y Planes Futuros',
+          clue_definition: 'El día posterior al día de hoy.',
+          clue_synonym: "Familia léxica: future, next day, soon. Colocación: 'tomorrow morning'.",
+          image_prompt: 'Clean 2D vector art of a sunrise with a clock ticking forward, bright optimistic colors, no text, no words.',
+          clue_first_letter: "La palabra empieza con la letra 'T' y tiene 8 letras.",
+          example_sentence: 'Tomorrow we will start our new English module.',
+          example_translation: 'Mañana iniciaremos nuestro nuevo módulo de inglés.',
+          tutor_clue_speeches: [
+            'Pista 1: Es el día que comenzará tras descansar esta noche.',
+            'Pista 2: La contraparte futura de yesterday.',
+            'Mira la imagen que preparé en el tanque.',
+            'Última pista: Empieza con T y tiene 8 letras.'
+          ]
+        },
+        {
+          target_word: 'VACATION',
+          category: 'Viajes y Descanso',
+          clue_definition: 'Periodo de tiempo en el que se suspenden las actividades habituales para descansar o viajar.',
+          clue_synonym: "Familia léxica: holiday, travel, beach, summer, relax. Colocación: 'go on vacation'.",
+          image_prompt: 'Clean 2D vector flat art of suitcases next to a sunny beach with palm trees, vibrant style, no text, no words.',
+          clue_first_letter: "La palabra empieza con la letra 'V' y tiene 8 letras.",
+          example_sentence: 'We are planning a sunny vacation in July.',
+          example_translation: 'Estamos planeando unas vacaciones soleadas en julio.',
+          tutor_clue_speeches: [
+            'Primera pista: Es la época favorita del año para viajar o descansar.',
+            'Segunda pista: Se relaciona con verano, playas y maletas.',
+            'Observa la ilustración en pantalla.',
+            'Última pista: Inicia con la letra V y tiene 8 letras.'
+          ]
+        }
+      ];
+    }
+
+    return [
+      {
+        target_word: 'AIRPORT',
+        category: 'Viajes y Lugares',
+        clue_definition: 'Lugar grande con pistas de despegue donde las personas abordan aviones para viajar.',
+        clue_synonym: "Familia léxica: airplane, terminal, flight, boarding pass. Colocación: 'at the airport'.",
+        image_prompt: 'Clean flat 2D vector educational illustration of a modern airport departure terminal with airplanes on runway, sunny day, minimal style, vibrant colors, no text, no words.',
+        clue_first_letter: "La palabra empieza con la letra 'A' y tiene 7 letras.",
+        example_sentence: 'We arrived at the airport two hours before our flight.',
+        example_translation: 'Llegamos al aeropuerto dos horas antes de nuestro vuelo.',
+        tutor_clue_speeches: [
+          '¡Primera pista! Es un lugar donde despegas hacia nuevas aventuras.',
+          'Segunda pista: Se relaciona con aviones, terminales y maletas.',
+          'Mira la ilustración en pantalla. ¿Qué lugar representa?',
+          'Última pista: Empieza con la letra A y tiene 7 letras.'
+        ]
+      },
+      {
+        target_word: 'BREAKFAST',
+        category: 'Comida y Rutina',
+        clue_definition: 'La primera comida que se toma por la mañana después de despertar.',
+        clue_synonym: "Familia léxica: morning, meal, eggs, coffee, cereal. Colocación: 'have breakfast'.",
+        image_prompt: 'Clean flat 2D vector educational illustration of a morning breakfast table with pancakes, orange juice and toast, bright sunny morning, minimal style, no text, no words.',
+        clue_first_letter: "La palabra empieza con la letra 'B' y tiene 9 letras.",
+        example_sentence: "I always have breakfast at seven o'clock in the morning.",
+        example_translation: 'Siempre desayuno a las siete en punto de la mañana.',
+        tutor_clue_speeches: [
+          '¡Primera pista! Es la comida más importante al inicio del día.',
+          'Segunda pista: Se relaciona con café, jugo, huevos y la mañana.',
+          'Observa la imagen que preparé para ti.',
+          'Última pista: Comienza con la letra B y tiene 9 letras.'
+        ]
+      },
+      {
+        target_word: 'PASSPORT',
+        category: 'Documentos y Viajes',
+        clue_definition: 'Documento oficial con foto para poder viajar a otros países.',
+        clue_synonym: "Familia léxica: travel, border, stamp, identification. Colocación: 'valid passport'.",
+        image_prompt: 'Clean flat 2D vector illustration of a travel passport document with visa stamps, plane tickets next to it, minimal colorful vector style, no text, no words.',
+        clue_first_letter: "La palabra empieza con la letra 'P' y tiene 8 letras.",
+        example_sentence: 'You must show your passport at the immigration desk.',
+        example_translation: 'Debes mostrar tu pasaporte en el mostrador de inmigración.',
+        tutor_clue_speeches: [
+          'Primera pista: Es un documento indispensable para cruzar fronteras.',
+          'Segunda pista: Lleva tu fotografía y sellos de viaje.',
+          'Mira la ilustración que acaba de aparecer en el tanque.',
+          'Última pista: Inicia con la letra P y tiene 8 letras.'
+        ]
+      },
+      {
+        target_word: 'TEACHER',
+        category: 'Profesiones y Escuela',
+        clue_definition: 'Persona cuya profesión es enseñar y guiar a estudiantes en una clase.',
+        clue_synonym: "Familia léxica: classroom, school, student, learn. Colocación: 'English teacher'.",
+        image_prompt: 'Clean 2D vector illustration of a friendly teacher in a bright classroom pointing to an educational board, warm vector style, no text, no words.',
+        clue_first_letter: "La palabra empieza con la letra 'T' y tiene 7 letras.",
+        example_sentence: 'Our English teacher explains the grammar rules very clearly.',
+        example_translation: 'Nuestro profesor de inglés explica las reglas gramaticales muy claramente.',
+        tutor_clue_speeches: [
+          '¡Pista 1! Es alguien que te ayuda a aprender cada día.',
+          'Pista 2: Trabaja en salones de clase y explica lecciones.',
+          'Observa la imagen didáctica en pantalla.',
+          'Pista final: Empieza con la letra T y tiene 7 letras.'
+        ]
+      }
+    ];
+  };
+
   // Fallback data generator in case network or API is offline
   const getClientFallbackData = () => {
-    const isA2 = sublevel.includes('A2');
-    const isB1 = sublevel.includes('B1') || sublevel.includes('B2');
-
-    const fallbackMystery: MysteryWordData = isB1 ? {
-      target_word: 'EXPERIENCE',
-      category: 'Vida y Present Perfect',
-      clue_definition: 'Conocimiento o habilidad práctica adquirida a través de la vivencia directa de eventos.',
-      clue_synonym: "Familia léxica: knowledge, background, skill, trial. Colocación: 'work experience'.",
-      image_prompt: 'Clean 2D vector flat art of a young professional climbing stairs towards goals, achieving milestones, bright vector style, no text, no words.',
-      clue_first_letter: "La palabra empieza con la letra 'E' y tiene 10 letras.",
-      example_sentence: 'Traveling abroad gives you unforgettable life experience.',
-      example_translation: 'Viajar al extranjero te brinda una experiencia de vida inolvidable.',
-      tutor_clue_speeches: [
-        '¡Pista 1! Es aquello que ganas al vivir situaciones y superar desafíos.',
-        'Segunda pista: Es fundamental en entrevistas laborales y en el Present Perfect.',
-        'Observa la ilustración generada para inspirarte.',
-        'Última pista: Comienza con la letra E y tiene 10 letras.'
-      ]
-    } : isA2 ? {
-      target_word: 'YESTERDAY',
-      category: 'Marcadores de Tiempo Pasado',
-      clue_definition: 'El día inmediatamente anterior al día de hoy.',
-      clue_synonym: "Familia léxica: past, time, morning, last night. Colocación: 'yesterday afternoon'.",
-      image_prompt: 'Clean 2D vector educational calendar illustration showing a past highlighted day marked with a checkmark, clean vector art, no text, no words.',
-      clue_first_letter: "La palabra empieza con la letra 'Y' y tiene 9 letras.",
-      example_sentence: 'Yesterday I visited my grandparents and watched a movie.',
-      example_translation: 'Ayer visité a mis abuelos y vi una película.',
-      tutor_clue_speeches: [
-        '¡Pista 1! Es un marcador temporal que nos lleva al pasado reciente.',
-        'Segunda pista: Se refiere al día que terminó hace unas horas.',
-        'Revisa la ilustración que apareció en pantalla.',
-        'Última pista: Comienza con la letra Y y tiene 9 letras.'
-      ]
-    } : {
-      target_word: 'AIRPORT',
-      category: 'Viajes y Lugares',
-      clue_definition: 'Lugar grande con pistas de despegue donde las personas abordan aviones para viajar.',
-      clue_synonym: "Familia léxica: airplane, terminal, flight, boarding pass. Colocación: 'at the airport'.",
-      image_prompt: 'Clean flat 2D vector educational illustration of a modern airport departure terminal with airplanes on runway, sunny day, minimal style, vibrant colors, no text, no words.',
-      clue_first_letter: "La palabra empieza con la letra 'A' y tiene 7 letras.",
-      example_sentence: 'We arrived at the airport two hours before our flight.',
-      example_translation: 'Llegamos al aeropuerto dos horas antes de nuestro vuelo.',
-      tutor_clue_speeches: [
-        '¡Primera pista! Es un lugar donde despegas hacia nuevas aventuras.',
-        'Segunda pista: Se relaciona con aviones, terminales y maletas.',
-        'Mira la ilustración en pantalla. ¿Qué lugar representa?',
-        'Última pista: Empieza con la letra A y tiene 7 letras.'
-      ]
-    };
+    const fallbackMysteryList = getFallbackWordsForLevel(sublevel, topic);
+    const fallbackMystery = fallbackMysteryList[0];
 
     const fallbackPairs: TwinCardPairData[] = [
       {
@@ -288,6 +434,42 @@ export default function GameArena({
     };
   }, [topic, sublevel, lessonId]);
 
+  // Handle Retry Mystery Word with a Different Word
+  const handleRetryMysteryWord = async () => {
+    setIsRetryingWord(true);
+    try {
+      // 1. Attempt generation from backend API
+      const res = await api.generateGames(topic, sublevel, lessonId, 'mystery_word');
+      if (
+        res &&
+        res.mystery_word &&
+        res.mystery_word.target_word &&
+        !usedMysteryWords.includes(res.mystery_word.target_word.toUpperCase())
+      ) {
+        setMysteryWordData(res.mystery_word);
+        toast.success('¡Nueva palabra cargada! Adivina las letras 💡');
+        return;
+      }
+
+      // 2. Select a different word from the local level bank
+      const pool = getFallbackWordsForLevel(sublevel, topic);
+      const available = pool.filter((w) => !usedMysteryWords.includes(w.target_word.toUpperCase()));
+      const nextWord = available.length > 0 ? available[0] : pool[Math.floor(Math.random() * pool.length)];
+
+      setMysteryWordData(nextWord);
+      toast.success('¡Nueva palabra cargada! Adivina las letras 💡');
+    } catch (e) {
+      console.warn('Error generating new mystery word, using bank:', e);
+      const pool = getFallbackWordsForLevel(sublevel, topic);
+      const available = pool.filter((w) => !usedMysteryWords.includes(w.target_word.toUpperCase()));
+      const nextWord = available.length > 0 ? available[0] : pool[Math.floor(Math.random() * pool.length)];
+      setMysteryWordData(nextWord);
+      toast.success('¡Nueva palabra cargada! Adivina las letras 💡');
+    } finally {
+      setIsRetryingWord(false);
+    }
+  };
+
   // Handle Mystery Word Completion
   const handleFinishMysteryWord = async (res: {
     score: number;
@@ -296,6 +478,12 @@ export default function GameArena({
     won: boolean;
     data: MysteryWordData;
   }) => {
+    // Only validate if student actually WON the game
+    if (!res.won) {
+      toast.error('Debes adivinar la palabra para completar este reto.');
+      return;
+    }
+
     setLastFinishedGameType('mystery_word');
     setFinalScore(res.score);
     setMaxStreak(res.maxStreak);
@@ -309,14 +497,16 @@ export default function GameArena({
         lesson_id: lessonId,
       });
       setEarnedXp(submitRes.xp_earned || 35);
-      toast.success(submitRes.message || '¡Puntaje guardado con éxito!');
+      toast.success(submitRes.message || '¡Palabra Misteriosa superada con éxito!');
     } catch (e) {
       console.warn('Submit score error:', e);
       setEarnedXp(40);
     }
 
     if (onGameScoreUpdate) {
-      onGameScoreUpdate('mystery_word', res.score);
+      // Award normalized passing grade (85-100%) for guessing the word
+      const normalizedClassScore = Math.max(85, Math.min(100, 100 - res.mistakes * 2));
+      onGameScoreUpdate('mystery_word', normalizedClassScore);
     }
 
     setShowReviewModal(true);
@@ -343,14 +533,21 @@ export default function GameArena({
         lesson_id: lessonId,
       });
       setEarnedXp(submitRes.xp_earned || 45);
-      toast.success(submitRes.message || '¡Puntaje guardado con éxito!');
+      toast.success(submitRes.message || '¡Cartas Gemelas completadas con éxito!');
     } catch (e) {
       console.warn('Submit score error:', e);
       setEarnedXp(45);
     }
 
     if (onGameScoreUpdate) {
-      onGameScoreUpdate('twin_cards', res.score);
+      // Fair non-punitive score for playing vs AI:
+      // Winning: 100%, Tie: 95%, Completed match: 90%
+      const normalizedScore = res.studentPairsCount > res.aiPairsCount
+        ? 100
+        : res.studentPairsCount === res.aiPairsCount
+        ? 95
+        : 90;
+      onGameScoreUpdate('twin_cards', normalizedScore);
     }
 
     setShowReviewModal(true);
@@ -643,27 +840,65 @@ export default function GameArena({
         </div>
 
         {/* 🏆 Banner de Evaluación y Aprobación de la Clase */}
-        {onFinishClass && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-brand-surface/40 border border-brand-border/60">
-            <div className="space-y-1 text-center sm:text-left">
-              <h4 className="text-sm font-bold text-white flex items-center gap-2 justify-center sm:justify-start">
-                <Award size={16} className="text-brand-gold" />
-                <span>¿Completaste tus desafíos didácticos?</span>
-              </h4>
-              <p className="text-xs text-brand-text-secondary">
-                Se requiere un promedio general de <strong className="text-brand-gold">80% o más</strong> combinando examen, lectura y juegos para aprobar la clase y avanzar.
-              </p>
+        {onFinishClass && (() => {
+          const completedCount = (povQuestCompleted || localPovCompleted ? 1 : 0) + (twinCardsCompleted ? 1 : 0) + (mysteryWordCompleted ? 1 : 0);
+          const allThreeDone = completedCount === 3;
+
+          return (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-brand-surface/40 border border-brand-border/60">
+              <div className="space-y-2 text-center sm:text-left w-full sm:w-auto">
+                <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Award size={16} className="text-brand-gold" />
+                    <span>3 Juegos Didácticos Obligatorios</span>
+                  </h4>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold font-mono border ${
+                    allThreeDone
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                      : 'bg-amber-500/20 text-amber-300 border-amber-400/40'
+                  }`}>
+                    {completedCount}/3 Completados
+                  </span>
+                </div>
+                
+                {/* 3 mini status indicators */}
+                <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap text-xs">
+                  <span className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 border font-medium ${
+                    (povQuestCompleted || localPovCompleted) ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/5 text-zinc-400 border-white/10'
+                  }`}>
+                    {(povQuestCompleted || localPovCompleted) ? '✓ Misión POV' : '○ Misión POV (Pendiente)'}
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 border font-medium ${
+                    twinCardsCompleted ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/5 text-zinc-400 border-white/10'
+                  }`}>
+                    {twinCardsCompleted ? '✓ Cartas Gemelas' : '○ Cartas Gemelas (Pendiente)'}
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 border font-medium ${
+                    mysteryWordCompleted ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/5 text-zinc-400 border-white/10'
+                  }`}>
+                    {mysteryWordCompleted ? '✓ P. Misteriosa' : '○ P. Misteriosa (Pendiente)'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-brand-text-secondary">
+                  Debes jugar y completar los 3 modos para graduar la lección y avanzar al siguiente tema.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onFinishClass}
+                className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xl hover:scale-105 transition-all flex-shrink-0 cursor-pointer ${
+                  allThreeDone
+                    ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-brand-cyan text-black font-extrabold shadow-emerald-500/20'
+                    : 'bg-gradient-to-r from-brand-accent to-brand-cyan text-white shadow-brand-accent/20'
+                }`}
+              >
+                <span>{allThreeDone ? 'Finalizar Clase y Evaluar (3/3 Listos) 🏆' : `Finalizar Clase (${completedCount}/3 Completados)`}</span>
+                <ChevronRight size={16} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={onFinishClass}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-accent to-brand-cyan text-white font-bold text-xs flex items-center gap-2 shadow-xl hover:scale-105 transition-all flex-shrink-0 cursor-pointer"
-            >
-              <span>Finalizar Clase y Evaluar</span>
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        )}
+          );
+        })()}
       </div>
     );
   }
@@ -774,6 +1009,8 @@ export default function GameArena({
             topic={topic}
             sublevel={sublevel}
             onFinishGame={handleFinishMysteryWord}
+            onRetryWithNewWord={handleRetryMysteryWord}
+            isRetryingWord={isRetryingWord}
             onSwitchGame={() => setActiveTab('pov_quest')}
           />
         )}

@@ -957,23 +957,28 @@ export default function TwinCardsGame({
             className="p-6 rounded-3xl glass border-2 border-brand-accent shadow-[0_0_50px_rgba(108,99,255,0.4)] flex flex-col md:flex-row items-center justify-between gap-6"
           >
             <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center text-3xl shadow-xl ${
+              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex items-center justify-center text-2xl sm:text-3xl shadow-xl flex-shrink-0 ${
                 studentPairsCount > aiPairsCount
                   ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
                   : studentPairsCount === aiPairsCount
                   ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                  : 'bg-purple-500/20 text-purple-400 border-purple-500/40'
+                  : 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/40'
               }`}>
-                {studentPairsCount > aiPairsCount ? '🏆' : studentPairsCount === aiPairsCount ? '🤝' : '💡'}
+                {studentPairsCount > aiPairsCount ? '🏆' : studentPairsCount === aiPairsCount ? '🤝' : '✨'}
               </div>
-              <div className="space-y-1">
-                <h3 className="text-xl font-outfit font-extrabold text-white">
-                  {studentPairsCount > aiPairsCount
-                    ? '¡Victoria! Has Ganado la Partida'
-                    : studentPairsCount === aiPairsCount
-                    ? '¡Partida Reñida! Empate Técnico'
-                    : '¡Buen Intento! Sigue Practicando'}
-                </h3>
+              <div className="space-y-1 text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-2">
+                  <h3 className="text-lg sm:text-xl font-outfit font-extrabold text-white">
+                    {studentPairsCount > aiPairsCount
+                      ? '¡Victoria! Has Ganado la Partida'
+                      : studentPairsCount === aiPairsCount
+                      ? '¡Partida Reñida! Empate Técnico'
+                      : '¡Partida Completada con Éxito!'}
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[10px] font-bold">
+                    {studentPairsCount > aiPairsCount ? '100% Calificación' : studentPairsCount === aiPairsCount ? '95% Calificación' : '90% Calificación'}
+                  </span>
+                </div>
                 <p className="text-xs text-brand-text-secondary">
                   Tu puntuación: <strong className="text-brand-gold">{studentScore} pts</strong> ({studentPairsCount} parejas) &mdash; Guionbajo: <strong className="text-purple-300">{aiScore} pts</strong> ({aiPairsCount} parejas)
                 </p>

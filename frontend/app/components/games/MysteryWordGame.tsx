@@ -48,6 +48,8 @@ interface MysteryWordGameProps {
     won: boolean;
     data: MysteryWordData;
   }) => void;
+  onRetryWithNewWord?: () => void;
+  isRetryingWord?: boolean;
   onSwitchGame?: () => void;
 }
 
@@ -316,6 +318,8 @@ export default function MysteryWordGame({
   topic,
   sublevel,
   onFinishGame,
+  onRetryWithNewWord,
+  isRetryingWord = false,
   onSwitchGame,
 }: MysteryWordGameProps) {
   const targetWord = (data?.target_word || 'ENGLISH').toUpperCase().replace(/[^A-Z]/g, '');
@@ -508,6 +512,21 @@ export default function MysteryWordGame({
       generateIllustration();
     }
   }, [data?.target_word, generateIllustration]);
+
+  // Reset game state whenever target_word changes (e.g. retry with a new word)
+  useEffect(() => {
+    if (data?.target_word) {
+      setGuessedLetters(new Set());
+      setMistakes(0);
+      setUnlockedTier(0);
+      setGameOver(false);
+      setIsWon(false);
+      setStreak(0);
+      setMobileSelectedTier(1);
+      setSelectedDesktopTier(1);
+      stopTutorVoice();
+    }
+  }, [data?.target_word]);
 
   // ── 7. Clue tier unlocker ────────────────────────────────────
   const unlockClueTier = useCallback(async (tier: number, currentUnlocked: number) => {
@@ -1708,52 +1727,76 @@ export default function MysteryWordGame({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-            className="p-6 rounded-3xl glass border-2 border-brand-accent shadow-[0_0_50px_rgba(108,99,255,0.4)] flex flex-col md:flex-row items-center justify-between gap-6"
+            className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl glass border-2 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 ${
+              isWon
+                ? 'border-emerald-500/60 shadow-[0_0_50px_rgba(16,185,129,0.3)] bg-gradient-to-b from-emerald-950/40 via-slate-900 to-black'
+                : 'border-amber-500/60 shadow-[0_0_50px_rgba(245,158,11,0.3)] bg-gradient-to-b from-red-950/50 via-slate-900 to-black'
+            }`}
           >
-            <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-xl ${
+            <div className="flex items-center gap-3.5 sm:gap-4 w-full md:w-auto">
+              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl shadow-xl flex-shrink-0 ${
                 isWon ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
               }`}>
-                {isWon ? '🏆' : '💡'}
+                {isWon ? '🏆' : '🌊'}
               </div>
-              <div className="space-y-1">
-                <h3 className="text-xl font-outfit font-extrabold text-white">
-                  {isWon ? '¡Misión Cumplida! Palabra Resuelta' : '¡Fin de la Partida! Sigue Practicando'}
-                </h3>
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-xl font-outfit font-extrabold text-white">
+                    {isWon ? '¡Misión Cumplida! Palabra Resuelta' : '¡Tanque Lleno! Debes Adivinar la Palabra'}
+                  </h3>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                    isWon ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
+                  }`}>
+                    {isWon ? 'Reto Superado' : 'Obligatorio para Aprobar'}
+                  </span>
+                </div>
                 <p className="text-xs text-brand-text-secondary">
-                  Palabra objetivo: <strong className="text-brand-cyan">{targetWord}</strong> | Puntaje final: <strong className="text-brand-gold">{score} pts</strong>
+                  Palabra objetivo: <strong className="text-brand-cyan tracking-wider">{targetWord}</strong>
+                  {isWon ? <> | Puntaje final: <strong className="text-brand-gold">{score} pts</strong></> : ' — Para completar la lección debes adivinar la palabra.'}
                 </p>
-                {/* FIX #5: fixed literal quotes */}
                 {data.example_sentence && (
-                  <p className="text-xs text-brand-text-muted mt-1 italic">
+                  <p className="text-[11px] sm:text-xs text-brand-text-muted italic line-clamp-1">
                     &ldquo;{data.example_sentence}&rdquo; &mdash; {data.example_translation}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap w-full md:w-auto justify-end">
               {onSwitchGame && (
                 <button
                   type="button"
                   onClick={onSwitchGame}
-                  className="px-4 py-2.5 rounded-xl glass hover:bg-brand-surface border border-brand-border text-white text-xs font-bold transition-all flex items-center gap-1.5"
+                  className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl glass hover:bg-brand-surface border border-brand-border text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
                 >
                   <RotateCcw size={14} />
                   <span>Jugar Cartas Gemelas</span>
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  onFinishGame({ score, mistakes, maxStreak, won: isWon, data });
-                }}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-accent to-brand-cyan hover:opacity-90 text-white text-xs sm:text-sm font-extrabold transition-all shadow-lg shadow-brand-accent/30 flex items-center gap-2 hover:scale-105"
-              >
-                <Award size={16} />
-                <span>Ver Cierre Pedagógico & XP</span>
-              </button>
+              {/* Only show approval if player WON; otherwise prompt to RETRY with another word */}
+              {isWon ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onFinishGame({ score, mistakes, maxStreak, won: true, data });
+                  }}
+                  className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-brand-cyan hover:opacity-90 text-black text-xs sm:text-sm font-extrabold transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 hover:scale-105 cursor-pointer w-full sm:w-auto"
+                >
+                  <Award size={16} />
+                  <span>Ver Cierre Pedagógico & XP</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isRetryingWord}
+                  onClick={onRetryWithNewWord}
+                  className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500 via-brand-gold to-yellow-400 hover:opacity-95 text-black text-xs sm:text-sm font-extrabold transition-all shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 hover:scale-105 cursor-pointer disabled:opacity-50 w-full sm:w-auto"
+                >
+                  <RefreshCw size={15} className={isRetryingWord ? 'animate-spin' : ''} />
+                  <span>{isRetryingWord ? 'Generando Nueva Palabra...' : 'Intentar con Otra Palabra 🔄'}</span>
+                </button>
+              )}
             </div>
           </motion.div>
         )}

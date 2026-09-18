@@ -821,13 +821,13 @@ export default function POVQuestGame({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className={`max-w-lg w-full rounded-3xl p-6 sm:p-7 border shadow-2xl space-y-5 text-center ${
+              className={`max-w-md w-full rounded-2xl sm:rounded-3xl p-4 sm:p-7 border shadow-2xl space-y-4 sm:space-y-5 text-center ${
                 evalResult.is_correct
                   ? 'bg-gradient-to-b from-emerald-950/95 via-zinc-950 to-black border-emerald-500/50 shadow-emerald-500/20'
                   : 'bg-gradient-to-b from-rose-950/95 via-zinc-950 to-black border-rose-500/50 shadow-rose-500/20'
@@ -836,22 +836,22 @@ export default function POVQuestGame({
               {/* Status Icon */}
               <div className="flex justify-center">
                 <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center shadow-xl ${
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-xl ${
                     evalResult.is_correct
                       ? 'bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400'
                       : 'bg-rose-500/20 border-2 border-rose-400 text-rose-400'
                   }`}
                 >
                   {evalResult.is_correct ? (
-                    <CheckCircle2 size={32} className="stroke-[2.5]" />
+                    <CheckCircle2 size={28} className="stroke-[2.5]" />
                   ) : (
-                    <AlertCircle size={32} className="stroke-[2.5]" />
+                    <AlertCircle size={28} className="stroke-[2.5]" />
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="text-xl sm:text-2xl font-extrabold font-outfit text-white">
+              <div className="space-y-1 sm:space-y-2">
+                <h3 className="text-lg sm:text-2xl font-extrabold font-outfit text-white">
                   {evalResult.is_correct ? '¡Escena Superada con Éxito! 🎉' : 'Intenta de Nuevo 💡'}
                 </h3>
                 <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-md mx-auto">
@@ -861,8 +861,8 @@ export default function POVQuestGame({
 
               {/* Suggested English correction if incorrect */}
               {!evalResult.is_correct && evalResult.correction && (
-                <div className="p-3.5 rounded-2xl bg-zinc-900/90 border border-white/10 text-left space-y-1">
-                  <span className="text-[11px] font-bold text-amber-400 uppercase block">
+                <div className="p-3 rounded-xl sm:rounded-2xl bg-zinc-900/90 border border-white/10 text-left space-y-1">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase block">
                     Ejemplo de respuesta sugerida:
                   </span>
                   <p className="text-xs sm:text-sm text-white font-medium italic">
@@ -872,14 +872,14 @@ export default function POVQuestGame({
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-center gap-3 pt-2">
+              <div className="flex items-center justify-center gap-3 pt-1 sm:pt-2">
                 {evalResult.is_correct ? (
                   <motion.button
                     type="button"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleNextScene}
-                    className="w-full px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-300 to-brand-cyan text-black font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-300 to-brand-cyan text-black font-extrabold text-xs sm:text-base shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>{isFinalNode ? 'Completar Misión 🏆' : 'Continuar Historia ➡️'}</span>
                     <ChevronRight size={18} />
@@ -890,7 +890,7 @@ export default function POVQuestGame({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleRetryScene}
-                    className="w-full px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-rose-500/30 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 text-white font-extrabold text-xs sm:text-base shadow-xl shadow-rose-500/30 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <RotateCcw size={16} />
                     <span>Reintentar Escena 🎤</span>

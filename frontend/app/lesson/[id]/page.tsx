@@ -3247,12 +3247,16 @@ export default function LessonPage() {
   }, [lesson, lessonId, topicParam, sublevelParam, classIndexParam, currentPhaseIdx, viewMode, quizCompleted, quizScore, readingCompleted, readingScore, mysteryWordCompleted, mysteryWordScore, twinCardsCompleted, twinCardsScore, povQuestCompleted, povQuestScore]);
 
   const handleEvaluateClassCompletion = async () => {
-    const hasCompletedAnyGame = mysteryWordCompleted || twinCardsCompleted || povQuestCompleted;
-    if (!hasCompletedAnyGame) {
+    const allGamesCompleted = Boolean(mysteryWordCompleted && twinCardsCompleted && povQuestCompleted);
+    if (!allGamesCompleted) {
       sfx.playMistake();
-      toast.error('⚠️ Debes completar al menos una actividad didáctica (Misión POV, Palabra Misteriosa o Cartas Gemelas) para evaluar la clase.', {
+      const missing: string[] = [];
+      if (!povQuestCompleted) missing.push('Misión POV (Visual Novel)');
+      if (!twinCardsCompleted) missing.push('Cartas Gemelas (3D)');
+      if (!mysteryWordCompleted) missing.push('Palabra Misteriosa (Tanque)');
+      toast.error(`⚠️ Debes completar los 3 juegos obligatorios para graduar la clase. Faltan: ${missing.join(', ')}`, {
         id: 'game-required',
-        duration: 4500,
+        duration: 5500,
       });
       return;
     }
@@ -3260,13 +3264,10 @@ export default function LessonPage() {
     const qSc = quizCompleted ? (quizScore || 85) : 85;
     const rSc = readingCompleted ? (readingScore || 85) : 85;
 
-    const gamesScores: number[] = [];
-    if (povQuestCompleted) gamesScores.push(povQuestScore || 85);
-    if (mysteryWordCompleted) gamesScores.push(mysteryWordScore || 85);
-    if (twinCardsCompleted) gamesScores.push(twinCardsScore || 85);
-    const avgGameScore = gamesScores.length > 0
-      ? Math.round(gamesScores.reduce((a, b) => a + b, 0) / gamesScores.length)
-      : 85;
+    const povSc = povQuestScore || 90;
+    const mysterySc = mysteryWordScore || 90;
+    const twinSc = twinCardsScore || 90;
+    const avgGameScore = Math.round((povSc + mysterySc + twinSc) / 3);
 
     const compositeScore = Math.round((qSc + rSc + avgGameScore * 2) / 4);
     setCalculatedOverallScore(compositeScore);
@@ -3293,12 +3294,12 @@ export default function LessonPage() {
           quiz_score: qSc,
           reading_completed: true,
           reading_score: rSc,
-          mystery_word_completed: Boolean(mysteryWordCompleted),
-          mystery_word_score: mysteryWordScore,
-          twin_cards_completed: Boolean(twinCardsCompleted),
-          twin_cards_score: twinCardsScore,
-          pov_quest_completed: Boolean(povQuestCompleted),
-          pov_quest_score: povQuestScore,
+          mystery_word_completed: true,
+          mystery_word_score: mysterySc,
+          twin_cards_completed: true,
+          twin_cards_score: twinSc,
+          pov_quest_completed: true,
+          pov_quest_score: povSc,
           overall_score: compositeScore,
           is_completed: true,
         });
@@ -3320,16 +3321,26 @@ export default function LessonPage() {
 
   // Direct approval and transition to dashboard from GameReviewModal
   const handleFinishAndGoToDashboard = async () => {
+    const allGamesCompleted = Boolean(mysteryWordCompleted && twinCardsCompleted && povQuestCompleted);
+    if (!allGamesCompleted) {
+      const missing: string[] = [];
+      if (!povQuestCompleted) missing.push('Misión POV');
+      if (!twinCardsCompleted) missing.push('Cartas Gemelas');
+      if (!mysteryWordCompleted) missing.push('Palabra Misteriosa');
+      toast.error(`⚠️ Para finalizar la clase debes completar los 3 juegos obligatorios. Faltan: ${missing.join(', ')}`, {
+        id: 'games-required-dash',
+        duration: 5000,
+      });
+      return;
+    }
+
     const qSc = quizCompleted ? (quizScore || 85) : 85;
     const rSc = readingCompleted ? (readingScore || 85) : 85;
 
-    const gamesScores: number[] = [];
-    if (povQuestCompleted) gamesScores.push(povQuestScore || 85);
-    if (mysteryWordCompleted) gamesScores.push(mysteryWordScore || 85);
-    if (twinCardsCompleted) gamesScores.push(twinCardsScore || 85);
-    const avgGameScore = gamesScores.length > 0
-      ? Math.round(gamesScores.reduce((a, b) => a + b, 0) / gamesScores.length)
-      : 85;
+    const povSc = povQuestScore || 90;
+    const mysterySc = mysteryWordScore || 90;
+    const twinSc = twinCardsScore || 90;
+    const avgGameScore = Math.round((povSc + mysterySc + twinSc) / 3);
 
     const compositeScore = Math.round((qSc + rSc + avgGameScore * 2) / 4);
 
@@ -3353,12 +3364,12 @@ export default function LessonPage() {
         quiz_score: qSc,
         reading_completed: true,
         reading_score: rSc,
-        mystery_word_completed: Boolean(mysteryWordCompleted),
-        mystery_word_score: mysteryWordScore,
-        twin_cards_completed: Boolean(twinCardsCompleted),
-        twin_cards_score: twinCardsScore,
-        pov_quest_completed: Boolean(povQuestCompleted),
-        pov_quest_score: povQuestScore,
+        mystery_word_completed: true,
+        mystery_word_score: mysterySc,
+        twin_cards_completed: true,
+        twin_cards_score: twinSc,
+        pov_quest_completed: true,
+        pov_quest_score: povSc,
         overall_score: Math.max(82, compositeScore),
         is_completed: true,
       });
@@ -6637,30 +6648,36 @@ export default function LessonPage() {
               </div>
 
               {/* Score Breakdown Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-lg mx-auto text-left">
-                <div className="p-3 rounded-2xl bg-black/50 border border-white/10">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5 max-w-lg mx-auto text-left">
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-black/50 border border-white/10">
                   <div className="text-[10px] text-zinc-400 uppercase font-bold">1. Pizarra</div>
-                  <div className="text-base font-extrabold text-emerald-400">100%</div>
+                  <div className="text-sm sm:text-base font-extrabold text-emerald-400">100%</div>
                   <div className="text-[10px] text-zinc-400">Completada</div>
                 </div>
-                <div className="p-3 rounded-2xl bg-black/50 border border-white/10">
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-black/50 border border-white/10">
                   <div className="text-[10px] text-zinc-400 uppercase font-bold">2. Examen</div>
-                  <div className="text-base font-extrabold text-emerald-400">{quizScore || 85}%</div>
+                  <div className="text-sm sm:text-base font-extrabold text-emerald-400">{quizScore || 85}%</div>
                   <div className="text-[10px] text-zinc-400">Aprobado</div>
                 </div>
-                <div className="p-3 rounded-2xl bg-black/50 border border-white/10">
-                  <div className="text-[10px] text-zinc-400 uppercase font-bold">3. Lectura</div>
-                  <div className="text-base font-extrabold text-emerald-400">{readingScore || 85}%</div>
-                  <div className="text-[10px] text-zinc-400">Fluidez IPA</div>
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-black/50 border border-white/10">
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">3. Lectura IPA</div>
+                  <div className="text-sm sm:text-base font-extrabold text-emerald-400">{readingScore || 85}%</div>
+                  <div className="text-[10px] text-zinc-400">Fluidez</div>
                 </div>
-                <div className="p-3 rounded-2xl bg-black/50 border border-white/10">
-                  <div className="text-[10px] text-zinc-400 uppercase font-bold">4. Juegos</div>
-                  <div className="text-base font-extrabold text-emerald-400">
-                    {povQuestCompleted ? (povQuestScore || 90) : mysteryWordCompleted ? (mysteryWordScore || 85) : twinCardsCompleted ? (twinCardsScore || 85) : 85}%
-                  </div>
-                  <div className="text-[10px] text-zinc-400">
-                    {povQuestCompleted ? 'Misión POV' : mysteryWordCompleted ? 'P. Misteriosa' : twinCardsCompleted ? 'Cartas Gemelas' : 'Completado'}
-                  </div>
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-black/50 border border-white/10">
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">4. Misión POV</div>
+                  <div className="text-sm sm:text-base font-extrabold text-emerald-400">{povQuestScore || 90}%</div>
+                  <div className="text-[10px] text-zinc-400">Completada</div>
+                </div>
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-black/50 border border-white/10">
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">5. Cartas Gemelas</div>
+                  <div className="text-sm sm:text-base font-extrabold text-emerald-400">{twinCardsScore || 90}%</div>
+                  <div className="text-[10px] text-zinc-400">Superado</div>
+                </div>
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-black/50 border border-white/10">
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">6. P. Misteriosa</div>
+                  <div className="text-sm sm:text-base font-extrabold text-emerald-400">{mysteryWordScore || 90}%</div>
+                  <div className="text-[10px] text-zinc-400">Resuelta</div>
                 </div>
               </div>
 
@@ -6713,38 +6730,46 @@ export default function LessonPage() {
                   Se requiere al menos 80% para aprobar
                 </h3>
                 <p className="text-xs sm:text-sm text-zinc-300 max-w-md mx-auto leading-relaxed">
-                  Para asegurar el dominio del Marco Común Europeo, una clase solo se da por aprobada si la suma de todas sus actividades alcanza 80 o más.
+                  Para asegurar el dominio del Marco Común Europeo, una clase solo se da por aprobada si la suma de todas sus actividades alcanza 80 o más y se completan los 3 juegos.
                 </p>
               </div>
 
               {/* Activities Status Breakdown */}
-              <div className="grid grid-cols-3 gap-2.5 max-w-md mx-auto text-left text-xs">
-                <div className={`p-3 rounded-2xl border ${quizCompleted && quizScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5 max-w-lg mx-auto text-left text-xs">
+                <div className={`p-2.5 sm:p-3 rounded-2xl border ${quizCompleted && quizScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                   <div className="text-[10px] text-zinc-400 uppercase font-bold">Examen</div>
-                  <div className={`text-base font-bold ${quizCompleted && quizScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <div className={`text-sm sm:text-base font-bold ${quizCompleted && quizScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
                     {quizCompleted ? `${quizScore}%` : 'Incompleto'}
                   </div>
                 </div>
 
-                <div className={`p-3 rounded-2xl border ${readingCompleted && readingScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                <div className={`p-2.5 sm:p-3 rounded-2xl border ${readingCompleted && readingScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                   <div className="text-[10px] text-zinc-400 uppercase font-bold">Lectura IPA</div>
-                  <div className={`text-base font-bold ${readingCompleted && readingScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <div className={`text-sm sm:text-base font-bold ${readingCompleted && readingScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
                     {readingCompleted ? `${readingScore}%` : 'Incompleta'}
                   </div>
                 </div>
 
-                {(() => {
-                  const gameDone = povQuestCompleted || mysteryWordCompleted || twinCardsCompleted;
-                  const gScore = povQuestCompleted ? (povQuestScore || 85) : mysteryWordCompleted ? (mysteryWordScore || 85) : (twinCardsScore || 85);
-                  return (
-                    <div className={`p-3 rounded-2xl border ${gameDone && gScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-                      <div className="text-[10px] text-zinc-400 uppercase font-bold">Juegos Didácticos</div>
-                      <div className={`text-base font-bold ${gameDone && gScore >= 80 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {gameDone ? `${gScore}%` : 'Pendiente'}
-                      </div>
-                    </div>
-                  );
-                })()}
+                <div className={`p-2.5 sm:p-3 rounded-2xl border ${povQuestCompleted ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">Misión POV</div>
+                  <div className={`text-sm sm:text-base font-bold ${povQuestCompleted ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {povQuestCompleted ? `${povQuestScore || 90}%` : 'Pendiente'}
+                  </div>
+                </div>
+
+                <div className={`p-2.5 sm:p-3 rounded-2xl border ${twinCardsCompleted ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">Cartas Gemelas</div>
+                  <div className={`text-sm sm:text-base font-bold ${twinCardsCompleted ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {twinCardsCompleted ? `${twinCardsScore || 90}%` : 'Pendiente'}
+                  </div>
+                </div>
+
+                <div className={`col-span-2 sm:col-span-1 p-2.5 sm:p-3 rounded-2xl border ${mysteryWordCompleted ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="text-[10px] text-zinc-400 uppercase font-bold">P. Misteriosa</div>
+                  <div className={`text-sm sm:text-base font-bold ${mysteryWordCompleted ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {mysteryWordCompleted ? `${mysteryWordScore || 90}%` : 'Pendiente'}
+                  </div>
+                </div>
               </div>
 
               {/* Action Buttons */}

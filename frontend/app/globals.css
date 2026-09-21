@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cabin+Sketch:wght@700&family=Caveat:wght@400..700&family=Fredericka+the+Great&family=Gochi+Hand&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&family=Nunito:wght@400;600;700;800&family=Outfit:wght@400;600;700;800;900&family=Patrick+Hand&family=Playfair+Display:ital,wght@0,400..800;1,400..800&family=Rock+Salt&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&family=Nunito:wght@400;600;700;800&family=Outfit:wght@400;600;700;800;900&family=Patrick+Hand&family=Playfair+Display:ital,wght@0,400..800;1,400..800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -23,42 +23,11 @@ body {
 
 /* ─── Custom Font Families ─────────────────────────── */
 .font-outfit { font-family: 'Outfit', sans-serif; }
-.font-chalk { font-family: 'Fredericka the Great', 'Rock Salt', 'Caveat', cursive; }
-.font-chalk-fredericka { font-family: 'Fredericka the Great', cursive; }
-.font-chalk-gochi { font-family: 'Gochi Hand', cursive; }
-.font-chalk-rocksalt { font-family: 'Rock Salt', cursive; }
-.font-chalk-sketch { font-family: 'Cabin Sketch', cursive; }
+.font-chalk { font-family: 'Caveat', cursive; }
 .font-mono-custom { font-family: 'JetBrains Mono', monospace; }
 .font-serif-custom { font-family: 'Playfair Display', serif; }
 .font-rounded { font-family: 'Nunito', sans-serif; }
 .font-handwriting { font-family: 'Patrick Hand', cursive; }
-
-/* ─── Hyper-Realistic Chalk Typography ─────────────── */
-.real-chalk-title {
-  font-family: 'Fredericka the Great', 'Cabin Sketch', cursive;
-  color: rgba(255, 255, 255, 0.88);
-  text-shadow: 
-    0 0 1px rgba(255, 255, 255, 0.95),
-    0 0 3px rgba(255, 255, 255, 0.65),
-    1px 1px 4px rgba(255, 255, 255, 0.4),
-    -1px -1px 3px rgba(255, 255, 255, 0.3),
-    0 0 12px rgba(255, 255, 255, 0.2);
-  letter-spacing: 0.035em;
-  -webkit-font-smoothing: subpixel-antialiased;
-}
-
-.real-chalk-subtitle {
-  font-family: 'Gochi Hand', 'Fredericka the Great', 'Patrick Hand', cursive;
-  color: #fef08a;
-  text-shadow: 
-    0 0 1px rgba(254, 240, 138, 0.95),
-    0 0 3px rgba(254, 240, 138, 0.65),
-    1px 1px 4px rgba(254, 240, 138, 0.4),
-    -1px -1px 3px rgba(254, 240, 138, 0.3),
-    0 0 10px rgba(254, 240, 138, 0.2);
-  letter-spacing: 0.04em;
-  -webkit-font-smoothing: subpixel-antialiased;
-}
 
 /* ─── Physical Chalkboard Stage & Chalk Typography ─────────────── */
 .chalk-stage {

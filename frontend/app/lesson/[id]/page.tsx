@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api, playTTS, stopTutorVoice, playEnglishAudio, setSavedPreferredVoice } from '@/lib/api';
+import { api, playTTS, stopTutorVoice, playEnglishAudio, setSavedPreferredVoice, prefetchTTS, hasCachedTTS } from '@/lib/api';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 import MicButton from '@/app/components/TutorPanel/MicButton';
 import ScoreDisplay from '@/app/components/TutorPanel/ScoreDisplay';
@@ -4546,7 +4546,29 @@ export default function LessonPage() {
       setRevealedTargets(new Set(['image']));
     }
 
-    setTutorState('thinking');
+    // 🚀 BACKGROUND PREFETCH PIPELINE:
+    // 1. Immediately trigger background synthesis for upcoming chunks of the current phase
+    for (let nextIdx = chunkIndex + 1; nextIdx < chunks.length; nextIdx++) {
+      const nextChunk = chunks[nextIdx];
+      if (nextChunk?.tutor_says) {
+        prefetchTTS(nextChunk.tutor_says);
+      }
+    }
+    // 2. If near the end of this phase, prefetch chunk 0 of the next phase
+    if (chunkIndex >= chunks.length - 2) {
+      const nextPhase = lesson?.phases?.[currentPhaseIdx + 1];
+      if (nextPhase) {
+        const nextChunks = getPhaseVoiceChunks(nextPhase, topicParam);
+        if (nextChunks[0]?.tutor_says) {
+          prefetchTTS(nextChunks[0].tutor_says);
+        }
+      }
+    }
+
+    // Only show 'thinking' state if the audio is not already cached in memory
+    if (!hasCachedTTS(chunk.tutor_says)) {
+      setTutorState('thinking');
+    }
     try {
       const audio = await playTTS(chunk.tutor_says);
       if (audioSessionIdRef.current !== thisSessionId) {
@@ -4601,12 +4623,12 @@ export default function LessonPage() {
           setAudioProgress(100);
 
           if (autoAdvance && chunkIndex + 1 < chunks.length) {
-            // Natural pause between chunks (450ms) before transitioning and playing next chunk
+            // Natural brief conversational pause between chunks before transitioning
             setTimeout(() => {
               if (audioSessionIdRef.current === thisSessionId) {
                 playVoiceChunk(chunkIndex + 1, true);
               }
-            }, 450);
+            }, 300);
           } else {
             setTutorState('idle');
             setIsFullBoardRevealed(true);
@@ -4647,6 +4669,14 @@ export default function LessonPage() {
 
     const currentPhaseObj = lesson?.phases?.[currentPhaseIdx];
     if (!currentPhaseObj) return;
+
+    // 🚀 Preload audio chunks for this phase in background so they are ready before/during image load
+    try {
+      const phaseChunks = getPhaseVoiceChunks(currentPhaseObj, topicParam);
+      phaseChunks.forEach((c) => {
+        if (c?.tutor_says) prefetchTTS(c.tutor_says);
+      });
+    } catch (_) {}
 
     // Check if this is a practice / quiz slide
     const isPracticeSlide = Boolean(

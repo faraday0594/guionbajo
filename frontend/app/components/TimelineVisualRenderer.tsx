@@ -263,25 +263,10 @@ export default function TimelineVisualRenderer({
   const isHookOnly = timeline.length === 1;
   const isChalk = theme === 'chalk';
 
-  // Animation state for the hero image: starts centered large on step 0, then docks to the left
-  const [isHeroCentered, setIsHeroCentered] = useState<boolean>(() => {
-    return !isFullBoardRevealed && revealedStepCount <= 1 && activeStepIdx === 0 && !isHookOnly;
-  });
-
-  useEffect(() => {
-    if (isFullBoardRevealed || revealedStepCount > 1 || activeStepIdx > 0 || isHookOnly) {
-      setIsHeroCentered(false);
-      return;
-    }
-
-    // Step 0: start centered large, then after 2.4s glide smoothly to docked position
-    setIsHeroCentered(true);
-    const timer = setTimeout(() => {
-      setIsHeroCentered(false);
-    }, 2400);
-
-    return () => clearTimeout(timer);
-  }, [activeStepIdx, revealedStepCount, isFullBoardRevealed, imageUrl, isHookOnly]);
+  // 🎬 Synchronized Hero Animation:
+  // The hero image remains centered large during Step 0 while the tutor explains the image context.
+  // The moment the tutor finishes chunk 0 and Step 1 (the board) begins, it glides smoothly to the left column.
+  const isHeroCentered = Boolean(!isFullBoardRevealed && revealedStepCount <= 1 && activeStepIdx === 0 && !isHookOnly);
 
   const isStep2Revealed = Boolean(isFullBoardRevealed || revealedStepCount >= 2 || activeStepIdx >= 1);
 

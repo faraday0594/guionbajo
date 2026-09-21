@@ -327,11 +327,7 @@ export const api = {
 
   // ─── TTS ─────────────────────────────────────────
   synthesize: (text: string, voice?: string, emotion = 'calm', speed = 1.0): Promise<Blob> => {
-    const selectedVoice = voice && voice !== 'default' ? voice : getSavedPreferredVoice();
-    return fetchAudio('/tts/synthesize', {
-      method: 'POST',
-      body: JSON.stringify({ text, voice: selectedVoice, emotion, speed }),
-    });
+    return fetchSynthesizeWithCache(text, voice, emotion, speed);
   },
 
   getVoices: () => fetchWithAuth('/tts/voices'),
@@ -882,6 +878,80 @@ export function cleanTextForTTS(text: string): string {
   clean = clean.replace(/\s{2,}/g, ' ').trim();
 
   return clean;
+}
+
+// ─── High-Performance In-Memory Audio Blob Cache & Background Pipeline ──────
+export const ttsBlobCache = new Map<string, Blob>();
+export const ttsInFlightPromises = new Map<string, Promise<Blob>>();
+
+export function getTTSCacheKey(text: string, voice?: string, emotion = 'calm', speed = 1.0): string {
+  const clean = cleanTextForTTS(text).toLowerCase().trim();
+  const v = voice && voice !== 'default' ? voice : getSavedPreferredVoice();
+  return `${clean}__${v}__${emotion}__${speed}`;
+}
+
+export function hasCachedTTS(text: string, voice?: string, emotion = 'calm', speed = 1.0): boolean {
+  const key = getTTSCacheKey(text, voice, emotion, speed);
+  return ttsBlobCache.has(key);
+}
+
+export async function fetchSynthesizeWithCache(
+  text: string,
+  voice?: string,
+  emotion = 'calm',
+  speed = 1.0
+): Promise<Blob> {
+  const speechText = cleanTextForTTS(text);
+  const selectedVoice = voice && voice !== 'default' ? voice : getSavedPreferredVoice();
+  const key = getTTSCacheKey(speechText, selectedVoice, emotion, speed);
+
+  // 1. Instant cache hit (< 2ms)
+  const cached = ttsBlobCache.get(key);
+  if (cached) {
+    return cached;
+  }
+
+  // 2. In-flight promise reuse to prevent duplicate simultaneous fetches
+  const inFlight = ttsInFlightPromises.get(key);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  // 3. Initiate fetch and record in-flight promise
+  const fetchPromise = (async () => {
+    const blob = await fetchAudio('/tts/synthesize', {
+      method: 'POST',
+      body: JSON.stringify({ text: speechText, voice: selectedVoice, emotion, speed }),
+    });
+
+    if (blob && blob.size > 200) {
+      ttsBlobCache.set(key, blob);
+    }
+    return blob;
+  })();
+
+  ttsInFlightPromises.set(key, fetchPromise);
+
+  try {
+    const result = await fetchPromise;
+    return result;
+  } finally {
+    ttsInFlightPromises.delete(key);
+  }
+}
+
+export async function prefetchTTS(
+  text: string,
+  voice?: string,
+  emotion = 'calm',
+  speed = 1.0
+): Promise<void> {
+  if (!text || !text.trim()) return;
+  try {
+    await fetchSynthesizeWithCache(text, voice, emotion, speed);
+  } catch (err) {
+    console.debug('Silent TTS prefetch notice:', err);
+  }
 }
 
 function createBrowserSpeechAudioAdapter(text: string, voiceId?: string) {

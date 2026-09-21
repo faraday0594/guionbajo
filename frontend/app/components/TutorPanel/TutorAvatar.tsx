@@ -311,16 +311,20 @@ export default function TutorAvatar({
       {/* ── Stage 8: Aura Divina (Detrás de todo el avatar) ── */}
       {upgradeStage >= 8 && <div className={styles.godAura} />}
 
-      {/* ── Stage 7: Mini-Dron Guioncito Orbital ── */}
+      {/* ── Stage 7: Mini-Dron en Órbita 3D Horizontal con Luz Roja Intermitente ── */}
       {upgradeStage >= 7 && (
-        <div className={styles.miniDroneOrbit}>
-          <div className={styles.miniDroneBody}>
-            <svg width="24" height="20" viewBox="0 0 24 20" fill="none" overflow="visible">
-              <line x1="2" y1="4" x2="10" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="14" y1="4" x2="22" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-              <circle cx="12" cy="10" r="6" fill="#0f172a" stroke="#00D4FF" strokeWidth="1.5" />
-              <circle cx="12" cy="10" r="2.5" fill="#00D4FF" />
-              <line x1="12" y1="4" x2="12" y2="1" stroke="#00D4FF" strokeWidth="1" />
+        <div className={styles.miniDrone3dContainer}>
+          <div className="flex flex-col items-center">
+            {/* Bombillo rojo intermitente */}
+            <div className={styles.droneRedStrobe} />
+            {/* Chasis del mini dron */}
+            <svg width="26" height="18" viewBox="0 0 26 18" fill="none" overflow="visible">
+              <line x1="1" y1="5" x2="11" y2="5" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" />
+              <line x1="15" y1="5" x2="25" y2="5" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" />
+              <rect x="7" y="5" width="12" height="9" rx="3" fill="#0f172a" stroke="#00D4FF" strokeWidth="1.5" />
+              <circle cx="13" cy="9.5" r="2.5" fill="#00D4FF" />
+              <circle cx="2" cy="7" r="1.5" fill="#38bdf8" />
+              <circle cx="24" cy="7" r="1.5" fill="#38bdf8" />
             </svg>
           </div>
         </div>
@@ -339,6 +343,9 @@ export default function TutorAvatar({
           transform: isMouthArticulating ? `translateY(${speechAperture * -3}px)` : undefined,
         }}
       >
+        {/* ── Stage 4: Placa Frontal Blindada de Oro ── */}
+        {upgradeStage >= 4 && <div className={styles.goldenBrowArmor} />}
+
         {/* ── Stage 8: Corona Maestra Flotante ── */}
         {upgradeStage >= 8 && (
           <div className={styles.headCrown}>
@@ -358,24 +365,28 @@ export default function TutorAvatar({
           </div>
         )}
 
-        {/* ── Stage 5: Bobina Tesla Cuántica ── */}
+        {/* ── Stage 5: Bobina Tesla Cuántica con Rayos Eléctricos Animados ── */}
         {upgradeStage >= 5 && (
           <div className={styles.teslaCoil}>
-            <svg width="32" height="24" viewBox="0 0 32 24" fill="none" overflow="visible">
-              <ellipse cx="16" cy="18" rx="12" ry="3.5" stroke="#00D4FF" strokeWidth="1.5" opacity="0.95" />
-              <ellipse cx="16" cy="12" rx="9" ry="2.8" stroke="#00D4FF" strokeWidth="1.5" opacity="0.8" />
-              <ellipse cx="16" cy="6" rx="6" ry="2" stroke="#00D4FF" strokeWidth="1.5" opacity="0.7" />
-              <circle cx="16" cy="2" r="2" fill="#ffffff" />
+            <svg width="38" height="28" viewBox="0 0 38 28" fill="none" overflow="visible">
+              <ellipse cx="19" cy="22" rx="14" ry="4" stroke="#00D4FF" strokeWidth="1.8" opacity="0.95" />
+              <ellipse cx="19" cy="15" rx="10" ry="3.2" stroke="#00D4FF" strokeWidth="1.8" opacity="0.85" />
+              <ellipse cx="19" cy="8" rx="6" ry="2.2" stroke="#00D4FF" strokeWidth="1.8" opacity="0.75" />
+              <circle cx="19" cy="3" r="3" fill="#ffffff" stroke="#00D4FF" strokeWidth="1" />
+              {/* Rayos danzantes alrededor */}
+              <path className={styles.teslaLightningBolt} d="M 9 20 L 5 14 L 11 11 L 8 4" stroke="#fef08a" strokeWidth="1.8" strokeLinecap="round" />
+              <path className={styles.teslaLightningBolt} d="M 29 20 L 33 14 L 27 11 L 30 4" stroke="#fef08a" strokeWidth="1.8" strokeLinecap="round" style={{ animationDelay: '0.15s' }} />
+              <path className={styles.teslaLightningBolt} d="M 19 4 L 22 0 L 17 -3" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" style={{ animationDelay: '0.08s' }} />
             </svg>
           </div>
         )}
 
-        {/* ── Stage 3: Visor HUD Táctico Neón ── */}
+        {/* ── Stage 3: Visor HUD Full Neón (Todo el visor es de color neón) ── */}
         {upgradeStage >= 3 && (
-          <div className={styles.headHudVisor}>
+          <div className={styles.headHudVisorFull}>
             <div className={styles.hudScanline} />
-            <span style={{ fontSize: '7px', fontFamily: 'monospace', color: '#00D4FF', fontWeight: 900 }}>HUD</span>
-            <span style={{ fontSize: '7px', fontFamily: 'monospace', color: '#00D4FF', fontWeight: 900 }}>SYS</span>
+            <span style={{ fontSize: '7px', fontFamily: 'monospace', color: '#ffffff', fontWeight: 900, textShadow: '0 0 4px #00f0ff' }}>HUD</span>
+            <span style={{ fontSize: '7px', fontFamily: 'monospace', color: '#ffffff', fontWeight: 900, textShadow: '0 0 4px #00f0ff' }}>TARGET</span>
           </div>
         )}
         
@@ -422,12 +433,14 @@ export default function TutorAvatar({
                 }`}
               />
 
-              {/* Lente neón / pupila */}
+              {/* Lente neón / pupila (se vuelve ROJO intenso en Stage >= 3) */}
               <div className={styles.eyeLens}>
                 <div
                   className={`${styles.pupil} ${
                     drowned
                       ? styles.drownedPupil
+                      : upgradeStage >= 3
+                      ? styles.tacticalRedPupil
                       : currentEmotion === 'happy' || currentEmotion === 'victory'
                       ? styles.happyPupil
                       : currentEmotion === 'angry'
@@ -502,49 +515,56 @@ export default function TutorAvatar({
       {!headOnly && (
         <div className={`${styles.robotBody} ${upgradeStage >= 4 ? styles.goldTrimBody : ''}`}>
           
-          {/* ── Stage 2: Jetpack Dorsal Doble Tobera ── */}
+          {/* ── Stage 4: Blindaje Pesado de Oro Real (Hombreras + Peto) ── */}
+          {upgradeStage >= 4 && (
+            <>
+              <div className={styles.goldenShoulderLeft} />
+              <div className={styles.goldenShoulderRight} />
+              <div className={styles.goldenChestplate} />
+            </>
+          )}
+
+          {/* ── Stage 2: Jetpack Dorsal Realista con Doble Canister y Mega Llamas ── */}
           {upgradeStage >= 2 && (
             <div className={styles.bodyJetpack}>
-              <div className="flex flex-col items-center">
-                <div className="w-3 sm:w-3.5 h-6 sm:h-7 rounded-sm bg-gradient-to-b from-slate-700 to-slate-950 border border-slate-600 shadow-md" />
-                <div className="w-2.5 sm:w-3 h-1.5 bg-slate-800 rounded-b border-t border-cyan-400" />
-                <div className="w-2 sm:w-2.5 h-3.5 sm:h-4 bg-gradient-to-b from-cyan-300 via-blue-500 to-transparent rounded-full blur-[0.5px] animate-pulse" />
+              {/* Canister izquierdo */}
+              <div className={styles.jetpackCanister}>
+                <div className={styles.jetpackTank}>
+                  <div className={styles.jetpackRing} />
+                </div>
+                <div className={styles.jetpackCone} />
+                <div className={styles.jetpackFlameMega} />
               </div>
-              <div className="flex flex-col items-center">
-                <div className="w-3 sm:w-3.5 h-6 sm:h-7 rounded-sm bg-gradient-to-b from-slate-700 to-slate-950 border border-slate-600 shadow-md" />
-                <div className="w-2.5 sm:w-3 h-1.5 bg-slate-800 rounded-b border-t border-cyan-400" />
-                <div className="w-2 sm:w-2.5 h-3.5 sm:h-4 bg-gradient-to-b from-cyan-300 via-blue-500 to-transparent rounded-full blur-[0.5px] animate-pulse" />
+              {/* Canister derecho */}
+              <div className={styles.jetpackCanister}>
+                <div className={styles.jetpackTank}>
+                  <div className={styles.jetpackRing} />
+                </div>
+                <div className={styles.jetpackCone} />
+                <div className={styles.jetpackFlameMega} />
               </div>
             </div>
           )}
 
-          {/* ── Stage 6: Alas Holográficas de Plasma ── */}
+          {/* ── Stage 6: Espadas Gemelas Cyber (Reemplaza las alas) ── */}
           {upgradeStage >= 6 && (
-            <div className={styles.plasmaWings}>
-              <svg width="40" height="46" viewBox="0 0 40 46" fill="none" overflow="visible">
-                <path d="M 38 35 Q 8 20 2 2 Q 12 18 38 25 Z" fill="url(#wingGradLeft)" stroke="#818cf8" strokeWidth="1" opacity="0.85" />
-                <line x1="36" y1="28" x2="10" y2="16" stroke="#c7d2fe" strokeWidth="0.8" opacity="0.6" />
-                <defs>
-                  <linearGradient id="wingGradLeft" x1="1" y1="1" x2="0" y2="0">
-                    <stop offset="0%" stopColor="#818cf8" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.1" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <svg width="40" height="46" viewBox="0 0 40 46" fill="none" overflow="visible">
-                <path d="M 2 35 Q 32 20 38 2 Q 28 18 2 25 Z" fill="url(#wingGradRight)" stroke="#818cf8" strokeWidth="1" opacity="0.85" />
-                <line x1="4" y1="28" x2="30" y2="16" stroke="#c7d2fe" strokeWidth="0.8" opacity="0.6" />
-                <defs>
-                  <linearGradient id="wingGradRight" x1="0" y1="1" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#818cf8" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.1" />
-                  </linearGradient>
-                </defs>
-              </svg>
+            <div className={styles.dualSwordsContainer}>
+              <div className={styles.cyberSwordLeft}>
+                <div className={styles.swordBlade} />
+                <div className={styles.swordGuard} />
+                <div className={styles.swordHilt} />
+                <div className={styles.swordPommel} />
+              </div>
+              <div className={styles.cyberSwordRight}>
+                <div className={styles.swordBlade} />
+                <div className={styles.swordGuard} />
+                <div className={styles.swordHilt} />
+                <div className={styles.swordPommel} />
+              </div>
             </div>
           )}
 
-          {/* Brazos Mecánicos */}
+          {/* Brazos Mecánicos (Stage >= 1: Brazos mucho más gruesos y cromados) */}
           {['left', 'right'].map((side) => {
             const isLeft = side === 'left';
             const armClass = isLeft ? styles.armLeft : styles.armRight;
@@ -559,12 +579,11 @@ export default function TutorAvatar({
             return (
               <div
                 key={side}
-                className={`${styles.robotArm} ${armClass} ${animClass}`}
-                style={upgradeStage >= 1 ? { filter: 'drop-shadow(0 0 3px rgba(0,212,255,0.7))' } : undefined}
+                className={`${styles.robotArm} ${armClass} ${animClass} ${upgradeStage >= 1 ? styles.thickArm : ''}`}
               >
-                <div className={styles.armUpper} style={upgradeStage >= 1 ? { background: 'linear-gradient(180deg, #94a3b8, #475569)' } : undefined} />
-                <div className={styles.armJoint} style={upgradeStage >= 1 ? { background: '#00D4FF', boxShadow: '0 0 4px #00D4FF' } : undefined} />
-                <div className={styles.armForearm} style={upgradeStage >= 1 ? { background: 'linear-gradient(180deg, #64748b, #334155)', borderBottom: '2px solid #00D4FF' } : undefined} />
+                <div className={styles.armUpper} />
+                <div className={styles.armJoint} />
+                <div className={styles.armForearm} />
               </div>
             );
           })}
@@ -588,11 +607,15 @@ export default function TutorAvatar({
             </div>
           </div>
 
-          {/* Micropropulsor Magnético Inferior */}
+          {/* Micropropulsor Magnético Inferior (Mega Llama cuando upgradeStage >= 2) */}
           <div className={styles.hoverThruster}>
             <div className={styles.thrusterNozzle} />
             {!drowned && (
-              <div className={`${styles.plasmaFlame} ${isMouthArticulating ? styles.plasmaHigh : ''}`} />
+              <div
+                className={`${styles.plasmaFlame} ${isMouthArticulating ? styles.plasmaHigh : ''} ${
+                  upgradeStage >= 2 ? styles.plasmaMega : ''
+                }`}
+              />
             )}
           </div>
         </div>

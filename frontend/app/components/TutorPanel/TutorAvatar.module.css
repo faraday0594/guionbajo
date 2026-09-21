@@ -800,36 +800,429 @@
   100% { opacity: 1; }
 }
 
-/* ── Upgrade Accessories Styles ── */
+/* ── Upgrade Accessories Styles Refined ── */
 
-/* Stage 4: Gold trim */
+/* Stage 1: Brazos Articulados Cromados Reforzados (Mucho más gruesos y robóticos) */
+.thickArm {
+  filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.7));
+}
+.thickArm .armUpper {
+  background: linear-gradient(90deg, #94a3b8 0%, #f1f5f9 50%, #475569 100%) !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: inset 1px 1px 2px rgba(255,255,255,0.8);
+}
+.thickArm .armJoint {
+  background: radial-gradient(circle, #00D4FF 40%, #0369a1 100%) !important;
+  border: 2px solid #e2e8f0 !important;
+  box-shadow: 0 0 10px #00D4FF !important;
+}
+.thickArm .armForearm {
+  background: linear-gradient(90deg, #475569 0%, #cbd5e1 50%, #1e293b 100%) !important;
+  border: 2px solid #94a3b8 !important;
+  border-bottom: 3.5px solid #00D4FF !important;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.6), inset 0 0 5px rgba(0,212,255,0.5);
+}
+
+.sizeSm .thickArm .armUpper { width: 9px !important; height: 12px !important; }
+.sizeSm .thickArm .armJoint { width: 11px !important; height: 11px !important; }
+.sizeSm .thickArm .armForearm { width: 11px !important; height: 15px !important; border-radius: 2px 2px 5px 5px !important; }
+
+.sizeMd .thickArm .armUpper { width: 14px !important; height: 17px !important; }
+.sizeMd .thickArm .armJoint { width: 15px !important; height: 15px !important; }
+.sizeMd .thickArm .armForearm { width: 15px !important; height: 21px !important; border-radius: 3px 3px 7px 7px !important; }
+
+.sizeLg .thickArm .armUpper { width: 18px !important; height: 22px !important; }
+.sizeLg .thickArm .armJoint { width: 19px !important; height: 19px !important; }
+.sizeLg .thickArm .armForearm { width: 19px !important; height: 28px !important; border-radius: 4px 4px 9px 9px !important; }
+
+.sizeToolbar .thickArm .armUpper { width: 6px !important; height: 8px !important; }
+.sizeToolbar .thickArm .armJoint { width: 7px !important; height: 7px !important; }
+.sizeToolbar .thickArm .armForearm { width: 7px !important; height: 10px !important; }
+
+/* Stage 2: Jetpack Realista y Mega Llamas */
+.bodyJetpack {
+  position: absolute;
+  top: -4px;
+  left: -20px;
+  right: -20px;
+  bottom: -6px;
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.sizeToolbar .bodyJetpack {
+  left: -10px;
+  right: -10px;
+}
+
+.jetpackCanister {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.jetpackTank {
+  width: 14px;
+  height: 32px;
+  background: linear-gradient(90deg, #475569 0%, #cbd5e1 35%, #334155 70%, #0f172a 100%);
+  border: 1.5px solid #94a3b8;
+  border-radius: 5px 5px 2px 2px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.8), inset 0 1px 2px #fff;
+  position: relative;
+}
+.sizeToolbar .jetpackTank {
+  width: 8px;
+  height: 18px;
+}
+.jetpackRing {
+  position: absolute;
+  top: 9px;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: #f59e0b;
+  box-shadow: 0 0 4px #f59e0b;
+}
+.jetpackCone {
+  width: 12px;
+  height: 6px;
+  background: linear-gradient(180deg, #334155, #0f172a);
+  border: 1px solid #64748b;
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+}
+.sizeToolbar .jetpackCone {
+  width: 7px;
+  height: 4px;
+}
+.jetpackFlameMega {
+  width: 11px;
+  height: 26px;
+  background: linear-gradient(180deg, #ffffff 0%, #00f0ff 25%, #3b82f6 65%, transparent 100%);
+  border-radius: 50%;
+  filter: blur(1px);
+  animation: jetpackFlameAnim 0.12s infinite alternate ease-in-out;
+  box-shadow: 0 0 18px 5px rgba(0, 212, 255, 0.85);
+}
+.sizeToolbar .jetpackFlameMega {
+  width: 6px;
+  height: 14px;
+}
+@keyframes jetpackFlameAnim {
+  0%   { transform: scaleX(0.85) scaleY(0.9); opacity: 0.85; }
+  100% { transform: scaleX(1.25) scaleY(1.35); opacity: 1; }
+}
+
+/* Mega Llama del propulsor inferior principal */
+.plasmaMega {
+  width: 22px !important;
+  height: 24px !important;
+  filter: blur(1px) !important;
+  box-shadow: 0 0 24px 8px rgba(0, 212, 255, 0.95), 0 0 40px rgba(59, 130, 246, 0.7) !important;
+  animation: megaThrusterFlame 0.1s infinite alternate !important;
+}
+.sizeLg .plasmaMega {
+  width: 30px !important;
+  height: 32px !important;
+}
+@keyframes megaThrusterFlame {
+  0%   { transform: scaleX(0.9) scaleY(0.9); opacity: 0.85; }
+  100% { transform: scaleX(1.35) scaleY(1.45); opacity: 1; }
+}
+
+/* Stage 3: Full Neon HUD Visor (Todo el visor es neón vibrante) */
+.headHudVisorFull {
+  position: absolute;
+  top: 18%;
+  left: 2%;
+  width: 96%;
+  height: 54%;
+  pointer-events: none;
+  z-index: 20;
+  border-radius: 9px;
+  background: rgba(0, 229, 255, 0.48); /* Full neon tint */
+  border: 2px solid #00f0ff;
+  box-shadow: 0 0 22px rgba(0, 240, 255, 0.9), inset 0 0 14px rgba(0, 240, 255, 0.7);
+  backdrop-filter: blur(1.5px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  overflow: hidden;
+}
+.sizeToolbar .headHudVisorFull {
+  top: 14%;
+  height: 60%;
+  border-width: 1.5px;
+}
+
+.hudScanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 8px #ffffff;
+  animation: hudScan 1.6s ease-in-out infinite alternate;
+}
+@keyframes hudScan {
+  0%   { top: 2px; }
+  100% { top: calc(100% - 4px); }
+}
+
+/* Ojos Rojos Tácticos (Terminator / Combat Mode) */
+.tacticalRedPupil {
+  background: #FF0033 !important;
+  box-shadow: 0 0 16px 6px rgba(255, 0, 51, 1), 0 0 28px rgba(255, 50, 50, 0.85) !important;
+  animation: redEyePulse 1.2s infinite alternate !important;
+}
+@keyframes redEyePulse {
+  0%   { filter: brightness(1); }
+  100% { filter: brightness(1.35); }
+}
+
+/* Stage 4: Blindaje Pesado de Oro Real */
 .goldTrimHead {
   border-color: #fbbf24 !important;
-  box-shadow: 0 0 15px rgba(251, 191, 36, 0.45), inset 0 1px 2px rgba(254, 240, 138, 0.6) !important;
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.5), inset 0 1px 2px rgba(254, 240, 138, 0.7) !important;
 }
-
 .goldTrimBody {
   border-color: #fbbf24 !important;
-  box-shadow: 0 0 15px rgba(251, 191, 36, 0.45), inset 0 1px 2px rgba(254, 240, 138, 0.6) !important;
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.5), inset 0 1px 2px rgba(254, 240, 138, 0.7) !important;
 }
 
-/* Stage 8: God Aura */
+.goldenShoulderLeft, .goldenShoulderRight {
+  position: absolute;
+  top: -4px;
+  width: 18px;
+  height: 24px;
+  background: linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #b45309 100%);
+  border: 2px solid #fef08a;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5), inset 0 1px 2px #ffffff;
+  z-index: 12;
+}
+.sizeToolbar .goldenShoulderLeft, .sizeToolbar .goldenShoulderRight {
+  width: 10px;
+  height: 14px;
+}
+.goldenShoulderLeft {
+  left: -10px;
+  border-radius: 8px 3px 6px 3px;
+  transform: rotate(-12deg);
+}
+.goldenShoulderRight {
+  right: -10px;
+  border-radius: 3px 8px 3px 6px;
+  transform: rotate(12deg);
+}
+
+.goldenChestplate {
+  position: absolute;
+  top: 0px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 76%;
+  height: 9px;
+  background: linear-gradient(180deg, #fef08a 0%, #f59e0b 60%, #b45309 100%);
+  border: 1.5px solid #fef08a;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+  z-index: 10;
+}
+
+.goldenBrowArmor {
+  position: absolute;
+  top: 0px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 8px;
+  background: linear-gradient(180deg, #fef08a, #d97706);
+  border: 1.5px solid #fef08a;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+  z-index: 15;
+}
+
+/* Stage 5: Bobina Tesla y Rayos Eléctricos */
+.teslaCoil {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 15;
+}
+.sizeToolbar .teslaCoil {
+  top: -18px;
+  transform: translateX(-50%) scale(0.7);
+}
+
+.teslaLightningBolt {
+  animation: lightningDance 0.3s infinite ease-in-out;
+  transform-origin: center;
+}
+@keyframes lightningDance {
+  0%   { opacity: 0.1; transform: scale(0.9) rotate(-3deg); }
+  25%  { opacity: 1; transform: scale(1.1) rotate(4deg); }
+  50%  { opacity: 0.3; transform: scale(0.95) rotate(-1deg); }
+  75%  { opacity: 1; transform: scale(1.2) rotate(-5deg); }
+  100% { opacity: 0.2; transform: scale(1) rotate(0deg); }
+}
+
+/* Stage 6: Espadas Gemelas Cyber */
+.dualSwordsContainer {
+  position: absolute;
+  top: -24px;
+  left: -32px;
+  right: -32px;
+  bottom: 0;
+  pointer-events: none;
+  z-index: -2;
+  display: flex;
+  justify-content: space-between;
+}
+.sizeToolbar .dualSwordsContainer {
+  top: -14px;
+  left: -18px;
+  right: -18px;
+  transform: scale(0.7);
+}
+
+.cyberSwordLeft, .cyberSwordRight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 0 8px #a855f7) drop-shadow(0 0 16px #3b82f6);
+}
+.cyberSwordLeft {
+  transform: rotate(-32deg);
+}
+.cyberSwordRight {
+  transform: rotate(32deg);
+}
+
+.swordBlade {
+  width: 5px;
+  height: 54px;
+  background: linear-gradient(180deg, #ffffff 0%, #c084fc 30%, #a855f7 70%, #00f0ff 100%);
+  border-radius: 3px 3px 1px 1px;
+  border: 1px solid #e9d5ff;
+  box-shadow: 0 0 14px #c084fc, inset 0 0 4px #ffffff;
+  position: relative;
+}
+.swordGuard {
+  width: 16px;
+  height: 4px;
+  background: linear-gradient(90deg, #475569, #94a3b8, #334155);
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+}
+.swordHilt {
+  width: 4px;
+  height: 14px;
+  background: repeating-linear-gradient(180deg, #1e293b 0px, #1e293b 2px, #0f172a 2px, #0f172a 4px);
+  border: 1px solid #64748b;
+  border-radius: 1px;
+}
+.swordPommel {
+  width: 6px;
+  height: 3px;
+  background: #a855f7;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #c084fc;
+}
+
+/* Stage 7: Mini Dron en Órbita 3D Horizontal pasando por detrás */
+.miniDrone3dContainer {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  pointer-events: none;
+  animation: drone3dOrbitHorizontal 5s ease-in-out infinite;
+}
+
+@keyframes drone3dOrbitHorizontal {
+  0% {
+    /* Al frente a la derecha */
+    transform: translate3d(60px, 12px, 50px) scale(1.15);
+    z-index: 35;
+    opacity: 1;
+  }
+  25% {
+    /* Extremo derecho */
+    transform: translate3d(95px, 0px, 0px) scale(1);
+    z-index: 35;
+    opacity: 1;
+  }
+  49% {
+    z-index: 35;
+  }
+  50% {
+    /* DETRÁS DE GUIONBAJO (al fondo) */
+    transform: translate3d(0px, -20px, -50px) scale(0.72);
+    z-index: -4;
+    opacity: 0.65;
+  }
+  75% {
+    /* Extremo izquierdo */
+    transform: translate3d(-95px, 0px, 0px) scale(1);
+    z-index: 35;
+    opacity: 1;
+  }
+  100% {
+    /* Vuelta al frente */
+    transform: translate3d(60px, 12px, 50px) scale(1.15);
+    z-index: 35;
+    opacity: 1;
+  }
+}
+
+.sizeToolbar .miniDrone3dContainer {
+  animation: drone3dOrbitHorizontalToolbar 5s ease-in-out infinite;
+}
+@keyframes drone3dOrbitHorizontalToolbar {
+  0%   { transform: translate3d(32px, 6px, 30px) scale(0.85); z-index: 35; opacity: 1; }
+  50%  { transform: translate3d(0px, -10px, -30px) scale(0.55); z-index: -4; opacity: 0.65; }
+  100% { transform: translate3d(32px, 6px, 30px) scale(0.85); z-index: 35; opacity: 1; }
+}
+
+/* Bombillo intermitente rojo del dron */
+.droneRedStrobe {
+  width: 5px;
+  height: 5px;
+  background: #ff0033;
+  border-radius: 50%;
+  box-shadow: 0 0 10px 4px #ff0033;
+  animation: redBeaconBlink 0.45s infinite alternate ease-in-out;
+}
+@keyframes redBeaconBlink {
+  0%   { opacity: 0.15; transform: scale(0.7); box-shadow: none; }
+  100% { opacity: 1; transform: scale(1.4); box-shadow: 0 0 14px 5px #ff0033; }
+}
+
+/* Stage 8: Aura Divina y Corona */
 .godAura {
   position: absolute;
   inset: -20px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.22) 0%, rgba(245, 158, 11, 0.08) 50%, transparent 75%);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(245, 158, 11, 0.1) 50%, transparent 75%);
   pointer-events: none;
   z-index: 1;
   animation: auraPulse 3s ease-in-out infinite alternate;
 }
-
 @keyframes auraPulse {
   0%   { transform: scale(0.96); opacity: 0.6; }
   100% { transform: scale(1.15); opacity: 1; }
 }
 
-/* Stage 8: Floating Master Crown */
 .headCrown {
   position: absolute;
   top: -26px;
@@ -840,149 +1233,14 @@
   filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.85));
   animation: crownHover 2.4s ease-in-out infinite alternate;
 }
-
 @keyframes crownHover {
   0%   { transform: translateX(-50%) translateY(0); }
   100% { transform: translateX(-50%) translateY(-4px); }
 }
-
 .sizeToolbar .headCrown {
   top: -18px;
   transform: translateX(-50%) scale(0.7);
 }
 
-/* Stage 3: Tactical HUD Visor */
-.headHudVisor {
-  position: absolute;
-  top: 24%;
-  left: 5%;
-  width: 90%;
-  height: 44%;
-  pointer-events: none;
-  z-index: 20;
-  border-radius: 7px;
-  background: rgba(8, 18, 36, 0.78);
-  border: 1.5px solid #00D4FF;
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.5), inset 0 0 5px rgba(0, 212, 255, 0.3);
-  backdrop-filter: blur(1px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 4px;
-  overflow: hidden;
-}
-
-.sizeToolbar .headHudVisor {
-  top: 20%;
-  height: 48%;
-  border-width: 1px;
-}
-
-.hudScanline {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: rgba(0, 212, 255, 0.6);
-  box-shadow: 0 0 6px #00D4FF;
-  animation: hudScan 2s ease-in-out infinite alternate;
-}
-
-@keyframes hudScan {
-  0%   { top: 2px; }
-  100% { top: calc(100% - 4px); }
-}
-
-/* Stage 5: Tesla Coil */
-.teslaCoil {
-  position: absolute;
-  top: -24px;
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 15;
-}
-
-.sizeToolbar .teslaCoil {
-  top: -16px;
-  transform: translateX(-50%) scale(0.7);
-}
-
-/* Stage 2: Dorsal Jetpack */
-.bodyJetpack {
-  position: absolute;
-  top: 2px;
-  left: -14px;
-  right: -14px;
-  bottom: 0px;
-  pointer-events: none;
-  z-index: 2;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.sizeToolbar .bodyJetpack {
-  left: -8px;
-  right: -8px;
-  top: 0px;
-}
-
-/* Stage 6: Holographic Plasma Wings */
-.plasmaWings {
-  position: absolute;
-  top: 15%;
-  left: -42px;
-  right: -42px;
-  height: 80%;
-  pointer-events: none;
-  z-index: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.sizeToolbar .plasmaWings {
-  left: -22px;
-  right: -22px;
-  transform: scale(0.65);
-}
-
-/* Stage 7: Mini Drone Orbit */
-.miniDroneOrbit {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 160px;
-  height: 160px;
-  margin-top: -80px;
-  margin-left: -80px;
-  pointer-events: none;
-  z-index: 35;
-  animation: droneSpin 4.5s linear infinite;
-}
-
-@keyframes droneSpin {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.sizeToolbar .miniDroneOrbit {
-  width: 100px;
-  height: 100px;
-  margin-top: -50px;
-  margin-left: -50px;
-}
-
-.miniDroneBody {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
 
 

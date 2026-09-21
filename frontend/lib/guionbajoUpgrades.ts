@@ -86,9 +86,9 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   },
   {
     stage: 6,
-    name: 'Alas Holográficas de Plasma',
-    emoji: '🪽',
-    desc: 'Fluidez independiente. ¡Graduado del nivel B1!',
+    name: 'Espadas Gemelas Cyber',
+    emoji: '⚔️',
+    desc: 'Doble espada de combate montada a los lados. ¡Graduado del nivel B1 con estilo!',
     triggerSublevel: 'B1.4',
   },
   {

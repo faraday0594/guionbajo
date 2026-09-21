@@ -356,13 +356,21 @@ export default function CelebrationModal({
                 {stage === 'pulling' && (
                   <g>
                     <path
-                      d="M 60 152 Q 70 178 70 182 Q 70 178 80 152 Z"
+                      d={
+                        upgradeStage >= 2
+                          ? 'M 54 152 Q 70 196 70 204 Q 70 196 86 152 Z'
+                          : 'M 60 152 Q 70 178 70 182 Q 70 178 80 152 Z'
+                      }
                       fill="url(#gbPlasmaOuter)"
-                      opacity="0.85"
+                      opacity="0.9"
                       filter="url(#gbCyanGlow)"
                     />
                     <path
-                      d="M 64 152 Q 70 172 70 175 Q 70 172 76 152 Z"
+                      d={
+                        upgradeStage >= 2
+                          ? 'M 58 152 Q 70 188 70 192 Q 70 188 82 152 Z'
+                          : 'M 64 152 Q 70 172 70 175 Q 70 172 76 152 Z'
+                      }
                       fill="url(#gbPlasmaCore)"
                       opacity="0.95"
                     />
@@ -589,77 +597,106 @@ export default function CelebrationModal({
 
                 {/* ══ UPGRADE ACCESSORIES (sobre el SVG base) ══ */}
 
-                {/* Stage 1+: Articulaciones cromadas en brazos */}
+                {/* Stage 1+: Articulaciones y hombreras gruesas cromadas en brazos */}
                 {upgradeStage >= 1 && (
                   <g>
-                    <circle cx="50" cy="120" r="4" fill="#0f172a" stroke="#00D4FF" strokeWidth="1.5" />
-                    <circle cx="50" cy="120" r="1.5" fill="#00D4FF" />
-                    <circle cx="90" cy="120" r="4" fill="#0f172a" stroke="#00D4FF" strokeWidth="1.5" />
-                    <circle cx="90" cy="120" r="1.5" fill="#00D4FF" />
+                    <rect x="44" y="114" width="12" height="10" rx="3" fill="#94a3b8" stroke="#cbd5e1" strokeWidth="1.5" />
+                    <circle cx="50" cy="119" r="3" fill="#00D4FF" filter="url(#gbCyanGlow)" />
+                    <rect x="84" y="114" width="12" height="10" rx="3" fill="#94a3b8" stroke="#cbd5e1" strokeWidth="1.5" />
+                    <circle cx="90" cy="119" r="3" fill="#00D4FF" filter="url(#gbCyanGlow)" />
                   </g>
                 )}
 
-                {/* Stage 2+: Jetpack dorsal detrás del torso */}
+                {/* Stage 2+: Jetpack dorsal con canisters realistas y mega llamas */}
                 {upgradeStage >= 2 && (
                   <g>
-                    <rect x="40" y="118" width="10" height="22" rx="3" fill="#1e293b" stroke="#334155" strokeWidth="1" />
-                    <rect x="90" y="118" width="10" height="22" rx="3" fill="#1e293b" stroke="#334155" strokeWidth="1" />
-                    <rect x="44" y="122" width="32" height="5" rx="2.5" fill="#0f172a" stroke="#475569" strokeWidth="0.8" />
-                    {/* Llamas */}
-                    <ellipse cx="45" cy="143" rx="3" ry="5" fill="url(#gbPlasmaOuter)" opacity="0.8">
-                      <animate attributeName="ry" values="5;7;4;6;5" dur="0.4s" repeatCount="indefinite" />
+                    <rect x="36" y="114" width="12" height="26" rx="4" fill="url(#gbChassis)" stroke="#94a3b8" strokeWidth="1.5" />
+                    <line x1="36" y1="122" x2="48" y2="122" stroke="#f59e0b" strokeWidth="2" />
+                    <rect x="92" y="114" width="12" height="26" rx="4" fill="url(#gbChassis)" stroke="#94a3b8" strokeWidth="1.5" />
+                    <line x1="92" y1="122" x2="104" y2="122" stroke="#f59e0b" strokeWidth="2" />
+                    {/* Mega Llamas de plasma */}
+                    <ellipse cx="42" cy="148" rx="5" ry="12" fill="url(#gbPlasmaOuter)" opacity="0.9" filter="url(#gbCyanGlow)">
+                      <animate attributeName="ry" values="10;15;9;14;10" dur="0.3s" repeatCount="indefinite" />
                     </ellipse>
-                    <ellipse cx="95" cy="143" rx="3" ry="5" fill="url(#gbPlasmaOuter)" opacity="0.8">
-                      <animate attributeName="ry" values="4;7;5;6;4" dur="0.45s" repeatCount="indefinite" />
+                    <ellipse cx="98" cy="148" rx="5" ry="12" fill="url(#gbPlasmaOuter)" opacity="0.9" filter="url(#gbCyanGlow)">
+                      <animate attributeName="ry" values="9;14;11;15;9" dur="0.32s" repeatCount="indefinite" />
                     </ellipse>
                   </g>
                 )}
 
-                {/* Stage 3+: Visor HUD sobre los ojos */}
+                {/* Stage 3+: Visor HUD Full Neón sobre los ojos */}
                 {upgradeStage >= 3 && (
                   <g>
-                    <rect x="36" y="64" width="68" height="10" rx="3"
-                      fill="#0c1a2e" stroke="#00D4FF" strokeWidth="1" opacity="0.85" />
-                    <circle cx="70" cy="69" r="3" fill="none" stroke="#00D4FF" strokeWidth="0.8" opacity="0.9" />
-                    <circle cx="70" cy="69" r="1" fill="#00D4FF" opacity="0.9" />
-                    <rect x="38" y="67" width="68" height="1" fill="#00D4FF" opacity="0.3">
-                      <animate attributeName="y" values="66;72;66" dur="2s" repeatCount="indefinite" />
-                    </rect>
+                    <rect x="36" y="62" width="68" height="26" rx="6"
+                      fill="rgba(0, 229, 255, 0.45)" stroke="#00f0ff" strokeWidth="1.8" filter="url(#gbCyanGlow)" />
+                    <line x1="38" y1="75" x2="102" y2="75" stroke="#ffffff" strokeWidth="1" opacity="0.7">
+                      <animate attributeName="y1" values="64;86;64" dur="1.8s" repeatCount="indefinite" />
+                      <animate attributeName="y2" values="64;86;64" dur="1.8s" repeatCount="indefinite" />
+                    </line>
+                    {/* Pupilas rojas tácticas visibles a través del visor */}
+                    <circle cx="58" cy="75" r="4" fill="#FF0033" filter="url(#gbCyanGlow)" />
+                    <circle cx="82" cy="75" r="4" fill="#FF0033" filter="url(#gbCyanGlow)" />
                   </g>
                 )}
 
-                {/* Stage 4+: Ribetes dorados en chasis */}
+                {/* Stage 4+: Blindaje Pesado de Oro Real (Hombreras + Placa frontal) */}
                 {upgradeStage >= 4 && (
                   <g>
-                    <rect x="38" y="58" width="64" height="50" rx="13"
-                      fill="none" stroke="url(#celebGoldFrame)" strokeWidth="1.8" opacity="0.8" />
+                    {/* Hombreras de oro */}
+                    <path d="M 38 110 L 28 116 L 34 130 L 44 124 Z" fill="url(#celebGoldFrame)" stroke="#fef08a" strokeWidth="1.5" />
+                    <path d="M 102 110 L 112 116 L 106 130 L 96 124 Z" fill="url(#celebGoldFrame)" stroke="#fef08a" strokeWidth="1.5" />
+                    {/* Placa frontal en cabeza */}
+                    <rect x="42" y="58" width="56" height="6" rx="3" fill="url(#celebGoldFrame)" stroke="#fef08a" strokeWidth="1.2" />
+                    {/* Ribetes dorados en chasis */}
                     <rect x="44" y="110" width="52" height="36" rx="9"
-                      fill="none" stroke="url(#celebGoldFrame)" strokeWidth="1.8" opacity="0.8" />
+                      fill="none" stroke="url(#celebGoldFrame)" strokeWidth="2" opacity="0.9" />
                     <defs>
                       <linearGradient id="celebGoldFrame" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#f59e0b" />
-                        <stop offset="50%" stopColor="#fef08a" />
-                        <stop offset="100%" stopColor="#d97706" />
+                        <stop offset="0%" stopColor="#fef08a" />
+                        <stop offset="50%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#b45309" />
                       </linearGradient>
                     </defs>
                   </g>
                 )}
 
-                {/* Stage 6+: Alas holográficas */}
+                {/* Stage 5: Rayos eléctricos en la bobina Tesla */}
+                {upgradeStage >= 5 && (
+                  <g>
+                    <path d="M 60 30 L 54 24 L 62 21 L 58 14" stroke="#fef08a" strokeWidth="2" fill="none" strokeLinecap="round">
+                      <animate attributeName="opacity" values="0.2;1;0.3;1;0.2" dur="0.25s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M 80 30 L 86 24 L 78 21 L 82 14" stroke="#fef08a" strokeWidth="2" fill="none" strokeLinecap="round">
+                      <animate attributeName="opacity" values="1;0.2;1;0.4;1" dur="0.3s" repeatCount="indefinite" />
+                    </path>
+                  </g>
+                )}
+
+                {/* Stage 6+: Espadas Gemelas Cyber montadas a los lados (Reemplaza alas) */}
                 {upgradeStage >= 6 && (
-                  <g opacity="0.75">
-                    <path d="M 44 128 Q 15 108 8 82 Q 20 100 44 134 Z"
-                      fill="#818cf8" opacity="0.5" stroke="#818cf8" strokeWidth="0.6">
-                      <animate attributeName="d"
-                        values="M 44 128 Q 15 108 8 82 Q 20 100 44 134 Z;M 44 128 Q 12 106 5 80 Q 18 98 44 134 Z;M 44 128 Q 15 108 8 82 Q 20 100 44 134 Z"
-                        dur="2.5s" repeatCount="indefinite" />
-                    </path>
-                    <path d="M 96 128 Q 125 108 132 82 Q 120 100 96 134 Z"
-                      fill="#818cf8" opacity="0.5" stroke="#818cf8" strokeWidth="0.6">
-                      <animate attributeName="d"
-                        values="M 96 128 Q 125 108 132 82 Q 120 100 96 134 Z;M 96 128 Q 128 106 135 80 Q 122 98 96 134 Z;M 96 128 Q 125 108 132 82 Q 120 100 96 134 Z"
-                        dur="2.5s" repeatCount="indefinite" />
-                    </path>
+                  <g>
+                    {/* Espada izquierda */}
+                    <g transform="rotate(-30 46 116)">
+                      <rect x="44" y="60" width="5" height="52" rx="2" fill="url(#celebSwordGrad)" stroke="#e9d5ff" strokeWidth="1" filter="url(#gbCyanGlow)" />
+                      <rect x="39" y="112" width="15" height="4" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="1" />
+                      <rect x="45" y="116" width="3" height="12" rx="1" fill="#1e293b" />
+                      <circle cx="46.5" cy="129" r="2.5" fill="#a855f7" />
+                    </g>
+                    {/* Espada derecha */}
+                    <g transform="rotate(30 94 116)">
+                      <rect x="91" y="60" width="5" height="52" rx="2" fill="url(#celebSwordGrad)" stroke="#e9d5ff" strokeWidth="1" filter="url(#gbCyanGlow)" />
+                      <rect x="86" y="112" width="15" height="4" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="1" />
+                      <rect x="92" y="116" width="3" height="12" rx="1" fill="#1e293b" />
+                      <circle cx="93.5" cy="129" r="2.5" fill="#a855f7" />
+                    </g>
+                    <defs>
+                      <linearGradient id="celebSwordGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ffffff" />
+                        <stop offset="35%" stopColor="#c084fc" />
+                        <stop offset="70%" stopColor="#a855f7" />
+                        <stop offset="100%" stopColor="#00f0ff" />
+                      </linearGradient>
+                    </defs>
                   </g>
                 )}
 

@@ -397,22 +397,22 @@ export default function GuionbajoLabPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
               <span className="text-[10px] font-bold font-mono text-emerald-400 uppercase">Nivel A1 (Acción)</span>
-              <p className="text-slate-300 font-semibold">• A1.2: 🦾 Brazos articulados</p>
-              <p className="text-slate-300 font-semibold">• A1.4: 🚀 Jetpack dorsal plasma</p>
+              <p className="text-slate-300 font-semibold">• A1.2: 🦾 Brazos pesados cromados</p>
+              <p className="text-slate-300 font-semibold">• A1.4: 🚀 Jetpack dual + mega llamas</p>
             </div>
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
               <span className="text-[10px] font-bold font-mono text-amber-400 uppercase">Nivel A2 (Estructura)</span>
-              <p className="text-slate-300 font-semibold">• A2.2: 🥽 Visor HUD táctico</p>
-              <p className="text-slate-300 font-semibold">• A2.4: 🛡️ Chasis cromado dorado</p>
+              <p className="text-slate-300 font-semibold">• A2.2: 🥽 Visor neón full + ojos rojos</p>
+              <p className="text-slate-300 font-semibold">• A2.4: 🛡️ Blindaje de oro (hombreras + peto)</p>
             </div>
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
               <span className="text-[10px] font-bold font-mono text-sky-400 uppercase">Nivel B1 (Expansión)</span>
-              <p className="text-slate-300 font-semibold">• B1.2: 📡 Bobina Tesla cuántica</p>
-              <p className="text-slate-300 font-semibold">• B1.4: 🪽 Alas holográficas</p>
+              <p className="text-slate-300 font-semibold">• B1.2: 📡 Bobina Tesla con rayos</p>
+              <p className="text-slate-300 font-semibold">• B1.4: ⚔️ Espadas gemelas cyber</p>
             </div>
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
               <span className="text-[10px] font-bold font-mono text-purple-400 uppercase">Nivel B2 (Maestría)</span>
-              <p className="text-slate-300 font-semibold">• B2.2: 🛸 Mini-dron Guioncito</p>
+              <p className="text-slate-300 font-semibold">• B2.2: 🛸 Mini-dron 3D + bombillo rojo</p>
               <p className="text-slate-300 font-semibold">• B2.4: 👑 Forma Maestra (Dios)</p>
             </div>
           </div>

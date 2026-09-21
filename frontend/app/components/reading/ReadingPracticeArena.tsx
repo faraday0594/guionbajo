@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { sfx } from '@/lib/soundEffects';
+import ChalkboardBackgroundWriting from '@/app/components/ChalkboardBackgroundWriting';
 
 export interface ReadingWord {
   word: string;
@@ -825,10 +826,13 @@ export default function ReadingPracticeArena({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="rounded-3xl p-5 sm:p-7 shadow-2xl board-chalkboard-green chalk-stage border-2 border-brand-cyan/60 ring-2 ring-brand-cyan/20 space-y-6"
+        className="rounded-3xl p-5 sm:p-7 shadow-2xl board-chalkboard-green chalk-stage border-2 border-brand-cyan/60 ring-2 ring-brand-cyan/20 space-y-6 relative overflow-hidden"
       >
+        {/* Authentic Background Chalkboard Writing */}
+        <ChalkboardBackgroundWriting topic={topic} />
+
         {/* Slide Header */}
-        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-white/10">
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-white/10 relative z-10">
           <div className="flex items-center gap-2.5">
             <span className="text-xs font-bold uppercase tracking-wider font-chalk text-yellow-300">
               📌 Escena {currentSlideIdx + 1}: {currentSlide.scene_title}

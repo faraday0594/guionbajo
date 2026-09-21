@@ -1729,7 +1729,7 @@ class TutorAgent:
             f"Tema de Repaso/Recuperación (Spaced Retrieval): {retrieval}\n"
             f"{target_guidance}"
             f"{phonetics_prompt_line}\n"
-            f"ESTRUCTURA DE SLIDES (Genera exactamente 4 fases conceptuales en el JSON):\n"
+            f"ESTRUCTURA DE SLIDES (Genera exactamente 5 fases estructuradas en el JSON):\n"
             f"• Slide 1: MANDATORY CINEMATIC HOOK ('is_hook': true, 'hook_type': 'dilemma', 'interaction_type': 'explanation').\n"
             f"   - 'tutor_says': Locución intrigante y empática en español (2-3 oraciones) presentando el dilema real sobre '{topic}'.\n"
             f"   - 'image_prompt': 2D flat vector educational illustration of a person facing a relatable situation about {topic}, no text.\n"
@@ -1744,7 +1744,20 @@ class TutorAgent:
             f"   - 'tutor_says': Explicación de los errores sintácticos y de concordancia más comunes en hispanohablantes al usar '{topic}' y cómo formular oraciones correctas. CERO explicaciones fonéticas o símbolos IPA aquí (la pronunciación va estrictamente en el bonus final).\n"
             f"   - 'board_content': Duelo de oraciones: ❌ Error sintáctico común vs ✅ Oración correcta.\n"
             f"   - REGLA DE ORO PARA CONTRASTES: Presenta SIEMPRE primero la forma correcta y luego el error (ej: 'Di ✅ \"She is cooking\" y no ❌ \"She cooking\"'). Si mencionas el error primero, di 'El error común es ❌ \"She cooking\", lo correcto es ✅ \"She is cooking\"'. NUNCA califiques un error gramatical como correcto.\n"
-            f"   - 'target_audio_items': Oraciones modelo 100% correctas en inglés (NUNCA incluyas oraciones con errores como 'She haves', 'She cooking' o 'They are run' como oraciones para practicar).\n\n"
+            f"   - 'target_audio_items': Oraciones modelo 100% correctas en inglés.\n"
+            f"• Slide 5: DESAFÍOS INTERACTIVOS (QUIZ) ('is_practice_slide': true, 'interaction_type': 'quiz').\n"
+            f"   - 'phase_name': 'Desafío Práctico: {topic}'\n"
+            f"   - 'tutor_says': '¡Momento de practicar! Completa estos ejercicios interactivos situacionales para consolidar {topic}.'\n"
+            f"   - 'exercises': Exactamente 8 ejercicios situacionales e interactivos ('id': 'ex-1' a 'ex-8') evaluando ESTRICTAMENTE '{topic}' ({grammar_target}).\n"
+            f"     Cada objeto en 'exercises' DEBE incluir:\n"
+            f"       * 'id': 'ex-1' .. 'ex-8'\n"
+            f"       * 'sentence': Oración completa en inglés con hueco '_____' y opciones entre corchetes, ej: 'Right now, Mateo is _____ [cooking / cook / cooked] dinner in the kitchen.'\n"
+            f"       * 'options': 3 opciones de respuesta contextuales (ej: ['cooking', 'cook', 'cooked']).\n"
+            f"       * 'expected_answer': la opción correcta exacta (ej: 'cooking').\n"
+            f"       * 'spanish_translation': traducción completa y natural en español.\n"
+            f"       * 'hint': breve pista pedagógica de por qué esa opción es correcta.\n"
+            f"       * 'image_prompt': descripción de imagen 2D plana para ilustrar la situación del ejercicio, sin texto.\n"
+            f"     RESTRICCIÓN CRÍTICA DE ALCANCE: Los 8 ejercicios deben evaluar ÚNICA Y EXCLUSIVAMENTE '{topic}' ({grammar_target}). PROHIBIDO incluir tiempos verbales o modales ajenos (cero Present Simple, cero modales Can, Would, etc. en clases de Present Continuous).\n\n"
             f"REGLAS OBLIGATORIAS:\n"
             f"1. {'Explicaciones (tutor_says), pizarra (board_content) y tareas en español con ejemplos en inglés.' if is_a_level else 'Full English immersion.'}\n"
             f"2. En cada fase incluye 'target_audio_items' con las oraciones modelo en inglés y su traducción.\n"
@@ -1851,15 +1864,100 @@ class TutorAgent:
 
     def _generate_default_exercises(self, topic: str, sublevel: str = "", grammar_target: str = "") -> list:
         """Constructs authentic complete-sentence exercises (minimum 8) strictly aligned with the target topic."""
+        top_low = (topic or "").lower().strip()
         if not grammar_target:
             curr_node = self._find_curriculum_node(topic, sublevel) or {}
             grammar_target = curr_node.get("grammar_core") or ""
         t_low = f"{topic} {grammar_target} {sublevel}".lower()
 
-        # 1. Questions & Negatives / Present Simple Auxiliaries (Do / Does / Don't / Doesn't)
+        # 1. Present Continuous (Actions in Progress) - HIGHEST PRIORITY OVER PRESENT SIMPLE
         if (
-            any(k in t_low for k in ["questions & negatives", "questions and negatives", "do and does", "do / does", "do & does", "don't / doesn't", "don't and doesn't", "auxiliar"]) or
-            (sublevel.upper() == "A1.2" and any(k in t_low for k in ["question", "negative", "do", "does"]))
+            any(k in top_low for k in ["present continuous", "presente continuo", "actions in progress", "verb-ing"]) or
+            (("continuous" in top_low or "continuo" in top_low) and "past" not in top_low and "pasado" not in top_low) or
+            (any(k in t_low for k in ["present continuous", "presente continuo", "actions in progress"]) and "past" not in t_low and "pasado" not in t_low)
+        ):
+            return [
+                {
+                    "id": "ex-1",
+                    "sentence": "Right now, Mateo is _____ [cooking / cook / cooked] dinner in the kitchen.",
+                    "options": ["cooking", "cook", "cooked"],
+                    "expected_answer": "cooking",
+                    "spanish_translation": "Ahora mismo, Mateo está cocinando la cena en la cocina.",
+                    "image_prompt": "A person happily stirring soup in a modern kitchen with steam rising, 2D flat vector art, no text",
+                    "hint": "En Present Continuous usamos el verbo 'to be' + verbo con terminación '-ing': 'is cooking'."
+                },
+                {
+                    "id": "ex-2",
+                    "sentence": "They are _____ [studying / study / studies] for tomorrow's English test at the library.",
+                    "options": ["studying", "study", "studies"],
+                    "expected_answer": "studying",
+                    "spanish_translation": "Ellos están estudiando para el examen de inglés de mañana en la biblioteca.",
+                    "image_prompt": "Two students focused on open notebooks at a wooden study desk, 2D flat vector art, no text",
+                    "hint": "Con 'They are' la acción en desarrollo lleva la forma con '-ing': 'studying'."
+                },
+                {
+                    "id": "ex-3",
+                    "sentence": "What _____ [are you doing / do you do / you doing] at this moment?",
+                    "options": ["are you doing", "do you do", "you doing"],
+                    "expected_answer": "are you doing",
+                    "spanish_translation": "¿Qué estás haciendo en este momento?",
+                    "image_prompt": "A person holding a phone and chatting casually in a living room, 2D flat vector art, no text",
+                    "hint": "Para acciones ocurriendo en este momento exacto usamos 'What are you doing?'."
+                },
+                {
+                    "id": "ex-4",
+                    "sentence": "She isn't _____ [sleeping / sleep / sleeps]; she is reading a novel in her bedroom.",
+                    "options": ["sleeping", "sleep", "sleeps"],
+                    "expected_answer": "sleeping",
+                    "spanish_translation": "Ella no está durmiendo; está leyendo una novela en su habitación.",
+                    "image_prompt": "A woman sitting propped up in bed reading a book under a warm lamp, 2D flat vector art, no text",
+                    "hint": "En la forma negativa continua usamos 'isn't' + verbo con '-ing': 'isn't sleeping'."
+                },
+                {
+                    "id": "ex-5",
+                    "sentence": "Look! It _____ [is raining / rains / raining] outside, take an umbrella.",
+                    "options": ["is raining", "rains", "raining"],
+                    "expected_answer": "is raining",
+                    "spanish_translation": "¡Mira! Está lloviendo afuera, lleva un paraguas.",
+                    "image_prompt": "Raindrops falling against a window pane looking onto a city street, 2D flat vector art, no text",
+                    "hint": "Para una acción que ocurre frente a nuestros ojos ('Look!'), usamos 'is raining'."
+                },
+                {
+                    "id": "ex-6",
+                    "sentence": "We _____ [are listening / listen / listening] to an interesting podcast right now.",
+                    "options": ["are listening", "listen", "listening"],
+                    "expected_answer": "are listening",
+                    "spanish_translation": "Estamos escuchando un podcast interesante ahora mismo.",
+                    "image_prompt": "Two people sharing earbuds and smiling while listening to audio, 2D flat vector art, no text",
+                    "hint": "Con 'We' y el marcador temporal 'right now' usamos 'are listening'."
+                },
+                {
+                    "id": "ex-7",
+                    "sentence": "Carlos is _____ [driving / drive / drove] to the airport to pick up his friend.",
+                    "options": ["driving", "drive", "drove"],
+                    "expected_answer": "driving",
+                    "spanish_translation": "Carlos está conduciendo hacia el aeropuerto para recoger a su amigo.",
+                    "image_prompt": "A driver focused on the road through the car windshield on a highway, 2D flat vector art, no text",
+                    "hint": "Los verbos terminados en 'e' como 'drive' eliminan la 'e' y añaden '-ing': 'driving'."
+                },
+                {
+                    "id": "ex-8",
+                    "sentence": "Why _____ [is she crying / does she cry / she is crying]? Is everything okay?",
+                    "options": ["is she crying", "does she cry", "she is crying"],
+                    "expected_answer": "is she crying",
+                    "spanish_translation": "¿Por qué está llorando ella? ¿Está todo bien?",
+                    "image_prompt": "A comforting friend placing a reassuring hand on someone's shoulder, 2D flat vector art, no text",
+                    "hint": "Estructura de pregunta continua: Wh-word + is + sujeto + verbo-ing: 'is she crying'."
+                }
+            ]
+
+        # 2. Questions & Negatives / Present Simple Auxiliaries (Do / Does / Don't / Doesn't)
+        elif (
+            "continuous" not in top_low and "continuo" not in top_low and (
+                any(k in top_low for k in ["questions & negatives", "questions and negatives", "do and does", "do / does", "do & does", "don't / doesn't", "don't and doesn't", "auxiliar"]) or
+                (sublevel.upper() == "A1.2" and any(k in top_low for k in ["question", "negative", "do", "does"])) or
+                any(k in t_low for k in ["questions & negatives", "questions and negatives", "do and does", "do / does", "do & does", "don't / doesn't", "don't and doesn't"])
+            )
         ):
             return [
                 {
@@ -2090,8 +2188,14 @@ class TutorAgent:
                 }
             ]
 
-        # 3. Present Simple & Daily Routines
-        elif any(k in t_low for k in ["present simple", "routine", "rutina", "habit", "third person", "frequency", "adverb"]):
+        # 3. Present Simple & Daily Routines (Strictly when NOT continuous)
+        elif (
+            "continuous" not in top_low and "continuo" not in top_low and "continuous" not in (topic or "").lower() and (
+                any(k in top_low for k in ["present simple", "routine", "rutina", "habit", "third person", "frequency", "adverb"]) or
+                (sublevel.upper() == "A1.2" and any(k in top_low for k in ["routine", "rutina", "daily"])) or
+                any(k in t_low for k in ["daily routines", "habits", "adverbs of frequency", "third-person singular -s"])
+            )
+        ):
             return [
                 {
                     "id": "ex-1",
@@ -2552,82 +2656,6 @@ class TutorAgent:
                 }
             ]
 
-        # Present Continuous (Actions in Progress)
-        elif (any(k in t_low for k in ["present continuous", "presente continuo", "actions in progress", "verb-ing"]) and "past" not in t_low and "pasado" not in t_low):
-            return [
-                {
-                    "id": "ex-1",
-                    "sentence": "Right now, Mateo is _____ [cooking / cook / cooked] dinner in the kitchen.",
-                    "options": ["cooking", "cook", "cooked"],
-                    "expected_answer": "cooking",
-                    "spanish_translation": "Ahora mismo, Mateo está cocinando la cena en la cocina.",
-                    "image_prompt": "A person happily stirring soup in a modern kitchen with steam rising, 2D flat vector art, no text",
-                    "hint": "En Present Continuous usamos el verbo 'to be' + verbo con terminación '-ing': 'is cooking'."
-                },
-                {
-                    "id": "ex-2",
-                    "sentence": "They are _____ [studying / study / studies] for tomorrow's English test at the library.",
-                    "options": ["studying", "study", "studies"],
-                    "expected_answer": "studying",
-                    "spanish_translation": "Ellos están estudiando para el examen de inglés de mañana en la biblioteca.",
-                    "image_prompt": "Two students focused on open notebooks at a wooden study desk, 2D flat vector art, no text",
-                    "hint": "Con 'They are' la acción en desarrollo lleva la forma con '-ing': 'studying'."
-                },
-                {
-                    "id": "ex-3",
-                    "sentence": "What _____ [are you doing / do you do / you doing] at this moment?",
-                    "options": ["are you doing", "do you do", "you doing"],
-                    "expected_answer": "are you doing",
-                    "spanish_translation": "¿Qué estás haciendo en este momento?",
-                    "image_prompt": "A person holding a phone and chatting casually in a living room, 2D flat vector art, no text",
-                    "hint": "Para acciones ocurriendo en este momento exacto usamos 'What are you doing?'."
-                },
-                {
-                    "id": "ex-4",
-                    "sentence": "She isn't _____ [sleeping / sleep / sleeps]; she is reading a novel in her bedroom.",
-                    "options": ["sleeping", "sleep", "sleeps"],
-                    "expected_answer": "sleeping",
-                    "spanish_translation": "Ella no está durmiendo; está leyendo una novela en su habitación.",
-                    "image_prompt": "A woman sitting propped up in bed reading a book under a warm lamp, 2D flat vector art, no text",
-                    "hint": "En la forma negativa continua usamos 'isn't' + verbo con '-ing': 'isn't sleeping'."
-                },
-                {
-                    "id": "ex-5",
-                    "sentence": "Look! It _____ [is raining / rains / raining] outside, take an umbrella.",
-                    "options": ["is raining", "rains", "raining"],
-                    "expected_answer": "is raining",
-                    "spanish_translation": "¡Mira! Está lloviendo afuera, lleva un paraguas.",
-                    "image_prompt": "Raindrops falling against a window pane looking onto a city street, 2D flat vector art, no text",
-                    "hint": "Para una acción que ocurre frente a nuestros ojos ('Look!'), usamos 'is raining'."
-                },
-                {
-                    "id": "ex-6",
-                    "sentence": "We _____ [are listening / listen / listening] to an interesting podcast right now.",
-                    "options": ["are listening", "listen", "listening"],
-                    "expected_answer": "are listening",
-                    "spanish_translation": "Estamos escuchando un podcast interesante ahora mismo.",
-                    "image_prompt": "Two people sharing earbuds and smiling while listening to audio, 2D flat vector art, no text",
-                    "hint": "Con 'We' y el marcador temporal 'right now' usamos 'are listening'."
-                },
-                {
-                    "id": "ex-7",
-                    "sentence": "Carlos is _____ [driving / drive / drove] to the airport to pick up his friend.",
-                    "options": ["driving", "drive", "drove"],
-                    "expected_answer": "driving",
-                    "spanish_translation": "Carlos está conduciendo hacia el aeropuerto para recoger a su amigo.",
-                    "image_prompt": "A driver focused on the road through the car windshield on a highway, 2D flat vector art, no text",
-                    "hint": "Los verbos terminados en 'e' como 'drive' eliminan la 'e' y añaden '-ing': 'driving'."
-                },
-                {
-                    "id": "ex-8",
-                    "sentence": "Why _____ [is she crying / does she cry / she is crying]? Is everything okay?",
-                    "options": ["is she crying", "does she cry", "she is crying"],
-                    "expected_answer": "is she crying",
-                    "spanish_translation": "¿Por qué está llorando ella? ¿Está todo bien?",
-                    "image_prompt": "A comforting friend placing a reassuring hand on someone's shoulder, 2D flat vector art, no text",
-                    "hint": "Estructura de pregunta continua: Wh-word + is + sujeto + verbo-ing: 'is she crying'."
-                }
-            ]
 
         # General Contextual Default (Strictly Present Simple & Everyday Vocabulary - Zero out-of-scope tenses)
         else:

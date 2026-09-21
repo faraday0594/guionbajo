@@ -1653,9 +1653,29 @@ def _build_a1_2_integration_fallback(sublevel: str) -> dict:
 
 def _derive_topic_sentence_models(topic: str, grammar_core: str, vocab_core: str, sublevel: str) -> dict:
     """Generates authentic, highly contextualized CEFR sentence models and typical errors based on topic."""
+    top_low = (topic or "").lower().strip()
     low = f"{topic} {grammar_core}".lower()
     
-    if any(k in low for k in ["routine", "rutina", "daily", "present simple", "habit", "third person"]):
+    # 1. Present Continuous (Priority over Present Simple)
+    if (
+        any(k in top_low for k in ["present continuous", "presente continuo", "actions in progress", "verb-ing"]) or
+        (("continuous" in top_low or "continuo" in top_low) and "past" not in top_low and "pasado" not in top_low) or
+        (any(k in low for k in ["present continuous", "presente continuo", "actions in progress"]) and "past" not in low and "pasado" not in low)
+    ):
+        return {
+            "model_1": "Right now, Mateo is cooking dinner in the kitchen.",
+            "model_trans_1": "Ahora mismo, Mateo está cocinando la cena en la cocina.",
+            "model_2": "They are studying for tomorrow's English test at the library.",
+            "model_trans_2": "Ellos están estudiando para el examen de inglés de mañana en la biblioteca.",
+            "err_wrong": "She cooking right now / They are run.",
+            "err_correct": "She is cooking right now / They are running.",
+            "err_tip": "En Present Continuous usamos el verbo 'to be' (am/is/are) + verbo con terminación '-ing'.",
+            "dialogue_q": "What are you doing at this moment?",
+            "dialogue_a": "I am practicing English conversation with my AI tutor.",
+            "formula_pattern": "Sujeto + am/is/are + Verbo(-ing) + Complemento",
+            "formula_role_pattern": "is cooking / are studying / am practicing"
+        }
+    elif "continuous" not in top_low and "continuo" not in top_low and any(k in low for k in ["routine", "rutina", "daily", "present simple", "habit", "third person"]):
         return {
             "model_1": "Mateo wakes up at six in the morning and drinks hot coffee.",
             "model_trans_1": "Mateo se despierta a las seis de la mañana y toma café caliente.",

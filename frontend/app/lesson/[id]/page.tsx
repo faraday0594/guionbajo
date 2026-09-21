@@ -53,7 +53,7 @@ import { sfx } from '@/lib/soundEffects';
 import GameArena from '@/app/components/games/GameArena';
 import ReadingPracticeArena from '@/app/components/reading/ReadingPracticeArena';
 import CelebrationModal from '@/app/components/games/CelebrationModal';
-import { getTopicQuizExercises, DO_DOES_QUESTIONS_NEGATIVES_BANK } from '@/lib/curriculumQuizBanks';
+import { getTopicQuizExercises, DO_DOES_QUESTIONS_NEGATIVES_BANK, PRESENT_CONTINUOUS_BANK } from '@/lib/curriculumQuizBanks';
 
 // ─── HELPER: Strict English Phrase & Pronunciation Target Validator ──────────
 const GRAMMAR_AND_SPANISH_DISQUALIFIERS: string[] = [
@@ -2667,7 +2667,18 @@ function buildFrontendOfflineLesson(topic: string, sublevel: string, lessonId: s
     errorCorrect = 'Does she work on weekends? / He doesn\'t like tea.';
     errorTip = 'Tras el auxiliar Do/Does/Don\'t/Doesn\'t, el verbo principal siempre va en FORMA BASE pura (sin -s).';
     exercises = DO_DOES_QUESTIONS_NEGATIVES_BANK;
-  } else if (low.includes('routine') || low.includes('rutina') || low.includes('daily') || low.includes('present simple')) {
+  } else if ((low.includes('present continuous') || low.includes('continuous') || low.includes('continuo') || low.includes('actions in progress') || low.includes('verb-ing')) && !low.includes('past')) {
+    modelSentence1 = 'Right now, Mateo is cooking dinner in the kitchen.';
+    modelSentenceTrans1 = 'Ahora mismo, Mateo está cocinando la cena en la cocina.';
+    modelSentence2 = 'They are studying for tomorrow\'s English test at the library.';
+    modelSentenceTrans2 = 'Ellos están estudiando para el examen de inglés de mañana en la biblioteca.';
+    ruleTitle = 'Present Continuous: Actions in Progress (am / is / are + -ing)';
+    formulaText = '[ Sujeto ] + [ am / is / are ] + [ Verbo(-ing) ] + [ Complemento de Tiempo ]';
+    errorWrong = 'She cooking right now / They are run.';
+    errorCorrect = 'She is cooking right now / They are running.';
+    errorTip = 'Recuerda usar siempre el verbo to be (am/is/are) acompañado del verbo principal con terminación -ing.';
+    exercises = PRESENT_CONTINUOUS_BANK;
+  } else if (!low.includes('continuous') && !low.includes('continuo') && (low.includes('routine') || low.includes('rutina') || low.includes('daily') || low.includes('present simple'))) {
     modelSentence1 = 'Mateo wakes up at six in the morning and drinks hot coffee.';
     modelSentenceTrans1 = 'Mateo se despierta a las seis de la mañana y toma café caliente.';
     modelSentence2 = 'She always studies English before going to work.';

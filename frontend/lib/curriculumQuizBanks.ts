@@ -468,6 +468,82 @@ export const PRESENT_CONTINUOUS_BANK: QuizExercise[] = [
   }
 ];
 
+// 6.5. B1 Past Continuous (was / were + verb-ing, Interrupted Actions)
+export const PAST_CONTINUOUS_BANK: QuizExercise[] = [
+  {
+    id: 'ex-1',
+    sentence: 'I was _____ [cooking / cooked / cook] dinner in the kitchen when the lights suddenly went out.',
+    options: ['cooking', 'cooked', 'cook'],
+    expected_answer: 'cooking',
+    spanish_translation: 'Estaba cocinando la cena en la cocina cuando de repente se fue la luz.',
+    image_prompt: 'A person holding a wooden spoon in a cozy kitchen looking surprised as the lights go off, 2D flat vector art, no text',
+    hint: 'Para la acción continua en el pasado usamos was + verbo con -ing.'
+  },
+  {
+    id: 'ex-2',
+    sentence: 'While we were _____ [walking / walked / walk] through the city park, it began to rain heavily.',
+    options: ['walking', 'walked', 'walk'],
+    expected_answer: 'walking',
+    spanish_translation: 'Mientras estábamos caminando por el parque de la ciudad, empezó a llover fuerte.',
+    image_prompt: 'Two friends walking on a tree-lined park path looking up as rain droplets start falling, 2D vector art, no text',
+    hint: 'Con While we were... la acción de fondo va en gerundio (-ing).'
+  },
+  {
+    id: 'ex-3',
+    sentence: 'David was _____ [driving / drove / drive] home from work when his phone rang.',
+    options: ['driving', 'drove', 'drive'],
+    expected_answer: 'driving',
+    spanish_translation: 'David estaba conduciendo a casa del trabajo cuando sonó su teléfono.',
+    image_prompt: 'A driver focused on a sunset city highway road while a phone on the dashboard lights up, 2D vector art, no text',
+    hint: 'Sujeto singular David + was + verbo con -ing.'
+  },
+  {
+    id: 'ex-4',
+    sentence: "What were you _____ [doing / did / do] at eight o'clock yesterday evening?",
+    options: ['doing', 'did', 'do'],
+    expected_answer: 'doing',
+    spanish_translation: '¿Qué estabas haciendo a las ocho en punto ayer por la noche?',
+    image_prompt: 'A young detective asking questions in a bright living room, 2D vector art, no text',
+    hint: 'En preguntas en pasado continuo: What were you + doing?'
+  },
+  {
+    id: 'ex-5',
+    sentence: 'They were _____ [playing / played / play] soccer in the stadium when the coach arrived.',
+    options: ['playing', 'played', 'play'],
+    expected_answer: 'playing',
+    spanish_translation: 'Ellos estaban jugando fútbol en el estadio cuando llegó el entrenador.',
+    image_prompt: 'Teenagers kicking a soccer ball on a green stadium grass field, 2D vector art, no text',
+    hint: 'Sujeto plural They + were + verbo con -ing.'
+  },
+  {
+    id: 'ex-6',
+    sentence: 'Elena was _____ [studying / studied / study] for her exam while her brother was sleeping.',
+    options: ['studying', 'study', 'studies'],
+    expected_answer: 'studying',
+    spanish_translation: 'Elena estaba estudiando para su examen mientras su hermano dormía.',
+    image_prompt: 'A student studying with books and a desk lamp in a cozy room, 2D vector art, no text',
+    hint: 'Dos acciones continuas paralelas usan was/were + -ing.'
+  },
+  {
+    id: 'ex-7',
+    sentence: 'I _____ [dropped / was dropping / drop] my keys while I was running for the bus.',
+    options: ['dropped', 'was dropping', 'drop'],
+    expected_answer: 'dropped',
+    spanish_translation: 'Se me cayeron las llaves mientras estaba corriendo tras el autobús.',
+    image_prompt: 'A commuter rushing toward a city bus as keys slip onto the sidewalk, 2D vector art, no text',
+    hint: 'La acción puntual que interrumpe va en Past Simple: dropped.'
+  },
+  {
+    id: 'ex-8',
+    sentence: 'She was _____ [reading / read / reads] a novel when the doorbell rang loudly.',
+    options: ['reading', 'read', 'reads'],
+    expected_answer: 'reading',
+    spanish_translation: 'Ella estaba leyendo una novela cuando el timbre sonó fuerte.',
+    image_prompt: 'A woman in an armchair holding a book looking toward the front door, 2D vector art, no text',
+    hint: 'Acción en progreso was reading interrumpida por rang.'
+  }
+];
+
 // 7. A1.3 Class 2: Places & There is / There are
 export const THERE_IS_THERE_ARE_BANK: QuizExercise[] = [
   {
@@ -856,9 +932,58 @@ export function getTopicQuizExercises(topic: string = '', sublevel: string = '',
   const t = (topic || '').toLowerCase().trim();
   const sub = (sublevel || '').toUpperCase().trim();
 
-  // 1. Precise Check: A1.2 Class 2 / Questions & Negatives / Do and Does
+  // 1. Present Continuous (HIGHEST PRIORITY: Must evaluate before Present Simple / Routines)
+  const isContinuous =
+    (!t.includes('past') && !t.includes('pasado')) && (
+      t.includes('present continuous') ||
+      t.includes('presente continuo') ||
+      t.includes('continuous') ||
+      t.includes('continuo') ||
+      t.includes('actions in progress') ||
+      t.includes('verb-ing') ||
+      (sub === 'A1.3' && classIndex === 1)
+    );
+
+  if (isContinuous) {
+    return PRESENT_CONTINUOUS_BANK;
+  }
+
+  // 2. Past Continuous & Interrupted Actions
+  const isPastContinuous =
+    (t.includes('continuous') || t.includes('continuo')) &&
+    (t.includes('past') || t.includes('pasado') || t.includes('was/were') || t.includes('interrupted'));
+
+  if (isPastContinuous) {
+    return PAST_CONTINUOUS_BANK;
+  }
+
+  // 3. A1.3 Class 3 / Can & Abilities
+  const isCanAbilities =
+    t.includes('can & abilities') ||
+    t.includes('can and abilities') ||
+    t.includes('abilities') ||
+    t.includes('habilidades') ||
+    (t.includes('can') && !t.includes('scan') && !t.includes('candle') && !t.includes('cant')) ||
+    (sub === 'A1.3' && classIndex === 3);
+
+  if (isCanAbilities) {
+    return CAN_AND_ABILITIES_BANK;
+  }
+
+  // 4. A1.3 Class 2 / Places & There is / There are
+  const isThereIs =
+    t.includes('there is') ||
+    t.includes('there are') ||
+    t.includes('places & there is') ||
+    t.includes('lugares y ciudad') ||
+    (sub === 'A1.3' && classIndex === 2);
+
+  if (isThereIs) {
+    return THERE_IS_THERE_ARE_BANK;
+  }
+
+  // 5. A1.2 Class 2 / Questions & Negatives / Do and Does
   const isDoDoes = 
-    (sub === 'A1.2' && classIndex === 2) ||
     t.includes('questions & negatives') ||
     t.includes('questions and negatives') ||
     t.includes('do and does') ||
@@ -866,125 +991,94 @@ export function getTopicQuizExercises(topic: string = '', sublevel: string = '',
     t.includes('do & does') ||
     t.includes("don't / doesn't") ||
     t.includes("don't and doesn't") ||
-    (t.includes('negative') && sub.startsWith('A1')) ||
+    (t.includes('negative') && sub.startsWith('A1') && !t.includes('continuous')) ||
     (t.includes('question') && t.includes('auxiliar')) ||
-    (t.includes('auxiliares') && t.includes('do'));
+    (t.includes('auxiliares') && t.includes('do')) ||
+    (sub === 'A1.2' && classIndex === 2 && !t.includes('continuous'));
 
   if (isDoDoes) {
     return DO_DOES_QUESTIONS_NEGATIVES_BANK;
   }
 
-  // 2. A1.2 Class 3 / Time & Frequency
+  // 6. A1.2 Class 3 / Time & Frequency
   const isFrequency =
-    (sub === 'A1.2' && classIndex === 3) ||
     t.includes('frequency') ||
     t.includes('frecuencia') ||
     t.includes('time & frequency') ||
     t.includes('always') ||
     t.includes('usually') ||
-    t.includes('adverbios de frecuencia');
+    t.includes('adverbios de frecuencia') ||
+    (sub === 'A1.2' && classIndex === 3 && !t.includes('continuous'));
 
   if (isFrequency) {
     return TIME_AND_FREQUENCY_BANK;
   }
 
-  // 3. A1.2 Class 1 / Daily Routines / Present Simple Affirmative
+  // 7. A1.2 Class 1 / Daily Routines / Present Simple Affirmative (Strictly NOT continuous)
   const isRoutine =
-    (sub === 'A1.2' && (classIndex === 1 || classIndex === 4)) ||
-    t.includes('routine') ||
-    t.includes('rutina') ||
-    t.includes('daily life') ||
-    t.includes('habit') ||
-    t.includes('present simple');
+    !t.includes('continuous') && !t.includes('continuo') && (
+      t.includes('routine') ||
+      t.includes('rutina') ||
+      t.includes('daily life') ||
+      t.includes('habit') ||
+      t.includes('present simple') ||
+      (sub === 'A1.2' && (classIndex === 1 || classIndex === 4))
+    );
 
   if (isRoutine) {
     return PRESENT_SIMPLE_ROUTINES_BANK;
   }
 
-  // 4. A1.3 Class 1 / Present Continuous
-  const isContinuous =
-    (sub === 'A1.3' && classIndex === 1) ||
-    t.includes('continuous') ||
-    t.includes('continuo') ||
-    t.includes('actions in progress') ||
-    t.includes('verb-ing');
-
-  if (isContinuous) {
-    return PRESENT_CONTINUOUS_BANK;
-  }
-
-  // 5. A1.3 Class 2 / Places & There is / There are
-  const isThereIs =
-    (sub === 'A1.3' && classIndex === 2) ||
-    t.includes('there is') ||
-    t.includes('there are') ||
-    t.includes('places & there is') ||
-    t.includes('lugares y ciudad');
-
-  if (isThereIs) {
-    return THERE_IS_THERE_ARE_BANK;
-  }
-
-  // 6. A1.3 Class 3 / Can & Abilities
-  const isCanAbilities =
-    (sub === 'A1.3' && classIndex === 3) ||
-    t.includes('can & abilities') ||
-    t.includes('can and abilities') ||
-    t.includes('habilidades') ||
-    (t.includes('can') && !t.includes('scan') && !t.includes('candle'));
-
-  if (isCanAbilities) {
-    return CAN_AND_ABILITIES_BANK;
-  }
-
-  // 7. A1.1 Introductions & Verb To Be
-  const isIntro =
-    sub === 'A1.1' && (classIndex === 1 || classIndex === 2 || classIndex === 4) ||
-    t.includes('sound') ||
-    t.includes('intro') ||
-    t.includes('greet') ||
-    t.includes('to be') ||
-    t.includes('personal information') ||
-    t.includes('hello');
-
-  if (isIntro) {
-    return INTRODUCTIONS_TO_BE_BANK;
-  }
-
-  // 8. A1.1 Objects & Possession
-  const isObjects =
-    (sub === 'A1.1' && classIndex === 3) ||
-    t.includes('object') ||
-    t.includes('possession') ||
-    t.includes('demonstrative') ||
-    t.includes('this / that') ||
-    t.includes('these / those');
-
-  if (isObjects) {
-    return OBJECTS_AND_POSSESSION_BANK;
-  }
-
-  // 9. Past Simple (A1.4 #1 & #2, A2.1)
+  // 8. Past Simple (A1.4 #1 & #2, A2.1)
   const isPast =
-    (sub === 'A1.4' && (classIndex === 1 || classIndex === 2)) ||
-    (sub === 'A2.1' && classIndex === 1) ||
-    t.includes('past simple') ||
-    t.includes('irregular past') ||
-    t.includes('was / were') ||
-    (t.includes('past') && !t.includes('continuous'));
+    !t.includes('continuous') && !t.includes('continuo') && (
+      t.includes('past simple') ||
+      t.includes('irregular past') ||
+      t.includes('was / were') ||
+      (t.includes('past') && !t.includes('continuous')) ||
+      (sub === 'A1.4' && (classIndex === 1 || classIndex === 2)) ||
+      (sub === 'A2.1' && classIndex === 1)
+    );
 
   if (isPast) {
     return PAST_SIMPLE_BANK;
   }
 
-  // 10. Future Going To (A1.4 #3)
+  // 9. Future Going To (A1.4 #3)
   const isFuture =
-    (sub === 'A1.4' && classIndex === 3) ||
     t.includes('going to') ||
-    t.includes('future plans');
+    t.includes('future plans') ||
+    (sub === 'A1.4' && classIndex === 3);
 
   if (isFuture) {
     return FUTURE_GOING_TO_BANK;
+  }
+
+  // 10. A1.1 Objects & Possession
+  const isObjects =
+    t.includes('object') ||
+    t.includes('possession') ||
+    t.includes('demonstrative') ||
+    t.includes('this / that') ||
+    t.includes('these / those') ||
+    (sub === 'A1.1' && classIndex === 3);
+
+  if (isObjects) {
+    return OBJECTS_AND_POSSESSION_BANK;
+  }
+
+  // 11. A1.1 Introductions & Verb To Be
+  const isIntro =
+    t.includes('sound') ||
+    t.includes('intro') ||
+    t.includes('greet') ||
+    t.includes('to be') ||
+    t.includes('personal information') ||
+    t.includes('hello') ||
+    (sub === 'A1.1' && (classIndex === 1 || classIndex === 2 || classIndex === 4));
+
+  if (isIntro) {
+    return INTRODUCTIONS_TO_BE_BANK;
   }
 
   // Clean fallback: Present Simple everyday communication (strictly NO out-of-scope modals/tenses)

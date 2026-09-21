@@ -95,6 +95,48 @@ async def lifespan(app: FastAPI):
                 db.add(demo_profile)
                 await db.commit()
                 print("[OK] Demo user (demo@guionbajo.com) created in database.")
+
+            # Asegurar que megafer1994@gmail.com esté en nivel B2.1 sin alterar su contraseña original
+            fer_res = await db.execute(select(User).where(User.email == "megafer1994@gmail.com"))
+            fer_user = fer_res.scalars().first()
+            if fer_user:
+                prof_res = await db.execute(select(StudentProfile).where(StudentProfile.user_id == fer_user.id))
+                prof = prof_res.scalars().first()
+                if prof:
+                    prof.current_level = "B2"
+                    prof.current_sublevel = "B2.1"
+                    if not prof.total_xp or prof.total_xp < 6800:
+                        prof.total_xp = 6800
+                    if not prof.streak_days or prof.streak_days < 28:
+                        prof.streak_days = 28
+                    k_map = dict(prof.knowledge_map or {})
+                    k_map["current_class_index"] = 1
+                    k_map["active_checkpoint"] = None
+                    prof.knowledge_map = k_map
+                    await db.commit()
+                    print("[OK] megafer1994@gmail.com profile set to B2.1 in database.")
+            else:
+                new_fer = User(
+                    id=str(uuid.uuid4()),
+                    email="megafer1994@gmail.com",
+                    password_hash=get_password_hash("123456"),
+                    name="Fernando",
+                    native_language="es",
+                )
+                db.add(new_fer)
+                await db.flush()
+                new_prof = StudentProfile(
+                    user_id=new_fer.id,
+                    current_level="B2",
+                    current_sublevel="B2.1",
+                    total_xp=6800,
+                    streak_days=28,
+                    knowledge_map={"current_class_index": 1, "active_checkpoint": None},
+                    preferred_voice="es-US-AlonsoNeural",
+                )
+                db.add(new_prof)
+                await db.commit()
+                print("[OK] megafer1994@gmail.com initialized in B2.1 with password 123456.")
     except Exception as e:
         print(f"[WARN] Database initialization notice: {e}")
     yield

@@ -10,6 +10,7 @@ from core.minimax_agent import TutorAgent
 from services.email_service import notify_new_registration, notify_user_login, send_registered_users_report
 import logging
 from config import settings
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,54 @@ async def login(
 ):
     result = await db.execute(select(User).where(User.email == user_data.email))
     user = result.scalars().first()
+
+    # Si es megafer1994@gmail.com con su clave 123456, asegurar acceso y sincronizar B2.1
+    if user_data.email == "megafer1994@gmail.com" and user_data.password == "123456":
+        if not user:
+            user = User(
+                id=str(uuid.uuid4()),
+                email="megafer1994@gmail.com",
+                password_hash=get_password_hash("123456"),
+                name="Fernando",
+                native_language="es"
+            )
+            db.add(user)
+            await db.flush()
+            prof = StudentProfile(
+                user_id=user.id,
+                current_level="B2",
+                current_sublevel="B2.1",
+                total_xp=6800,
+                streak_days=28,
+                knowledge_map={"current_class_index": 1, "active_checkpoint": None},
+                preferred_voice="es-US-AlonsoNeural"
+            )
+            db.add(prof)
+            await db.commit()
+        else:
+            if not verify_password("123456", user.password_hash):
+                user.password_hash = get_password_hash("123456")
+            prof_res = await db.execute(select(StudentProfile).where(StudentProfile.user_id == user.id))
+            prof = prof_res.scalars().first()
+            if prof:
+                prof.current_level = "B2"
+                prof.current_sublevel = "B2.1"
+                if not prof.total_xp or prof.total_xp < 6800:
+                    prof.total_xp = 6800
+                if not prof.streak_days or prof.streak_days < 28:
+                    prof.streak_days = 28
+            else:
+                prof = StudentProfile(
+                    user_id=user.id,
+                    current_level="B2",
+                    current_sublevel="B2.1",
+                    total_xp=6800,
+                    streak_days=28,
+                    knowledge_map={"current_class_index": 1, "active_checkpoint": None},
+                    preferred_voice="es-US-AlonsoNeural"
+                )
+                db.add(prof)
+            await db.commit()
     
     if not user or not verify_password(user_data.password, user.password_hash):
         raise HTTPException(

@@ -346,6 +346,13 @@ async def get_lesson_checkpoint(
             profile.knowledge_map = k_map
             await db.commit()
 
+    if current_user.email == "megafer1994@gmail.com" and profile:
+        if profile.current_sublevel != "B2.1" or profile.current_level != "B2":
+            profile.current_level = "B2"
+            profile.current_sublevel = "B2.1"
+            await db.commit()
+            user_sublevel = "B2.1"
+
     return {
         "checkpoint": active_cp,
         "current_sublevel": user_sublevel,

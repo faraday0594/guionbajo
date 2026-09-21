@@ -367,9 +367,9 @@ export default function HardwareUpgradeModal({
       {/* Panel principal */}
       <motion.div
         className={`
-          relative z-10 w-full max-w-lg rounded-3xl border-2 ${borderColor}
+          relative z-10 w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border-2 ${borderColor}
           bg-gradient-to-br ${bgColor}
-          shadow-2xl overflow-hidden
+          shadow-2xl
           transition-colors duration-700
         `}
         initial={{ scale: 0.7, opacity: 0, y: 40 }}
@@ -429,7 +429,7 @@ export default function HardwareUpgradeModal({
                     Iniciando ensamblaje de componentes...
                   </p>
                 </div>
-                <div className="w-24 h-28">
+                <div className="min-h-[190px] w-full flex items-center justify-center relative my-2">
                   <TutorAvatar
                     size="lg"
                     emotion="nervous"
@@ -457,7 +457,7 @@ export default function HardwareUpgradeModal({
                 </div>
 
                 {/* ZONA DE ENSAMBLAJE DE AVATAR */}
-                <div className="w-48 h-36 relative flex items-center justify-center">
+                <div className="min-h-[220px] w-full relative flex items-center justify-center my-2">
                   {/* Círculo de escaneo / mira telescópica */}
                   <div className="absolute inset-0 border border-brand-cyan/20 rounded-full animate-ping opacity-25 pointer-events-none" />
 
@@ -524,7 +524,7 @@ export default function HardwareUpgradeModal({
             {isBooting && (
               <motion.div
                 key="booting"
-                className="flex flex-col items-center gap-5 w-full"
+                className="flex flex-col items-center gap-4 w-full"
                 initial={{ opacity: 0, scale: 1.05 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
@@ -539,22 +539,20 @@ export default function HardwareUpgradeModal({
                 </motion.div>
 
                 {/* Avatar con nuevo upgrade visible */}
-                <div className="relative">
+                <div className="min-h-[210px] w-full flex items-center justify-center relative my-2">
                   <motion.div
-                    className="absolute inset-0 rounded-full bg-emerald-400/25 blur-xl"
+                    className="absolute inset-0 max-w-[200px] max-h-[200px] m-auto rounded-full bg-emerald-400/25 blur-xl pointer-events-none"
                     animate={{ scale: [1, 1.8, 1] }}
                     transition={{ duration: 1, repeat: 2 }}
                   />
-                  <div className="w-28 h-32">
-                    <TutorAvatar
-                      size="lg"
-                      emotion="happy"
-                      upgradeStage={newStage}
-                    />
-                  </div>
+                  <TutorAvatar
+                    size="lg"
+                    emotion="happy"
+                    upgradeStage={newStage}
+                  />
                 </div>
 
-                <div className="text-center">
+                <div className="relative z-20 text-center mt-2">
                   <p className="text-emerald-300 font-bold text-base">
                     {upgradeDef?.emoji} {upgradeDef?.name} instalado
                   </p>
@@ -569,7 +567,7 @@ export default function HardwareUpgradeModal({
             {isCelebrate && (
               <motion.div
                 key="celebrate"
-                className="flex flex-col items-center gap-5 w-full"
+                className="flex flex-col items-center gap-4 w-full"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -600,13 +598,13 @@ export default function HardwareUpgradeModal({
                 </div>
 
                 {/* Avatar en modo victoria con nuevo upgrade */}
-                <div className="relative">
+                <div className="min-h-[220px] w-full flex items-center justify-center relative my-2">
                   <motion.div
-                    className="absolute -inset-4 rounded-full bg-gradient-to-r from-yellow-400/20 via-brand-cyan/20 to-yellow-400/20 blur-xl"
+                    className="absolute inset-0 max-w-[220px] max-h-[220px] m-auto rounded-full bg-gradient-to-r from-yellow-400/20 via-brand-cyan/20 to-yellow-400/20 blur-xl pointer-events-none"
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 4, ease: 'linear' }}
                   />
-                  <div className="w-28 h-32 relative z-10">
+                  <div className="relative z-10">
                     <TutorAvatar
                       size="lg"
                       emotion="victory"
@@ -615,9 +613,9 @@ export default function HardwareUpgradeModal({
                   </div>
                 </div>
 
-                {/* Subtitle nivel completado */}
-                <div className="bg-slate-800/60 border border-slate-700 rounded-2xl px-4 py-2 text-center">
-                  <p className="text-slate-300 text-xs font-mono">
+                {/* Subtitle nivel completado posicionado claramente DEBAJO */}
+                <div className="relative z-20 bg-slate-800/80 border border-slate-700/80 rounded-2xl px-5 py-2.5 text-center shadow-lg mt-2">
+                  <p className="text-slate-300 text-xs sm:text-sm font-mono font-medium">
                     Nivel <span className="text-brand-cyan font-bold">{sublevelCompleted}</span> completado
                     {' — '}
                     Stage <span className="text-yellow-300 font-bold">{newStage}/8</span>

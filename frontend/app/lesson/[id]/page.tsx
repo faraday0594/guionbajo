@@ -15,7 +15,6 @@ import PhoneticBoard from '@/app/components/PhoneticBoard';
 import LiveStoryboardController, { StoryboardStep } from '@/app/components/LiveStoryboardController';
 import TimelineVisualRenderer, { TimelineStep } from '@/app/components/TimelineVisualRenderer';
 import InteractiveExerciseStage from '@/app/components/InteractiveExerciseStage';
-import ChalkboardBackgroundWriting from '@/app/components/ChalkboardBackgroundWriting';
 import {
   ArrowLeft,
   Send,
@@ -371,7 +370,7 @@ function extractBoardLines(content: any): string[] {
 // ─── HELPER: Board Theme Classes ─────────────────────────────────────────────
 function getBoardThemeClass(theme?: string): string {
   // Always enforce the authentic green chalkboard as the universal primary container
-  return 'board-chalkboard-green chalk-stage rounded-2xl sm:rounded-3xl shadow-2xl flex-1 flex flex-col transition-all relative overflow-hidden';
+  return 'board-chalkboard-green chalk-stage rounded-2xl sm:rounded-3xl shadow-2xl flex-1 flex flex-col transition-all';
 }
 
 // ─── HELPER: Number Word Normalization for Speech Recognition ─────────────────
@@ -5811,11 +5810,8 @@ export default function LessonPage() {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.94, y: -20 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                  className="w-full flex-1 flex flex-col justify-between p-4 sm:p-7 md:p-8 rounded-3xl board-chalkboard-green chalk-stage shadow-2xl relative overflow-hidden min-h-[560px]"
+                  className="w-full flex-1 flex flex-col justify-between p-4 sm:p-7 md:p-8 rounded-3xl bg-gradient-to-b from-[#0a0f1d]/95 via-[#070a14]/98 to-[#04060b]/99 border border-brand-cyan/25 shadow-2xl relative overflow-hidden min-h-[560px]"
                 >
-                  {/* Authentic Classroom Chalkboard Background Writing */}
-                  <ChalkboardBackgroundWriting topic={topicParam} />
-
                   {/* Cinematic Background Ambient Glows */}
                   <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-brand-cyan/15 rounded-full blur-[120px] pointer-events-none" />
                   <div className="absolute -bottom-32 right-1/4 w-[400px] h-[300px] bg-brand-accent/15 rounded-full blur-[100px] pointer-events-none" />
@@ -6001,12 +5997,10 @@ export default function LessonPage() {
                   </div>
                 </motion.div>
               ) : (
-                <div className={`${getBoardThemeClass(phase.board_theme)} p-3.5 sm:p-6 md:p-7 space-y-4 sm:space-y-5 relative overflow-hidden`}>
-                  {/* Realistic Background Chalkboard Classroom Writing & Dust (Pure Decoration) */}
-                  <ChalkboardBackgroundWriting topic={topicParam} />
+                <div className={`${getBoardThemeClass(phase.board_theme)} p-3.5 sm:p-6 md:p-7 space-y-4 sm:space-y-5 relative`}>
                 
-                  {/* Board Header Bar - Ultra-compact & clean */}
-                  <div id="storyboard-target-title" className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-white/10 z-10 relative">
+                {/* Board Header Bar - Ultra-compact & clean */}
+                <div id="storyboard-target-title" className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-white/10 z-10">
                   <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                     <div className="p-1.5 sm:p-2 rounded-xl bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan flex-shrink-0">
                       <BookOpen size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -6130,10 +6124,7 @@ export default function LessonPage() {
                   transition={{ duration: 0.4 }}
                   className="board-chalkboard-green chalk-stage p-5 sm:p-7 rounded-3xl shadow-2xl space-y-4 relative overflow-hidden"
                 >
-                  {/* Realistic Background Chalkboard Classroom Writing & Dust (Pure Decoration) */}
-                  <ChalkboardBackgroundWriting topic={topicParam} />
-
-                  <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-white/10 relative z-10">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-white/10">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-2xl bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan">
                         <BookOpen size={20} />

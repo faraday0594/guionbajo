@@ -52,7 +52,9 @@ import { sfx } from '@/lib/soundEffects';
 import GameArena from '@/app/components/games/GameArena';
 import ReadingPracticeArena from '@/app/components/reading/ReadingPracticeArena';
 import CelebrationModal from '@/app/components/games/CelebrationModal';
+import HardwareUpgradeModal from '@/app/components/games/HardwareUpgradeModal';
 import { getTopicQuizExercises, DO_DOES_QUESTIONS_NEGATIVES_BANK, PRESENT_CONTINUOUS_BANK } from '@/lib/curriculumQuizBanks';
+import { getCurrentUpgradeStage, checkUpgradeTrigger, UPGRADE_DEFINITIONS, type UpgradeStage } from '@/lib/guionbajoUpgrades';
 
 // ─── HELPER: Strict English Phrase & Pronunciation Target Validator ──────────
 const GRAMMAR_AND_SPANISH_DISQUALIFIERS: string[] = [
@@ -3373,6 +3375,12 @@ export default function LessonPage() {
   const [showFailedScoreModal, setShowFailedScoreModal] = useState<boolean>(false);
   const [calculatedOverallScore, setCalculatedOverallScore] = useState<number>(0);
 
+  // ─── Upgrade Modal ─────────────────────────────────────────────────────────
+  const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
+  const [pendingUpgradeStage, setPendingUpgradeStage] = useState<UpgradeStage>(0);
+  // Stage actual del avatar (calculado desde localStorage al montar)
+  const [avatarUpgradeStage] = useState<UpgradeStage>(() => getCurrentUpgradeStage());
+
   const handlePracticeProgressChange = useCallback((correct: number, total: number, isUnlocked: boolean) => {
     setPracticeProgress(prev => {
       if (prev.correctCount === correct && prev.totalCount === total && prev.isUnlocked === isUnlocked) {
@@ -3486,7 +3494,17 @@ export default function LessonPage() {
 
     if (compositeScore >= 80) {
       sfx.playStreakFanfare();
-      setShowCelebrationModal(true);
+
+      // ── Verificar si esta clase dispara un upgrade de Guionbajo ──
+      const upgradeTrigger = checkUpgradeTrigger(sublevelParam || 'A1.1', classIndexParam || 1);
+      if (upgradeTrigger !== null) {
+        setPendingUpgradeStage(upgradeTrigger);
+        setShowUpgradeModal(true);
+        // El CelebrationModal se mostrará cuando se cierre el UpgradeModal (ver onClose)
+      } else {
+        setShowCelebrationModal(true);
+      }
+
       try {
         localStorage.setItem('guionbajo_class_just_completed', JSON.stringify({
           sublevel: sublevelParam || 'A1.1',
@@ -3594,7 +3612,16 @@ export default function LessonPage() {
     }
 
     setCalculatedOverallScore(Math.max(82, compositeScore));
-    setShowCelebrationModal(true);
+
+    // ── Verificar si esta clase dispara un upgrade de Guionbajo ──
+    const upgradeTrigger = checkUpgradeTrigger(sublevelParam || 'A1.1', classIndexParam || 1);
+    if (upgradeTrigger !== null) {
+      setPendingUpgradeStage(upgradeTrigger);
+      setShowUpgradeModal(true);
+      // El CelebrationModal se mostrará cuando se cierre el UpgradeModal
+    } else {
+      setShowCelebrationModal(true);
+    }
   };
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [zoomedImageUrl, setZoomedImageUrl] = useState<string>('');
@@ -5904,6 +5931,7 @@ export default function LessonPage() {
                   size="toolbar"
                   headOnly={false}
                   audioElement={currentAudioRef.current}
+                  upgradeStage={avatarUpgradeStage}
                 />
               </div>
               <div className="flex flex-col justify-center pr-1.5">
@@ -6517,6 +6545,18 @@ export default function LessonPage() {
         )}
       </AnimatePresence>
 
+      {/* 🔩 Hardware Upgrade Modal — cinemática de mejora de Guionbajo */}
+      <HardwareUpgradeModal
+        isOpen={showUpgradeModal}
+        newStage={pendingUpgradeStage}
+        sublevelCompleted={sublevelParam || 'A1.1'}
+        onClose={() => {
+          setShowUpgradeModal(false);
+          // Después del upgrade modal, mostrar el CelebrationModal de puntuación
+          setShowCelebrationModal(true);
+        }}
+      />
+
       {/* 🏆 Guionbajo Cinematic Celebration Animation (Score >= 80% on Class Finish) */}
       <CelebrationModal
         isOpen={showCelebrationModal}
@@ -6524,6 +6564,7 @@ export default function LessonPage() {
         topic={topicParam || lesson?.topic || 'Clase Oficial CEFR'}
         sublevel={sublevelParam || 'A1.1'}
         xpEarned={150}
+        upgradeStage={avatarUpgradeStage}
         onClose={() => {
           setShowCelebrationModal(false);
           router.push('/dashboard');

@@ -799,3 +799,16 @@
   0% { opacity: 0.3; }
   100% { opacity: 1; }
 }
+
+/* ── Upgrade Accessories Overlay ── */
+/* SVG superpuesto sobre el cuerpo del robot para mostrar los upgrades de Guionbajo */
+.upgradeOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+

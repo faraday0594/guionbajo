@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sfx } from '@/lib/soundEffects';
 import { Trophy, ArrowRight, RotateCcw, Volume2, VolumeX, Sparkles, Award } from 'lucide-react';
+import type { UpgradeStage } from '@/lib/guionbajoUpgrades';
 
 export interface CelebrationModalProps {
   isOpen: boolean;
@@ -14,6 +15,8 @@ export interface CelebrationModalProps {
   onClose?: () => void;
   onContinue?: () => void;
   autoPlaySound?: boolean;
+  /** Stage de upgrade visual de Guionbajo (0 = base, 8 = maestro) */
+  upgradeStage?: UpgradeStage;
 }
 
 type StageType = 'pulling' | 'snap' | 'fall' | 'landed' | 'look_score' | 'celebrate';
@@ -27,6 +30,7 @@ export default function CelebrationModal({
   onClose,
   onContinue,
   autoPlaySound = true,
+  upgradeStage = 0,
 }: CelebrationModalProps) {
   const [stage, setStage] = useState<StageType>('pulling');
   const [soundEnabled, setSoundEnabled] = useState(autoPlaySound);
@@ -555,18 +559,134 @@ export default function CelebrationModal({
                   )}
 
                   {/* ── TOP ANTENNA & VACUUM BULB ── */}
-                  <rect x="68.5" y="44" width="3" height="16" rx="1.5" fill="url(#gbStemGrad)" />
-                  <circle cx="70" cy="37" r="7.5" fill="url(#gbVacuumBulb)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" />
-                  <circle
-                    cx="70"
-                    cy="37"
-                    r={stage === 'celebrate' ? 14 : 9}
-                    fill={stage === 'celebrate' ? '#fde047' : '#00D4FF'}
-                    opacity={stage === 'celebrate' ? 0.6 : 0.4}
-                    filter="url(#gbCyanGlow)"
-                  />
-                  <path d="M 68 39 C 68 34 72 34 72 39" fill="none" stroke={stage === 'celebrate' ? '#fef08a' : '#00D4FF'} strokeWidth="1.2" />
+                  {/* Stage 5+: Bobina Tesla en lugar de antena simple */}
+                  {upgradeStage >= 5 ? (
+                    <g>
+                      <rect x="68.5" y="44" width="3" height="16" rx="1.5" fill="url(#gbStemGrad)" />
+                      {/* Anillos de bobina */}
+                      {[0, 1, 2].map((i) => (
+                        <ellipse key={i} cx="70" cy={36 - i * 5} rx="7" ry="2.5"
+                          fill="none" stroke="#00D4FF" strokeWidth="1.2" opacity={0.9 - i * 0.2} />
+                      ))}
+                      <circle cx="70" cy="21" r="3" fill="#ffffff" opacity="0.9" />
+                    </g>
+                  ) : (
+                    <g>
+                      <rect x="68.5" y="44" width="3" height="16" rx="1.5" fill="url(#gbStemGrad)" />
+                      <circle cx="70" cy="37" r="7.5" fill="url(#gbVacuumBulb)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" />
+                      <circle
+                        cx="70"
+                        cy="37"
+                        r={stage === 'celebrate' ? 14 : 9}
+                        fill={stage === 'celebrate' ? '#fde047' : '#00D4FF'}
+                        opacity={stage === 'celebrate' ? 0.6 : 0.4}
+                        filter="url(#gbCyanGlow)"
+                      />
+                      <path d="M 68 39 C 68 34 72 34 72 39" fill="none" stroke={stage === 'celebrate' ? '#fef08a' : '#00D4FF'} strokeWidth="1.2" />
+                    </g>
+                  )}
                 </g>
+
+                {/* ══ UPGRADE ACCESSORIES (sobre el SVG base) ══ */}
+
+                {/* Stage 1+: Articulaciones cromadas en brazos */}
+                {upgradeStage >= 1 && (
+                  <g>
+                    <circle cx="50" cy="120" r="4" fill="#0f172a" stroke="#00D4FF" strokeWidth="1.5" />
+                    <circle cx="50" cy="120" r="1.5" fill="#00D4FF" />
+                    <circle cx="90" cy="120" r="4" fill="#0f172a" stroke="#00D4FF" strokeWidth="1.5" />
+                    <circle cx="90" cy="120" r="1.5" fill="#00D4FF" />
+                  </g>
+                )}
+
+                {/* Stage 2+: Jetpack dorsal detrás del torso */}
+                {upgradeStage >= 2 && (
+                  <g>
+                    <rect x="40" y="118" width="10" height="22" rx="3" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+                    <rect x="90" y="118" width="10" height="22" rx="3" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+                    <rect x="44" y="122" width="32" height="5" rx="2.5" fill="#0f172a" stroke="#475569" strokeWidth="0.8" />
+                    {/* Llamas */}
+                    <ellipse cx="45" cy="143" rx="3" ry="5" fill="url(#gbPlasmaOuter)" opacity="0.8">
+                      <animate attributeName="ry" values="5;7;4;6;5" dur="0.4s" repeatCount="indefinite" />
+                    </ellipse>
+                    <ellipse cx="95" cy="143" rx="3" ry="5" fill="url(#gbPlasmaOuter)" opacity="0.8">
+                      <animate attributeName="ry" values="4;7;5;6;4" dur="0.45s" repeatCount="indefinite" />
+                    </ellipse>
+                  </g>
+                )}
+
+                {/* Stage 3+: Visor HUD sobre los ojos */}
+                {upgradeStage >= 3 && (
+                  <g>
+                    <rect x="36" y="64" width="68" height="10" rx="3"
+                      fill="#0c1a2e" stroke="#00D4FF" strokeWidth="1" opacity="0.85" />
+                    <circle cx="70" cy="69" r="3" fill="none" stroke="#00D4FF" strokeWidth="0.8" opacity="0.9" />
+                    <circle cx="70" cy="69" r="1" fill="#00D4FF" opacity="0.9" />
+                    <rect x="38" y="67" width="68" height="1" fill="#00D4FF" opacity="0.3">
+                      <animate attributeName="y" values="66;72;66" dur="2s" repeatCount="indefinite" />
+                    </rect>
+                  </g>
+                )}
+
+                {/* Stage 4+: Ribetes dorados en chasis */}
+                {upgradeStage >= 4 && (
+                  <g>
+                    <rect x="38" y="58" width="64" height="50" rx="13"
+                      fill="none" stroke="url(#celebGoldFrame)" strokeWidth="1.8" opacity="0.8" />
+                    <rect x="44" y="110" width="52" height="36" rx="9"
+                      fill="none" stroke="url(#celebGoldFrame)" strokeWidth="1.8" opacity="0.8" />
+                    <defs>
+                      <linearGradient id="celebGoldFrame" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#f59e0b" />
+                        <stop offset="50%" stopColor="#fef08a" />
+                        <stop offset="100%" stopColor="#d97706" />
+                      </linearGradient>
+                    </defs>
+                  </g>
+                )}
+
+                {/* Stage 6+: Alas holográficas */}
+                {upgradeStage >= 6 && (
+                  <g opacity="0.75">
+                    <path d="M 44 128 Q 15 108 8 82 Q 20 100 44 134 Z"
+                      fill="#818cf8" opacity="0.5" stroke="#818cf8" strokeWidth="0.6">
+                      <animate attributeName="d"
+                        values="M 44 128 Q 15 108 8 82 Q 20 100 44 134 Z;M 44 128 Q 12 106 5 80 Q 18 98 44 134 Z;M 44 128 Q 15 108 8 82 Q 20 100 44 134 Z"
+                        dur="2.5s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M 96 128 Q 125 108 132 82 Q 120 100 96 134 Z"
+                      fill="#818cf8" opacity="0.5" stroke="#818cf8" strokeWidth="0.6">
+                      <animate attributeName="d"
+                        values="M 96 128 Q 125 108 132 82 Q 120 100 96 134 Z;M 96 128 Q 128 106 135 80 Q 122 98 96 134 Z;M 96 128 Q 125 108 132 82 Q 120 100 96 134 Z"
+                        dur="2.5s" repeatCount="indefinite" />
+                    </path>
+                  </g>
+                )}
+
+                {/* Stage 8: Corona maestra flotante */}
+                {upgradeStage >= 8 && (
+                  <g>
+                    <circle cx="70" cy="30" r="45" fill="#fbbf24" opacity="0.08">
+                      <animate attributeName="r" values="45;54;45" dur="2.5s" repeatCount="indefinite" />
+                    </circle>
+                    <path d="M 52 16 L 56 5 L 63 13 L 70 2 L 77 13 L 84 5 L 88 16 Z"
+                      fill="url(#crownGoldCeleb)" stroke="#f59e0b" strokeWidth="1.2">
+                      <animate attributeName="transform" attributeType="XML"
+                        type="translate" values="0,0;0,-3;0,0" dur="2s" repeatCount="indefinite" />
+                    </path>
+                    <circle cx="63" cy="11" r="2" fill="#ffffff" opacity="0.95" />
+                    <circle cx="70" cy="5" r="2.5" fill="#fef08a" opacity="0.95" />
+                    <circle cx="77" cy="11" r="2" fill="#ffffff" opacity="0.95" />
+                    <defs>
+                      <linearGradient id="crownGoldCeleb" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#fef08a" />
+                        <stop offset="60%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#b45309" />
+                      </linearGradient>
+                    </defs>
+                  </g>
+                )}
+
               </svg>
             </motion.div>
 

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { JOURNEY_TOPICS, getTopicIndex, JourneyTopic } from '@/lib/journeyTopics';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
+import { getCurrentUpgradeStage } from '@/lib/guionbajoUpgrades';
 
 interface JourneyVisualStageProps {
   sublevel: string;
@@ -40,6 +41,9 @@ export default function JourneyVisualStage({
   onLaunchClass,
 }: JourneyVisualStageProps) {
   const targetIndex = useMemo(() => getTopicIndex(sublevel, classIndex), [sublevel, classIndex]);
+
+  // Nivel de evolución visual de Guionbajo (calculado desde localStorage)
+  const [avatarUpgradeStage] = useState(() => getCurrentUpgradeStage());
 
   const [currentIndex, setCurrentIndex] = useState<number>(() => {
     if (typeof window !== 'undefined') {
@@ -1739,6 +1743,7 @@ export default function JourneyVisualStage({
             <TutorAvatar
               size="sm"
               emotion={currentIndex < targetIndex ? 'victory' : activeCheckpoint ? 'victory' : 'happy'}
+              upgradeStage={avatarUpgradeStage}
             />
           </div>
           <div className="min-w-0 flex-1">

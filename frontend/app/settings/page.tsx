@@ -30,6 +30,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
+import { getCurrentUpgradeStage, UpgradeStage } from '@/lib/guionbajoUpgrades';
 
 export interface VoiceItem {
   id: string;
@@ -306,6 +307,7 @@ export default function SettingsPage() {
   const [voices, setVoices] = useState<VoiceItem[]>(CURATED_VOICES);
   const [selectedVoice, setSelectedVoice] = useState<string>('es-US-AlonsoNeural');
   const [activeTab, setActiveTab] = useState<'all' | 'minimax' | 'google' | 'edge'>('all');
+  const [avatarUpgradeStage, setAvatarUpgradeStage] = useState<UpgradeStage>(() => getCurrentUpgradeStage());
   
   const [loadingVoiceId, setLoadingVoiceId] = useState<string | null>(null);
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
@@ -352,6 +354,12 @@ export default function SettingsPage() {
             setSavedPreferredVoice(settingsRes.value.preferred_voice);
           }
         }
+
+        api.getMe().then((u) => {
+          if (u?.current_sublevel) {
+            setAvatarUpgradeStage(getCurrentUpgradeStage(u.current_sublevel));
+          }
+        }).catch(() => {});
       } catch (err) {
         console.warn('Error loading settings/voices:', err);
       }
@@ -522,6 +530,7 @@ export default function SettingsPage() {
                 audioProgress={audioProgress}
                 audioElement={activeAudioRef.current}
                 size="sm"
+                upgradeStage={avatarUpgradeStage}
               />
               <div className="text-left">
                 <span className="text-[10px] text-brand-cyan font-bold uppercase tracking-wider block">

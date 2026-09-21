@@ -21,6 +21,7 @@ import {
 import { toast } from 'react-hot-toast';
 
 import TutorAvatar, { TutorState } from '@/app/components/TutorPanel/TutorAvatar';
+import { getCurrentUpgradeStage, UpgradeStage } from '@/lib/guionbajoUpgrades';
 import { api, LiveAudioStreamQueue, getSavedPreferredVoice } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 
@@ -53,6 +54,7 @@ export default function LiveChatPage() {
   // User & Voice Preferences
   const [userName, setUserName] = useState<string>('Estudiante');
   const [userLevel, setUserLevel] = useState<string>('A1.2');
+  const [avatarUpgradeStage, setAvatarUpgradeStage] = useState<UpgradeStage>(() => getCurrentUpgradeStage());
   const [preferredVoice, setPreferredVoice] = useState<string>('es-US-AlonsoNeural');
 
   // Hands-Free State Machine
@@ -122,7 +124,10 @@ export default function LiveChatPage() {
     api.getMe()
       .then((data) => {
         if (data?.name) setUserName(data.name);
-        if (data?.current_sublevel) setUserLevel(data.current_sublevel);
+        if (data?.current_sublevel) {
+          setUserLevel(data.current_sublevel);
+          setAvatarUpgradeStage(getCurrentUpgradeStage(data.current_sublevel));
+        }
       })
       .catch((err) => console.warn('Failed to load profile:', err));
 
@@ -672,6 +677,11 @@ export default function LiveChatPage() {
             <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan">
               {userLevel}
             </span>
+            {avatarUpgradeStage > 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400/15 border border-yellow-400/40 text-yellow-300 flex items-center gap-1">
+                <span>⚡</span> Stage {avatarUpgradeStage}/8
+              </span>
+            )}
           </div>
         </div>
 
@@ -776,12 +786,14 @@ export default function LiveChatPage() {
               </div>
             </div>
 
-            {/* Animated Guionbajo Avatar */}
+            {/* Animated Guionbajo Avatar con Upgrades */}
             <div className="relative z-10 my-2">
               <TutorAvatar
                 state={tutorState}
+                text={tutorState === 'speaking' ? currentTutorSubtitle : ''}
                 size="lg"
                 audioElement={activeAudio}
+                upgradeStage={avatarUpgradeStage}
               />
             </div>
 

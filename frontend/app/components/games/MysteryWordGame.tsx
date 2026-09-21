@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { playTutorVoice, stopTutorVoice, playEnglishAudio, api } from '@/lib/api';
 import TutorAvatar, { TutorEmotion } from '@/app/components/TutorPanel/TutorAvatar';
+import { getCurrentUpgradeStage } from '@/lib/guionbajoUpgrades';
 
 export interface MysteryWordData {
   target_word: string;
@@ -797,6 +798,7 @@ export default function MysteryWordGame({
                     text={!isWon && (mistakes >= 5 || robotState.drowned) ? '' : tutorSpeechText}
                     panickedArms={!isWon && mistakes >= 4 && !robotState.drowned}
                     shortCircuit={!isWon && mistakes >= 3 && !robotState.drowned}
+                    upgradeStage={getCurrentUpgradeStage(sublevel)}
                   />
 
                   {/* Mouth Bubbles Emitter (!isWon && mistakes >= 5 && !drowned) */}
@@ -1146,6 +1148,7 @@ export default function MysteryWordGame({
                     text={!isWon && (mistakes >= 5 || robotState.drowned) ? '' : tutorSpeechText}
                     panickedArms={!isWon && mistakes >= 4 && !robotState.drowned}
                     shortCircuit={!isWon && mistakes >= 3 && !robotState.drowned}
+                    upgradeStage={getCurrentUpgradeStage(sublevel)}
                   />
 
                   {/* Mouth Bubbles Emitter (!isWon && mistakes >= 5 && !drowned) */}

@@ -188,7 +188,7 @@ export const api = {
     sublevel: string;
     class_index?: number;
     current_slide: number;
-    view_mode: 'board' | 'timeline' | 'reading' | 'games';
+    view_mode: 'board' | 'reading' | 'games';
     quiz_completed?: boolean;
     quiz_score?: number;
     reading_completed?: boolean;

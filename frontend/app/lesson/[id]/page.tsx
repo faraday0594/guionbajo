@@ -3383,8 +3383,8 @@ export default function LessonPage() {
     });
   }, []);
 
-  // 🎨 Consolidated View Modes: 'board' (Pizarra Interactiva), 'timeline' (Flujo Didáctico), 'reading' (Práctica de Lectura), or 'games' (Game Arena)
-  const [viewMode, setViewMode] = useState<'board' | 'timeline' | 'reading' | 'games'>('board');
+  // 🎨 Consolidated View Modes: 'board' (Pizarra Interactiva), 'reading' (Práctica de Lectura), or 'games' (Game Arena)
+  const [viewMode, setViewMode] = useState<'board' | 'reading' | 'games'>('board');
 
   const practiceSlideIdx = useMemo(() => {
     if (!lesson?.phases) return -1;
@@ -3393,7 +3393,7 @@ export default function LessonPage() {
 
   const syncCheckpoint = useCallback(async (updates: {
     slide?: number;
-    mode?: 'board' | 'timeline' | 'reading' | 'games';
+    mode?: 'board' | 'reading' | 'games';
     quizDone?: boolean;
     quizSc?: number;
     readingDone?: boolean;
@@ -5853,22 +5853,6 @@ export default function LessonPage() {
 
             <button
               onClick={() => {
-                stopCurrentAudio();
-                setViewMode('timeline');
-              }}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all font-semibold text-xs ${
-                viewMode === 'timeline'
-                  ? 'bg-gradient-to-r from-brand-cyan to-blue-600 text-white shadow-md shadow-brand-cyan/25'
-                  : 'text-brand-text-muted hover:text-white'
-              }`}
-              title="Flujo Didáctico"
-            >
-              <Sparkles size={13} className={viewMode === 'timeline' ? 'text-yellow-300 animate-pulse' : ''} />
-              <span>Flujo</span>
-            </button>
-
-            <button
-              onClick={() => {
                 if (!quizCompleted) {
                   sfx.playMistake();
                   toast.error('🔒 Completa la explicación y el examen para desbloquear la Lectura.', { id: 'reading-locked-tab' });
@@ -6040,7 +6024,7 @@ export default function LessonPage() {
                   syncCheckpoint({ mode: 'board' });
                 }}
               />
-            ) : viewMode === 'board' ? (
+            ) : (
               /* ═══════════════════════════════════════════════════════════════════════
                  🎨 MODE 1: PIZARRA INTERACTIVA / HOOK CINEMATOGRÁFICO
                  ═══════════════════════════════════════════════════════════════════════ */
@@ -6352,287 +6336,8 @@ export default function LessonPage() {
                   />
                 </div>
               </div>
-              )
-            ) : (
-              /* ═══════════════════════════════════════════════════════════════════════
-                 ✨ MODE 2: FLUJO DIDÁCTICO (SMART TIMELINE FEED)
-                 ═══════════════════════════════════════════════════════════════════════ */
-              <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full py-2">
-                {/* 1. Hero Concept Card (Green Chalkboard Container) */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4 }}
-                  className="board-chalkboard-green chalk-stage p-5 sm:p-7 rounded-3xl shadow-2xl space-y-4 relative overflow-hidden"
-                >
-                  <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-2xl bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan">
-                        <BookOpen size={20} />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold uppercase tracking-wider text-brand-cyan block">
-                          Pizarra de Estudio • Fase {currentPhaseIdx + 1}
-                        </span>
-                        <h2 className="text-base sm:text-lg font-chalk font-bold text-white">
-                          {renderTextContent(phase.phase_name)}
-                        </h2>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => speakText(typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text || '', true)}
-                      className="px-3.5 py-1.5 rounded-xl bg-brand-accent/20 hover:bg-brand-accent/40 text-brand-cyan border border-brand-accent/40 text-xs font-bold flex items-center gap-2 transition-all shadow-sm hover:scale-105"
-                    >
-                      <Volume2 size={14} className="animate-pulse text-brand-cyan" />
-                      <span>Escuchar Explicación Completa</span>
-                    </button>
-                  </div>
-
-                    {/* Concept Grid: Image + Rules */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
-                      <div className="md:col-span-5 relative group rounded-2xl overflow-hidden bg-black/30 border border-white/10">
-                        {minimaxGeneratedUrl ? (
-                          <div
-                            onClick={() => setIsImageZoomed(true)}
-                            className="cursor-pointer relative"
-                          >
-                            <img
-                              src={minimaxGeneratedUrl}
-                              alt="Ilustración didáctica principal"
-                              className="w-full h-48 sm:h-56 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
-                            />
-                            <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                              <span className="px-3.5 py-1.5 rounded-xl bg-brand-accent text-white text-xs font-bold flex items-center gap-1.5 shadow-lg">
-                                <ZoomIn size={14} /> Ampliar Imagen
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="h-48 sm:h-56 flex flex-col items-center justify-center p-4 text-center bg-brand-dark/60 border border-brand-cyan/20 rounded-2xl">
-                            <Sparkles className="w-6 h-6 text-brand-cyan animate-pulse mb-2" />
-                            <span className="text-xs font-semibold text-white font-chalk">Generando ilustración didáctica...</span>
-                            <div className="flex items-center gap-1.5 mt-2 text-[11px] text-brand-cyan font-mono">
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              <span>Ilustración HD</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                    <div className="md:col-span-7 space-y-3">
-                      <ExplanationBoard
-                        boardContent={phase.board_content}
-                        tutorSays={typeof phase.tutor_says === 'string' ? phase.tutor_says : phase.tutor_says?.text}
-                        phaseTimeline={phaseTimeline}
-                        audioProgress={100}
-                        isPlaying={false}
-                        tutorState="idle"
-                        isFullBoardRevealed={true}
-                        onPlayAudio={handlePlayIndividualAudio}
-                        theme="chalk"
-                      />
-                      {/* ⚡ Visual Structured Grammar Formula Card */}
-                      {(phase.grammar_structure || phase.key_structure) && (
-                        <GrammarStructureCard
-                          structure={phase.grammar_structure || phase.key_structure}
-                          onPlayAudio={handlePlayIndividualAudio}
-                          theme="chalk"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* 2. Timeline Feed Header */}
-                {targetAudioItems && targetAudioItems.length > 0 && (
-                  <div className="flex items-center justify-between px-2 pt-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-cyan flex items-center gap-2">
-                      <Sparkles size={16} className="text-brand-cyan animate-pulse" />
-                      <span>Frases de Práctica ({targetAudioItems.length})</span>
-                    </h3>
-                    <span className="text-[11px] text-brand-text-muted hidden sm:inline">
-                      Práctica guiada paso a paso con audio y micrófono
-                    </span>
-                  </div>
-                )}
-
-                {/* 3. Stream of Dedicated Visuals + Pronunciation Cards */}
-                <div className="relative pl-4 sm:pl-8 space-y-6 border-l-2 border-brand-cyan/40 ml-2 sm:ml-4">
-                  {targetAudioItems.map((item, idx) => {
-                    const sentenceImage = getSentenceImageUrl(item.english, idx);
-                    const itemKey = `timeline-item-${idx}-${item.english}`;
-                    const isThisRecording = itemRecordingKey === itemKey;
-                    const isThisProcessing = itemProcessingKey === itemKey;
-                    const itemResult = itemEvals[itemKey];
-
-                    return (
-                      <motion.div
-                        key={itemKey}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: idx * 0.1 }}
-                        className="relative"
-                      >
-                        {/* Timeline Node Marker */}
-                        <div className="absolute -left-[25px] sm:-left-[41px] top-6 w-8 h-8 rounded-full bg-brand-dark border-2 border-brand-cyan flex items-center justify-center text-brand-cyan font-bold text-xs shadow-[0_0_12px_rgba(0,212,255,0.6)] z-10">
-                          {idx + 1}
-                        </div>
-
-                        {/* Card Container */}
-                        <div className={`glass p-5 sm:p-6 rounded-3xl border transition-all shadow-xl space-y-4 ${
-                          itemResult
-                            ? itemResult.is_correct
-                              ? 'border-brand-success/50 bg-brand-success/5 shadow-brand-success/10'
-                              : 'border-brand-error/50 bg-brand-error/5'
-                            : 'border-brand-border/70 hover:border-brand-cyan/50 bg-brand-surface/40'
-                        }`}>
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30">
-                              {item.label || `Ejemplo #${idx + 1}`}
-                            </span>
-                            {item.translation && (
-                              <span className="text-xs text-brand-text-secondary italic font-medium">
-                                Traducción: {item.translation}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
-                            {/* Sentence Image */}
-                            <div
-                              onClick={() => setIsImageZoomed(true)}
-                              className="md:col-span-5 relative group/simg rounded-2xl overflow-hidden cursor-pointer bg-black/30 border border-brand-cyan/30 shadow-md"
-                            >
-                              <img
-                                src={sentenceImage}
-                                alt={`Ilustración para: ${item.english}`}
-                                className="w-full h-44 sm:h-48 object-cover rounded-2xl group-hover/simg:scale-105 transition-transform duration-300"
-                              />
-                              <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover/simg:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                                <span className="px-3 py-1.5 rounded-xl bg-brand-accent text-white text-xs font-bold flex items-center gap-1 shadow-lg">
-                                  <ZoomIn size={13} /> Ampliar
-                                </span>
-                              </div>
-                              <div className="absolute bottom-2 left-2 right-2 bg-brand-dark/85 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] text-brand-cyan font-semibold truncate border border-brand-cyan/20">
-                                🎨 Visual: &quot;{item.english}&quot;
-                              </div>
-                            </div>
-
-                            {/* Sentence Content & Controls */}
-                            <div className="md:col-span-7 space-y-3">
-                              <div className="bg-brand-surface/80 p-4 rounded-2xl border border-brand-cyan/30 space-y-1">
-                                <span className="text-xs text-brand-cyan font-bold uppercase tracking-wider block">Oración Target:</span>
-                                <p className="text-base sm:text-lg font-outfit font-bold text-white tracking-wide leading-snug">
-                                  &quot;{item.english}&quot;
-                                </p>
-                              </div>
-
-                              {/* Controls */}
-                              <div className="flex items-center gap-2 flex-wrap pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handlePlayIndividualAudio(item.english)}
-                                  disabled={isThisRecording || isThisProcessing}
-                                  className="px-3.5 py-2 rounded-xl bg-brand-cyan/20 hover:bg-brand-cyan/40 text-brand-cyan border border-brand-cyan/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm hover:scale-105 disabled:opacity-40"
-                                >
-                                  <Volume2 size={14} className="text-brand-cyan animate-pulse" />
-                                  <span>Escuchar</span>
-                                </button>
-
-                                {!itemResult ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (isThisRecording) {
-                                        setItemRecordingKey(null);
-                                      } else {
-                                        startItemRecognition(itemKey, item.english);
-                                      }
-                                    }}
-                                    disabled={isThisProcessing || (itemRecordingKey !== null && !isThisRecording)}
-                                    className={`px-4 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
-                                      isThisProcessing
-                                        ? 'bg-brand-surface border-brand-accent text-brand-cyan animate-pulse'
-                                        : isThisRecording
-                                        ? 'bg-brand-error border-brand-error text-white shadow-[0_0_20px_rgba(255,82,82,0.5)] scale-105 animate-pulse'
-                                        : 'bg-brand-accent hover:bg-brand-accent/90 text-white border-brand-accent shadow-md hover:scale-105'
-                                    }`}
-                                  >
-                                    {isThisProcessing ? (
-                                      <Loader2 size={14} className="animate-spin" />
-                                    ) : isThisRecording ? (
-                                      <Square size={14} className="fill-white" />
-                                    ) : (
-                                      <Mic size={14} />
-                                    )}
-                                    <span>{isThisProcessing ? 'Evaluando...' : isThisRecording ? 'Detener' : 'Practicar 🎤'}</span>
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setItemEvals(prev => {
-                                        const n = { ...prev };
-                                        delete n[itemKey];
-                                        return n;
-                                      });
-                                    }}
-                                    className="px-3.5 py-2 rounded-xl bg-brand-surface hover:bg-brand-border border border-brand-border text-brand-text-muted hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all"
-                                  >
-                                    <RotateCcw size={13} />
-                                    <span>Reintentar</span>
-                                  </button>
-                                )}
-                              </div>
-
-                              {/* Live Speech Recognition Box */}
-                              {isThisRecording && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: 'auto' }}
-                                  className="p-3 rounded-2xl bg-black/40 border border-brand-error/40 flex items-center gap-2 text-xs"
-                                >
-                                  <div className="w-2.5 h-2.5 rounded-full bg-brand-error animate-ping" />
-                                  <span className="font-bold text-brand-error">Escuchando:</span>
-                                  <span className="font-mono text-white truncate">{itemLiveTranscript || 'Habla ahora...'}</span>
-                                </motion.div>
-                              )}
-
-                              {/* Item Result */}
-                              {itemResult && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: 'auto' }}
-                                  className={`p-3.5 rounded-2xl border text-xs space-y-1.5 ${
-                                    itemResult.is_correct
-                                      ? 'bg-brand-success/15 border-brand-success/40'
-                                      : 'bg-brand-error/15 border-brand-error/40'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-bold text-white">
-                                      {itemResult.is_correct ? '✅ ¡Excelente pronunciación!' : '❌ Inténtalo de nuevo'}
-                                    </span>
-                                    <span className="font-bold text-brand-gold">
-                                      Puntaje: {itemResult.overall_score}/100
-                                    </span>
-                                  </div>
-                                  {itemResult.feedback && (
-                                    <p className="text-brand-text-secondary leading-relaxed">{itemResult.feedback}</p>
-                                  )}
-                                </motion.div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            )
+          )}
           </motion.div>
         </AnimatePresence>
 

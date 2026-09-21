@@ -800,15 +800,189 @@
   100% { opacity: 1; }
 }
 
-/* ── Upgrade Accessories Overlay ── */
-/* SVG superpuesto sobre el cuerpo del robot para mostrar los upgrades de Guionbajo */
-.upgradeOverlay {
+/* ── Upgrade Accessories Styles ── */
+
+/* Stage 4: Gold trim */
+.goldTrimHead {
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.45), inset 0 1px 2px rgba(254, 240, 138, 0.6) !important;
+}
+
+.goldTrimBody {
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.45), inset 0 1px 2px rgba(254, 240, 138, 0.6) !important;
+}
+
+/* Stage 8: God Aura */
+.godAura {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.22) 0%, rgba(245, 158, 11, 0.08) 50%, transparent 75%);
+  pointer-events: none;
+  z-index: 1;
+  animation: auraPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes auraPulse {
+  0%   { transform: scale(0.96); opacity: 0.6; }
+  100% { transform: scale(1.15); opacity: 1; }
+}
+
+/* Stage 8: Floating Master Crown */
+.headCrown {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 30;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.85));
+  animation: crownHover 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes crownHover {
+  0%   { transform: translateX(-50%) translateY(0); }
+  100% { transform: translateX(-50%) translateY(-4px); }
+}
+
+.sizeToolbar .headCrown {
+  top: -18px;
+  transform: translateX(-50%) scale(0.7);
+}
+
+/* Stage 3: Tactical HUD Visor */
+.headHudVisor {
+  position: absolute;
+  top: 24%;
+  left: 5%;
+  width: 90%;
+  height: 44%;
+  pointer-events: none;
+  z-index: 20;
+  border-radius: 7px;
+  background: rgba(8, 18, 36, 0.78);
+  border: 1.5px solid #00D4FF;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.5), inset 0 0 5px rgba(0, 212, 255, 0.3);
+  backdrop-filter: blur(1px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  overflow: hidden;
+}
+
+.sizeToolbar .headHudVisor {
+  top: 20%;
+  height: 48%;
+  border-width: 1px;
+}
+
+.hudScanline {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  overflow: visible;
+  right: 0;
+  height: 2px;
+  background: rgba(0, 212, 255, 0.6);
+  box-shadow: 0 0 6px #00D4FF;
+  animation: hudScan 2s ease-in-out infinite alternate;
 }
+
+@keyframes hudScan {
+  0%   { top: 2px; }
+  100% { top: calc(100% - 4px); }
+}
+
+/* Stage 5: Tesla Coil */
+.teslaCoil {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 15;
+}
+
+.sizeToolbar .teslaCoil {
+  top: -16px;
+  transform: translateX(-50%) scale(0.7);
+}
+
+/* Stage 2: Dorsal Jetpack */
+.bodyJetpack {
+  position: absolute;
+  top: 2px;
+  left: -14px;
+  right: -14px;
+  bottom: 0px;
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.sizeToolbar .bodyJetpack {
+  left: -8px;
+  right: -8px;
+  top: 0px;
+}
+
+/* Stage 6: Holographic Plasma Wings */
+.plasmaWings {
+  position: absolute;
+  top: 15%;
+  left: -42px;
+  right: -42px;
+  height: 80%;
+  pointer-events: none;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sizeToolbar .plasmaWings {
+  left: -22px;
+  right: -22px;
+  transform: scale(0.65);
+}
+
+/* Stage 7: Mini Drone Orbit */
+.miniDroneOrbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160px;
+  height: 160px;
+  margin-top: -80px;
+  margin-left: -80px;
+  pointer-events: none;
+  z-index: 35;
+  animation: droneSpin 4.5s linear infinite;
+}
+
+@keyframes droneSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.sizeToolbar .miniDroneOrbit {
+  width: 100px;
+  height: 100px;
+  margin-top: -50px;
+  margin-left: -50px;
+}
+
+.miniDroneBody {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 

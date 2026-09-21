@@ -359,6 +359,15 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            <Link
+              href="/guionbajo-lab"
+              className="flex items-center gap-1.5 px-3 py-2 glass rounded-2xl border border-yellow-400/40 text-yellow-300 hover:bg-yellow-400/10 hover:text-yellow-200 transition-all text-xs font-semibold shadow-sm"
+              title="Laboratorio de Upgrades de Guionbajo (Probar todos los niveles)"
+            >
+              <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" />
+              <span className="hidden md:inline">Evolución Guionbajo</span>
+            </Link>
+
             <Link href="/settings" className="p-2.5 glass rounded-2xl hover:bg-brand-surface border border-brand-border transition-colors" title="Configuración">
               <Settings className="w-4 h-4 text-brand-text-secondary hover:text-white" />
             </Link>

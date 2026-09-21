@@ -415,19 +415,6 @@ export default function TimelineVisualRenderer({
               </div>
             )}
           </div>
-
-          {/* Bottom Audio Progress Bar if active */}
-          {activeStepIdx === 0 && isPlaying && (
-            <div className="w-full bg-black/80 p-2 border-t border-white/10 flex items-center gap-2">
-              <Volume2 size={13} className="text-brand-cyan animate-pulse flex-shrink-0 ml-1" />
-              <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-brand-cyan to-brand-accent rounded-full shadow-[0_0_10px_rgba(0,212,255,0.8)]"
-                  style={{ width: `${Math.min(Math.max(audioProgress, 0), 100)}%` }}
-                />
-              </div>
-            </div>
-          )}
         </motion.div>
 
         {/* Mobile quick button to view diagram when on board tab */}

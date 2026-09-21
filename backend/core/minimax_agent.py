@@ -679,6 +679,81 @@ class TutorAgent:
         prompt = prompt.replace("{total_xp}", str(student_profile.get("total_xp", 0)))
         return prompt
 
+    @staticmethod
+    def _is_ungrammatical_english(text: str) -> bool:
+        """Comprehensive English grammar validator. Returns True if phrase is clearly ungrammatical."""
+        if not text or not isinstance(text, str):
+            return True
+        cleaned = text.strip()
+        cleaned = re.sub(r"^['\"“‘`]+|['\"”’`]+$", "", cleaned).strip()
+        if len(cleaned) < 2:
+            return True
+        t = cleaned.lower()
+
+        # 1. Continuous / Progressive Tenses errors:
+        # 1a. Missing 'to be' before -ing verb: "she cooking", "they running", "i sleeping", "he playing"
+        if re.search(r'\b(?:i|you|he|she|it|we|they|[A-Z][a-z]+)\s+(?:cooking|running|playing|dancing|swimming|reading|eating|sleeping|studying|working|driving|watching|drinking|listening|talking|walking|cleaning|writing|buying|doing|making|sitting|waiting|traveling|learning|living|speaking|coming|going)\b', t):
+            return True
+        
+        # 1b. Auxiliary 'to be' + bare base verb: "they are run", "she is cook", "i am drive", "we are play", "he is watch"
+        if re.search(r'\b(?:am|is|are|was|were|\'m|\'s|\'re)\s+(?:cook|run|play|dance|swim|read|eat|sleep|study|work|drive|watch|drink|listen|talk|walk|clean|write|buy|do|make|sit|wait|travel|learn|live|speak|come|go)\b', t):
+            return True
+
+        # 1c. Auxiliary 'to be' + 3rd person -s verb: "she is cooks", "he is works", "they are runs"
+        if re.search(r'\b(?:am|is|are|was|were|\'m|\'s|\'re)\s+(?:cooks|runs|plays|dances|swims|reads|eats|sleeps|studies|works|drives|watches|drinks|listens|talks|walks|cleans|writes|buys|does|makes|sits|waits|travels|learns|lives|speaks|comes|goes)\b', t):
+            return True
+
+        # 2. Present Simple 3rd person singular errors:
+        # 2a. 'she haves', 'he haves'
+        if re.search(r'\bhaves\b', t):
+            return True
+        # 2b. Missing -s on 3rd person: "he work", "she sleep", "carlos play"
+        if re.search(r'\b(?:she|he|it)\s+(?:work|live|sleep|watch|drink|eat|study|read|play|run|dance|swim|write|drive|clean|listen|talk|walk)\b', t):
+            return True
+        # 2c. Extra -s on 1st/2nd/plural: "i works", "they sleeps"
+        if re.search(r'\b(?:i|you|we|they)\s+(?:works|lives|sleeps|watches|drinks|eats|studies|reads|plays|runs|dances|swims|writes|drives|cleans|listens|talks|walks)\b', t):
+            return True
+
+        # 3. Subject-Verb agreement with To Be:
+        if re.search(r'\b(?:i)\s+(?:is|are|were)\b', t):
+            return True
+        if re.search(r'\b(?:he|she|it)\s+(?:are|were|am)\b', t):
+            return True
+        if re.search(r'\b(?:we|they|you)\s+(?:is|was|am)\b', t):
+            return True
+        if re.search(r'\b(?:this|that)\s+are\b', t):
+            return True
+        if re.search(r'\b(?:these|those)\s+is\b', t):
+            return True
+
+        # 4. Modal Can errors:
+        if re.search(r'\bcan\s+[a-z]+(?:s|ed|ing)\b', t):
+            return True
+        if re.search(r'\bcans\b', t):
+            return True
+        if re.search(r'\bcan\s+to\s+[a-z]+', t):
+            return True
+        if "doesn't can" in t or "don't can" in t:
+            return True
+
+        # 5. Do / Does errors:
+        if re.search(r'\b(?:she|he|it)\s+don\'?t\b', t):
+            return True
+        if re.search(r'\b(?:i|you|we|they)\s+doesn\'?t\b', t):
+            return True
+        if re.search(r'\bdoesn\'?t\s+(?:works|lives|sleeps|watches|drinks|eats|plays|studies|runs|dances|swims|writes|drives|cleans)\b', t):
+            return True
+        if re.search(r'\bdoes\s+(?:he|she|it)\s+(?:works|lives|sleeps|watches|drinks|eats|plays|studies|runs|dances|swims|writes|drives|cleans)\b', t):
+            return True
+        if re.search(r'\bdo\s+(?:he|she|it)\b', t):
+            return True
+
+        # 6. Spanish phonetic / structural interference:
+        if re.search(r'\b(?:espain|i maria|i am espain|i leeve|i liv|john pen|playeds)\b', t):
+            return True
+
+        return False
+
     async def _chat(self, system: str, user: str, thinking: str = "adaptive") -> str:
         """Core chat call with MiniMax M3."""
         try:
@@ -1668,7 +1743,8 @@ class TutorAgent:
             f"• Slide 4: DUELO DE ERRORES SINTÁCTICOS Y COMUNICACIÓN REAL ('is_hook': false, 'interaction_type': 'explanation').\n"
             f"   - 'tutor_says': Explicación de los errores sintácticos y de concordancia más comunes en hispanohablantes al usar '{topic}' y cómo formular oraciones correctas. CERO explicaciones fonéticas o símbolos IPA aquí (la pronunciación va estrictamente en el bonus final).\n"
             f"   - 'board_content': Duelo de oraciones: ❌ Error sintáctico común vs ✅ Oración correcta.\n"
-            f"   - 'target_audio_items': Oraciones modelo 100% correctas en inglés (NUNCA incluyas oraciones con errores como 'She haves' o 'She work' como oraciones para practicar).\n\n"
+            f"   - REGLA DE ORO PARA CONTRASTES: Presenta SIEMPRE primero la forma correcta y luego el error (ej: 'Di ✅ \"She is cooking\" y no ❌ \"She cooking\"'). Si mencionas el error primero, di 'El error común es ❌ \"She cooking\", lo correcto es ✅ \"She is cooking\"'. NUNCA califiques un error gramatical como correcto.\n"
+            f"   - 'target_audio_items': Oraciones modelo 100% correctas en inglés (NUNCA incluyas oraciones con errores como 'She haves', 'She cooking' o 'They are run' como oraciones para practicar).\n\n"
             f"REGLAS OBLIGATORIAS:\n"
             f"1. {'Explicaciones (tutor_says), pizarra (board_content) y tareas en español con ejemplos en inglés.' if is_a_level else 'Full English immersion.'}\n"
             f"2. En cada fase incluye 'target_audio_items' con las oraciones modelo en inglés y su traducción.\n"
@@ -2930,8 +3006,97 @@ class TutorAgent:
             p["storyboard_steps"] = self._build_phase_storyboard(p)
             p["storyboard_timeline"] = self._build_phase_storyboard_timeline(p, topic, sublevel)
 
+        self._audit_all_contrasts_and_oral_targets(clean_phases, topic)
+
         data["phases"] = clean_phases
         return data
+
+    def _audit_all_contrasts_and_oral_targets(self, phases: list, topic: str):
+        """
+        Final quality gate ensuring that NO ungrammatical English sentence is presented
+        as a 'correct' target, oral practice item, or contrast winner.
+        Automatically swaps inverted contrasts (where the error was marked correct),
+        and discards broken items that cannot be salvaged.
+        """
+        for p in phases:
+            if not isinstance(p, dict):
+                continue
+
+            # 1. Clean target_audio_items
+            tai = p.get("target_audio_items")
+            if tai and isinstance(tai, list):
+                p["target_audio_items"] = [
+                    it for it in tai 
+                    if isinstance(it, dict) and not self._is_ungrammatical_english(it.get("english", ""))
+                ]
+
+            # 2. Audit storyboard_timeline and storyboard_steps
+            for steps_key in ("storyboard_timeline", "storyboard_steps"):
+                steps = p.get(steps_key)
+                if steps and isinstance(steps, list):
+                    for s in steps:
+                        if not isinstance(s, dict):
+                            continue
+                        payload = s.get("payload")
+                        if not isinstance(payload, dict):
+                            continue
+
+                        # Contrast auditing & inversion swapping
+                        contrasts = payload.get("contrasts")
+                        if contrasts and isinstance(contrasts, list):
+                            audited = []
+                            for ct in contrasts:
+                                if not isinstance(ct, dict):
+                                    continue
+                                cor = str(ct.get("correct") or "").strip()
+                                inc = str(ct.get("incorrect") or "").strip()
+
+                                # If inverted (correct is ungrammatical, incorrect is grammatical) -> SWAP
+                                if self._is_ungrammatical_english(cor) and not self._is_ungrammatical_english(inc):
+                                    cor, inc = inc, cor
+
+                                # Drop if still ungrammatical or identical
+                                if self._is_ungrammatical_english(cor) or cor.lower() == inc.lower():
+                                    continue
+
+                                ct["correct"] = cor
+                                ct["incorrect"] = inc
+                                audited.append(ct)
+
+                            payload["contrasts"] = audited
+                            payload["contrast"] = audited[0] if audited else None
+
+                        # Single contrast object if present
+                        single_ct = payload.get("contrast")
+                        if single_ct and isinstance(single_ct, dict):
+                            cor = str(single_ct.get("correct") or "").strip()
+                            inc = str(single_ct.get("incorrect") or "").strip()
+                            if self._is_ungrammatical_english(cor) and not self._is_ungrammatical_english(inc):
+                                cor, inc = inc, cor
+                            if self._is_ungrammatical_english(cor) or cor.lower() == inc.lower():
+                                payload["contrast"] = None
+                            else:
+                                single_ct["correct"] = cor
+                                single_ct["incorrect"] = inc
+                                payload["contrast"] = single_ct
+
+                        # English oral practice target sentence auditing
+                        eng = payload.get("english")
+                        if eng and self._is_ungrammatical_english(eng):
+                            # Try to find valid alternative from phase's target_audio_items
+                            valid_alt = None
+                            for it in p.get("target_audio_items", []):
+                                if isinstance(it, dict):
+                                    cand = it.get("english", "")
+                                    if cand and not self._is_ungrammatical_english(cand):
+                                        valid_alt = cand
+                                        break
+                            if not valid_alt:
+                                if "present continuous" in topic.lower() or "progressive" in topic.lower():
+                                    valid_alt = "I am studying English right now."
+                                else:
+                                    valid_alt = "She works at an international school."
+                            payload["english"] = valid_alt
 
     async def generate_lesson_script(self, topic: str, sublevel: str, student_profile: Optional[dict] = None) -> dict:
         """Alias for generate_adaptive_lesson_script."""
@@ -4058,43 +4223,34 @@ class TutorAgent:
             if len(source) >= 2 and len(target) >= 2 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', source) and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', target):
                 transformations.append({"from": source, "to": target})
 
-        def is_clearly_ungrammatical(text: str) -> bool:
-            if not text:
-                return True
-            t = text.strip().lower()
-            if re.search(r'\bcan\s+[a-z]+(?:s|ed|ing)\b', t):
-                return True
-            if re.search(r'\bcans\b', t):
-                return True
-            if re.search(r'\bcan\s+to\s+[a-z]+', t):
-                return True
-            if "doesn't can" in t or "don't can" in t:
-                return True
-            if "playeds" in t or ("swims" in t and "can" in t):
-                return True
-            if re.search(r'\bhaves\b', t):
-                return True
-            if re.search(r'\b(?:she|he|it)\s+doesn\'t\s+[a-z]+s\b', t):
-                return True
-            return False
-
-        # 2. Flexible Contrast Matching & Common Error Detection
+        contrasts = []
         contrast_pattern = re.compile(
             r"['\"‘“]([^'\"‘“’”\n\r]+)['\"’”][^'\"‘“’”\n\r]{0,35}?(?:y no|y nunca|no|en lugar de|instead of|mientras que)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]",
             re.IGNORECASE
         )
-        contrasts = []
         for m in contrast_pattern.finditer(speech_text):
-            cor = m.group(1).strip()
-            inc = m.group(2).strip()
-            if len(cor) >= 2 and len(inc) >= 2 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', cor) and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', inc):
-                if is_clearly_ungrammatical(cor) and not is_clearly_ungrammatical(inc):
+            cand1 = m.group(1).strip()
+            cand2 = m.group(2).strip()
+            if len(cand1) >= 2 and len(cand2) >= 2 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', cand1) and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', cand2):
+                start_pos = max(0, m.start() - 60)
+                prefix_text = speech_text[start_pos:m.start()].lower()
+                
+                # Check if the prefix introduced the first quote as an error
+                if any(w in prefix_text for w in ["error", "incorrect", "olvidar", "no digas", "trampa", "cuidado", "muchos dicen", "mal"]):
+                    cor, inc = cand2, cand1
+                else:
+                    cor, inc = cand1, cand2
+
+                # Inversion detection via comprehensive grammar validator:
+                if self._is_ungrammatical_english(cor) and not self._is_ungrammatical_english(inc):
                     cor, inc = inc, cor
-                if not is_clearly_ungrammatical(cor):
+
+                # Strict safety: 'correct' MUST NEVER be ungrammatical, and both sides must be different
+                if not self._is_ungrammatical_english(cor) and cor.lower() != inc.lower():
                     contrasts.append({"correct": cor, "incorrect": inc, "why": "Contraste de regla gramatical"})
 
         # Detect Common Errors introduced like: "Un error típico ... diciendo 'She can swims'"
-        err_match = re.search(r"(?:error\s+típico[^\n\r]*?diciendo|diciendo|es\s+incorrecto\s+decir|en\s+lugar\s+de\s+decir|no\s+digas)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]", speech_text, re.IGNORECASE)
+        err_match = re.search(r"(?:error\s+típico[^\n\r]*?diciendo|diciendo|es\s+incorrecto\s+decir|en\s+lugar\s+de\s+decir|no\s+digas|olvidar[^\n\r]*?decir)\s*['\"‘“]([^'\"‘“’”\n\r]+)['\"’”]", speech_text, re.IGNORECASE)
         if err_match:
             incorrect_quote = err_match.group(1).strip()
             if not any(c["incorrect"].lower() == incorrect_quote.lower() for c in contrasts):
@@ -4102,17 +4258,17 @@ class TutorAgent:
                 correct_cand = None
                 if model_cand:
                     cand = model_cand.group(1).strip()
-                    if len(cand) >= 3 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', cand) and not is_clearly_ungrammatical(cand):
+                    if len(cand) >= 3 and not re.search(r'[áéíóúñÁÉÍÓÚÑ]', cand) and not self._is_ungrammatical_english(cand):
                         correct_cand = cand
 
                 if not correct_cand and p.get("target_audio_items"):
                     for tai in p["target_audio_items"]:
                         eng = (tai.get("english") or "").strip()
-                        if eng and not is_clearly_ungrammatical(eng):
+                        if eng and not self._is_ungrammatical_english(eng):
                             correct_cand = eng
                             break
 
-                if correct_cand and not is_clearly_ungrammatical(correct_cand):
+                if correct_cand and not self._is_ungrammatical_english(correct_cand) and correct_cand.lower() != incorrect_quote.lower():
                     contrasts.append({
                         "correct": correct_cand,
                         "incorrect": incorrect_quote,

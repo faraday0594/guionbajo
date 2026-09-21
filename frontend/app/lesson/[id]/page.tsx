@@ -71,14 +71,36 @@ const GRAMMAR_AND_SPANISH_DISQUALIFIERS: string[] = [
 
 const UNGRAMMATICAL_ENGLISH_PATTERNS = [
   /\bhaves\b/i,                                                                          // 'she haves' (grave error for 'has')
-  /\b(?:she|he|it)\s+(?:work|live|sleep|watch|drink|eat|study|go|do|have|read|play)\b/i, // missing -s 3rd person
-  /\b(?:i|you|we|they)\s+(?:works|lives|sleeps|watches|drinks|eats|studies|goes|does|has|reads|plays)\b/i, // extra -s
-  /\b(?:i|you|we|they)\s+is\b/i,                                                         // agreement error
-  /\b(?:he|she|it)\s+are\b/i,                                                            // agreement error
+  // 1. Continuous errors: Missing 'to be' before -ing verb ("she cooking", "they running", "he playing", "i driving")
+  /\b(?:i|you|he|she|it|we|they|[A-Z][a-z]+)\s+(?:cooking|running|playing|dancing|swimming|reading|eating|sleeping|studying|working|driving|watching|drinking|listening|talking|walking|cleaning|writing|buying|doing|making|sitting|waiting|traveling|learning|living|speaking|coming|going)\b/i,
+  // 2. Continuous errors: Auxiliary 'to be' + bare base verb ("they are run", "she is cook", "i am drive", "we are play")
+  /\b(?:am|is|are|was|were|'m|'s|'re)\s+(?:cook|run|play|dance|swim|read|eat|sleep|study|work|drive|watch|drink|listen|talk|walk|clean|write|buy|do|make|sit|wait|travel|learn|live|speak|come|go)\b/i,
+  // 3. Continuous errors: Auxiliary 'to be' + 3rd person -s verb ("she is cooks", "he is works", "they are runs")
+  /\b(?:am|is|are|was|were|'m|'s|'re)\s+(?:cooks|runs|plays|dances|swims|reads|eats|sleeps|studies|works|drives|watches|drinks|listens|talks|walks|cleans|writes|buys|does|makes|sits|waits|travels|learns|lives|speaks|comes|goes)\b/i,
+  // 4. Present Simple: Missing -s on 3rd person singular ("he work", "she sleep", "carlos play")
+  /\b(?:she|he|it)\s+(?:work|live|sleep|watch|drink|eat|study|read|play|run|dance|swim|write|drive|clean|listen|talk|walk)\b/i,
+  // 5. Present Simple: Extra -s on 1st/2nd/plural person ("i works", "they sleeps", "we drinks")
+  /\b(?:i|you|we|they)\s+(?:works|lives|sleeps|watches|drinks|eats|studies|reads|plays|runs|dances|swims|writes|drives|cleans|listens|talks|walks)\b/i,
+  // 6. Agreement errors with To Be
+  /\b(?:i)\s+(?:is|are|were)\b/i,                                                         // agreement error
+  /\b(?:he|she|it)\s+(?:are|were|am)\b/i,                                                // agreement error
+  /\b(?:we|they|you)\s+(?:is|was|am)\b/i,                                                // agreement error
   /\b(?:this|that)\s+are\b/i,                                                            // demonstrative mismatch
   /\b(?:these|those)\s+is\b/i,                                                           // demonstrative mismatch
+  // 7. Modal can errors
+  /\bcan\s+[a-z]+(?:s|ed|ing)\b/i,
+  /\bcans\b/i,
+  /\bcan\s+to\s+[a-z]+/i,
+  /\b(?:doesn't|don't|does|do|didn't|did)\s+(?:not\s+)?can\b/i,
+  // 8. Auxiliary Do / Does errors
+  /\b(?:she|he|it)\s+don'?t\b/i,
+  /\b(?:i|you|we|they)\s+doesn'?t\b/i,
+  /\bdoesn'?t\s+(?:works|lives|sleeps|watches|drinks|eats|plays|studies|runs|dances|swims|writes|drives|cleans)\b/i,
+  /\bdoes\s+(?:he|she|it)\s+(?:works|lives|sleeps|watches|drinks|eats|plays|studies|runs|dances|swims|writes|drives|cleans)\b/i,
+  /\bdo\s+(?:he|she|it)\b/i,
+  // 9. Infinitive and fragment errors
   /\bto\s+(?:have|be|do|go|work|live|sleep|watch|drink|study|eat)\b/i,                   // infinitive marker as oral target
-  /\b(?:espain|i maria|i leeve|i liv|john pen)\b/i,                                      // known phonetic/syntax error quotes
+  /\b(?:espain|i maria|i am espain|i leeve|i liv|john pen|playeds)\b/i,                  // known phonetic/syntax error quotes
   /\b(?:don|doesn|didn|wasn|weren|isn|aren|won)\b/i,                                     // broken/truncated contraction
   /^(?:do not|does not|don't|doesn't|do|does|did|not)$/i,                                // isolated auxiliary particle
   /^(?:s|re|ve|ll|d|m|t)\s+/i,                                                           // orphaned contraction fragment
@@ -88,6 +110,13 @@ const UNGRAMMATICAL_ENGLISH_PATTERNS = [
   /[,;:\-]$/,                                                                            // trailing punctuation
   /\b(?:metaphor|finished vs unfinished|the two formulas)\b/i,                           // meta topic labels
 ];
+
+export function isUngrammaticalEnglishPhrase(text: string): boolean {
+  if (!text || typeof text !== 'string') return true;
+  const cleaned = text.trim().replace(/^['"“‘`]+|['"”’`]+$/g, '').trim();
+  if (cleaned.length < 2) return true;
+  return UNGRAMMATICAL_ENGLISH_PATTERNS.some(pat => pat.test(cleaned));
+}
 
 export function isValidEnglishTargetPhrase(text: string): boolean {
   if (!text || typeof text !== 'string') return false;
@@ -100,7 +129,7 @@ export function isValidEnglishTargetPhrase(text: string): boolean {
   }
 
   // Disqualify known ungrammatical / error phrases
-  if (UNGRAMMATICAL_ENGLISH_PATTERNS.some(pat => pat.test(cleaned))) return false;
+  if (isUngrammaticalEnglishPhrase(cleaned)) return false;
 
   // Disqualify if it contains syntax/math/bracket symbols
   if (/[/\\|\[\](){}+=→<>_~*#^]/.test(cleaned)) return false;
@@ -1826,35 +1855,21 @@ function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: 
   const contrasts: Array<{ correct: string; incorrect: string; why: string }> = [];
   const incorrectQuotes = new Set<string>();
 
-  const isUngrammaticalPhrase = (text: string): boolean => {
-    if (!text) return true;
-    const t = text.trim().toLowerCase();
-    if (/\bcan\s+[a-z]+(?:s|ed|ing)\b/i.test(t)) return true;
-    if (/\bcans\b/i.test(t)) return true;
-    if (/\bcan\s+to\s+[a-z]+/i.test(t)) return true;
-    if (/\bdoesn't\s+can\b/i.test(t) || /\bdon't\s+can\b/i.test(t)) return true;
-    if (/\bplayeds\b/i.test(t) || (/\bswims\b/i.test(t) && /\bcan\b/i.test(t))) return true;
-    if (/\bhaves\b/i.test(t)) return true;
-    if (/\b(?:she|he|it)\s+doesn't\s+[a-z]+s\b/i.test(t)) return true;
-    if (/\b(?:i|you|we|they)\s+doesn't\b/i.test(t)) return true;
-    return false;
-  };
-
   const addContrast = (candidateCorrect: string, candidateIncorrect: string, why: string) => {
     let cor = candidateCorrect.trim();
     let inc = candidateIncorrect.trim();
     if (cor.length < 2 || inc.length < 2) return;
-    if (/[áéíóúñÁÉÍÓÚÑ]/.test(cor)) return;
+    if (/[áéíóúñÁÉÍÓÚÑ]/.test(cor) || /[áéíóúñÁÉÍÓÚÑ]/.test(inc)) return;
 
     // 🛡️ Detect inversion: If candidate 'cor' is ungrammatical and 'inc' is grammatical, SWAP them!
-    if (isUngrammaticalPhrase(cor) && !isUngrammaticalPhrase(inc)) {
+    if (isUngrammaticalEnglishPhrase(cor) && !isUngrammaticalEnglishPhrase(inc)) {
       const temp = cor;
       cor = inc;
       inc = temp;
     }
 
-    // 🛡️ Strict Safety: Never allow an ungrammatical phrase to be stored as 'correct'
-    if (isUngrammaticalPhrase(cor)) return;
+    // 🛡️ Strict Safety: Never allow an ungrammatical phrase or duplicate to be stored as 'correct'
+    if (isUngrammaticalEnglishPhrase(cor) || cor.toLowerCase() === inc.toLowerCase()) return;
 
     if (!contrasts.some(c => c.correct.toLowerCase() === cor.toLowerCase())) {
       contrasts.push({ correct: cor, incorrect: inc, why });
@@ -1878,22 +1893,36 @@ function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: 
     addContrast(erm[1], erm[2], 'Duelo gramatical / fonético');
   }
 
-  // 3. "en lugar de" / "en vez de" / "instead of":
-  // In Spanish, saying "usa 'Spain' en lugar de 'Espain'" -> m[1] is CORRECT ('Spain'), m[2] is INCORRECT ('Espain')!
+  // 3. "en lugar de" / "en vez de" / "instead of" with context awareness:
+  // e.g. "error ... decir 'They are run' en lugar de 'They are running'" -> prefix indicates 'They are run' is the error!
   const enLugarDeMatches = Array.from(
-    speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:en\s+lugar\s+de|en\s+vez\s+de|instead\s+of)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+    speechText.matchAll(/(?:([^\n\r]{0,60}))?['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:en\s+lugar\s+de|en\s+vez\s+de|instead\s+of)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
   );
   for (const elm of enLugarDeMatches) {
-    addContrast(elm[1], elm[2], 'Evita la interferencia del español');
+    const prefix = (elm[1] || '').toLowerCase();
+    const cand1 = elm[2].trim();
+    const cand2 = elm[3].trim();
+    if (/(?:error|incorrect[ao]|olvidar|no\s+digas|trampa|cuidado|muchos\s+dicen|mal)/i.test(prefix)) {
+      // The prefix says this is an ERROR: cand1 is the error, cand2 is the correct phrase!
+      addContrast(cand2, cand1, 'Forma correcta vs error común');
+    } else {
+      addContrast(cand1, cand2, 'Forma correcta vs error común');
+    }
   }
 
   // 4. "di X y no Y" / "usa X y nunca Y":
-  // Here m[1] is CORRECT, m[2] is INCORRECT
   const yNoMatches = Array.from(
-    speechText.matchAll(/['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:y\s+no|y\s+nunca|mientras\s+que\s+no)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+    speechText.matchAll(/(?:([^\n\r]{0,60}))?['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:y\s+no|y\s+nunca|mientras\s+que\s+no)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
   );
   for (const ynm of yNoMatches) {
-    addContrast(ynm[1], ynm[2], 'Regla de pronunciación y gramática');
+    const prefix = (ynm[1] || '').toLowerCase();
+    const cand1 = ynm[2].trim();
+    const cand2 = ynm[3].trim();
+    if (/(?:error|incorrect[ao]|olvidar|no\s+digas|trampa|cuidado|muchos\s+dicen|mal)/i.test(prefix)) {
+      addContrast(cand2, cand1, 'Regla de pronunciación y gramática');
+    } else {
+      addContrast(cand1, cand2, 'Regla de pronunciación y gramática');
+    }
   }
 
   // 5. Scan speech for error phrases to BAN from audio practice
@@ -2139,7 +2168,14 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
             return null;
           }
 
-          // Inversion Check: If 'correct' is an error ('espain', 'i maria', 'i am espain', 'i liv')
+          // General Inversion Check: If candidate 'correct' is ungrammatical and 'incorrect' is grammatical -> SWAP!
+          if (isUngrammaticalEnglishPhrase(cor) && !isUngrammaticalEnglishPhrase(inc)) {
+            const temp = cor;
+            cor = inc;
+            inc = temp;
+          }
+
+          // Specific phonetic/lexical inversion checks
           if (
             corLow === 'espain' ||
             corLow === 'i maria' ||
@@ -2163,10 +2199,26 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
               };
             }
           }
+
+          // If 'correct' is STILL ungrammatical or both sides are identical, reject this contrast entirely
+          if (isUngrammaticalEnglishPhrase(cor) || cor.toLowerCase() === inc.toLowerCase()) {
+            return null;
+          }
+
           return { correct: cor, incorrect: inc, why: ct.why || 'Contraste fonético / gramatical' };
         })
-        .filter((ct: any): ct is { correct: string; incorrect: string; why: string } => Boolean(ct && ct.correct && ct.incorrect && isValidEnglishTargetPhrase(ct.correct)));
+        .filter((ct: any): ct is { correct: string; incorrect: string; why: string } => Boolean(ct && ct.correct && ct.incorrect && isValidEnglishTargetPhrase(ct.correct) && !isUngrammaticalEnglishPhrase(ct.correct)));
       p.contrasts = sanitizedContrasts;
+    }
+
+    if (p.contrast && typeof p.contrast === 'object') {
+      let cor = String(p.contrast.correct || '').trim();
+      let inc = String(p.contrast.incorrect || '').trim();
+      if (isUngrammaticalEnglishPhrase(cor) && !isUngrammaticalEnglishPhrase(inc)) {
+        p.contrast = { ...p.contrast, correct: inc, incorrect: cor };
+      } else if (isUngrammaticalEnglishPhrase(cor) || cor.toLowerCase() === inc.toLowerCase()) {
+        p.contrast = null;
+      }
     }
 
     // 2. Sanitize additional_examples: Strictly purge erroneous items like 'Espain', 'I Maria', 'I liv in Spain', 'To Be'
@@ -2235,13 +2287,17 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
         engLow === 'haves' ||
         engLow === 'don' ||
         engLow === 'doesn' ||
-        !isValidEnglishTargetPhrase(p.english)
+        !isValidEnglishTargetPhrase(p.english) ||
+        isUngrammaticalEnglishPhrase(p.english)
       ) {
-        const fullAlt = p.additional_examples?.find((ad: any) => ad.english && ad.english.trim().split(/\s+/).length >= 3)?.english;
+        const fullAlt = p.additional_examples?.find((ad: any) => ad.english && isValidEnglishTargetPhrase(ad.english) && !isUngrammaticalEnglishPhrase(ad.english) && ad.english.trim().split(/\s+/).length >= 3)?.english;
         let defaultTopicSentence = 'I am practicing English today.';
         let defaultTopicSpanish = 'Estoy practicando inglés hoy.';
 
-        if (isPresentPerfectTopic) {
+        if (isPresentContinuousTopic) {
+          defaultTopicSentence = 'I am studying English right now.';
+          defaultTopicSpanish = 'Estoy estudiando inglés justo ahora.';
+        } else if (isPresentPerfectTopic) {
           defaultTopicSentence = 'I have visited Japan three times.';
           defaultTopicSpanish = 'He visitado Japón tres veces.';
         } else if (isPastContTopic) {

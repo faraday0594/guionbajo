@@ -21,7 +21,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import ScoreDisplay from './TutorPanel/ScoreDisplay';
-import { isValidEnglishTargetPhrase } from '@/app/lesson/[id]/page';
+import { isValidEnglishTargetPhrase, isUngrammaticalEnglishPhrase } from '@/app/lesson/[id]/page';
 
 export interface TimelineStepPayload {
   title?: string;
@@ -830,7 +830,20 @@ export default function TimelineVisualRenderer({
                       )}
 
                       {/* 3. Visual Contrasts */}
-                      {(p.contrasts || (p.contrast ? [p.contrast] : [])).map((ct, ctIdx) => (
+                      {(p.contrasts || (p.contrast ? [p.contrast] : []))
+                        .map((rawCt) => {
+                          let cor = String(rawCt.correct || '').trim();
+                          let inc = String(rawCt.incorrect || '').trim();
+                          // Fail-safe inversion swap: if candidate 'correct' is ungrammatical and 'incorrect' is grammatical -> SWAP!
+                          if (isUngrammaticalEnglishPhrase(cor) && !isUngrammaticalEnglishPhrase(inc)) {
+                            const tmp = cor;
+                            cor = inc;
+                            inc = tmp;
+                          }
+                          return { ...rawCt, correct: cor, incorrect: inc };
+                        })
+                        .filter((ct) => Boolean(ct.correct && ct.incorrect && !isUngrammaticalEnglishPhrase(ct.correct) && ct.correct.toLowerCase() !== ct.incorrect.toLowerCase()))
+                        .map((ct, ctIdx) => (
                         <div key={ctIdx} className="my-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs flex items-center justify-between">
                             <span className="font-mono font-bold">✅ &quot;{ct.correct}&quot;</span>

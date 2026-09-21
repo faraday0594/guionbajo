@@ -37,7 +37,6 @@ import {
   X,
   Mic,
   Square,
-  Film,
   CheckCircle2,
   AlertCircle,
   Award,
@@ -3744,8 +3743,7 @@ export default function LessonPage() {
     }
   }, [lesson, currentPhaseIdx, topicParam, fetchPhaseImage, fetchExerciseImage, minimaxImageMap]);
 
-  // 🎬 Cinema mode & audio tracking
-  const [cinemaModeActive, setCinemaModeActive] = useState(false);
+  // 🎬 Audio tracking
   const [audioProgress, setAudioProgress] = useState(0); // 0–100
   // 📖 Board karaoke: reveal lines one-by-one as tutor speaks
   const [revealedLineCount, setRevealedLineCount] = useState<number>(999);
@@ -4020,9 +4018,7 @@ export default function LessonPage() {
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioSessionIdRef = useRef<number>(0);
   const lastSpokenPhaseRef = useRef<number | null>(null);
-  const cinemaModeRef = useRef(false);
   const lineRevealTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const cinemaNextSlideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioFinishedNaturallyRef = useRef(false);
   const mainRecognitionRef = useRef<any>(null);
   const itemRecognitionRef = useRef<any>(null);
@@ -4071,10 +4067,6 @@ export default function LessonPage() {
     if (lineRevealTimerRef.current) {
       clearInterval(lineRevealTimerRef.current);
       lineRevealTimerRef.current = null;
-    }
-    if (cinemaNextSlideRef.current) {
-      clearTimeout(cinemaNextSlideRef.current);
-      cinemaNextSlideRef.current = null;
     }
   };
 
@@ -5319,28 +5311,6 @@ export default function LessonPage() {
     await executeAdvanceSlide();
   };
 
-  // 🎬 Cinema mode: auto-advance
-  useEffect(() => {
-    if (!cinemaModeActive || tutorState !== 'idle' || !lesson) return;
-    if (!audioFinishedNaturallyRef.current) return;
-    audioFinishedNaturallyRef.current = false;
-    cinemaNextSlideRef.current = setTimeout(() => {
-      if (cinemaModeRef.current) {
-        // Do NOT auto-advance if an exercise on this slide is locked or incomplete!
-        if (isPracticeSlide || hasBoardExercise) {
-          return;
-        }
-        handleNextSlide();
-      }
-    }, 2200);
-    return () => {
-      if (cinemaNextSlideRef.current) {
-        clearTimeout(cinemaNextSlideRef.current);
-        cinemaNextSlideRef.current = null;
-      }
-    };
-  }, [tutorState, cinemaModeActive, lesson, isPracticeSlide, hasBoardExercise]);
-
   // 🎬 Stable Viewport Focus: Keeps student focused on words being revealed & spoken
   useEffect(() => {
     if (viewMode !== 'board') return;
@@ -6429,25 +6399,6 @@ export default function LessonPage() {
               >
                 <Mic size={13} className="text-emerald-400" />
                 <span>Tablero Fonético</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const next = !cinemaModeActive;
-                  cinemaModeRef.current = next;
-                  setCinemaModeActive(next);
-                }}
-                className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
-                  cinemaModeActive
-                    ? 'bg-brand-accent text-white border-brand-accent shadow-[0_0_18px_rgba(108,99,255,0.5)]'
-                    : 'glass border-brand-border text-brand-text-muted hover:text-white hover:border-brand-accent/50'
-                }`}
-                title={cinemaModeActive
-                  ? 'Desactivar Modo Cine (auto-avance)'
-                  : 'Activar Modo Cine — avanza automáticamente al terminar cada slide'}
-              >
-                <Film size={13} className={cinemaModeActive ? 'animate-pulse' : ''} />
-                <span>{cinemaModeActive ? '▶ Cine ON' : 'Modo Cine'}</span>
               </button>
 
               <motion.button

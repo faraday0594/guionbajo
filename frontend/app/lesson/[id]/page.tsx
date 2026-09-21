@@ -848,6 +848,62 @@ const THIRD_PERSON_VERB_RULES_SVG = `<svg xmlns="http://www.w3.org/2000/svg" vie
   </g>
 </svg>`;
 
+const PRESENT_CONTINUOUS_TIMELINE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgPCt" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowPCt" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgPCt)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MAPA CONCEPTUAL: PRESENT CONTINUOUS (EN PROGRESO)</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Acciones ocurriendo ahora mismo: [ Sujeto ] + [ am / is / are ] + [ Verbo-ing ]</text>
+
+  <!-- Left Card: ESTRUCTURA (am / is / are + -ing) -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. ESTRUCTURA FUNDAMENTAL</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• I ➔ <tspan fill="#34d399" font-weight="bold">am</tspan> (&apos;m) + <tspan fill="#e2e8f0">working</tspan></text>
+    <text x="30" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">&quot;I <tspan fill="#34d399">am studying</tspan> English now.&quot;</text>
+    
+    <text x="20" y="112" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">• He / She / It ➔ <tspan fill="#34d399" font-weight="bold">is</tspan> (&apos;s) + <tspan fill="#e2e8f0">cooking</tspan></text>
+    <text x="30" y="130" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">&quot;She <tspan fill="#34d399">is listening</tspan> to music.&quot;</text>
+    
+    <text x="20" y="154" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• You / We / They ➔ <tspan fill="#34d399" font-weight="bold">are</tspan> (&apos;re) + <tspan fill="#e2e8f0">playing</tspan></text>
+    <text x="30" y="172" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">&quot;They <tspan fill="#34d399">are talking</tspan> right now.&quot;</text>
+  </g>
+
+  <!-- Right Card: REGLAS DE ORTOGRAFÍA (-ING) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(192,132,252,0.1)" stroke="#c084fc" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#7e22ce"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. REGLAS PARA AGREGAR -ING</text>
+    
+    <text x="20" y="68" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#c084fc">① Regla General (+ing):</text>
+    <text x="30" y="86" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">read ➔ <tspan fill="#34d399" font-weight="bold">reading</tspan> | cook ➔ <tspan fill="#34d399" font-weight="bold">cooking</tspan></text>
+    
+    <text x="20" y="108" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#fbbf24">② Termina en -e muda (se elimina -e):</text>
+    <text x="30" y="126" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">write ➔ <tspan fill="#34d399" font-weight="bold">writing</tspan> | make ➔ <tspan fill="#34d399" font-weight="bold">making</tspan></text>
+    
+    <text x="20" y="148" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#f87171">③ 1 Sílaba C-V-C (duplica consonante):</text>
+    <text x="30" y="166" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">run ➔ <tspan fill="#f87171" font-weight="bold">running</tspan> | sit ➔ <tspan fill="#f87171" font-weight="bold">sitting</tspan></text>
+  </g>
+
+  <!-- Bottom Card: CONTRASTE TEMPORAL (Now vs Routine) -->
+  <g transform="translate(35, 272)">
+    <rect x="0" y="0" width="630" height="88" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="24" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      ⚡ CONTRASTE CLAVE: PRESENT CONTINUOUS (AHORA) vs PRESENT SIMPLE (RUTINA)
+    </text>
+    <text x="30" y="50" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">
+      <tspan fill="#38bdf8" font-weight="bold">Present Simple (Hábito / Rutina):</tspan> &quot;I <tspan fill="#38bdf8">drink</tspan> coffee every morning.&quot; (Siempre)
+    </text>
+    <text x="30" y="72" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">
+      <tspan fill="#34d399" font-weight="bold">Present Continuous (En este instante):</tspan> &quot;Right now, I <tspan fill="#34d399" font-weight="bold">am drinking</tspan> tea!&quot; (Ocurriendo ya)
+    </text>
+  </g>
+</svg>`;
+
 const DO_DOES_QUESTIONS_NEGATIVES_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
   <defs>
     <linearGradient id="chalkBgQN" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
@@ -1201,9 +1257,30 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return CAN_ABILITIES_SVG;
   }
 
+  // 0.0 Present Continuous & Actions in Progress (HIGHEST PRIORITY for Continuous)
+  const isPresentContinuous =
+    !isCan &&
+    (
+      lowTop.includes('present continuous') ||
+      lowTop.includes('progressive') ||
+      lowTop.includes('presente continuo') ||
+      lowTop.includes('acciones en progreso') ||
+      (lowTop.includes('continuous') && !lowTop.includes('past')) ||
+      combined.includes('present continuous') ||
+      combined.includes('presente continuo') ||
+      combined.includes('am/is/are + -ing') ||
+      combined.includes('am / is / are + verbo-ing') ||
+      (combined.includes('-ing') && !combined.includes('past continuous') && !lowTop.includes('past'))
+    );
+
+  if (isPresentContinuous) {
+    return PRESENT_CONTINUOUS_TIMELINE_SVG;
+  }
+
   // 1. Questions & Negatives (Do / Does, don't / doesn't, El reflector DO/DOES) - STRICT (never generic 'preguntas')
   const isQn =
     !isCan &&
+    !isPresentContinuous &&
     (
       combined.includes('questions & negatives') ||
       combined.includes('questions and negatives') ||
@@ -1220,11 +1297,14 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     return DO_DOES_QUESTIONS_NEGATIVES_SVG;
   }
 
-  // If cached diagram_svg exists and is valid (not mismatched DO/DOES on Can, and not mismatched third-person rule on a question slide)
+  // If cached diagram_svg exists and is valid (not mismatched DO/DOES on Can, and not mismatched third-person rule on a question or continuous slide)
   if (phase?.diagram_svg && typeof phase.diagram_svg === 'string' && phase.diagram_svg.includes('<svg')) {
+    if (isPresentContinuous && (phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || phase.diagram_svg.includes('DO / DOES') || phase.diagram_svg.includes('PAST SIMPLE'))) {
+      return PRESENT_CONTINUOUS_TIMELINE_SVG;
+    }
     if (
       (!phase.diagram_svg.includes('DO / DOES') || isQn) &&
-      (!phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || (!isQn && !combined.includes('reflector') && !combined.includes('do/does')))
+      (!phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || (!isQn && !isPresentContinuous && !combined.includes('reflector') && !combined.includes('do/does')))
     ) {
       return phase.diagram_svg;
     }
@@ -1309,12 +1389,15 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
   // 6. Third-Person Singular Verb Rules (-s / -es / -ies) for Daily Routines (Affirmative Only)
   if (
     !isQn &&
+    !isPresentContinuous &&
     !combined.includes('question') &&
     !combined.includes('negative') &&
     !combined.includes('do / does') &&
     !combined.includes('do/does') &&
     !combined.includes("don't") &&
     !combined.includes('reflector') &&
+    !combined.includes('continuous') &&
+    !combined.includes('progressive') &&
     (combined.includes('third person') ||
      combined.includes('tercera persona') ||
      combined.includes('la magia de la -s') ||
@@ -2006,9 +2089,10 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
   const lowTop = (topic || '').toLowerCase();
   const isPresentPerfectTopic = lowTop.includes('present perfect') || lowTop.includes('perfect vs past');
   const isPastContTopic = !isPresentPerfectTopic && (lowTop.includes('past continuous') || lowTop.includes('interrupted'));
-  const isQNTopic = !isPresentPerfectTopic && !isPastContTopic && (lowTop.includes('questions & negatives') || lowTop.includes('questions and negatives') || lowTop.includes('do / does'));
-  const isRoutineTopic = !isPresentPerfectTopic && !isPastContTopic && !isQNTopic && (lowTop.includes('daily routines') || lowTop.includes('routine') || lowTop.includes('habit'));
-  const isObjectTopic = !isPresentPerfectTopic && !isPastContTopic && !isQNTopic && !isRoutineTopic && (lowTop.includes('object') || lowTop.includes('possession'));
+  const isPresentContinuousTopic = !isPresentPerfectTopic && !isPastContTopic && (lowTop.includes('present continuous') || lowTop.includes('progressive') || lowTop.includes('presente continuo') || (lowTop.includes('continuous') && !lowTop.includes('past')));
+  const isQNTopic = !isPresentPerfectTopic && !isPastContTopic && !isPresentContinuousTopic && (lowTop.includes('questions & negatives') || lowTop.includes('questions and negatives') || lowTop.includes('do / does'));
+  const isRoutineTopic = !isPresentPerfectTopic && !isPastContTopic && !isPresentContinuousTopic && !isQNTopic && (lowTop.includes('daily routines') || lowTop.includes('routine') || lowTop.includes('habit'));
+  const isObjectTopic = !isPresentPerfectTopic && !isPastContTopic && !isPresentContinuousTopic && !isQNTopic && !isRoutineTopic && (lowTop.includes('object') || lowTop.includes('possession'));
 
   return steps.map((step) => {
     const p = { ...step.payload };
@@ -2322,12 +2406,24 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
           ];
           p.explanation = 'Usa la forma base del verbo con los pronombres I, You, We, They.';
         }
+      } else if (isPresentContinuousTopic) {
+        p.title = 'Fórmula: Present Continuous (am / is / are + Verbo-ing)';
+        p.formula = '[ Sujeto ] + [ am / is / are ] + [ Verbo + -ing ] + [ Complemento ]';
+        p.formula_tokens = [
+          { role: 'Sujeto', pattern: 'I / He / She / It / We / They', color: 'blue' },
+          { role: 'To Be', pattern: 'am / is / are', color: 'purple' },
+          { role: 'Verbo con -ing', pattern: 'working / studying / playing', color: 'emerald' },
+          { role: 'Complemento', pattern: 'now / right now / at the moment', color: 'amber' },
+        ];
+        p.explanation = 'Usa am con I, is con He/She/It y are con You/We/They seguido del verbo principal con terminación -ing.';
       }
     }
 
     // 5. Sanitize Diagram SVG (Strict Topic Anchoring)
     if (step.visual_action === 'show_diagram' && p.svg) {
-      if (isPastContTopic) {
+      if (isPresentContinuousTopic) {
+        p.svg = PRESENT_CONTINUOUS_TIMELINE_SVG;
+      } else if (isPastContTopic) {
         p.svg = PAST_CONTINUOUS_TIMELINE_SVG;
       } else if (isQNTopic) {
         p.svg = DO_DOES_QUESTIONS_NEGATIVES_SVG;
@@ -6023,7 +6119,7 @@ export default function LessonPage() {
                           ? 'bg-brand-accent text-white border-brand-accent shadow-[0_0_15px_rgba(108,99,255,0.4)]'
                           : 'glass hover:bg-brand-surface border-brand-border text-brand-cyan hover:text-white'
                       }`}
-                      title={tutorState === 'speaking' ? 'Pausar locución' : 'Escuchar explicación'}
+                      title={tutorState === 'speaking' ? 'Pausar explicación' : 'Escuchar explicación'}
                     >
                       {tutorState === 'speaking' ? (
                         <>

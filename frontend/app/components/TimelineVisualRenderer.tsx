@@ -347,11 +347,13 @@ export default function TimelineVisualRenderer({
               : 'border-white/15 bg-black/40'
           }`}
         >
-          {/* Top image status badge */}
-          <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-lg">
-            <span className={`w-2 h-2 rounded-full ${activeStepIdx === 0 && isPlaying ? 'bg-brand-cyan animate-ping' : 'bg-brand-gold'}`} />
-            <span>{isHookOnly ? '🌟 Situación Principal' : isHeroCentered ? '✨ Enfoque Inicial' : '🖼️ Contexto Visual'}</span>
-          </div>
+          {/* Top image status badge (only for situational hook/hero) */}
+          {(isHookOnly || isHeroCentered) && (
+            <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-lg">
+              <span className={`w-2 h-2 rounded-full ${activeStepIdx === 0 && isPlaying ? 'bg-brand-cyan animate-ping' : 'bg-brand-gold'}`} />
+              <span>{isHookOnly ? '🌟 Situación en Contexto' : '✨ Enfoque'}</span>
+            </div>
+          )}
 
           {/* Top right quick actions */}
           <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
@@ -371,7 +373,7 @@ export default function TimelineVisualRenderer({
                 onClick={onRegenerateImage}
                 disabled={imageLoading}
                 className="p-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-white/90 hover:text-white transition-all shadow-md disabled:opacity-40"
-                title="Regenerar ilustración con IA"
+                title="Regenerar ilustración"
               >
                 <RefreshCw size={13} className={imageLoading ? 'animate-spin' : ''} />
               </button>
@@ -403,7 +405,7 @@ export default function TimelineVisualRenderer({
               <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
                 <div className="w-10 h-10 border-4 border-brand-cyan border-t-transparent rounded-full animate-spin shadow-lg" />
                 <span className="text-xs font-mono text-brand-cyan font-bold animate-pulse">
-                  Generando ilustración didáctica con IA...
+                  Generando ilustración...
                 </span>
               </div>
             ) : (
@@ -417,9 +419,7 @@ export default function TimelineVisualRenderer({
           {/* Bottom Audio Progress Bar if active */}
           {activeStepIdx === 0 && isPlaying && (
             <div className="w-full bg-black/80 p-2 border-t border-white/10 flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-cyan font-mono pl-1">
-                Locución
-              </span>
+              <Volume2 size={13} className="text-brand-cyan animate-pulse flex-shrink-0 ml-1" />
               <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-gradient-to-r from-brand-cyan to-brand-accent rounded-full shadow-[0_0_10px_rgba(0,212,255,0.8)]"
@@ -549,7 +549,7 @@ export default function TimelineVisualRenderer({
                   <Sparkles size={15} />
                 </span>
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300">
-                  Esquema Conceptual Didáctico
+                  Guía Visual de Gramática
                 </span>
               </div>
               <button
@@ -1474,9 +1474,9 @@ export default function TimelineVisualRenderer({
                   </span>
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-white font-outfit uppercase tracking-wider">
-                      Esquema Conceptual Didáctico
+                      Guía Visual de Gramática
                     </h3>
-                    <p className="text-xs text-cyan-300/80">Vista ampliada en alta resolución</p>
+                    <p className="text-xs text-cyan-300/80">Estructura y reglas visuales</p>
                   </div>
                 </div>
                 <button

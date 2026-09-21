@@ -126,7 +126,7 @@ export default function LiveStoryboardController({
                 ? 'bg-brand-accent text-white border-brand-accent shadow-[0_0_15px_rgba(108,99,255,0.4)]'
                 : 'glass hover:bg-brand-surface border-brand-border text-brand-cyan hover:text-white'
             }`}
-            title={isPlaying ? 'Pausar locución' : 'Continuar locución del tutor'}
+            title={isPlaying ? 'Pausar explicación' : 'Continuar explicación del tutor'}
           >
             {isPlaying ? <Pause size={13} /> : <Play size={13} className="fill-current" />}
             <span>{isPlaying ? 'Pausar' : 'Reproducir'}</span>

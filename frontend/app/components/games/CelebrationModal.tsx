@@ -672,22 +672,25 @@ export default function CelebrationModal({
                   </g>
                 )}
 
-                {/* Stage 6+: Espadas Gemelas Cyber montadas a los lados (Reemplaza alas) */}
+                {/* Stage 6+: Espadas Gemelas Cyber montadas a los lados (Bajadas al torso / hombros) */}
                 {upgradeStage >= 6 && (
                   <g>
-                    {/* Espada izquierda */}
-                    <g transform="rotate(-30 46 116)">
-                      <rect x="44" y="60" width="5" height="52" rx="2" fill="url(#celebSwordGrad)" stroke="#e9d5ff" strokeWidth="1" filter="url(#gbCyanGlow)" />
-                      <rect x="39" y="112" width="15" height="4" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="1" />
-                      <rect x="45" y="116" width="3" height="12" rx="1" fill="#1e293b" />
-                      <circle cx="46.5" cy="129" r="2.5" fill="#a855f7" />
+                    {/* Arnés de sujeción en torso */}
+                    <line x1="42" y1="124" x2="98" y2="132" stroke="#334155" strokeWidth="2" strokeDasharray="3 1" />
+
+                    {/* Espada izquierda (-48°) */}
+                    <g transform="rotate(-48 46 130)">
+                      <rect x="44" y="90" width="4.5" height="36" rx="2" fill="url(#celebSwordGrad)" stroke="#e9d5ff" strokeWidth="1" filter="url(#gbCyanGlow)" />
+                      <rect x="39" y="126" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="1" />
+                      <rect x="44.5" y="129.5" width="3" height="10" rx="1" fill="#1e293b" />
+                      <circle cx="46" cy="141" r="2.2" fill="#a855f7" />
                     </g>
-                    {/* Espada derecha */}
-                    <g transform="rotate(30 94 116)">
-                      <rect x="91" y="60" width="5" height="52" rx="2" fill="url(#celebSwordGrad)" stroke="#e9d5ff" strokeWidth="1" filter="url(#gbCyanGlow)" />
-                      <rect x="86" y="112" width="15" height="4" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="1" />
-                      <rect x="92" y="116" width="3" height="12" rx="1" fill="#1e293b" />
-                      <circle cx="93.5" cy="129" r="2.5" fill="#a855f7" />
+                    {/* Espada derecha (+48°) */}
+                    <g transform="rotate(48 94 130)">
+                      <rect x="91.5" y="90" width="4.5" height="36" rx="2" fill="url(#celebSwordGrad)" stroke="#e9d5ff" strokeWidth="1" filter="url(#gbCyanGlow)" />
+                      <rect x="87" y="126" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="1" />
+                      <rect x="92.5" y="129.5" width="3" height="10" rx="1" fill="#1e293b" />
+                      <circle cx="94" cy="141" r="2.2" fill="#a855f7" />
                     </g>
                     <defs>
                       <linearGradient id="celebSwordGrad" x1="0" y1="0" x2="0" y2="1">

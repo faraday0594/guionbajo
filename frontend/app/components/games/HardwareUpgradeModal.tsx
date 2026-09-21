@@ -157,31 +157,31 @@ function SlidingHardwarePiece({
         </motion.div>
       )}
 
-      {/* ⚔️ STAGE 6: Espadas Gemelas Cyber deslizándose diagonalmente */}
+      {/* ⚔️ STAGE 6: Espadas Gemelas Cyber deslizándose diagonalmente a la espalda */}
       {stage === 6 && isSliding && (
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Espada izquierda */}
           <motion.div
             className="absolute left-6 flex flex-col items-center filter drop-shadow-[0_0_10px_#a855f7]"
-            initial={{ x: -160, y: -60, rotate: -70, opacity: 0 }}
-            animate={{ x: 26, y: -12, rotate: -32, opacity: 1 }}
+            initial={{ x: -160, y: -40, rotate: -70, opacity: 0 }}
+            animate={{ x: 20, y: 16, rotate: -48, opacity: 1 }}
             transition={{ type: 'spring', damping: 14, stiffness: 120 }}
           >
-            <div className="w-2 h-16 bg-gradient-to-b from-white via-purple-400 to-cyan-400 rounded-t border border-purple-200" />
-            <div className="w-5 h-1.5 bg-slate-400 rounded-sm" />
-            <div className="w-1.5 h-4 bg-slate-800" />
+            <div className="w-2 h-12 bg-gradient-to-b from-white via-purple-400 to-cyan-400 rounded-t border border-purple-200" />
+            <div className="w-4 h-1.5 bg-slate-400 rounded-sm" />
+            <div className="w-1.5 h-3.5 bg-slate-800" />
           </motion.div>
 
           {/* Espada derecha */}
           <motion.div
             className="absolute right-6 flex flex-col items-center filter drop-shadow-[0_0_10px_#a855f7]"
-            initial={{ x: 160, y: -60, rotate: 70, opacity: 0 }}
-            animate={{ x: -26, y: -12, rotate: 32, opacity: 1 }}
+            initial={{ x: 160, y: -40, rotate: 70, opacity: 0 }}
+            animate={{ x: -20, y: 16, rotate: 48, opacity: 1 }}
             transition={{ type: 'spring', damping: 14, stiffness: 120 }}
           >
-            <div className="w-2 h-16 bg-gradient-to-b from-white via-purple-400 to-cyan-400 rounded-t border border-purple-200" />
-            <div className="w-5 h-1.5 bg-slate-400 rounded-sm" />
-            <div className="w-1.5 h-4 bg-slate-800" />
+            <div className="w-2 h-12 bg-gradient-to-b from-white via-purple-400 to-cyan-400 rounded-t border border-purple-200" />
+            <div className="w-4 h-1.5 bg-slate-400 rounded-sm" />
+            <div className="w-1.5 h-3.5 bg-slate-800" />
           </motion.div>
         </div>
       )}

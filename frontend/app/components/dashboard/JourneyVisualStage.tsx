@@ -1080,22 +1080,26 @@ export default function JourneyVisualStage({
                   />
                 )}
 
-                {/* ── STAGE 6: ESPADAS GEMELAS CYBER EN LA ESPALDA ──────── */}
+                {/* ── STAGE 6: ESPADAS GEMELAS CYBER EN LA ESPALDA (BAJADAS AL TORSO) ──────── */}
                 {avatarUpgradeStage >= 6 && (
                   <g>
-                    {/* Espada izquierda (-30°) */}
-                    <g transform="rotate(-30 460 280)">
-                      <rect x="458" y="215" width="4.5" height="52" rx="2" fill="url(#mapSwordGrad)" stroke="#e9d5ff" strokeWidth="0.8" filter="url(#cyanGlow)" />
-                      <rect x="453" y="267" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="0.8" />
-                      <rect x="458.5" y="270.5" width="3" height="11" rx="1" fill="#1e293b" />
-                      <circle cx="460" cy="282" r="2.2" fill="#a855f7" />
+                    {/* Tahalí / arnés de sujeción en la espalda */}
+                    <line x1="454" y1="288" x2="496" y2="298" stroke="#334155" strokeWidth="2.5" strokeDasharray="3 1" />
+                    <rect x="471" y="290" width="8" height="6" rx="1.5" fill="#475569" stroke="#94a3b8" strokeWidth="0.8" />
+
+                    {/* Espada izquierda (-48°) cruzada en torso */}
+                    <g transform="rotate(-48 460 295)">
+                      <rect x="458" y="254" width="4.5" height="38" rx="2" fill="url(#mapSwordGrad)" stroke="#e9d5ff" strokeWidth="0.8" filter="url(#cyanGlow)" />
+                      <rect x="453" y="292" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="0.8" />
+                      <rect x="458.5" y="295.5" width="3" height="11" rx="1" fill="#1e293b" />
+                      <circle cx="460" cy="307" r="2.2" fill="#a855f7" />
                     </g>
-                    {/* Espada derecha (+30°) */}
-                    <g transform="rotate(30 490 280)">
-                      <rect x="487.5" y="215" width="4.5" height="52" rx="2" fill="url(#mapSwordGrad)" stroke="#e9d5ff" strokeWidth="0.8" filter="url(#cyanGlow)" />
-                      <rect x="483" y="267" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="0.8" />
-                      <rect x="488.5" y="270.5" width="3" height="11" rx="1" fill="#1e293b" />
-                      <circle cx="490" cy="282" r="2.2" fill="#a855f7" />
+                    {/* Espada derecha (+48°) cruzada en torso */}
+                    <g transform="rotate(48 490 295)">
+                      <rect x="487.5" y="254" width="4.5" height="38" rx="2" fill="url(#mapSwordGrad)" stroke="#e9d5ff" strokeWidth="0.8" filter="url(#cyanGlow)" />
+                      <rect x="483" y="292" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="0.8" />
+                      <rect x="488.5" y="295.5" width="3" height="11" rx="1" fill="#1e293b" />
+                      <circle cx="490" cy="307" r="2.2" fill="#a855f7" />
                     </g>
                   </g>
                 )}

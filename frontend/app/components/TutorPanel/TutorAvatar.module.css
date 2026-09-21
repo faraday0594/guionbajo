@@ -1069,12 +1069,12 @@
   100% { opacity: 0.2; transform: scale(1) rotate(0deg); }
 }
 
-/* Stage 6: Espadas Gemelas Cyber */
+/* Stage 6: Espadas Gemelas Cyber (Montadas en la espalda / torso diagonalmente, no en la cabeza) */
 .dualSwordsContainer {
   position: absolute;
-  top: -24px;
-  left: -32px;
-  right: -32px;
+  top: 8px;
+  left: -28px;
+  right: -28px;
   bottom: 0;
   pointer-events: none;
   z-index: -2;
@@ -1082,28 +1082,29 @@
   justify-content: space-between;
 }
 .sizeToolbar .dualSwordsContainer {
-  top: -14px;
-  left: -18px;
-  right: -18px;
-  transform: scale(0.7);
+  top: 4px;
+  left: -14px;
+  right: -14px;
+  transform: scale(0.68);
 }
 
 .cyberSwordLeft, .cyberSwordRight {
   display: flex;
   flex-direction: column;
   align-items: center;
+  transform-origin: bottom center;
   filter: drop-shadow(0 0 8px #a855f7) drop-shadow(0 0 16px #3b82f6);
 }
 .cyberSwordLeft {
-  transform: rotate(-32deg);
+  transform: rotate(-48deg);
 }
 .cyberSwordRight {
-  transform: rotate(32deg);
+  transform: rotate(48deg);
 }
 
 .swordBlade {
   width: 5px;
-  height: 54px;
+  height: 44px;
   background: linear-gradient(180deg, #ffffff 0%, #c084fc 30%, #a855f7 70%, #00f0ff 100%);
   border-radius: 3px 3px 1px 1px;
   border: 1px solid #e9d5ff;
@@ -1111,7 +1112,7 @@
   position: relative;
 }
 .swordGuard {
-  width: 16px;
+  width: 15px;
   height: 4px;
   background: linear-gradient(90deg, #475569, #94a3b8, #334155);
   border: 1px solid #cbd5e1;
@@ -1119,7 +1120,7 @@
 }
 .swordHilt {
   width: 4px;
-  height: 14px;
+  height: 13px;
   background: repeating-linear-gradient(180deg, #1e293b 0px, #1e293b 2px, #0f172a 2px, #0f172a 4px);
   border: 1px solid #64748b;
   border-radius: 1px;

@@ -248,6 +248,9 @@ export default function DashboardPage() {
           streak_days: stats?.streak_days ?? prev.streak_days,
         }));
         setCurrentClassIndex(classIdx);
+        if (typeof window !== 'undefined' && userSublevel) {
+          localStorage.setItem('guionbajo_user_sublevel', userSublevel);
+        }
 
         let cp = checkpointRes?.checkpoint || stats?.active_checkpoint || null;
         if (!cp && typeof window !== 'undefined') {

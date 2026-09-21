@@ -3379,7 +3379,7 @@ export default function LessonPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   const [pendingUpgradeStage, setPendingUpgradeStage] = useState<UpgradeStage>(0);
   // Stage actual del avatar (calculado desde localStorage al montar)
-  const [avatarUpgradeStage] = useState<UpgradeStage>(() => getCurrentUpgradeStage());
+  const [avatarUpgradeStage, setAvatarUpgradeStage] = useState<UpgradeStage>(() => getCurrentUpgradeStage());
 
   const handlePracticeProgressChange = useCallback((correct: number, total: number, isUnlocked: boolean) => {
     setPracticeProgress(prev => {
@@ -4381,6 +4381,9 @@ export default function LessonPage() {
 
         if (isCancelledRef.current) return;
         setLesson(data);
+        if (data?.sublevel || sublevelParam) {
+          setAvatarUpgradeStage(getCurrentUpgradeStage(data?.sublevel || sublevelParam));
+        }
 
         // ─── 4. Restore Checkpoint / Savepoint State (Strict Pedagogical Sequence) ───
         let targetSlide = 0;

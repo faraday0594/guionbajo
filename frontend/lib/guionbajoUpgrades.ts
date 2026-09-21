@@ -192,10 +192,38 @@ export function getUpgradeStageFromCompleted(completedSublevels: string[]): Upgr
 }
 
 /**
- * Función conveniente: lee localStorage y retorna el stage directamente.
+ * Calcula el upgrade stage alcanzado automáticamente a partir del subnivel activo del estudiante.
+ * Todo subnivel completado antes del actual desbloquea su upgrade correspondiente.
  */
-export function getCurrentUpgradeStage(): UpgradeStage {
-  return getUpgradeStageFromCompleted(getCompletedSublevelsFromLocalStorage());
+export function getUpgradeStageFromSublevel(sublevel: string): UpgradeStage {
+  const sublevelIdx = SUBLEVEL_ORDER.indexOf(sublevel);
+  if (sublevelIdx < 0) return 0;
+
+  let maxStage: UpgradeStage = 0;
+  for (let i = 0; i < sublevelIdx; i++) {
+    const s = SUBLEVEL_ORDER[i];
+    const stage = UPGRADE_TRIGGERS[s];
+    if (stage !== undefined && stage > maxStage) {
+      maxStage = stage as UpgradeStage;
+    }
+  }
+  return maxStage;
+}
+
+/**
+ * Función conveniente: lee localStorage o toma el subnivel provisto y retorna el stage directamente.
+ */
+export function getCurrentUpgradeStage(currentSublevel?: string): UpgradeStage {
+  const fromLocal = getUpgradeStageFromCompleted(getCompletedSublevelsFromLocalStorage());
+  let fromSavedSublevel: UpgradeStage = 0;
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('guionbajo_user_sublevel');
+    if (saved) {
+      fromSavedSublevel = getUpgradeStageFromSublevel(saved);
+    }
+  }
+  const fromParam = currentSublevel ? getUpgradeStageFromSublevel(currentSublevel) : 0;
+  return Math.max(fromLocal, fromSavedSublevel, fromParam) as UpgradeStage;
 }
 
 /**

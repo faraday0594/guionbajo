@@ -42,8 +42,12 @@ export default function JourneyVisualStage({
 }: JourneyVisualStageProps) {
   const targetIndex = useMemo(() => getTopicIndex(sublevel, classIndex), [sublevel, classIndex]);
 
-  // Nivel de evolución visual de Guionbajo (calculado desde localStorage)
-  const [avatarUpgradeStage] = useState(() => getCurrentUpgradeStage());
+  // Nivel de evolución visual de Guionbajo (calculado desde localStorage o nivel activo)
+  const [avatarUpgradeStage, setAvatarUpgradeStage] = useState(() => getCurrentUpgradeStage(sublevel));
+
+  useEffect(() => {
+    setAvatarUpgradeStage(getCurrentUpgradeStage(sublevel));
+  }, [sublevel]);
 
   const [currentIndex, setCurrentIndex] = useState<number>(() => {
     if (typeof window !== 'undefined') {

@@ -72,7 +72,7 @@ const GRAMMAR_AND_SPANISH_DISQUALIFIERS: string[] = [
 const UNGRAMMATICAL_ENGLISH_PATTERNS = [
   /\bhaves\b/i,                                                                          // 'she haves' (grave error for 'has')
   // 1. Continuous errors: Missing 'to be' before -ing verb ("she cooking", "they running", "he playing", "i driving")
-  /\b(?:i|you|he|she|it|we|they|[A-Z][a-z]+)\s+(?:cooking|running|playing|dancing|swimming|reading|eating|sleeping|studying|working|driving|watching|drinking|listening|talking|walking|cleaning|writing|buying|doing|making|sitting|waiting|traveling|learning|living|speaking|coming|going)\b/i,
+  /\b(?:i|you|he|she|it|we|they|carlos|maria|john|mary|peter|ana|david|pedro|lucas|juan)\s+(?:cooking|running|playing|dancing|swimming|reading|eating|sleeping|studying|working|driving|watching|drinking|listening|talking|walking|cleaning|writing|buying|doing|making|sitting|waiting|traveling|learning|living|speaking|coming|going)\b/i,
   // 2. Continuous errors: Auxiliary 'to be' + bare base verb ("they are run", "she is cook", "i am drive", "we are play")
   /\b(?:am|is|are|was|were|'m|'s|'re)\s+(?:cook|run|play|dance|swim|read|eat|sleep|study|work|drive|watch|drink|listen|talk|walk|clean|write|buy|do|make|sit|wait|travel|learn|live|speak|come|go)\b/i,
   // 3. Continuous errors: Auxiliary 'to be' + 3rd person -s verb ("she is cooks", "he is works", "they are runs")
@@ -99,7 +99,7 @@ const UNGRAMMATICAL_ENGLISH_PATTERNS = [
   /\bdoes\s+(?:he|she|it)\s+(?:works|lives|sleeps|watches|drinks|eats|plays|studies|runs|dances|swims|writes|drives|cleans)\b/i,
   /\bdo\s+(?:he|she|it)\b/i,
   // 9. Infinitive and fragment errors
-  /\bto\s+(?:have|be|do|go|work|live|sleep|watch|drink|study|eat)\b/i,                   // infinitive marker as oral target
+  /^to\s+(?:have|be|do|go|work|live|sleep|watch|drink|study|eat)$/i,                      // isolated infinitive
   /\b(?:espain|i maria|i am espain|i leeve|i liv|john pen|playeds)\b/i,                  // known phonetic/syntax error quotes
   /\b(?:don|doesn|didn|wasn|weren|isn|aren|won)\b/i,                                     // broken/truncated contraction
   /^(?:do not|does not|don't|doesn't|do|does|did|not)$/i,                                // isolated auxiliary particle
@@ -1896,7 +1896,7 @@ function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: 
   // 3. "en lugar de" / "en vez de" / "instead of" with context awareness:
   // e.g. "error ... decir 'They are run' en lugar de 'They are running'" -> prefix indicates 'They are run' is the error!
   const enLugarDeMatches = Array.from(
-    speechText.matchAll(/(?:([^\n\r]{0,60}))?['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:en\s+lugar\s+de|en\s+vez\s+de|instead\s+of)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+    speechText.matchAll(/(?:([^\n\r]{0,90}))?['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:en\s+lugar\s+de|en\s+vez\s+de|instead\s+of)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
   );
   for (const elm of enLugarDeMatches) {
     const prefix = (elm[1] || '').toLowerCase();
@@ -1912,7 +1912,7 @@ function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: 
 
   // 4. "di X y no Y" / "usa X y nunca Y":
   const yNoMatches = Array.from(
-    speechText.matchAll(/(?:([^\n\r]{0,60}))?['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:y\s+no|y\s+nunca|mientras\s+que\s+no)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
+    speechText.matchAll(/(?:([^\n\r]{0,90}))?['"‘“]([^'"‘“’”\n\r]+)['"’”][^'"‘“’”\n\r]{0,35}?(?:y\s+no|y\s+nunca|mientras\s+que\s+no)\s*['"‘“]([^'"‘“’”\n\r]+)['"’”]/gi)
   );
   for (const ynm of yNoMatches) {
     const prefix = (ynm[1] || '').toLowerCase();
@@ -2123,7 +2123,7 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
   const isRoutineTopic = !isPresentPerfectTopic && !isPastContTopic && !isPresentContinuousTopic && !isQNTopic && (lowTop.includes('daily routines') || lowTop.includes('routine') || lowTop.includes('habit'));
   const isObjectTopic = !isPresentPerfectTopic && !isPastContTopic && !isPresentContinuousTopic && !isQNTopic && !isRoutineTopic && (lowTop.includes('object') || lowTop.includes('possession'));
 
-  return steps.map((step) => {
+  const sanitized = steps.map((step) => {
     const p = { ...step.payload };
 
     // 1. Sanitize Contrasts (Swap if inverted, fix "leeve", fix "john pen", remove duplicates)
@@ -2209,6 +2209,14 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
         })
         .filter((ct: any): ct is { correct: string; incorrect: string; why: string } => Boolean(ct && ct.correct && ct.incorrect && isValidEnglishTargetPhrase(ct.correct) && !isUngrammaticalEnglishPhrase(ct.correct)));
       p.contrasts = sanitizedContrasts;
+      if (sanitizedContrasts.length > 0) {
+        p.contrast = sanitizedContrasts[0];
+        p.title = p.title || '⚡ Contraste: Correcto vs. Error Común';
+        if (!p.english || isUngrammaticalEnglishPhrase(p.english) || p.english.toLowerCase() === sanitizedContrasts[0].incorrect.toLowerCase()) {
+          p.english = sanitizedContrasts[0].correct;
+          p.spanish = COMMON_ENGLISH_SPANISH[sanitizedContrasts[0].correct.toLowerCase()] || 'Forma correcta';
+        }
+      }
     }
 
     if (p.contrast && typeof p.contrast === 'object') {
@@ -2493,6 +2501,46 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
 
     return { ...step, payload: p };
   });
+
+  // Cross-step deduplication & distinct title assignment pass
+  const seenSentences = new Set<string>();
+  for (let i = 0; i < sanitized.length; i++) {
+    const s = sanitized[i];
+    if (s.visual_action !== 'show_example_sentence') continue;
+    const p = s.payload;
+    if (!p) continue;
+
+    const hasContrasts = Boolean((p.contrasts && p.contrasts.length > 0) || p.contrast);
+    if (hasContrasts) {
+      p.title = p.title || '⚡ Contraste: Correcto vs. Error Común';
+    } else if (!p.title) {
+      p.title = i <= 1 ? '✨ Oración Modelo' : '🎯 Ejemplos y Práctica Oral';
+    }
+
+    const eng = (p.english || '').toLowerCase().trim();
+    if (!eng) continue;
+
+    if (seenSentences.has(eng)) {
+      if (hasContrasts && p.contrasts && p.contrasts[0]?.correct) {
+        p.english = p.contrasts[0].correct;
+        p.spanish = COMMON_ENGLISH_SPANISH[p.contrasts[0].correct.toLowerCase()] || 'Forma correcta';
+      } else {
+        const targetAudio = phase?.target_audio_items || [];
+        const alt = targetAudio.find(
+          (it: any) => it.english && isValidEnglishTargetPhrase(it.english) && !seenSentences.has(it.english.toLowerCase().trim())
+        );
+        if (alt) {
+          p.english = alt.english;
+          p.spanish = alt.translation || alt.spanish || COMMON_ENGLISH_SPANISH[alt.english.toLowerCase()] || 'Oración modelo';
+        }
+      }
+    }
+    if (p.english) {
+      seenSentences.add(p.english.toLowerCase().trim());
+    }
+  }
+
+  return sanitized;
 }
 
 // ─── HELPER: Generate or Normalize Chronological Timeline Steps for Slide ────

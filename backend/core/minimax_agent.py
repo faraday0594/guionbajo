@@ -692,7 +692,7 @@ class TutorAgent:
 
         # 1. Continuous / Progressive Tenses errors:
         # 1a. Missing 'to be' before -ing verb: "she cooking", "they running", "i sleeping", "he playing"
-        if re.search(r'\b(?:i|you|he|she|it|we|they|[A-Z][a-z]+)\s+(?:cooking|running|playing|dancing|swimming|reading|eating|sleeping|studying|working|driving|watching|drinking|listening|talking|walking|cleaning|writing|buying|doing|making|sitting|waiting|traveling|learning|living|speaking|coming|going)\b', t):
+        if re.search(r'\b(?:i|you|he|she|it|we|they|carlos|maria|john|mary|peter|ana|david|pedro|lucas|juan)\s+(?:cooking|running|playing|dancing|swimming|reading|eating|sleeping|studying|working|driving|watching|drinking|listening|talking|walking|cleaning|writing|buying|doing|making|sitting|waiting|traveling|learning|living|speaking|coming|going)\b', t):
             return True
         
         # 1b. Auxiliary 'to be' + bare base verb: "they are run", "she is cook", "i am drive", "we are play", "he is watch"
@@ -3065,6 +3065,10 @@ class TutorAgent:
 
                             payload["contrasts"] = audited
                             payload["contrast"] = audited[0] if audited else None
+                            if audited:
+                                payload["title"] = payload.get("title") or "⚡ Contraste: Correcto vs. Error Común"
+                                if not payload.get("english") or self._is_ungrammatical_english(payload.get("english")) or payload.get("english", "").lower() == audited[0]["incorrect"].lower():
+                                    payload["english"] = audited[0]["correct"]
 
                         # Single contrast object if present
                         single_ct = payload.get("contrast")
@@ -3079,18 +3083,22 @@ class TutorAgent:
                                 single_ct["correct"] = cor
                                 single_ct["incorrect"] = inc
                                 payload["contrast"] = single_ct
+                                payload["title"] = payload.get("title") or "⚡ Contraste: Correcto vs. Error Común"
 
                         # English oral practice target sentence auditing
                         eng = payload.get("english")
                         if eng and self._is_ungrammatical_english(eng):
-                            # Try to find valid alternative from phase's target_audio_items
+                            # Try to find valid alternative from contrast winner or phase's target_audio_items
                             valid_alt = None
-                            for it in p.get("target_audio_items", []):
-                                if isinstance(it, dict):
-                                    cand = it.get("english", "")
-                                    if cand and not self._is_ungrammatical_english(cand):
-                                        valid_alt = cand
-                                        break
+                            if payload.get("contrasts") and payload["contrasts"]:
+                                valid_alt = payload["contrasts"][0]["correct"]
+                            if not valid_alt:
+                                for it in p.get("target_audio_items", []):
+                                    if isinstance(it, dict):
+                                        cand = it.get("english", "")
+                                        if cand and not self._is_ungrammatical_english(cand):
+                                            valid_alt = cand
+                                            break
                             if not valid_alt:
                                 if "present continuous" in topic.lower() or "progressive" in topic.lower():
                                     valid_alt = "I am studying English right now."
@@ -4541,6 +4549,7 @@ class TutorAgent:
                 "tutor_audio": s2_audio,
                 "visual_action": "show_example_sentence",
                 "payload": {
+                    "title": "✨ Oración Modelo",
                     "english": eng_sentence,
                     "spanish": spa_trans,
                     "parts": first_item.get("parts") or [],
@@ -4572,21 +4581,33 @@ class TutorAgent:
         s_spoken = self._extract_spoken_english_examples(s_audio, p, topic)
 
         target_trans = s_spoken.get("transformations") or spoken_overall.get("transformations") or []
-        target_eng = first_item.get("english") or s_spoken.get("primary") or spoken_overall.get("primary") or "I am practicing English today."
-        target_spa = first_item.get("translation") or first_item.get("spanish") or s_spoken.get("primary_translation") or spoken_overall.get("primary_translation") or "Estoy practicando inglés hoy."
         target_contrast = s_spoken.get("contrasts") or spoken_overall.get("contrasts") or []
         target_phonetic = s_spoken.get("phonetic_pairs") or spoken_overall.get("phonetic_pairs") or []
         target_freq = s_spoken.get("frequency_scale") or spoken_overall.get("frequency_scale") or []
+
+        if target_contrast:
+            s4_title = "⚡ Contraste: Correcto vs. Error Común"
+            step_header = f"{len(timeline)+1}. Contraste y Corrección"
+            target_eng = target_contrast[0].get("correct") or first_item.get("english") or "I am practicing English today."
+            target_spa = target_contrast[0].get("why") or "Forma correcta de la oración"
+        else:
+            sec_item = valid_targets[1] if len(valid_targets) > 1 else first_item
+            target_eng = sec_item.get("english") or s_spoken.get("primary") or spoken_overall.get("primary") or "I am practicing English today."
+            target_spa = sec_item.get("translation") or sec_item.get("spanish") or s_spoken.get("primary_translation") or spoken_overall.get("primary_translation") or "Estoy practicando inglés hoy."
+            s4_title = "🎯 Ejemplos y Práctica Oral"
+            step_header = f"{len(timeline)+1}. Ejemplos y Práctica Oral"
+
         extra_examples = valid_targets[1:5] if len(valid_targets) > 1 else (s_spoken.get("additional") or spoken_overall.get("additional") or [])
 
         # Only add example sentence step if there are examples, transformations, or no diagram was shown
         if not diagram or target_trans or target_eng or extra_examples or target_contrast:
             timeline.append({
                 "step_index": len(timeline) + 1,
-                "step_title": f"{len(timeline)+1}. Ejemplos y Práctica Oral",
+                "step_title": step_header,
                 "tutor_audio": s_audio,
                 "visual_action": "show_example_sentence",
                 "payload": {
+                    "title": s4_title,
                     "english": target_eng,
                     "spanish": target_spa,
                     "transformation": target_trans[0] if target_trans else None,

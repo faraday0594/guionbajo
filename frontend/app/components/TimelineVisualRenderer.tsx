@@ -687,7 +687,7 @@ export default function TimelineVisualRenderer({
                             <CheckCircle2 size={15} />
                           </span>
                           <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-emerald-300 font-outfit">
-                            {p.title || '🎯 Ejemplos y Práctica Oral'}
+                            {p.title || ((p.contrasts && p.contrasts.length > 0) || p.contrast ? '⚡ Contraste: Correcto vs. Error Común' : (step.step_title ? step.step_title.replace(/^\d+\.\s*/, '') : '🎯 Ejemplos y Práctica Oral'))}
                           </h3>
                         </div>
                         {isStepActive && (
@@ -877,7 +877,7 @@ export default function TimelineVisualRenderer({
                       ))}
 
                       {/* 4. Main English Sentence / Core Target */}
-                      {p.english && (() => {
+                      {p.english && (!p.contrasts || !p.contrasts.some((ct: any) => ct.correct && ct.correct.toLowerCase().trim() === p.english!.toLowerCase().trim())) && (() => {
                         const mainKey = `main-${currentStepNumber}`;
                         const isThisRecording = itemRecordingKey === mainKey;
                         const isThisProcessing = itemProcessingKey === mainKey;

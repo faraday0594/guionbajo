@@ -381,12 +381,10 @@ export default function TutorAvatar({
           </div>
         )}
 
-        {/* ── Stage 3: Visor HUD Full Neón (Todo el visor es de color neón) ── */}
+        {/* ── Stage 3: Visor HUD Full Neón (Todo el visor es de color neón con pupilas rojas) ── */}
         {upgradeStage >= 3 && (
           <div className={styles.headHudVisorFull}>
             <div className={styles.hudScanline} />
-            <span style={{ fontSize: '7px', fontFamily: 'monospace', color: '#ffffff', fontWeight: 900, textShadow: '0 0 4px #00f0ff' }}>HUD</span>
-            <span style={{ fontSize: '7px', fontFamily: 'monospace', color: '#ffffff', fontWeight: 900, textShadow: '0 0 4px #00f0ff' }}>TARGET</span>
           </div>
         )}
         

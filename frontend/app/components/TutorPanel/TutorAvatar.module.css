@@ -941,14 +941,10 @@
   pointer-events: none;
   z-index: 20;
   border-radius: 9px;
-  background: rgba(0, 229, 255, 0.48); /* Full neon tint */
+  background: rgba(0, 229, 255, 0.42); /* Full neon tint */
   border: 2px solid #00f0ff;
-  box-shadow: 0 0 22px rgba(0, 240, 255, 0.9), inset 0 0 14px rgba(0, 240, 255, 0.7);
-  backdrop-filter: blur(1.5px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 6px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.85), inset 0 0 12px rgba(0, 240, 255, 0.6);
+  backdrop-filter: blur(1px);
   overflow: hidden;
 }
 .sizeToolbar .headHudVisorFull {

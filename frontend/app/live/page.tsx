@@ -60,9 +60,10 @@ export default function LiveChatPage() {
   const router = useRouter();
 
   // User & Voice Preferences
+  const [isMounted, setIsMounted] = useState<boolean>(false);
   const [userName, setUserName] = useState<string>('Estudiante');
   const [userLevel, setUserLevel] = useState<string>('A1.2');
-  const [avatarUpgradeStage, setAvatarUpgradeStage] = useState<UpgradeStage>(() => getCurrentUpgradeStage());
+  const [avatarUpgradeStage, setAvatarUpgradeStage] = useState<UpgradeStage>(1);
   const [preferredVoice, setPreferredVoice] = useState<string>('es-US-AlonsoNeural');
 
   // Hands-Free State Machine
@@ -84,7 +85,7 @@ export default function LiveChatPage() {
       id: 'welcome-msg',
       role: 'assistant',
       content: '¡Hola! Estoy listo para conversar contigo en modo Manos Libres. Habla cuando quieras en inglés o español.',
-      timestamp: new Date(),
+      timestamp: new Date(1700000000000),
     },
   ]);
   const [corrections, setCorrections] = useState<GrammarCorrection[]>([]);
@@ -161,6 +162,7 @@ export default function LiveChatPage() {
   const speechStartRef = useRef<number>(0);
   const isSessionActiveRef = useRef<boolean>(false);
   const tutorStateRef = useRef<TutorState>('idle');
+  const speakingStartTimeRef = useRef<number>(0);
 
   // Playback & Watchdog Refs
   const audioQueueRef = useRef<LiveAudioStreamQueue | null>(null);
@@ -177,6 +179,9 @@ export default function LiveChatPage() {
 
   // Initial Profile Load
   useEffect(() => {
+    setIsMounted(true);
+    setAvatarUpgradeStage(getCurrentUpgradeStage());
+
     const token = getToken();
     if (!token) {
       router.push('/login');
@@ -296,15 +301,38 @@ export default function LiveChatPage() {
       const now = Date.now();
       const currentState = tutorStateRef.current;
 
-      // ── BARGE-IN: If Guionbajo is speaking and user speaks clearly (volume >= 14 for > 200ms) ──
-      if (currentState === 'speaking' || currentState === 'thinking') {
-        if (volume >= 14) {
+      // ── BARGE-IN: If Guionbajo is speaking and user speaks clearly ──
+      if (currentState === 'speaking') {
+        const timeSinceSpeakingStart = now - (speakingStartTimeRef.current || 0);
+        // Ignore first 500ms to avoid acoustic reflection from speakers
+        // Threshold: 25 RMS (direct speech into mic is 35-70; speaker reflection is 10-18)
+        // Duration: 350ms of sustained speech
+        if (timeSinceSpeakingStart > 500 && volume >= 25) {
           if (!speechStartRef.current) speechStartRef.current = now;
-          if (now - speechStartRef.current >= 200) {
+          if (now - speechStartRef.current >= 350) {
             console.log('⚡ Interrupción: el estudiante comenzó a hablar');
             if (audioQueueRef.current) {
               audioQueueRef.current.stop();
             }
+            if (abortControllerRef.current) {
+              abortControllerRef.current.abort();
+            }
+            setTutorState('listening');
+            startUtteranceRecording();
+          }
+        } else {
+          speechStartRef.current = 0;
+        }
+        animationFrameRef.current = requestAnimationFrame(checkFrame);
+        return;
+      }
+
+      // If Guionbajo is thinking: do NOT abort on low/medium ambient noise; only loud deliberate speech (volume >= 35 for 500ms)
+      if (currentState === 'thinking') {
+        if (volume >= 35) {
+          if (!speechStartRef.current) speechStartRef.current = now;
+          if (now - speechStartRef.current >= 500) {
+            console.log('⚡ Interrupción durante thinking');
             if (abortControllerRef.current) {
               abortControllerRef.current.abort();
             }
@@ -514,6 +542,9 @@ export default function LiveChatPage() {
       },
       onStateChange: (state) => {
         if (!isMuted) {
+          if (state === 'playing') {
+            speakingStartTimeRef.current = Date.now();
+          }
           setTutorState(state === 'playing' ? 'speaking' : 'idle');
         }
       },
@@ -934,7 +965,7 @@ export default function LiveChatPage() {
             <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan">
               {userLevel}
             </span>
-            {avatarUpgradeStage > 0 && (
+            {isMounted && avatarUpgradeStage > 0 && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400/15 border border-yellow-400/40 text-yellow-300 flex items-center gap-1">
                 <span>⚡</span> Stage {avatarUpgradeStage}/8
               </span>

@@ -100,20 +100,22 @@ DIRECTRICES DE CONVERSACIÓN EN VIVO (ÁGIL Y CONCISA):
 
 6. MINI-CLASES EN VIVO Y PIZARRA HOLOGRÁFICA BAJO DEMANDA:
    - CUÁNDO ACTIVARLA:
-     a) Cuando {student_name} te pida explícitamente una explicación gramatical, de vocabulario o pronunciación (ej: "explícame los adverbios de frecuencia", "¿cómo se usa would like?", "cuál es la diferencia entre make y do").
+     a) Cuando {student_name} mencione o pida una explicación, clase o duda sobre cualquier tema gramatical, tiempo verbal o vocabulario (ej: "explícame el presente progresivo", "quiero que me expliques...", "cómo se usa would like", "present continuous", "adverbios de frecuencia", "phrasal verbs", "pasado simple", etc.).
      b) O cuando {student_name} acepte una sugerencia tuya de aprender un tema (ej: "sí, explícame", "quiero aprenderlo").
      c) O cuando cometa un error conceptual importante y le propongas una mini-clase express.
-   - CÓMO HABLARLO (VOZ NATURAL Y DINÁMICA):
-     a) Responde en 2 a 3 oraciones concisas, cálidas y motivadoras. Anuncia que abres la pizarra holográfica para él/ella (ej: "¡Excelente pregunta! Fíjate en los contenedores que acabo de abrir en tu pantalla con las reglas clave...").
-     b) Explica el principio clave verbalmente sin abrumar.
-     c) Cierra tu turno invitándolo a responder el micro-quiz interactivo (ej: "¿Te quedó claro? ¡Pruébalo con la pregunta que tienes enfrente!").
+   - REGLA DE ORO DE LA VOZ HABLADA (CRÍTICO):
+     ESTÁ TOTALMENTE PROHIBIDO dar explicaciones gramaticales, listas o detalles de reglas ("primero...", "segundo...", excepciones) con tu voz hablada.
+     Tu voz hablada DEBE SER ÚNICAMENTE 1 O 2 FRASES CORTAS (máximo 12 a 18 palabras en total) anunciando con entusiasmo que abres la pizarra holográfica para él/ella.
+     Ejemplo hablado obligatorio: "¡Por supuesto! Abro tu pizarra holográfica con las reglas clave del tema. ¡Mírala en pantalla y prueba tu respuesta!"
+     NUNCA uses formato markdown (como negritas ** ni guiones de lista) en tu voz hablada.
+     TODO el contenido explicativo (fórmulas, reglas gramaticales, excepciones como -ing, tips y ejemplos) DEBE IR OBLIGATORIA Y EXCLUSIVAMENTE DENTRO DEL BLOQUE OCULTO [MINI_CLASS: {...}].
    - FORMATO OBLIGATORIO DEL BLOQUE OCULTO [MINI_CLASS]:
-     Al final de tu respuesta (después de cualquier [CORRECTION]), incluye OBLIGATORIAMENTE el bloque JSON estructurado:
-     [MINI_CLASS: {{"topic": "Nombre del Tema", "summary": "Resumen en 1 línea", "cards": [{{"id": "c1", "step": 1, "badge": "Regla 1", "title": "Título de la regla", "formula": "Sujeto + Adverbio + Verbo", "example": "Oración de ejemplo en inglés", "highlight": "palabra o frase resaltada", "explanation": "Regla mnemotécnica clara y directa en español"}}, {{"id": "c2", "step": 2, "badge": "Regla 2", "title": "Título regla 2", "formula": "Sujeto + To Be + Adverbio", "example": "Ejemplo con To Be", "highlight": "palabra resaltada", "explanation": "Explicación en español"}}], "quiz": {{"question": "¿Pregunta concisa para evaluar el tema?", "options": ["Opción A", "Opción B", "Opción C"], "correct_index": 0, "explanation": "Por qué es correcta"}}}} ]
+     Inmediatamente después de tu breve saludo hablado (después de cualquier [CORRECTION]), incluye OBLIGATORIAMENTE el bloque JSON estructurado completo:
+     [MINI_CLASS: {{"topic": "Nombre del Tema", "summary": "Resumen en 1 línea", "cards": [{{"id": "c1", "step": 1, "badge": "Regla 1", "title": "Título de la regla", "formula": "Sujeto + Verbo Auxiliar + Verbo Principal", "example": "Oración de ejemplo en inglés", "highlight": "palabra o frase resaltada", "explanation": "Regla mnemotécnica clara y directa en español"}}, {{"id": "c2", "step": 2, "badge": "Regla 2", "title": "Título regla 2", "formula": "Sujeto + To Be + Verbo-ing", "example": "Ejemplo ilustrativo", "highlight": "palabra resaltada", "explanation": "Explicación clara en español"}}], "quiz": {{"question": "¿Pregunta concisa para evaluar el tema?", "options": ["Opción A", "Opción B", "Opción C"], "correct_index": 0, "explanation": "Por qué es correcta"}}}} ]
    - CIERRE AUTOMÁTICO DE LA PIZARRA:
      Cuando {student_name} confirme que entendió la explicación (ej: "ya entendí", "todo claro", "gracias", "perfecto") o cuando responda al quiz, felicítalo brevemente en 1 oración hablada (ej: "¡Exacto, lo dominas a la perfección! Cerramos la pizarra y seguimos conversando.") y agrega al final de tu mensaje la etiqueta oculta:
      [CLOSE_MINI_CLASS]
-   - Si la conversación es charla cotidiana sin solicitud de explicación ni mini-clase, NO incluyas [MINI_CLASS].
+   - Si la conversación es charla cotidiana sin solicitud de explicación ni dudas gramaticales, NO incluyas [MINI_CLASS].
 """
 
 
@@ -253,13 +255,23 @@ async def live_respond_stream(
             last_user_content = (m.content or "").lower().strip()
             break
 
-    CLASS_INTENT_KEYWORDS = [
-        "clase", "mini clase", "mini-clase", "explica", "explícame", "explicar",
-        "cómo se usa", "como se usa", "cuándo se usa", "cuando se usa",
-        "diferencia entre", "cuál es la diferencia", "que significa", "qué significa",
-        "regla", "gramática", "gramatica", "enseña", "enséñame", "lección", "leccion"
+    # Broad intent detection for explanations and mini-classes
+    CLASS_STEMS = [
+        "expliq", "explica", "enseñ", "aprend", "clase", "lecci", "regla", "gramat",
+        "como se", "cómo se", "cuando se", "cuándo se", "cuál es", "cual es", "qué es", "que es",
+        "que significa", "qué significa", "diferencia", "cómo funciona", "como funciona",
+        "pizarra", "entender", "ayuda con"
     ]
-    is_class_requested = any(kw in last_user_content for kw in CLASS_INTENT_KEYWORDS)
+    GRAMMAR_TOPICS = [
+        "presente", "pasado", "futuro", "progresivo", "continuo", "continuous", "perfect",
+        "simple", "verb", "adverb", "adjetiv", "preposici", "pronomb", "modal",
+        "would", "could", "should", "phrasal", "gerund", "infinitiv", "condicional", "conditional",
+        "passive", "pasiva", "used to", "going to", "will"
+    ]
+
+    has_intent_stem = any(s in last_user_content for s in CLASS_STEMS)
+    has_grammar_topic = any(t in last_user_content for t in GRAMMAR_TOPICS)
+    is_class_requested = has_intent_stem or has_grammar_topic
 
     # Also detect affirmative responses if previous assistant message offered a class/explanation
     prev_assistant_content = ""
@@ -286,8 +298,10 @@ async def live_respond_stream(
             "role": "system",
             "content": (
                 "[INSTRUCCIÓN CRÍTICA DE SISTEMA: El estudiante está pidiendo una clase o explicación sobre un tema. "
-                "Debes responder en 1 a 2 oraciones habladas enérgicas y amables anunciando que abres la pizarra holográfica "
-                "y OBLIGATORIAMENTE incluir al final de tu mensaje el bloque [MINI_CLASS: { ... }] completo con cards y quiz. "
+                "TU VOZ HABLADA DEBE TENER MÁXIMO 1 O 2 FRASES CORTAS (10 a 15 palabras en total), por ejemplo: "
+                "'¡Por supuesto! Abro tu pizarra holográfica con la estructura y ejemplos clave. ¡Pruébalo con la pregunta!' "
+                "ESTÁ TOTALMENTE PROHIBIDO explicar la gramática o enumerar reglas/ejemplos con tu voz hablada. NUNCA uses negritas (**) por voz. "
+                "OBLIGATORIO: Genera inmediatamente después de tu breve saludo el bloque oculto [MINI_CLASS: { ... }] completo con cards y quiz. "
                 "No lo postergues, genéralo AHORA MISMO en esta respuesta.]"
             )
         })
@@ -312,7 +326,8 @@ async def live_respond_stream(
         accumulated_text = ""
         clause_buffer = ""
         clause_index = 0
-        correction_detected = None
+        miniclass_emitted = False
+        correction_emitted = False
 
         def _strip_hidden_tags(text: str) -> str:
             if not text:
@@ -322,17 +337,33 @@ async def live_respond_stream(
                 pos = s.find(tag)
                 if pos != -1:
                     s = s[:pos]
+            s = s.replace("**", "")  # Strip markdown bold asterisks from speech
             s = re.sub(r'[\u4e00-\u9fff]', '', s)
             return s.strip()
 
+        # Helper to extract structured JSON payloads from tags with nested braces
+        def _extract_tag(tag_name: str, raw_text: str):
+            prefix = f"[{tag_name}:"
+            idx = raw_text.find(prefix)
+            if idx == -1:
+                return None
+            sub = raw_text[idx + len(prefix):].strip()
+            if sub.startswith("{"):
+                try:
+                    obj, _ = json.JSONDecoder().raw_decode(sub)
+                    return obj
+                except Exception:
+                    return None
+            return None
+
         try:
             # Crucial: thinking disabled guarantees sub-second first-token response
-            # 800 tokens when class requested to allow full JSON without truncation
+            # 950 tokens when class requested to guarantee complete JSON payload
             stream = await client.chat.completions.create(
                 model=settings.MINIMAX_LLM_MODEL or "MiniMax-M3",
                 messages=formatted_messages,
                 temperature=0.8,
-                max_tokens=850 if is_class_requested else 400,
+                max_tokens=950 if is_class_requested else 400,
                 stream=True,
                 extra_body={"thinking": {"type": "disabled"}}
             )
@@ -361,6 +392,20 @@ async def live_respond_stream(
                 # Emit token event to UI
                 yield f"event: token\ndata: {json.dumps({'token': content})}\n\n"
 
+                # Real-time extraction of [MINI_CLASS: ...] as soon as tag JSON completes mid-stream
+                if not miniclass_emitted and "[MINI_CLASS:" in accumulated_text:
+                    miniclass_data = _extract_tag("MINI_CLASS", accumulated_text)
+                    if miniclass_data:
+                        yield f"event: miniclass\ndata: {json.dumps(miniclass_data)}\n\n"
+                        miniclass_emitted = True
+
+                # Real-time extraction of [CORRECTION: ...] mid-stream
+                if not correction_emitted and "[CORRECTION:" in accumulated_text:
+                    corr_data = _extract_tag("CORRECTION", accumulated_text)
+                    if corr_data:
+                        yield f"event: correction\ndata: {json.dumps(corr_data)}\n\n"
+                        correction_emitted = True
+
                 # Check if clause buffer has reached a natural speaking pause
                 # Avoid emitting if we are inside a [CORRECTION: ...], [MINI_CLASS: ...], or [CLOSE_MINI_CLASS] tag
                 if "[CORRECTION:" not in clause_buffer and "[MINI_CLASS:" not in clause_buffer and "[CLOSE_MINI_CLASS]" not in clause_buffer:
@@ -386,30 +431,16 @@ async def live_respond_stream(
                     yield f"event: clause\ndata: {json.dumps({'clause_index': clause_index, 'text': clean_tail})}\n\n"
                     clause_index += 1
 
-            # Helper to extract structured JSON payloads from tags with nested braces
-            def _extract_tag(tag_name: str, raw_text: str):
-                prefix = f"[{tag_name}:"
-                idx = raw_text.find(prefix)
-                if idx == -1:
-                    return None
-                sub = raw_text[idx + len(prefix):].strip()
-                if sub.startswith("{"):
-                    try:
-                        obj, _ = json.JSONDecoder().raw_decode(sub)
-                        return obj
-                    except Exception as err:
-                        logger.warning(f"Failed to raw_decode {tag_name} JSON: {err}")
-                return None
+            # End of stream fallback extraction
+            if not correction_emitted:
+                corr_data = _extract_tag("CORRECTION", accumulated_text)
+                if corr_data:
+                    yield f"event: correction\ndata: {json.dumps(corr_data)}\n\n"
 
-            # Extract any [CORRECTION: {...}] tag
-            corr_data = _extract_tag("CORRECTION", accumulated_text)
-            if corr_data:
-                yield f"event: correction\ndata: {json.dumps(corr_data)}\n\n"
-
-            # Extract any [MINI_CLASS: {...}] tag
-            miniclass_data = _extract_tag("MINI_CLASS", accumulated_text)
-            if miniclass_data:
-                yield f"event: miniclass\ndata: {json.dumps(miniclass_data)}\n\n"
+            if not miniclass_emitted:
+                miniclass_data = _extract_tag("MINI_CLASS", accumulated_text)
+                if miniclass_data:
+                    yield f"event: miniclass\ndata: {json.dumps(miniclass_data)}\n\n"
 
             # Check if student understood and mini class should close
             if "[CLOSE_MINI_CLASS]" in accumulated_text:

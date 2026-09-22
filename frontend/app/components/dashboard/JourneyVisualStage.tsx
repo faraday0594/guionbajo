@@ -461,50 +461,106 @@ export default function JourneyVisualStage({
               </feMerge>
             </filter>
 
-            {/* Bright, clear sky */}
+            {/* 🌅 Sky & Atmospheric Horizon Gradients */}
             <linearGradient id="skyWarm" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#7dd3fc" />
-              <stop offset="30%" stopColor="#bae6fd" />
-              <stop offset="55%" stopColor="#e0f2fe" />
-              <stop offset="75%" stopColor="#fef9c3" stopOpacity="0.5" />
-              <stop offset="90%" stopColor="#fef3c7" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="#fde68a" stopOpacity="0.4" />
+              <stop offset="0%" stopColor="#38bdf8" />
+              <stop offset="22%" stopColor="#7dd3fc" />
+              <stop offset="50%" stopColor="#bae6fd" />
+              <stop offset="72%" stopColor="#e0f2fe" />
+              <stop offset="86%" stopColor="#fef3c7" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#fef9c3" stopOpacity="0.75" />
             </linearGradient>
 
-            {/* Warm horizon glow */}
-            <radialGradient id="sunGlow" cx="0.5" cy="0.42" r="0.3">
-              <stop offset="0%" stopColor="#fef9c3" stopOpacity="0.7" />
-              <stop offset="40%" stopColor="#fde68a" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#000" stopOpacity="0" />
+            {/* Warm horizon sunburst glow */}
+            <radialGradient id="sunGlow" cx="0.5" cy="0.43" r="0.42">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
+              <stop offset="20%" stopColor="#fef08a" stopOpacity="0.55" />
+              <stop offset="55%" stopColor="#fed7aa" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#bae6fd" stopOpacity="0" />
             </radialGradient>
 
-            {/* Ground / grass gradient */}
-            <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3d8b55" />
-              <stop offset="25%" stopColor="#2d7a42" />
-              <stop offset="60%" stopColor="#226b36" />
-              <stop offset="100%" stopColor="#1a5c2e" />
+            {/* Radiant Sunbeams / God Rays */}
+            <linearGradient id="sunBeamGrad" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stopColor="#fef9c3" stopOpacity="0.2" />
+              <stop offset="55%" stopColor="#ffffff" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
             </linearGradient>
 
-            {/* Distant hills */}
+            {/* Horizon atmospheric mist / depth blur */}
+            <linearGradient id="horizonMist" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#fef9c3" stopOpacity="0" />
+              <stop offset="40%" stopColor="#e0f2fe" stopOpacity="0.6" />
+              <stop offset="80%" stopColor="#fef3c7" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#226b36" stopOpacity="0" />
+            </linearGradient>
+
+            {/* Volumetric Cloud Gradients */}
+            <linearGradient id="cloudBodyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="68%" stopColor="#f8fafc" />
+              <stop offset="100%" stopColor="#dbeafe" />
+            </linearGradient>
+            <linearGradient id="cloudUnderbelly" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#dbeafe" stopOpacity="0" />
+              <stop offset="100%" stopColor="#94a3b8" stopOpacity="0.3" />
+            </linearGradient>
+
+            {/* Layered Mountains & Rolling Hills */}
+            <linearGradient id="distantMountainGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.55" />
+              <stop offset="100%" stopColor="#64748b" stopOpacity="0.75" />
+            </linearGradient>
             <linearGradient id="hillFar" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#5da06e" />
-              <stop offset="100%" stopColor="#4a8c5c" />
+              <stop offset="0%" stopColor="#529b68" />
+              <stop offset="60%" stopColor="#418754" />
+              <stop offset="100%" stopColor="#2e7141" />
             </linearGradient>
             <linearGradient id="hillMid" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#4a8c5c" />
-              <stop offset="100%" stopColor="#3a7d4c" />
+              <stop offset="0%" stopColor="#458f5b" />
+              <stop offset="100%" stopColor="#276b3b" />
             </linearGradient>
 
-            {/* Trail / dirt path */}
+            {/* Lush Ground & Grass */}
+            <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#307c47" />
+              <stop offset="25%" stopColor="#246a39" />
+              <stop offset="60%" stopColor="#1b562c" />
+              <stop offset="100%" stopColor="#12401f" />
+            </linearGradient>
+
+            {/* Tree Canopies (Volumetric shading) */}
+            <linearGradient id="canopySunlit" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#5db86e" />
+              <stop offset="50%" stopColor="#3ea153" />
+              <stop offset="100%" stopColor="#287c3c" />
+            </linearGradient>
+            <linearGradient id="canopyMidTone" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#328847" />
+              <stop offset="100%" stopColor="#1d5c2c" />
+            </linearGradient>
+            <linearGradient id="canopyShadow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#206332" />
+              <stop offset="100%" stopColor="#113e1c" />
+            </linearGradient>
+
+            {/* Tree Bark */}
+            <linearGradient id="treeBarkGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#452712" />
+              <stop offset="40%" stopColor="#6e4222" />
+              <stop offset="85%" stopColor="#543017" />
+              <stop offset="100%" stopColor="#3b1e0c" />
+            </linearGradient>
+
+            {/* Trail / Natural Dirt & Gravel Path */}
             <linearGradient id="trailGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#b89a6a" />
-              <stop offset="40%" stopColor="#c9a87a" />
-              <stop offset="100%" stopColor="#d4b48a" />
+              <stop offset="0%" stopColor="#b69566" />
+              <stop offset="25%" stopColor="#c5a576" />
+              <stop offset="70%" stopColor="#d2b487" />
+              <stop offset="100%" stopColor="#dec297" />
             </linearGradient>
             <linearGradient id="trailEdge" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8a7050" />
-              <stop offset="100%" stopColor="#9a8060" />
+              <stop offset="0%" stopColor="#7a5f3f" />
+              <stop offset="100%" stopColor="#927652" />
             </linearGradient>
 
             {/* 🤖 Guionbajo Robot Gradients & Shaders */}
@@ -623,83 +679,201 @@ export default function JourneyVisualStage({
           </defs>
 
 
-          {/* ═══ SKY LAYER (Fixed horizon) ═══ */}
+          {/* ═══ SKY LAYER (Fixed atmospheric horizon) ═══ */}
           <rect width="960" height="340" fill="url(#skyWarm)" />
-          <rect x="0" y="60" width="960" height="120" fill="url(#sunGlow)" />
 
-          {/* Clouds */}
-          <g opacity="0.6">
-            <ellipse cx="160" cy="40" rx="55" ry="12" fill="#ffffff" />
-            <ellipse cx="190" cy="38" rx="35" ry="9" fill="#ffffff" opacity="0.8" />
-            <ellipse cx="650" cy="55" rx="65" ry="14" fill="#ffffff" />
-            <ellipse cx="685" cy="52" rx="42" ry="10" fill="#ffffff" opacity="0.8" />
-            <ellipse cx="420" cy="28" rx="40" ry="10" fill="#ffffff" opacity="0.5" />
-            <ellipse cx="850" cy="35" rx="45" ry="11" fill="#ffffff" opacity="0.4" />
+          {/* Radiant morning sun on horizon */}
+          <ellipse cx="480" cy="130" rx="38" ry="24" fill="#ffffff" opacity="0.9" filter="url(#flagGlow)" />
+          <rect x="0" y="40" width="960" height="150" fill="url(#sunGlow)" />
+
+          {/* ☀️ Radiant Sunbeams (God Rays) */}
+          <g opacity="0.35">
+            <polygon points="480,126 180,0 250,0" fill="url(#sunBeamGrad)" />
+            <polygon points="480,126 360,0 430,0" fill="url(#sunBeamGrad)" />
+            <polygon points="480,126 530,0 600,0" fill="url(#sunBeamGrad)" />
+            <polygon points="480,126 710,0 780,0" fill="url(#sunBeamGrad)" />
+            <polygon points="480,126 840,40 900,40" fill="url(#sunBeamGrad)" />
           </g>
 
-          {/* Birds */}
-          <g stroke="#4b5563" strokeWidth="1" fill="none" opacity="0.3">
-            <path d="M 280 50 Q 284 46, 288 50 Q 292 46, 296 50" />
-            <path d="M 600 38 Q 603 35, 606 38 Q 609 35, 612 38" />
-          </g>
-
-          {/* ─── DISTANT HILLS (horizon at y≈130) ─── */}
-          <path
-            d="M 0 140 Q 150 115, 300 130 Q 420 145, 500 120 Q 620 100, 750 128 Q 870 148, 960 130 L 960 165 L 0 165 Z"
-            fill="url(#hillFar)"
-            opacity="0.65"
-          />
-          <path
-            d="M 0 150 Q 200 130, 350 148 Q 480 162, 580 140 Q 700 120, 840 145 Q 920 158, 960 148 L 960 175 L 0 175 Z"
-            fill="url(#hillMid)"
-            opacity="0.8"
-          />
-
-          {/* Distant tiny trees */}
-          <g opacity="0.5">
-            {[60, 120, 180, 260, 700, 760, 820, 900].map((x, i) => (
-              <polygon
-                key={`dt-${i}`}
-                points={`${x},${138 + Math.sin(x * 0.03) * 6} ${x - 3},${148 + Math.sin(x * 0.03) * 6} ${x + 3},${148 + Math.sin(x * 0.03) * 6}`}
-                fill="#3a6e48"
+          {/* ☁️ Volumetric Puffy Cumulus Clouds with Gentle Ambient Drift */}
+          <g>
+            {/* Cloud Group 1 (Left Major Formation) */}
+            <g opacity="0.88">
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                values="0,0; 12,-1; 0,0"
+                dur="20s"
+                repeatCount="indefinite"
               />
-            ))}
+              <ellipse cx="170" cy="50" rx="80" ry="16" fill="url(#cloudUnderbelly)" />
+              <path
+                d="M 100 52 Q 100 38, 120 36 Q 132 20, 155 20 Q 175 12, 195 24 Q 215 16, 235 28 Q 250 36, 250 52 Z"
+                fill="url(#cloudBodyGrad)"
+              />
+              <circle cx="150" cy="30" r="18" fill="#ffffff" />
+              <circle cx="185" cy="24" r="22" fill="#ffffff" />
+              <circle cx="218" cy="32" r="16" fill="#ffffff" />
+              <circle cx="122" cy="40" r="14" fill="#ffffff" />
+            </g>
+
+            {/* Cloud Group 2 (Right Major Formation) */}
+            <g opacity="0.82">
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                values="0,0; -14,1; 0,0"
+                dur="26s"
+                repeatCount="indefinite"
+              />
+              <ellipse cx="730" cy="54" rx="90" ry="17" fill="url(#cloudUnderbelly)" />
+              <path
+                d="M 650 56 Q 650 42, 670 38 Q 685 24, 712 24 Q 735 14, 760 26 Q 785 18, 805 32 Q 820 42, 820 56 Z"
+                fill="url(#cloudBodyGrad)"
+              />
+              <circle cx="705" cy="32" r="20" fill="#ffffff" />
+              <circle cx="745" cy="25" r="24" fill="#ffffff" />
+              <circle cx="785" cy="34" r="18" fill="#ffffff" />
+              <circle cx="672" cy="42" r="15" fill="#ffffff" />
+            </g>
+
+            {/* Subtle high wisps (Altocumulus) */}
+            <g opacity="0.45">
+              <ellipse cx="430" cy="26" rx="48" ry="7" fill="#ffffff" />
+              <ellipse cx="890" cy="42" rx="42" ry="6" fill="#ffffff" />
+              <ellipse cx="70" cy="36" rx="36" ry="5" fill="#ffffff" />
+            </g>
           </g>
 
-          {/* ─── GREEN GROUND PLANE (perspective floor) ─── */}
-          <rect x="0" y="160" width="960" height="180" fill="url(#groundGrad)" />
+          {/* Majestic Soaring Birds in flight */}
+          <g stroke="#334155" strokeWidth="1.2" fill="none" opacity="0.4" strokeLinecap="round">
+            <path d="M 285 46 Q 289 41, 294 46 Q 299 41, 303 46" />
+            <path d="M 270 54 Q 273 50, 277 54 Q 281 50, 284 54" />
+            <path d="M 620 36 Q 624 32, 628 36 Q 632 32, 636 36" />
+          </g>
 
-          {/* Ground texture lines */}
-          <g opacity="0.15" stroke="#2a6b3a" strokeWidth="0.5">
-            {Array.from({ length: 20 }, (_, i) => {
-              const y = 170 + i * 8;
-              return <line key={`gl-${i}`} x1="0" y1={y} x2="960" y2={y} />;
+          {/* ─── LAYER 1: DISTANT BLUE PEAKS (Atmospheric Aerial Perspective) ─── */}
+          <path
+            d="M 0 138 L 80 118 L 190 132 L 290 114 L 380 128 L 470 110 L 560 126 L 680 108 L 790 125 L 890 112 L 960 126 L 960 155 L 0 155 Z"
+            fill="url(#distantMountainGrad)"
+          />
+          <path
+            d="M 80 118 L 130 132 M 290 114 L 335 128 M 470 110 L 515 126 M 680 108 L 735 125 M 890 112 L 925 126"
+            stroke="rgba(255,255,255,0.35)"
+            strokeWidth="1"
+            fill="none"
+          />
+
+          {/* ─── LAYER 2: MID-GROUND EMERALD HILLS (horizon at y≈130) ─── */}
+          <path
+            d="M 0 138 Q 140 116, 290 128 Q 420 140, 510 118 Q 630 102, 750 124 Q 870 142, 960 128 L 960 166 L 0 166 Z"
+            fill="url(#hillFar)"
+            opacity="0.85"
+          />
+
+          {/* Silhouettes of distant pine groves on the ridge */}
+          <g opacity="0.65">
+            {[45, 85, 125, 165, 230, 270, 715, 755, 805, 855, 915].map((x, i) => {
+              const baseY = 132 + Math.sin(x * 0.02) * 8;
+              const h = 8 + (i % 3) * 3;
+              return (
+                <g key={`pinetree-${i}`}>
+                  <line x1={x} y1={baseY} x2={x} y2={baseY - h} stroke="#214e30" strokeWidth="1.2" />
+                  <polygon
+                    points={`${x},${baseY - h} ${x - 3.5},${baseY - h * 0.4} ${x + 3.5},${baseY - h * 0.4}`}
+                    fill="#1e472a"
+                  />
+                  <polygon
+                    points={`${x},${baseY - h * 0.65} ${x - 4.5},${baseY - 1} ${x + 4.5},${baseY - 1}`}
+                    fill="#1e472a"
+                  />
+                </g>
+              );
             })}
           </g>
 
-          {/* ─── WINDING TRAIL (perspective correct: wide at bottom, narrow at horizon) ─── */}
-          {/* Shadow */}
+          {/* ─── LAYER 3: NEAR ROLLING HILL WITH LUSH CREST ─── */}
+          <path
+            d="M 0 148 Q 190 128, 350 144 Q 480 156, 580 136 Q 710 118, 840 140 Q 920 152, 960 144 L 960 178 L 0 178 Z"
+            fill="url(#hillMid)"
+          />
+          <path
+            d="M 0 148 Q 190 128, 350 144 Q 480 156, 580 136 Q 710 118, 840 140 Q 920 152, 960 144"
+            fill="none"
+            stroke="rgba(254, 240, 138, 0.45)"
+            strokeWidth="1.5"
+          />
+
+          {/* ─── HORIZON ATMOSPHERIC MIST BAND (Blends mountains & ground) ─── */}
+          <rect x="0" y="130" width="960" height="28" fill="url(#horizonMist)" />
+
+          {/* ─── GREEN GROUND PLANE (perspective meadow) ─── */}
+          <rect x="0" y="156" width="960" height="184" fill="url(#groundGrad)" />
+
+          {/* Organic Meadow Grass Texture in True Depth Perspective */}
+          {/* Distant tiny grass tufts (y = 160-195) */}
+          <g stroke="#3a8b4f" strokeWidth="1" fill="none" opacity="0.55">
+            {[75, 140, 215, 310, 620, 690, 770, 845, 915].map((gx, i) => (
+              <path key={`gt-far-${i}`} d={`M ${gx} 172 L ${gx - 2} 167 M ${gx} 172 L ${gx + 2} 166`} />
+            ))}
+            {[110, 185, 260, 360, 580, 660, 735, 810, 885].map((gx, i) => (
+              <path key={`gt-midfar-${i}`} d={`M ${gx} 190 L ${gx - 2.5} 183 M ${gx} 190 L ${gx} 182 M ${gx} 190 L ${gx + 2.5} 184`} />
+            ))}
+          </g>
+
+          {/* Mid-distance meadow tufts (y = 205-255) */}
+          <g stroke="#459e5a" strokeWidth="1.3" fill="none" opacity="0.65">
+            {[60, 130, 220, 315, 625, 710, 800, 890].map((gx, i) => (
+              <path key={`gt-mid-${i}`} d={`M ${gx} 224 L ${gx - 3.5} 214 M ${gx} 224 L ${gx} 212 M ${gx} 224 L ${gx + 3.5} 215`} />
+            ))}
+            {[90, 175, 340, 590, 670, 755, 840, 925].map((gx, i) => (
+              <path key={`gt-mid2-${i}`} d={`M ${gx} 248 L ${gx - 4} 236 M ${gx} 248 L ${gx + 1} 233 M ${gx} 248 L ${gx + 4.5} 237`} />
+            ))}
+          </g>
+
+          {/* Foreground lush grass clumps (y = 270-335) */}
+          <g stroke="#56b36c" strokeWidth="1.6" fill="none" opacity="0.75" strokeLinecap="round">
+            {[40, 120, 210, 310, 620, 730, 830, 920].map((gx, i) => (
+              <path key={`gt-near-${i}`} d={`M ${gx} 285 Q ${gx - 5} 270, ${gx - 7} 265 M ${gx} 285 Q ${gx} 268, ${gx + 1} 263 M ${gx} 285 Q ${gx + 6} 272, ${gx + 8} 268`} />
+            ))}
+            {[80, 160, 250, 670, 780, 880].map((gx, i) => (
+              <path key={`gt-fore-${i}`} d={`M ${gx} 320 Q ${gx - 7} 302, ${gx - 9} 296 M ${gx} 320 Q ${gx + 2} 298, ${gx + 3} 292 M ${gx} 320 Q ${gx + 8} 304, ${gx + 11} 300`} />
+            ))}
+          </g>
+
+          {/* ─── WINDING TRAIL ─── */}
+          {/* Natural soft shadow under trail edge */}
           <path
             d="M 380 340 L 560 340 Q 580 300, 570 270 Q 555 235, 520 215 Q 490 200, 500 185 Q 510 172, 500 165 Q 490 160, 492 155 L 488 155 Q 470 160, 475 165 Q 485 172, 475 185 Q 465 200, 440 215 Q 400 235, 395 270 Q 388 300, 400 340 Z"
-            fill="#1a4a2e"
-            opacity="0.3"
+            fill="#0f2b17"
+            opacity="0.35"
           />
-          {/* Edges */}
+          {/* Trampled earthen border with natural bevel */}
           <path
             d="M 375 340 L 565 340 Q 585 295, 575 265 Q 558 228, 525 210 Q 495 195, 505 182 Q 515 168, 503 160 Q 495 155, 495 150 L 485 150 Q 465 155, 470 162 Q 480 170, 470 184 Q 458 198, 430 212 Q 392 230, 385 268 Q 378 300, 395 340 Z"
             fill="url(#trailEdge)"
           />
-          {/* Body */}
+          {/* Main dirt & golden gravel trail bed */}
           <path
             d="M 390 340 L 550 340 Q 572 298, 565 268 Q 550 233, 520 216 Q 495 202, 502 186 Q 510 174, 500 164 Q 494 158, 493 153 L 487 153 Q 468 158, 474 166 Q 483 175, 474 188 Q 462 203, 438 218 Q 402 238, 395 270 Q 388 302, 400 340 Z"
             fill="url(#trailGrad)"
           />
 
+          {/* Small natural trail pebbles & stones */}
+          <g fill="#8a6f4e" opacity="0.6">
+            <ellipse cx="440" cy="275" rx="3" ry="1.8" />
+            <ellipse cx="510" cy="255" rx="2.5" ry="1.5" />
+            <ellipse cx="470" cy="295" rx="2" ry="1.2" />
+            <ellipse cx="492" cy="235" rx="1.8" ry="1" />
+            <ellipse cx="462" cy="205" rx="1.5" ry="0.9" />
+            <ellipse cx="482" cy="178" rx="1.2" ry="0.7" />
+          </g>
+
           {/* 🌟 Dynamic Worn Center Line — dashes rush backward during travel */}
           <path
             d="M 470 340 Q 478 300, 480 270 Q 482 240, 490 218 Q 496 202, 492 188 Q 488 175, 490 165 Q 491 158, 490 153"
             fill="none"
-            stroke="#dcc8a8"
+            stroke="#fef3c7"
             strokeWidth="1.8"
             strokeDasharray="8 10"
             strokeDashoffset={
@@ -709,7 +883,7 @@ export default function JourneyVisualStage({
                   : -travelProgress * 96
                 : 0
             }
-            opacity={isTraveling ? 0.6 : 0.3}
+            opacity={isTraveling ? 0.75 : 0.45}
           />
 
           {/* 🌟 Speed wind streaks rushing past student (reverse stream when backward) */}
@@ -749,17 +923,31 @@ export default function JourneyVisualStage({
             }}
           >
             {/* L1: Big near tree */}
-            <rect x="175" y="182" width="10" height="55" fill="#5c3a1e" rx="2" />
-            <ellipse cx="180" cy="182" rx="35" ry="46" fill="#266e3a" />
-            <ellipse cx="180" cy="173" rx="28" ry="35" fill="#358a4a" />
-            <ellipse cx="180" cy="166" rx="18" ry="22" fill="#45a05a" opacity="0.6" />
+            <ellipse cx="198" cy="236" rx="44" ry="12" fill="#0c2e17" opacity="0.45" filter="url(#flagGlow)" />
+            <path
+              d="M 174 235 Q 177 205, 180 182 L 188 182 Q 186 205, 191 235 Z"
+              fill="url(#treeBarkGrad)"
+            />
+            <path d="M 183 195 Q 192 188, 196 182 L 194 180 Q 188 186, 182 191 Z" fill="#4a2c16" />
+            <ellipse cx="184" cy="184" rx="38" ry="34" fill="url(#canopyShadow)" />
+            <circle cx="166" cy="170" r="28" fill="url(#canopyMidTone)" />
+            <circle cx="200" cy="172" r="26" fill="url(#canopyMidTone)" />
+            <circle cx="182" cy="155" r="25" fill="url(#canopySunlit)" />
+            <circle cx="176" cy="148" r="14" fill="#6ee7b7" opacity="0.35" />
+
             {/* L2: Mid tree */}
-            <rect x="268" y="176" width="7" height="38" fill="#5c3a1e" rx="1.5" />
-            <ellipse cx="272" cy="176" rx="24" ry="32" fill="#2a7040" />
-            <ellipse cx="272" cy="169" rx="18" ry="24" fill="#3a8550" />
+            <ellipse cx="282" cy="214" rx="28" ry="8" fill="#0c2e17" opacity="0.38" filter="url(#flagGlow)" />
+            <path d="M 269 214 Q 272 195, 274 176 L 279 176 Q 278 195, 282 214 Z" fill="url(#treeBarkGrad)" />
+            <ellipse cx="276" cy="176" rx="26" ry="24" fill="url(#canopyShadow)" />
+            <circle cx="264" cy="168" r="19" fill="url(#canopyMidTone)" />
+            <circle cx="288" cy="169" r="18" fill="url(#canopyMidTone)" />
+            <circle cx="276" cy="156" r="17" fill="url(#canopySunlit)" />
+
             {/* L3: Small tree */}
-            <rect x="338" y="168" width="5" height="24" fill="#5c3a1e" rx="1" />
-            <ellipse cx="341" cy="168" rx="15" ry="20" fill="#2a7040" />
+            <ellipse cx="346" cy="192" rx="18" ry="5" fill="#0c2e17" opacity="0.3" filter="url(#flagGlow)" />
+            <rect x="339" y="168" width="5" height="24" rx="1.5" fill="url(#treeBarkGrad)" />
+            <ellipse cx="342" cy="168" rx="17" ry="16" fill="url(#canopyMidTone)" />
+            <circle cx="342" cy="158" r="12" fill="url(#canopySunlit)" />
           </g>
 
           {/* Right Trees Group */}
@@ -774,25 +962,43 @@ export default function JourneyVisualStage({
             }}
           >
             {/* R1: Big near tree */}
-            <rect x="748" y="185" width="10" height="60" fill="#5c3a1e" rx="2" />
-            <ellipse cx="753" cy="185" rx="38" ry="50" fill="#2d7a42" />
-            <ellipse cx="753" cy="175" rx="30" ry="38" fill="#3a8c50" />
-            <ellipse cx="753" cy="168" rx="20" ry="25" fill="#4a9c60" opacity="0.6" />
+            <ellipse cx="766" cy="242" rx="46" ry="13" fill="#0c2e17" opacity="0.45" filter="url(#flagGlow)" />
+            <path
+              d="M 746 242 Q 750 208, 752 185 L 761 185 Q 759 208, 764 242 Z"
+              fill="url(#treeBarkGrad)"
+            />
+            <path d="M 755 200 Q 746 192, 742 185 L 744 183 Q 750 189, 756 195 Z" fill="#4a2c16" />
+            <ellipse cx="756" cy="186" rx="42" ry="36" fill="url(#canopyShadow)" />
+            <circle cx="736" cy="174" r="29" fill="url(#canopyMidTone)" />
+            <circle cx="774" cy="176" r="28" fill="url(#canopyMidTone)" />
+            <circle cx="755" cy="156" r="27" fill="url(#canopySunlit)" />
+            <circle cx="748" cy="148" r="15" fill="#6ee7b7" opacity="0.35" />
+
             {/* R2: Mid tree */}
-            <rect x="668" y="178" width="7" height="40" fill="#5c3a1e" rx="1.5" />
-            <ellipse cx="672" cy="178" rx="26" ry="35" fill="#2a7040" />
-            <ellipse cx="672" cy="170" rx="20" ry="26" fill="#3a8550" />
+            <ellipse cx="680" cy="216" rx="30" ry="8" fill="#0c2e17" opacity="0.38" filter="url(#flagGlow)" />
+            <path d="M 669 216 Q 672 196, 674 178 L 679 178 Q 678 196, 682 216 Z" fill="url(#treeBarkGrad)" />
+            <ellipse cx="675" cy="178" rx="28" ry="25" fill="url(#canopyShadow)" />
+            <circle cx="663" cy="170" r="20" fill="url(#canopyMidTone)" />
+            <circle cx="688" cy="171" r="19" fill="url(#canopyMidTone)" />
+            <circle cx="675" cy="158" r="18" fill="url(#canopySunlit)" />
+
             {/* R3: Small tree */}
-            <rect x="598" y="170" width="5" height="26" fill="#5c3a1e" rx="1" />
-            <ellipse cx="601" cy="170" rx="16" ry="22" fill="#2d7a42" />
+            <ellipse cx="606" cy="194" rx="18" ry="5" fill="#0c2e17" opacity="0.3" filter="url(#flagGlow)" />
+            <rect x="599" y="170" width="5" height="25" rx="1.5" fill="url(#treeBarkGrad)" />
+            <ellipse cx="602" cy="170" rx="18" ry="17" fill="url(#canopyMidTone)" />
+            <circle cx="602" cy="160" r="13" fill="url(#canopySunlit)" />
           </g>
 
-          {/* Far static trees */}
-          <g opacity="0.6">
-            <ellipse cx="560" cy="162" rx="10" ry="14" fill="#3a7d4c" />
-            <ellipse cx="410" cy="160" rx="9" ry="12" fill="#3a7d4c" />
-            <ellipse cx="630" cy="161" rx="8" ry="11" fill="#3a7d4c" />
-            <ellipse cx="350" cy="162" rx="7" ry="10" fill="#3a7d4c" />
+          {/* Far static background trees */}
+          <g opacity="0.75">
+            <circle cx="562" cy="160" r="12" fill="url(#canopyMidTone)" />
+            <circle cx="562" cy="154" r="8" fill="url(#canopySunlit)" />
+
+            <circle cx="412" cy="158" r="11" fill="url(#canopyMidTone)" />
+            <circle cx="412" cy="152" r="7" fill="url(#canopySunlit)" />
+
+            <circle cx="632" cy="159" r="10" fill="url(#canopyMidTone)" />
+            <circle cx="348" cy="160" r="9" fill="url(#canopyMidTone)" />
           </g>
 
           {/* ══════════════════════════════════════════════════════════════
@@ -1023,25 +1229,137 @@ export default function JourneyVisualStage({
             </>
           )}
 
-          {/* Wildflowers near path */}
-          <g opacity="0.45">
-            <circle cx="560" cy="260" r="2" fill="#fbbf24" />
-            <circle cx="565" cy="263" r="1.5" fill="#fb923c" />
-            <circle cx="395" cy="285" r="2" fill="#f472b6" />
-            <circle cx="600" cy="245" r="1.5" fill="#e879f9" />
-            <circle cx="370" cy="250" r="1.8" fill="#60a5fa" />
+          {/* 🌸 Studio Ghibli Wildflowers & Meadow Flora */}
+          <g>
+            {/* Left Bank - Near & Mid Foreground Clustered Wildflowers */}
+            <g>
+              {/* White Daisy with golden core */}
+              <path d="M 378 300 Q 374 292, 372 284" stroke="#2d7a42" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+              <path d="M 375 292 Q 370 290, 368 288" stroke="#358a4a" strokeWidth="1" fill="none" />
+              <circle cx="372" cy="283" r="2.5" fill="#ffffff" />
+              <circle cx="372" cy="283" r="1" fill="#fbbf24" />
+
+              {/* Red Poppy */}
+              <path d="M 388 312 Q 386 302, 384 294" stroke="#2d7a42" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+              <circle cx="384" cy="293" r="3" fill="#f43f5e" />
+              <circle cx="384" cy="293" r="1.2" fill="#881337" />
+
+              {/* Blue forget-me-nots */}
+              <path d="M 362 318 Q 360 310, 357 304" stroke="#2d7a42" strokeWidth="1.2" fill="none" />
+              <circle cx="357" cy="303" r="2.2" fill="#38bdf8" />
+              <circle cx="357" cy="303" r="0.8" fill="#ffffff" />
+
+              {/* Buttercup / Yellow Marigold */}
+              <path d="M 396 295 Q 394 286, 395 278" stroke="#2d7a42" strokeWidth="1.2" fill="none" />
+              <circle cx="395" cy="277" r="2.6" fill="#facc15" />
+              <circle cx="395" cy="277" r="1" fill="#ea580c" />
+            </g>
+
+            {/* Mid left flower cluster */}
+            <g opacity="0.85">
+              <path d="M 425 252 Q 423 245, 421 239" stroke="#276b3b" strokeWidth="0.9" fill="none" />
+              <circle cx="421" cy="238" r="1.8" fill="#e879f9" />
+              <circle cx="421" cy="238" r="0.7" fill="#ffffff" />
+
+              <path d="M 432 242 Q 431 236, 432 231" stroke="#276b3b" strokeWidth="0.9" fill="none" />
+              <circle cx="432" cy="230" r="1.6" fill="#38bdf8" />
+
+              <path d="M 370 258 Q 368 252, 366 246" stroke="#276b3b" strokeWidth="0.9" fill="none" />
+              <circle cx="366" cy="245" r="1.8" fill="#fbbf24" />
+            </g>
+
+            {/* Right Bank - Near & Mid Foreground Clustered Wildflowers */}
+            <g>
+              {/* Lavender / Wild Lupine */}
+              <path d="M 572 305 Q 574 294, 575 285" stroke="#2d7a42" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+              <ellipse cx="575" cy="285" rx="1.8" ry="3.5" fill="#a855f7" />
+              <ellipse cx="575" cy="281" rx="1.4" ry="2.5" fill="#c084fc" />
+
+              {/* Crimson poppy */}
+              <path d="M 584 316 Q 587 306, 588 298" stroke="#2d7a42" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+              <circle cx="588" cy="297" r="3" fill="#ef4444" />
+              <circle cx="588" cy="297" r="1.2" fill="#7f1d1d" />
+
+              {/* White Daisy */}
+              <path d="M 598 292 Q 602 284, 604 278" stroke="#2d7a42" strokeWidth="1.2" fill="none" />
+              <circle cx="604" cy="277" r="2.5" fill="#ffffff" />
+              <circle cx="604" cy="277" r="1" fill="#f59e0b" />
+
+              {/* Sunny Buttercup */}
+              <path d="M 560 274 Q 563 266, 562 258" stroke="#2d7a42" strokeWidth="1" fill="none" />
+              <circle cx="562" cy="257" r="2.2" fill="#facc15" />
+              <circle cx="562" cy="257" r="0.9" fill="#d97706" />
+            </g>
+
+            {/* Mid right flower cluster */}
+            <g opacity="0.85">
+              <path d="M 524 235 Q 525 228, 524 222" stroke="#276b3b" strokeWidth="0.8" fill="none" />
+              <circle cx="524" cy="221" r="1.5" fill="#38bdf8" />
+
+              <path d="M 536 244 Q 537 238, 539 232" stroke="#276b3b" strokeWidth="0.8" fill="none" />
+              <circle cx="539" cy="231" r="1.7" fill="#fbbf24" />
+
+              <path d="M 592 252 Q 595 245, 597 239" stroke="#276b3b" strokeWidth="0.8" fill="none" />
+              <circle cx="597" cy="238" r="1.6" fill="#ec4899" />
+            </g>
           </g>
 
-          {/* Fireflies / particles */}
+          {/* ✨ Floating Golden Spores & Fireflies */}
           <g>
-            <circle cx="550" cy="230" r="1.5" fill="#fef9c3" opacity="0.4">
-              <animate attributeName="opacity" values="0.15;0.5;0.15" dur="3s" repeatCount="indefinite" />
-              <animate attributeName="cy" values="230;225;230" dur="4s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="400" cy="220" r="1" fill="#fef9c3" opacity="0.3">
-              <animate attributeName="opacity" values="0.1;0.4;0.1" dur="2.5s" repeatCount="indefinite" />
-              <animate attributeName="cy" values="220;215;220" dur="3.5s" repeatCount="indefinite" />
-            </circle>
+            {/* Spore 1 - warm gold drifting above left meadow */}
+            <g>
+              <circle cx="340" cy="225" r="3" fill="#fef08a" opacity="0.25" filter="url(#flagGlow)">
+                <animate attributeName="opacity" values="0.1;0.45;0.1" dur="4.2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="340" cy="225" r="1.4" fill="#ffffff" opacity="0.85">
+                <animate attributeName="cy" values="225;217;225" dur="4.2s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="340;345;340" dur="4.2s" repeatCount="indefinite" />
+              </circle>
+            </g>
+
+            {/* Spore 2 - luminous emerald light mote near center trail */}
+            <g>
+              <circle cx="510" cy="195" r="2.8" fill="#6ee7b7" opacity="0.25" filter="url(#flagGlow)">
+                <animate attributeName="opacity" values="0.15;0.5;0.15" dur="3.6s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="510" cy="195" r="1.2" fill="#ecfdf5" opacity="0.9">
+                <animate attributeName="cy" values="195;188;195" dur="3.6s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="510;506;510" dur="3.6s" repeatCount="indefinite" />
+              </circle>
+            </g>
+
+            {/* Spore 3 - golden mote floating near milestone flag */}
+            <g>
+              <circle cx="575" cy="235" r="3.2" fill="#fde047" opacity="0.28" filter="url(#flagGlow)">
+                <animate attributeName="opacity" values="0.1;0.55;0.1" dur="4.8s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="575" cy="235" r="1.3" fill="#ffffff" opacity="0.9">
+                <animate attributeName="cy" values="235;226;235" dur="4.8s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="575;580;575" dur="4.8s" repeatCount="indefinite" />
+              </circle>
+            </g>
+
+            {/* Spore 4 - gentle high-flying mote near canopies */}
+            <g>
+              <circle cx="230" cy="175" r="2.5" fill="#fef08a" opacity="0.2" filter="url(#flagGlow)">
+                <animate attributeName="opacity" values="0.05;0.35;0.05" dur="5.5s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="230" cy="175" r="1" fill="#ffffff" opacity="0.75">
+                <animate attributeName="cy" values="175;168;175" dur="5.5s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="230;234;230" dur="5.5s" repeatCount="indefinite" />
+              </circle>
+            </g>
+
+            {/* Spore 5 - near right woods mote */}
+            <g>
+              <circle cx="710" cy="205" r="3" fill="#a7f3d0" opacity="0.22" filter="url(#flagGlow)">
+                <animate attributeName="opacity" values="0.1;0.4;0.1" dur="5.1s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="710" cy="205" r="1.2" fill="#ffffff" opacity="0.8">
+                <animate attributeName="cy" values="205;198;205" dur="5.1s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="710;716;710" dur="5.1s" repeatCount="indefinite" />
+              </circle>
+            </g>
           </g>
 
           {/* ══════════════════════════════════════════════════════════════

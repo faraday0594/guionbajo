@@ -643,6 +643,165 @@ RELATIVE_CLAUSES_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7
   </g>
 </svg>"""
 
+PERFECT_TENSES_FOUNDATIONS_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgPT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowPT" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgPT)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MAPA CONCEPTUAL: THE PERFECT TENSES (MODELO MENTAL)</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Acciones completadas con respecto a un punto de referencia temporal (Auxiliar + V3)</text>
+
+  <!-- Column 1: PAST PERFECT (Had + V3) -->
+  <g transform="translate(25, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(192,132,252,0.10)" stroke="#c084fc" stroke-width="1.5"/>
+    <rect x="10" y="12" width="185" height="26" rx="6" fill="#7e22ce"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">1. PAST PERFECT (Had + V3)</text>
+    <text x="12" y="60" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#c084fc">📍 Referencia: El Pasado</text>
+    <text x="12" y="76" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Ocurrió ANTES de otro suceso pasado:</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0">"By 2020, they <tspan fill="#c084fc">had published</tspan> ten reports."</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">⏳ El pasado del pasado</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Marcadores: by then, before, already</text>
+  </g>
+
+  <!-- Column 2: PRESENT PERFECT (Have/Has + V3) -->
+  <g transform="translate(247, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="10" y="12" width="185" height="26" rx="6" fill="#0284c7"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">2. PRESENT PERFECT (Have + V3)</text>
+    <text x="12" y="60" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#38bdf8">📍 Referencia: El Presente (Ahora)</text>
+    <text x="12" y="76" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Puente: Conecta experiencia pasada y hoy:</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0">"They <tspan fill="#38bdf8">have published</tspan> the report."</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">🌉 Tiempo abierto hacia hoy</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Marcadores: ever, never, so far, recently</text>
+  </g>
+
+  <!-- Column 3: FUTURE PERFECT (Will have + V3) -->
+  <g transform="translate(470, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(52,211,153,0.10)" stroke="#34d399" stroke-width="1.5"/>
+    <rect x="10" y="12" width="185" height="26" rx="6" fill="#059669"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">3. FUTURE PERFECT (Will have + V3)</text>
+    <text x="12" y="60" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#34d399">📍 Referencia: El Futuro</text>
+    <text x="12" y="76" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Mirar hacia atrás desde el futuro:</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0">"By 2030, they <tspan fill="#34d399">will have published</tspan> fifty."</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">🚀 Máquina del tiempo hacia adelante</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Marcadores: by 2030, by next year, by then</text>
+  </g>
+
+  <!-- Bottom Golden Rule Box -->
+  <g transform="translate(25, 275)">
+    <rect x="0" y="0" width="650" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="325" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      💡 REGLA DE ORO DE LOS TIEMPOS PERFECTOS: ANTERIORIDAD Y CUMPLIMIENTO
+    </text>
+    <text x="325" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Todo tiempo perfecto expresa una acción completada con respecto a una fecha límite: <tspan fill="#c084fc" font-weight="bold">Had + V3</tspan> (antes de ayer), <tspan fill="#38bdf8" font-weight="bold">Have/Has + V3</tspan> (hasta hoy), <tspan fill="#34d399" font-weight="bold">Will have + V3</tspan> (para mañana).
+    </text>
+    <text x="325" y="68" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">
+      Fórmula universal: [ Sujeto ] + [ Auxiliar temporal: had / have / will have ] + [ Participio Pasado (V3) ]
+    </text>
+  </g>
+</svg>"""
+
+PRESENT_PERFECT_VS_PAST_SIMPLE_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgPP" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowPP" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgPP)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">THE BRIDGE METAPHOR: PRESENT PERFECT vs PAST SIMPLE</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Tiempo Cerrado / Terminado (Past Simple) vs Tiempo Abierto / Conexión Hoy (Present Perfect)</text>
+
+  <!-- Left Card: PAST SIMPLE (Finished Stone Bridge) -->
+  <g transform="translate(35, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#b91c1c"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. PAST SIMPLE (TIEMPO CERRADO)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#f87171">• Acción y periodo terminados en el pasado:</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#f87171" font-weight="bold">went</tspan> to Japan <tspan fill="#fca5a5" font-weight="bold">in 2020</tspan>."</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#fca5a5">📍 Marcadores Específicos (Closed Time):</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">• yesterday, in 2020, 2 years ago, last week</text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">🔒 El puente está sellado y no conecta con hoy.</text>
+  </g>
+
+  <!-- Right Card: PRESENT PERFECT (Open Glass Bridge) -->
+  <g transform="translate(360, 75)">
+    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
+    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. PRESENT PERFECT (TIEMPO ABIERTO)</text>
+    
+    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• Experiencia de vida / Conexión con el presente:</text>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#38bdf8" font-weight="bold">have visited</tspan> Japan <tspan fill="#7dd3fc" font-weight="bold">three times</tspan>."</text>
+    
+    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#7dd3fc">📍 Marcadores Abiertos (Unfinished Time):</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">• ever, never, three times, so far, recently, this year</text>
+    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#38bdf8">🌉 El puente sigue abierto hacia el presente.</text>
+  </g>
+
+  <!-- Bottom Golden Rule Box -->
+  <g transform="translate(35, 275)">
+    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      💡 REGLA DE ORO: ¿CUÁNDO OCURRIÓ?
+    </text>
+    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Si mencionas el momento exacto (in 2020 / yesterday) ➔ <tspan fill="#f87171" font-weight="bold">Past Simple</tspan>.
+    </text>
+    <text x="315" y="68" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Si importa la experiencia o la frecuencia hasta hoy ➔ <tspan fill="#38bdf8" font-weight="bold">Present Perfect (have/has + V3)</tspan>.
+    </text>
+  </g>
+</svg>"""
+
+NARRATIVE_TENSES_TIMELINE_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgNT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowNT" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgNT)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="36" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">TIMELINE: NARRATIVE TENSES (3 CAPAS TEMPORALES)</text>
+  <text x="350" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Estructura cronológica: Fondo (Continuous) + Suceso (Simple) + Pasado Anterior (Past Perfect)</text>
+  <line x1="50" y1="130" x2="650" y2="130" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+  <polygon points="650,130 636,124 636,136" fill="#64748b"/>
+  <g transform="translate(130, 130)" filter="url(#glowNT)">
+    <circle cx="0" cy="0" r="12" fill="#c084fc"/>
+    <text x="0" y="4" font-family="system-ui, sans-serif" font-size="11" font-weight="900" text-anchor="middle" fill="#fff">1</text>
+  </g>
+  <rect x="50" y="68" width="160" height="24" rx="8" fill="rgba(192,132,252,0.2)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="130" y="84" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#c084fc">PAST PERFECT (Had + V3)</text>
+  <text x="130" y="165" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#e9d5ff">"The train had left..."</text>
+  <text x="130" y="180" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">(Ocurrió primero)</text>
+  <g transform="translate(350, 130)" filter="url(#glowNT)">
+    <circle cx="0" cy="0" r="12" fill="#38bdf8"/>
+    <text x="0" y="4" font-family="system-ui, sans-serif" font-size="11" font-weight="900" text-anchor="middle" fill="#fff">2</text>
+  </g>
+  <rect x="270" y="68" width="160" height="24" rx="8" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" stroke-width="1.2"/>
+  <text x="350" y="84" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#38bdf8">PAST SIMPLE (V2)</text>
+  <text x="350" y="165" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#7dd3fc">"...when I arrived"</text>
+  <text x="350" y="180" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">(Evento principal)</text>
+  <line x1="560" y1="95" x2="560" y2="165" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+  <circle cx="560" cy="130" r="9" fill="#f59e0b" filter="url(#glowNT)"/>
+  <text x="560" y="160" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">NOW</text>
+  <text x="560" y="175" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">(Presente)</text>
+  <g transform="translate(45, 215)">
+    <rect x="0" y="0" width="610" height="65" rx="10" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="15" y="25" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">Regla de Secuencia Temporal (Causa / Antecedente):</text>
+    <text x="15" y="48" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">
+      <tspan fill="#7dd3fc">When I arrived at the cinema</tspan>, <tspan fill="#c084fc" font-weight="bold">the movie had already started</tspan>.
+    </text>
+  </g>
+  <g transform="translate(45, 290)">
+    <rect x="0" y="0" width="610" height="65" rx="10" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="15" y="25" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#34d399">Con Past Continuous (Escenario de Fondo + Interrupción):</text>
+    <text x="15" y="48" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">
+      <tspan fill="#34d399">It was raining</tspan> <tspan fill="#cbd5e1">because a storm</tspan> <tspan fill="#c084fc" font-weight="bold">had hit the city</tspan>.
+    </text>
+  </g>
+</svg>"""
+
+
 
 class TutorAgent:
     """
@@ -884,56 +1043,69 @@ class TutorAgent:
         """Resolves or generates a rich didactic vector SVG diagram for temporal/frequency/spatial topics."""
         combined_text = f"{topic} {p.get('phase_name', '')} {p.get('board_content', '')} {p.get('tutor_says', '')}".lower()
         low_top = topic.lower()
-        is_pp = "present perfect" in low_top or "perfect vs past" in low_top or "present perfect" in combined_text
 
-        # 0. Can & Abilities / Modal Verbs of Ability (HIGHEST PRIORITY for Can)
+        # 0. Perfect Tenses / Present Perfect detection (Strictly Anchored)
+        is_perfect = (
+            any(w in low_top for w in [
+                "perfect", "perfecto", "present perfect", "past perfect", "future perfect",
+                "perfect tenses", "perfect continuous", "the bridge metaphor", "perfect tense"
+            ]) or
+            any(w in combined_text for w in [
+                "perfect tenses", "the bridge metaphor", "finished vs unfinished",
+                "present perfect bridge", "past simple bridge", "had + v3", "will have + v3"
+            ])
+        )
+        is_pp = is_perfect or "present perfect" in low_top or "perfect vs past" in low_top
+
+        # 0.1 Can & Abilities (Strictly Anchored)
         is_can = (
-            "can & abilities" in low_top or
-            "can and abilities" in low_top or
-            "abilities" in low_top or
-            "ability" in low_top or
-            "modal can" in low_top or
-            "can & can't" in low_top or
-            "can & abilities" in combined_text or
-            ("can" in low_top and ("ability" in combined_text or "habilidad" in combined_text or "swim" in combined_text))
+            any(w in low_top for w in ["can & abilities", "can and abilities", "abilities", "ability", "modal can", "can & can't", "can't"]) or
+            low_top == "can" or
+            ("can" in low_top and any(w in combined_text for w in ["ability", "habilidad", "swim", "hablar inglés"]))
         )
 
-        # 0.0 Present Continuous detection
+        # 0.2 Present Continuous (STRICT: Must ONLY match when the topic specifically targets present continuous / progressive)
         is_present_continuous = (
-            not is_can and (
-                any(w in low_top for w in ["present continuous", "progressive", "presente continuo", "acciones en progreso"]) or
-                ("continuous" in low_top and "past" not in low_top) or
-                any(w in combined_text for w in ["present continuous", "presente continuo", "am/is/are + -ing", "am / is / are + verbo-ing"]) or
-                (("-ing" in combined_text or "verb-ing" in combined_text or "verbo-ing" in combined_text) and "past continuous" not in combined_text and "past" not in low_top)
+            not is_can and
+            not is_perfect and
+            not any(w in low_top for w in ["past", "pasado", "future", "futuro", "gerund", "passive", "perfect"]) and
+            (
+                any(w in low_top for w in [
+                    "present continuous", "present progressive", "presente continuo", 
+                    "presente progresivo", "acciones en progreso", "actions in progress"
+                ]) or
+                low_top == "continuous" or
+                low_top == "progressive" or
+                (any(w in combined_text for w in ["present continuous", "presente continuo", "am/is/are + -ing", "am / is / are + verbo-ing"]) and not any(w in combined_text for w in ["past continuous", "future continuous", "perfect", "past", "future"]))
             )
         )
-        
+
         # 1. Questions & Negatives detection (Do/Does, don't/doesn't) - STRICT (never generic 'preguntas')
-        is_qn = not is_can and not is_present_continuous and any(w in combined_text for w in [
+        is_qn = not is_can and not is_perfect and not is_present_continuous and any(w in combined_text for w in [
             "questions & negatives", "questions and negatives", "do / does", "do/does", 
             "don't / doesn't", "don't/doesn't", "do and does", "el reflector do/does",
             "el reflector do / does", "auxiliar do", "auxiliar does", "auxiliares do"
         ])
-        
-        # 2. Third person singular affirmative (ONLY when NOT questions/negatives and NOT continuous)
-        is_third_person = not is_qn and not is_can and not is_present_continuous and any(w in combined_text for w in [
+
+        # 2. Third person singular affirmative (ONLY when NOT questions/negatives and NOT continuous and NOT perfect)
+        is_third_person = not is_qn and not is_can and not is_perfect and not is_present_continuous and any(w in combined_text for w in [
             "third person", "tercera persona", "la magia de la -s", "terminación -s", "reglas de tercera persona"
         ]) and any(w in combined_text for w in ["works", "watches", "studies", "regla general", "lives", "sleeps", "drinks", "affirmative", "afirmativ"])
-        
+
         diag = p.get("diagram_svg")
         if diag and isinstance(diag, str):
             raw_svg = diag.strip()
             raw_svg = re.sub(r'<think>.*?</think>', '', raw_svg, flags=re.DOTALL).strip()
-            # If the saved SVG is mismatched (e.g. DO/DOES on Can, or Third Person rules saved on Continuous or DO/DOES slide)
-            if is_present_continuous and ("REGLAS DE TERCERA PERSONA" in raw_svg or "DO / DOES" in raw_svg or "PAST SIMPLE" in raw_svg):
+            # If the saved SVG is mismatched from previous bad heuristics, invalidate it
+            if is_present_continuous and ("REGLAS DE TERCERA PERSONA" in raw_svg or "DO / DOES" in raw_svg or "PAST SIMPLE" in raw_svg or "THE BRIDGE METAPHOR" in raw_svg):
                 diag = None
-            elif is_can and ("DO / DOES" in raw_svg or "REGLAS DE TERCERA PERSONA" in raw_svg):
+            elif is_can and ("DO / DOES" in raw_svg or "REGLAS DE TERCERA PERSONA" in raw_svg or "PRESENT CONTINUOUS" in raw_svg):
                 diag = None
-            elif is_qn and ("REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg or "THERE IS" in raw_svg or "CAN &" in raw_svg):
-                diag = None  # Invalidate mismatched diagram
-            elif is_third_person and ("FREQUENCY ADVERBS" in raw_svg or "ALWAYS" in raw_svg or "DO / DOES" in raw_svg):
+            elif is_qn and ("REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg or "THERE IS" in raw_svg or "CAN &" in raw_svg or "PRESENT CONTINUOUS" in raw_svg):
                 diag = None
-            elif is_pp and ("THERE IS" in raw_svg or "REGLAS DE TERCERA PERSONA" in raw_svg or "FREQUENCY ADVERBS" in raw_svg or "DO / DOES" in raw_svg):
+            elif is_perfect and ("PRESENT CONTINUOUS" in raw_svg or "DO / DOES" in raw_svg or "REGLAS DE TERCERA PERSONA" in raw_svg or "CAN &" in raw_svg or "FREQUENCY ADVERBS" in raw_svg):
+                diag = None  # Invalidate present continuous on perfect tenses!
+            elif is_third_person and ("FREQUENCY ADVERBS" in raw_svg or "ALWAYS" in raw_svg or "DO / DOES" in raw_svg or "PRESENT CONTINUOUS" in raw_svg):
                 diag = None
             else:
                 svg_match = re.search(r'(<svg[\s\S]*?</svg>)', raw_svg, re.IGNORECASE)
@@ -947,11 +1119,19 @@ class TutorAgent:
         if phase_num not in (1, 2, 3, 4):
             return None
 
-        # 0. Can & Abilities
+        # 0. Perfect Tenses (The Bridge Metaphor & 3-Tense Foundations)
+        if is_perfect:
+            if any(w in low_top for w in ["narrative tenses", "past perfect", "had + v3"]):
+                return NARRATIVE_TENSES_TIMELINE_SVG
+            if any(w in low_top for w in ["perfect tenses", "foundations", "fundamentos", "modelo mental", "mental model"]) or any(w in combined_text for w in ["by 2020", "by 2030", "time machine"]):
+                return PERFECT_TENSES_FOUNDATIONS_SVG
+            return PRESENT_PERFECT_VS_PAST_SIMPLE_SVG
+
+        # 0.1 Can & Abilities
         if is_can:
             return CAN_ABILITIES_SVG
 
-        # 0.0 Present Continuous (En Progreso)
+        # 0.2 Present Continuous (En Progreso) - STRICT: Only when actual Present Continuous
         if is_present_continuous:
             return PRESENT_CONTINUOUS_TIMELINE_SVG
 
@@ -970,60 +1150,6 @@ class TutorAgent:
         # 0.3. Relative Clauses (The Bridge Connector)
         if any(w in combined_text for w in ["relative clause", "relative clauses", "cláusula relativa", "who / which / that", "who/which/that", "defining relative"]):
             return RELATIVE_CLAUSES_SVG
-
-        # 0. Present Perfect vs Past Simple (The Bridge Metaphor)
-        if is_pp or any(w in combined_text for w in ["the bridge metaphor", "finished vs unfinished", "present perfect bridge", "past simple bridge"]):
-            return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
-  <defs>
-    <linearGradient id="chalkBgPP" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
-    <filter id="glowPP" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  </defs>
-  <rect width="700" height="380" rx="16" fill="url(#chalkBgPP)" stroke="#27354f" stroke-width="1.5"/>
-  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">THE BRIDGE METAPHOR: PRESENT PERFECT vs PAST SIMPLE</text>
-  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Tiempo Cerrado / Terminado (Past Simple) vs Tiempo Abierto / Conexión Hoy (Present Perfect)</text>
-
-  <!-- Left Card: PAST SIMPLE (Finished Stone Bridge) -->
-  <g transform="translate(35, 75)">
-    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="1.5"/>
-    <rect x="15" y="15" width="275" height="28" rx="6" fill="#b91c1c"/>
-    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1. PAST SIMPLE (TIEMPO CERRADO)</text>
-    
-    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#f87171">• Acción y periodo terminados en el pasado:</text>
-    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#f87171" font-weight="bold">went</tspan> to Japan <tspan fill="#fca5a5" font-weight="bold">in 2020</tspan>."</text>
-    
-    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#fca5a5">📍 Marcadores Específicos (Closed Time):</text>
-    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">• yesterday, in 2020, 2 years ago, last week</text>
-    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">🔒 El puente está sellado y no conecta con hoy.</text>
-  </g>
-
-  <!-- Right Card: PRESENT PERFECT (Open Glass Bridge) -->
-  <g transform="translate(360, 75)">
-    <rect x="0" y="0" width="305" height="185" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
-    <rect x="15" y="15" width="275" height="28" rx="6" fill="#0284c7"/>
-    <text x="152" y="34" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2. PRESENT PERFECT (TIEMPO ABIERTO)</text>
-    
-    <text x="20" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">• Experiencia de vida / Conexión con el presente:</text>
-    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">"I <tspan fill="#38bdf8" font-weight="bold">have visited</tspan> Japan <tspan fill="#7dd3fc" font-weight="bold">three times</tspan>."</text>
-    
-    <text x="20" y="120" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#7dd3fc">📍 Marcadores Abiertos (Unfinished Time):</text>
-    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#e2e8f0">• ever, never, three times, so far, recently, this year</text>
-    <text x="20" y="165" font-family="system-ui, sans-serif" font-size="10" fill="#38bdf8">🌉 El puente sigue abierto hacia el presente.</text>
-  </g>
-
-  <!-- Bottom Golden Rule Box -->
-  <g transform="translate(35, 275)">
-    <rect x="0" y="0" width="630" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
-    <text x="315" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
-      💡 REGLA DE ORO: ¿CUÁNDO OCURRIÓ?
-    </text>
-    <text x="315" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
-      Si mencionas el momento exacto (in 2020 / yesterday) ➔ <tspan fill="#f87171" font-weight="bold">Past Simple</tspan>.
-    </text>
-    <text x="315" y="68" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
-      Si importa la experiencia o la frecuencia hasta hoy ➔ <tspan fill="#38bdf8" font-weight="bold">Present Perfect (have/has + V3)</tspan>.
-    </text>
-  </g>
-</svg>"""
 
         # 1. Places & There is / There are / Prepositions of Place (Existential & Spatial Relations)
         if (any(w in low_top for w in ["places", "there is", "there are"]) or (any(w in low_top for w in ["preposition"]) and not is_pp)):

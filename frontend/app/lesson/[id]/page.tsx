@@ -1101,6 +1101,112 @@ const PRESENT_PERFECT_VS_PAST_SIMPLE_SVG = `<svg xmlns="http://www.w3.org/2000/s
   </g>
 </svg>`;
 
+const PERFECT_TENSES_FOUNDATIONS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgPT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowPT" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgPT)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="34" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">MAPA CONCEPTUAL: THE PERFECT TENSES (MODELO MENTAL)</text>
+  <text x="350" y="54" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Acciones completadas con respecto a un punto de referencia temporal (Auxiliar + V3)</text>
+
+  <!-- Column 1: PAST PERFECT (Had + V3) -->
+  <g transform="translate(25, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(192,132,252,0.10)" stroke="#c084fc" stroke-width="1.5"/>
+    <rect x="10" y="12" width="185" height="26" rx="6" fill="#7e22ce"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">1. PAST PERFECT (Had + V3)</text>
+    <text x="12" y="60" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#c084fc">📍 Referencia: El Pasado</text>
+    <text x="12" y="76" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Ocurrió ANTES de otro suceso pasado:</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0">&quot;By 2020, they <tspan fill="#c084fc">had published</tspan> ten reports.&quot;</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">⏳ El pasado del pasado</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Marcadores: by then, before, already</text>
+  </g>
+
+  <!-- Column 2: PRESENT PERFECT (Have/Has + V3) -->
+  <g transform="translate(247, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(56,189,248,0.10)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="10" y="12" width="185" height="26" rx="6" fill="#0284c7"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">2. PRESENT PERFECT (Have + V3)</text>
+    <text x="12" y="60" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#38bdf8">📍 Referencia: El Presente (Ahora)</text>
+    <text x="12" y="76" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Puente: Conecta experiencia pasada y hoy:</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0">&quot;They <tspan fill="#38bdf8">have published</tspan> the report.&quot;</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">🌉 Tiempo abierto hacia hoy</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Marcadores: ever, never, so far, recently</text>
+  </g>
+
+  <!-- Column 3: FUTURE PERFECT (Will have + V3) -->
+  <g transform="translate(470, 75)">
+    <rect x="0" y="0" width="205" height="185" rx="12" fill="rgba(52,211,153,0.10)" stroke="#34d399" stroke-width="1.5"/>
+    <rect x="10" y="12" width="185" height="26" rx="6" fill="#059669"/>
+    <text x="102" y="29" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">3. FUTURE PERFECT (Will have + V3)</text>
+    <text x="12" y="60" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#34d399">📍 Referencia: El Futuro</text>
+    <text x="12" y="76" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Mirar hacia atrás desde el futuro:</text>
+    <text x="12" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0">&quot;By 2030, they <tspan fill="#34d399">will have published</tspan> fifty.&quot;</text>
+    <text x="12" y="145" font-family="system-ui, sans-serif" font-size="10" fill="#cbd5e1">🚀 Máquina del tiempo hacia adelante</text>
+    <text x="12" y="165" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Marcadores: by 2030, by next year, by then</text>
+  </g>
+
+  <!-- Bottom Golden Rule Box -->
+  <g transform="translate(25, 275)">
+    <rect x="0" y="0" width="650" height="85" rx="12" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="325" y="26" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">
+      💡 REGLA DE ORO DE LOS TIEMPOS PERFECTOS: ANTERIORIDAD Y CUMPLIMIENTO
+    </text>
+    <text x="325" y="48" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" fill="#e2e8f0">
+      Todo tiempo perfecto expresa una acción completada con respecto a una fecha límite: <tspan fill="#c084fc" font-weight="bold">Had + V3</tspan> (antes de ayer), <tspan fill="#38bdf8" font-weight="bold">Have/Has + V3</tspan> (hasta hoy), <tspan fill="#34d399" font-weight="bold">Will have + V3</tspan> (para mañana).
+    </text>
+    <text x="325" y="68" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">
+      Fórmula universal: [ Sujeto ] + [ Auxiliar temporal: had / have / will have ] + [ Participio Pasado (V3) ]
+    </text>
+  </g>
+</svg>`;
+
+const NARRATIVE_TENSES_TIMELINE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="chalkBgNT" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
+    <filter id="glowNT" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="700" height="380" rx="16" fill="url(#chalkBgNT)" stroke="#27354f" stroke-width="1.5"/>
+  <text x="350" y="36" font-family="system-ui, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#f8fafc">TIMELINE: NARRATIVE TENSES (3 CAPAS TEMPORALES)</text>
+  <text x="350" y="56" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">Estructura cronológica: Fondo (Continuous) + Suceso (Simple) + Pasado Anterior (Past Perfect)</text>
+  <line x1="50" y1="130" x2="650" y2="130" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+  <polygon points="650,130 636,124 636,136" fill="#64748b"/>
+  <g transform="translate(130, 130)" filter="url(#glowNT)">
+    <circle cx="0" cy="0" r="12" fill="#c084fc"/>
+    <text x="0" y="4" font-family="system-ui, sans-serif" font-size="11" font-weight="900" text-anchor="middle" fill="#fff">1</text>
+  </g>
+  <rect x="50" y="68" width="160" height="24" rx="8" fill="rgba(192,132,252,0.2)" stroke="#c084fc" stroke-width="1.2"/>
+  <text x="130" y="84" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#c084fc">PAST PERFECT (Had + V3)</text>
+  <text x="130" y="165" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#e9d5ff">&quot;The train had left...&quot;</text>
+  <text x="130" y="180" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">(Ocurrió primero)</text>
+  <g transform="translate(350, 130)" filter="url(#glowNT)">
+    <circle cx="0" cy="0" r="12" fill="#38bdf8"/>
+    <text x="0" y="4" font-family="system-ui, sans-serif" font-size="11" font-weight="900" text-anchor="middle" fill="#fff">2</text>
+  </g>
+  <rect x="270" y="68" width="160" height="24" rx="8" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" stroke-width="1.2"/>
+  <text x="350" y="84" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#38bdf8">PAST SIMPLE (V2)</text>
+  <text x="350" y="165" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#7dd3fc">&quot;...when I arrived&quot;</text>
+  <text x="350" y="180" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">(Evento principal)</text>
+  <line x1="560" y1="95" x2="560" y2="165" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+  <circle cx="560" cy="130" r="9" fill="#f59e0b" filter="url(#glowNT)"/>
+  <text x="560" y="160" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#fbbf24">NOW</text>
+  <text x="560" y="175" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" fill="#94a3b8">(Presente)</text>
+  <g transform="translate(45, 215)">
+    <rect x="0" y="0" width="610" height="65" rx="10" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="15" y="25" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">Regla de Secuencia Temporal (Causa / Antecedente):</text>
+    <text x="15" y="48" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">
+      <tspan fill="#7dd3fc">When I arrived at the cinema</tspan>, <tspan fill="#c084fc" font-weight="bold">the movie had already started</tspan>.
+    </text>
+  </g>
+  <g transform="translate(45, 290)">
+    <rect x="0" y="0" width="610" height="65" rx="10" fill="#060a12" stroke="#1e293b" stroke-width="1"/>
+    <text x="15" y="25" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#34d399">Con Past Continuous (Escenario de Fondo + Interrupción):</text>
+    <text x="15" y="48" font-family="system-ui, sans-serif" font-size="12" fill="#e2e8f0">
+      <tspan fill="#34d399">It was raining</tspan> <tspan fill="#cbd5e1">because a storm</tspan> <tspan fill="#c084fc" font-weight="bold">had hit the city</tspan>.
+    </text>
+  </g>
+</svg>`;
+
 const SECOND_CONDITIONAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" width="100%" height="100%">
   <defs>
     <linearGradient id="chalkBgCond" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a101d"/><stop offset="100%" stop-color="#141e33"/></linearGradient>
@@ -1268,7 +1374,17 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     : (typeof phase?.tutor_says?.text === 'string' ? phase.tutor_says.text.toLowerCase() : '');
   const combined = `${lowTop} ${pName} ${pBoard} ${pSpeech}`;
 
-  // 0. Can & Abilities / Modal Verbs of Ability (HIGHEST PRIORITY for Can)
+  // 0. Perfect Tenses / Present Perfect detection (Strictly Anchored)
+  const isPerfect =
+    lowTop.includes('perfect') ||
+    lowTop.includes('perfecto') ||
+    lowTop.includes('the bridge metaphor') ||
+    combined.includes('perfect tenses') ||
+    combined.includes('tiempos perfectos') ||
+    combined.includes('foundations of the perfect') ||
+    combined.includes('the bridge metaphor');
+
+  // 0.1 Can & Abilities / Modal Verbs of Ability (HIGHEST PRIORITY for Can)
   const isCan =
     lowTop.includes('can & abilities') ||
     lowTop.includes('can and abilities') ||
@@ -1283,33 +1399,38 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
     combined.includes('las 3 reglas de oro de can') ||
     (combined.includes('can') && (combined.includes('abilities') || combined.includes('habilidad') || combined.includes('habilidades') || combined.includes('swim')));
 
-  if (isCan) {
-    return CAN_ABILITIES_SVG;
-  }
-
-  // 0.0 Present Continuous & Actions in Progress (HIGHEST PRIORITY for Continuous)
+  // 0.2 Present Continuous & Actions in Progress - STRICT: Must ONLY match when topic is actual Present Continuous/Progressive
   const isPresentContinuous =
     !isCan &&
+    !isPerfect &&
+    !lowTop.includes('past') &&
+    !lowTop.includes('future') &&
+    !lowTop.includes('gerund') &&
+    !lowTop.includes('passive') &&
     (
       lowTop.includes('present continuous') ||
-      lowTop.includes('progressive') ||
+      lowTop.includes('present progressive') ||
       lowTop.includes('presente continuo') ||
+      lowTop.includes('presente progresivo') ||
       lowTop.includes('acciones en progreso') ||
-      (lowTop.includes('continuous') && !lowTop.includes('past')) ||
-      combined.includes('present continuous') ||
-      combined.includes('presente continuo') ||
-      combined.includes('am/is/are + -ing') ||
-      combined.includes('am / is / are + verbo-ing') ||
-      (combined.includes('-ing') && !combined.includes('past continuous') && !lowTop.includes('past'))
+      lowTop.includes('actions in progress') ||
+      lowTop === 'continuous' ||
+      lowTop === 'progressive' ||
+      (
+        (combined.includes('present continuous') ||
+         combined.includes('presente continuo') ||
+         combined.includes('am/is/are + -ing') ||
+         combined.includes('am / is / are + verbo-ing')) &&
+        !combined.includes('past continuous') &&
+        !combined.includes('future continuous') &&
+        !combined.includes('perfect')
+      )
     );
-
-  if (isPresentContinuous) {
-    return PRESENT_CONTINUOUS_TIMELINE_SVG;
-  }
 
   // 1. Questions & Negatives (Do / Does, don't / doesn't, El reflector DO/DOES) - STRICT (never generic 'preguntas')
   const isQn =
     !isCan &&
+    !isPerfect &&
     !isPresentContinuous &&
     (
       combined.includes('questions & negatives') ||
@@ -1323,21 +1444,55 @@ export function getPhaseDiagramSvg(phase: any, topic: string): string | null {
       ((combined.includes('auxiliar do') || combined.includes('auxiliar does') || combined.includes('auxiliares do')) && (combined.includes('pregunta') || combined.includes('negac')))
     );
 
-  if (isQn) {
-    return DO_DOES_QUESTIONS_NEGATIVES_SVG;
-  }
-
   // If cached diagram_svg exists and is valid (not mismatched DO/DOES on Can, and not mismatched third-person rule on a question or continuous slide)
   if (phase?.diagram_svg && typeof phase.diagram_svg === 'string' && phase.diagram_svg.includes('<svg')) {
-    if (isPresentContinuous && (phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || phase.diagram_svg.includes('DO / DOES') || phase.diagram_svg.includes('PAST SIMPLE'))) {
+    if (isPerfect && (phase.diagram_svg.includes('PRESENT CONTINUOUS') || phase.diagram_svg.includes('DO / DOES') || phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || phase.diagram_svg.includes('FREQUENCY ADVERBS'))) {
+      // Invalidate bad cached SVG, will resolve to correct perfect tenses diagram below
+    } else if (isPresentContinuous && (phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || phase.diagram_svg.includes('DO / DOES') || phase.diagram_svg.includes('PAST SIMPLE') || phase.diagram_svg.includes('THE BRIDGE METAPHOR'))) {
       return PRESENT_CONTINUOUS_TIMELINE_SVG;
-    }
-    if (
+    } else if (isCan && (phase.diagram_svg.includes('DO / DOES') || phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || phase.diagram_svg.includes('PRESENT CONTINUOUS'))) {
+      return CAN_ABILITIES_SVG;
+    } else if (isQn && (phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || phase.diagram_svg.includes('FREQUENCY ADVERBS') || phase.diagram_svg.includes('PRESENT CONTINUOUS'))) {
+      return DO_DOES_QUESTIONS_NEGATIVES_SVG;
+    } else if (
       (!phase.diagram_svg.includes('DO / DOES') || isQn) &&
       (!phase.diagram_svg.includes('REGLAS DE TERCERA PERSONA') || (!isQn && !isPresentContinuous && !combined.includes('reflector') && !combined.includes('do/does')))
     ) {
       return phase.diagram_svg;
     }
+  }
+
+  // 0. Perfect Tenses (The Bridge Metaphor, 3-Tense Foundations, or Narrative Tenses)
+  if (isPerfect) {
+    if (lowTop.includes('narrative') || lowTop.includes('past perfect') || combined.includes('past perfect') || combined.includes('had + v3')) {
+      return NARRATIVE_TENSES_TIMELINE_SVG;
+    }
+    if (
+      lowTop.includes('perfect tenses') ||
+      lowTop.includes('foundations') ||
+      lowTop.includes('fundamentos') ||
+      lowTop.includes('mental model') ||
+      lowTop.includes('modelo mental') ||
+      combined.includes('by 2020') ||
+      combined.includes('by 2030') ||
+      combined.includes('time machine') ||
+      combined.includes('future perfect')
+    ) {
+      return PERFECT_TENSES_FOUNDATIONS_SVG;
+    }
+    return PRESENT_PERFECT_VS_PAST_SIMPLE_SVG;
+  }
+
+  if (isCan) {
+    return CAN_ABILITIES_SVG;
+  }
+
+  if (isPresentContinuous) {
+    return PRESENT_CONTINUOUS_TIMELINE_SVG;
+  }
+
+  if (isQn) {
+    return DO_DOES_QUESTIONS_NEGATIVES_SVG;
   }
 
   // 0. Modals of Deduction & Probability (Certainty Scale)
@@ -2117,9 +2272,23 @@ function extractSpokenEnglishQuotes(speechText: string, topic?: string, phase?: 
 
 function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: string): TimelineStep[] {
   const lowTop = (topic || '').toLowerCase();
-  const isPresentPerfectTopic = lowTop.includes('present perfect') || lowTop.includes('perfect vs past');
+  const isPresentPerfectTopic = lowTop.includes('perfect') || lowTop.includes('perfecto') || lowTop.includes('the bridge metaphor');
   const isPastContTopic = !isPresentPerfectTopic && (lowTop.includes('past continuous') || lowTop.includes('interrupted'));
-  const isPresentContinuousTopic = !isPresentPerfectTopic && !isPastContTopic && (lowTop.includes('present continuous') || lowTop.includes('progressive') || lowTop.includes('presente continuo') || (lowTop.includes('continuous') && !lowTop.includes('past')));
+  const isPresentContinuousTopic =
+    !isPresentPerfectTopic &&
+    !isPastContTopic &&
+    !lowTop.includes('past') &&
+    !lowTop.includes('future') &&
+    !lowTop.includes('gerund') &&
+    !lowTop.includes('passive') &&
+    (
+      lowTop.includes('present continuous') ||
+      lowTop.includes('present progressive') ||
+      lowTop.includes('presente continuo') ||
+      lowTop.includes('acciones en progreso') ||
+      lowTop === 'continuous' ||
+      lowTop === 'progressive'
+    );
   const isQNTopic = !isPresentPerfectTopic && !isPastContTopic && !isPresentContinuousTopic && (lowTop.includes('questions & negatives') || lowTop.includes('questions and negatives') || lowTop.includes('do / does'));
   const isRoutineTopic = !isPresentPerfectTopic && !isPastContTopic && !isPresentContinuousTopic && !isQNTopic && (lowTop.includes('daily routines') || lowTop.includes('routine') || lowTop.includes('habit'));
   const isObjectTopic = !isPresentPerfectTopic && !isPastContTopic && !isPresentContinuousTopic && !isQNTopic && !isRoutineTopic && (lowTop.includes('object') || lowTop.includes('possession'));
@@ -2486,7 +2655,17 @@ function sanitizeTimelineSteps(steps: TimelineStep[], phase?: any, topic?: strin
 
     // 5. Sanitize Diagram SVG (Strict Topic Anchoring)
     if (step.visual_action === 'show_diagram' && p.svg) {
-      if (isPresentContinuousTopic) {
+      if (isPresentPerfectTopic) {
+        if (p.svg.includes('PRESENT CONTINUOUS') || p.svg.includes('DO / DOES') || p.svg.includes('REGLAS DE TERCERA PERSONA') || p.svg.includes('FREQUENCY ADVERBS')) {
+          if (lowTop.includes('narrative') || lowTop.includes('past perfect')) {
+            p.svg = NARRATIVE_TENSES_TIMELINE_SVG;
+          } else if (lowTop.includes('foundations') || lowTop.includes('fundamentos') || lowTop.includes('mental model') || lowTop.includes('perfect tenses')) {
+            p.svg = PERFECT_TENSES_FOUNDATIONS_SVG;
+          } else {
+            p.svg = PRESENT_PERFECT_VS_PAST_SIMPLE_SVG;
+          }
+        }
+      } else if (isPresentContinuousTopic) {
         p.svg = PRESENT_CONTINUOUS_TIMELINE_SVG;
       } else if (isPastContTopic) {
         p.svg = PAST_CONTINUOUS_TIMELINE_SVG;

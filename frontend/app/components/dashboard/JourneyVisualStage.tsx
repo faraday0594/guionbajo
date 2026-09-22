@@ -517,9 +517,44 @@ export default function JourneyVisualStage({
             </filter>
 
             <linearGradient id="robotChassis" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#374151" />
-              <stop offset="60%" stopColor="#1f2937" />
-              <stop offset="100%" stopColor="#111827" />
+              <stop offset="0%" stopColor="#475569" />
+              <stop offset="25%" stopColor="#374151" />
+              <stop offset="70%" stopColor="#1f2937" />
+              <stop offset="100%" stopColor="#0f172a" />
+            </linearGradient>
+
+            <radialGradient id="robotChassis3D" cx="45%" cy="32%" r="70%">
+              <stop offset="0%" stopColor="#64748b" />
+              <stop offset="25%" stopColor="#374151" />
+              <stop offset="70%" stopColor="#1e293b" />
+              <stop offset="100%" stopColor="#0a0f1d" />
+            </radialGradient>
+
+            <linearGradient id="robotTorso3D" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#1e293b" />
+              <stop offset="22%" stopColor="#475569" />
+              <stop offset="55%" stopColor="#334155" />
+              <stop offset="85%" stopColor="#1e293b" />
+              <stop offset="100%" stopColor="#0f172a" />
+            </linearGradient>
+
+            <linearGradient id="robotSideFlank" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#334155" />
+              <stop offset="35%" stopColor="#1e293b" />
+              <stop offset="75%" stopColor="#141c2b" />
+              <stop offset="100%" stopColor="#090d16" />
+            </linearGradient>
+
+            <linearGradient id="topRoofHighlight" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#cbd5e1" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="#64748b" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#1e293b" stopOpacity="0" />
+            </linearGradient>
+
+            <linearGradient id="nozzleBellGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#64748b" />
+              <stop offset="45%" stopColor="#334155" />
+              <stop offset="100%" stopColor="#0f172a" />
             </linearGradient>
 
             <linearGradient id="antennaStemGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1029,43 +1064,84 @@ export default function JourneyVisualStage({
             const p = travelProgress; // 0..1 eased
             const isFlying = isTraveling;
 
-            // ── 180° Media Vuelta (Turn) Kinematics ────────────────────────
-            // When moving backward, Guionbajo spins 180° to face us, flies in reverse,
-            // then spins 180° back to land facing forward.
-            let flipScaleX = 1;
-            let showFront = false;
-
+            // ── 3D Kinematics Rotation Calculation ─────────────────────────
+            // θ (theta) is the Y-axis rotation angle in radians:
+            // 0 = facing forward along the path (back view)
+            // π = facing backward toward the student (front view)
+            let theta = 0;
             if (isFlying && travelDirection === 'backward') {
-              // Spin 1: p from 0 to 0.18
-              // Mid-flight: p from 0.18 to 0.82 (fully facing camera)
-              // Spin 2: p from 0.82 to 1.0
-              if (p < 0.18) {
-                const spin1 = p / 0.18; // 0 to 1
-                const rotCos = Math.cos(spin1 * Math.PI);
-                flipScaleX = Math.abs(rotCos);
-                showFront = rotCos < 0;
-              } else if (p <= 0.82) {
-                flipScaleX = 1;
-                showFront = true;
+              if (p < 0.22) {
+                // Spin 1: Smooth 0 -> π turn
+                const t = p / 0.22;
+                const easedT = t * t * (3 - 2 * t);
+                theta = easedT * Math.PI;
+              } else if (p <= 0.78) {
+                // Mid-flight: Facing camera (π)
+                theta = Math.PI;
               } else {
-                const spin2 = (p - 0.82) / 0.18; // 0 to 1
-                const rotCos = Math.cos(spin2 * Math.PI);
-                flipScaleX = Math.abs(rotCos);
-                showFront = rotCos > 0;
+                // Spin 2: Smooth π -> 0 turn back
+                const t = (p - 0.78) / 0.22;
+                const easedT = t * t * (3 - 2 * t);
+                theta = Math.PI * (1 - easedT);
               }
             }
+
+            const cosTheta = Math.cos(theta);
+            const sinTheta = Math.sin(theta);
+            const absCos = Math.abs(cosTheta);
+            const showFront = cosTheta < 0;
+
+            // Physical 3D dimensions
+            const W_head = 60;
+            const H_head = 48;
+            const D_head = 24; // 3D lateral thickness of head
+
+            const W_torso = 48;
+            const H_torso = 32;
+            const D_torso = 20; // 3D lateral depth of torso
+
+            // Projected face & side flank dimensions:
+            const faceW_head = Math.max(0.01, W_head * absCos);
+            const sideW_head = D_head * sinTheta;
+            const totalW_head = faceW_head + sideW_head;
+
+            const faceW_torso = Math.max(0.01, W_torso * absCos);
+            const sideW_torso = D_torso * sinTheta;
+            const totalW_torso = faceW_torso + sideW_torso;
+
+            // Centers and offsets:
+            // When cosTheta >= 0 (Back view), side flank is on the right side.
+            // When cosTheta < 0 (Front view), side flank is on the left side.
+            const faceCenterX_head = cosTheta >= 0
+              ? 475 - sideW_head / 2
+              : 475 + sideW_head / 2;
+            const sideX_head = cosTheta >= 0
+              ? faceCenterX_head + faceW_head / 2
+              : 475 - totalW_head / 2;
+
+            const faceCenterX_torso = cosTheta >= 0
+              ? 475 - sideW_torso / 2
+              : 475 + sideW_torso / 2;
+            const sideX_torso = cosTheta >= 0
+              ? faceCenterX_torso + faceW_torso / 2
+              : 475 - totalW_torso / 2;
+
+            // 3D Ear dials positions (orbiting on the lateral perimeter):
+            const earLeftX = 475 - (W_head / 2) * cosTheta - (D_head / 2) * sinTheta;
+            const earLeftZ = (W_head / 2) * sinTheta - (D_head / 2) * cosTheta;
+            const earRightX = 475 + (W_head / 2) * cosTheta + (D_head / 2) * sinTheta;
+            const earRightZ = -(W_head / 2) * sinTheta + (D_head / 2) * cosTheta;
 
             // ── Flame intensity (sinusoidal peak at mid-flight) ──────────
             const flameIntensity = isFlying ? Math.sin(p * Math.PI) : 0.15;
             const isMegaFlame = avatarUpgradeStage >= 2;
-            const flameLen = (12 + flameIntensity * 44) * (isMegaFlame ? 1.45 : 1.0);    // Mega flames for Stage >= 2
-            const flameW = (8 + flameIntensity * 7) * (isMegaFlame ? 1.4 : 1.0);        // Mega flames for Stage >= 2
+            const flameLen = (12 + flameIntensity * 44) * (isMegaFlame ? 1.45 : 1.0);
+            const flameW = (8 + flameIntensity * 7) * (isMegaFlame ? 1.4 : 1.0);
             const flameCoreLen = flameLen * 0.6;
             const flameOpacity = 0.5 + flameIntensity * 0.5;
             const shimmer = Math.sin(p * Math.PI * 13) * 2;
 
             // ── Tilt angle ───────────────────────────────────────────────
-            // Tilts forward when advancing, tilts slightly into flight direction when reversing
             const tiltAngle = isFlying
               ? travelDirection === 'forward'
                 ? Math.sin(p * Math.PI) * -11
@@ -1080,10 +1156,36 @@ export default function JourneyVisualStage({
             // Ground glow dimensions
             const groundGlowR = (16 + flameIntensity * 26) * (isMegaFlame ? 1.35 : 1.0);
 
+            const renderEarDial = (x: number) => (
+              <g transform={`translate(${x - 3.5}, 241)`}>
+                <rect
+                  x="0"
+                  y="0"
+                  width="7"
+                  height="18"
+                  rx="2"
+                  fill="url(#earDialGrad)"
+                  stroke="#475569"
+                  strokeWidth="0.8"
+                />
+                <line x1="1" y1="3" x2="6" y2="3" stroke="#94a3b8" strokeWidth="0.8" opacity="0.6" />
+                <line x1="1" y1="15" x2="6" y2="15" stroke="#1e293b" strokeWidth="0.8" opacity="0.8" />
+                <rect
+                  x="1.8"
+                  y="8"
+                  width="3.5"
+                  height="2"
+                  rx="1"
+                  fill="#00D4FF"
+                  filter="url(#cyanGlow)"
+                />
+              </g>
+            );
+
             return (
               <g
                 style={{
-                  transform: `translateY(${hoverY}px) rotate(${tiltAngle}deg) scaleX(${Math.max(0.05, flipScaleX)})`,
+                  transform: `translateY(${hoverY}px) rotate(${tiltAngle}deg)`,
                   transformOrigin: '475px 285px',
                   transition: 'none',
                 }}
@@ -1101,7 +1203,7 @@ export default function JourneyVisualStage({
                   />
                 )}
 
-                {/* ── STAGE 6: ESPADAS GEMELAS CYBER EN LA ESPALDA (BAJADAS AL TORSO) ──────── */}
+                {/* ── STAGE 6: ESPADAS GEMELAS CYBER EN LA ESPALDA ──────── */}
                 {avatarUpgradeStage >= 6 && (
                   <g>
                     {/* Tahalí / arnés de sujeción en la espalda */}
@@ -1125,28 +1227,22 @@ export default function JourneyVisualStage({
                   </g>
                 )}
 
-                {/* ── STAGE 2: JETPACK DORSAL DOBLE TOBERA (ESPALDA Y LATERALES) ── */}
+                {/* ── STAGE 2: JETPACK DORSAL DOBLE TOBERA ── */}
                 {avatarUpgradeStage >= 2 && (
                   <g>
                     {!showFront ? (
-                      /* ESPALDA: Canisters metálicos montados directamente sobre el chasis trasero */
                       <>
-                        {/* Canister izquierdo */}
                         <rect x="453" y="274" width="11" height="28" rx="3" fill="url(#antennaStemGrad)" stroke="#64748b" strokeWidth="1.2" />
                         <line x1="453" y1="282" x2="464" y2="282" stroke="#f59e0b" strokeWidth="1.5" />
                         <rect x="454.5" y="302" width="8" height="4" rx="1" fill="#334155" stroke="#64748b" strokeWidth="0.8" />
-                        {/* Llama de plasma lateral izquierda */}
                         <ellipse cx="458.5" cy={310 + flameIntensity * 12} rx={3.5 + flameIntensity * 2} ry={6 + flameIntensity * 14} fill="url(#plasmaFlameOuter)" opacity={flameOpacity} filter="url(#cyanGlow)" />
 
-                        {/* Canister derecho */}
                         <rect x="486" y="274" width="11" height="28" rx="3" fill="url(#antennaStemGrad)" stroke="#64748b" strokeWidth="1.2" />
                         <line x1="486" y1="282" x2="497" y2="282" stroke="#f59e0b" strokeWidth="1.5" />
                         <rect x="487.5" y="302" width="8" height="4" rx="1" fill="#334155" stroke="#64748b" strokeWidth="0.8" />
-                        {/* Llama de plasma lateral derecha */}
                         <ellipse cx="491.5" cy={310 + flameIntensity * 12} rx={3.5 + flameIntensity * 2} ry={6 + flameIntensity * 14} fill="url(#plasmaFlameOuter)" opacity={flameOpacity} filter="url(#cyanGlow)" />
                       </>
                     ) : (
-                      /* FRENTE: Canisters sobresaliendo detrás de los flancos del torso */
                       <>
                         <rect x="443" y="276" width="8" height="24" rx="2.5" fill="url(#antennaStemGrad)" stroke="#64748b" strokeWidth="1" />
                         <line x1="443" y1="284" x2="451" y2="284" stroke="#f59e0b" strokeWidth="1.5" />
@@ -1178,56 +1274,52 @@ export default function JourneyVisualStage({
                   opacity={flameIntensity * 0.85}
                 />
 
-                {/* ── MAGNETIC HOVER THRUSTER (Base del cuerpo) ─────────── */}
-                {/* Pluma de llama de plasma inferior */}
+                {/* ── 3D MAGNETIC HOVER THRUSTER (Base del cuerpo) ─────────── */}
                 <path
-                  d={`M ${475 - flameW} 314
-                      Q ${475 - flameW * 0.4 + shimmer} ${314 + flameLen * 0.55}
-                        475 ${314 + flameLen}
-                      Q ${475 + flameW * 0.4 + shimmer} ${314 + flameLen * 0.55}
-                        ${475 + flameW} 314 Z`}
+                  d={`M ${475 - flameW} 315
+                      Q ${475 - flameW * 0.4 + shimmer} ${315 + flameLen * 0.55}
+                        475 ${315 + flameLen}
+                      Q ${475 + flameW * 0.4 + shimmer} ${315 + flameLen * 0.55}
+                        ${475 + flameW} 315 Z`}
                   fill="url(#plasmaFlameOuter)"
                   opacity={flameOpacity}
                   filter="url(#cyanGlow)"
                 />
                 <path
-                  d={`M ${475 - flameW * 0.55} 314
-                      Q 475 ${314 + flameCoreLen * 0.55}
-                        475 ${314 + flameCoreLen}
-                      Q 475 ${314 + flameCoreLen * 0.55}
-                        ${475 + flameW * 0.55} 314 Z`}
+                  d={`M ${475 - flameW * 0.55} 315
+                      Q 475 ${315 + flameCoreLen * 0.55}
+                        475 ${315 + flameCoreLen}
+                      Q 475 ${315 + flameCoreLen * 0.55}
+                        ${475 + flameW * 0.55} 315 Z`}
                   fill="url(#plasmaFlameCore)"
                   opacity={0.95}
                 />
 
-                {/* Tobera metálica de propulsión */}
-                <rect
-                  x="464"
-                  y="310"
-                  width="22"
-                  height="5"
-                  rx="2"
-                  fill="url(#antennaStemGrad)"
-                  stroke="#334155"
-                  strokeWidth="1"
+                {/* 3D Tobera metálica de propulsión (campana troncocónica) */}
+                <polygon
+                  points={`464,308 486,308 ${475 + Math.max(9, totalW_torso * 0.28)},315 ${475 - Math.max(9, totalW_torso * 0.28)},315`}
+                  fill="url(#nozzleBellGrad)"
+                  stroke="#475569"
+                  strokeWidth="0.9"
                 />
-                <rect
-                  x="467"
-                  y="313"
-                  width="16"
-                  height="2"
-                  rx="1"
-                  fill="#0a0e17"
-                />
-                <rect
-                  x="467"
-                  y="313"
-                  width="16"
-                  height="2"
-                  rx="1"
-                  fill="#00D4FF"
-                  opacity={0.7 + flameIntensity * 0.3}
+                {/* 3D Boca elíptica con plasma resplandeciente */}
+                <ellipse
+                  cx="475"
+                  cy="315"
+                  rx={Math.max(9, totalW_torso * 0.26)}
+                  ry="3.2"
+                  fill="#090d16"
+                  stroke="#00D4FF"
+                  strokeWidth="1.4"
                   filter="url(#cyanGlow)"
+                />
+                <ellipse
+                  cx="475"
+                  cy="315"
+                  rx={Math.max(6, totalW_torso * 0.18)}
+                  ry="2"
+                  fill="#ffffff"
+                  opacity={0.85 + flameIntensity * 0.15}
                 />
 
                 {/* ── STAGE 1: BRAZOS MECÁNICOS ARTICULADOS ────────────── */}
@@ -1249,7 +1341,6 @@ export default function JourneyVisualStage({
                   stroke={avatarUpgradeStage >= 1 ? '#00D4FF' : '#64748b'}
                   strokeWidth={avatarUpgradeStage >= 1 ? 1.5 : 1}
                 />
-                {/* Left forearm & pincer clamp */}
                 <path
                   d={isFlying
                     ? `M 438 ${300 - flameIntensity * 8} L 441 ${309 - flameIntensity * 8}`
@@ -1285,7 +1376,6 @@ export default function JourneyVisualStage({
                   stroke={avatarUpgradeStage >= 1 ? '#00D4FF' : '#64748b'}
                   strokeWidth={avatarUpgradeStage >= 1 ? 1.5 : 1}
                 />
-                {/* Right forearm & pincer clamp */}
                 <path
                   d={isFlying
                     ? `M 512 ${300 - flameIntensity * 8} L 509 ${309 - flameIntensity * 8}`
@@ -1303,98 +1393,130 @@ export default function JourneyVisualStage({
                   filter={avatarUpgradeStage >= 1 ? 'url(#cyanGlow)' : undefined}
                 />
 
-                {/* ── ROBOT TORSO / BODY ─────────────────────────────────── */}
-                <rect
-                  x="451"
-                  y="278"
-                  width="48"
-                  height="32"
-                  rx="10"
-                  fill="url(#robotChassis)"
-                  stroke={avatarUpgradeStage >= 4 ? 'url(#mapGoldChassis)' : '#4b5563'}
-                  strokeWidth={avatarUpgradeStage >= 4 ? 2.5 : 1.8}
-                />
-
-                {/* STAGE 4: Hombreras de Oro Blindadas */}
-                {avatarUpgradeStage >= 4 && (
+                {/* ── 3D ROBOT TORSO / BODY ─────────────────────────────────── */}
+                {/* 3D Side flank of torso (visible when rotating in 3D) */}
+                {sideW_torso > 0.5 && (
                   <g>
-                    <path d="M 444 282 L 452 277 L 452 291 Z" fill="url(#mapGoldChassis)" stroke="#fef08a" strokeWidth="1" />
-                    <path d="M 506 282 L 498 277 L 498 291 Z" fill="url(#mapGoldChassis)" stroke="#fef08a" strokeWidth="1" />
-                    <rect x="458" y="278" width="34" height="4" rx="2" fill="url(#mapGoldChassis)" stroke="#fef08a" strokeWidth="0.8" />
+                    <rect
+                      x={sideX_torso}
+                      y="278"
+                      width={sideW_torso}
+                      height="32"
+                      rx={Math.min(6, sideW_torso / 2)}
+                      fill="url(#robotSideFlank)"
+                      stroke="#334155"
+                      strokeWidth="1"
+                    />
+                    {sideW_torso > 6 && (
+                      <line
+                        x1={cosTheta >= 0 ? sideX_torso : sideX_torso + sideW_torso}
+                        y1="282"
+                        x2={cosTheta >= 0 ? sideX_torso : sideX_torso + sideW_torso}
+                        y2="306"
+                        stroke="rgba(255,255,255,0.25)"
+                        strokeWidth="1"
+                      />
+                    )}
                   </g>
                 )}
 
-                {showFront ? (
-                  /* ─── TORSO FRONT: CRT MONITOR & SCANLINES ─── */
-                  <>
-                    <rect
-                      x="457"
-                      y="282"
-                      width="36"
-                      height="22"
-                      rx="5"
-                      fill="#020617"
-                      stroke={avatarUpgradeStage >= 4 ? '#fef08a' : '#334155'}
-                      strokeWidth="1.2"
-                      filter="url(#softGlow)"
-                    />
-                    {/* Horizontal CRT scanlines */}
-                    <line x1="459" y1="286" x2="491" y2="286" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
-                    <line x1="459" y1="290" x2="491" y2="290" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
-                    <line x1="459" y1="294" x2="491" y2="294" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
-                    <line x1="459" y1="298" x2="491" y2="298" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
-                    {/* Glowing CRT Screen Content: Guionbajo Underscore Terminal Symbol */}
-                    <text
-                      x="475"
-                      y="297"
-                      textAnchor="middle"
-                      fill="#00D4FF"
-                      fontFamily="monospace"
-                      fontSize="10"
-                      fontWeight="900"
-                      filter="url(#cyanGlow)"
-                    >
-                      _
-                    </text>
-                  </>
-                ) : (
-                  /* ─── TORSO BACK: REAR CHASSIS & POWER COUPLING ─── */
-                  <>
-                    {/* Central power conduit spine */}
-                    <rect
-                      x="469"
-                      y="278"
-                      width="12"
-                      height="28"
-                      rx="3"
-                      fill="#0f172a"
-                      stroke={avatarUpgradeStage >= 4 ? '#f59e0b' : '#334155'}
-                      strokeWidth="0.8"
-                    />
-                    <line x1="471" y1="283" x2="479" y2="283" stroke="#00D4FF" strokeWidth="1" opacity="0.8" />
-                    <line x1="471" y1="288" x2="479" y2="288" stroke="#00D4FF" strokeWidth="1" opacity="0.8" />
-                    {/* Underscore illuminated insignia on back */}
-                    <rect
-                      x="472"
-                      y="295"
-                      width="6"
-                      height="2"
-                      rx="1"
-                      fill="#00D4FF"
-                      filter="url(#cyanGlow)"
-                    />
-                    {/* Lateral ventilation / heat exhaust grilles */}
-                    <rect x="456" y="283" width="9" height="17" rx="2" fill="#111827" stroke="#334155" strokeWidth="0.8" />
-                    <line x1="458" y1="287" x2="463" y2="287" stroke="#334155" strokeWidth="1" />
-                    <line x1="458" y1="291" x2="463" y2="291" stroke="#334155" strokeWidth="1" />
-                    <line x1="458" y1="295" x2="463" y2="295" stroke="#334155" strokeWidth="1" />
+                {/* Torso Front/Back Face with cylindrical 3D shading */}
+                <g
+                  transform={`translate(${faceCenterX_torso}, 294) scale(${Math.max(0.02, absCos)}, 1) translate(-475, -294)`}
+                >
+                  <rect
+                    x="451"
+                    y="278"
+                    width="48"
+                    height="32"
+                    rx="10"
+                    fill="url(#robotTorso3D)"
+                    stroke={avatarUpgradeStage >= 4 ? 'url(#mapGoldChassis)' : '#4b5563'}
+                    strokeWidth={avatarUpgradeStage >= 4 ? 2.5 : 1.8}
+                  />
+                  {/* 3D Top curved reflection on torso */}
+                  <path
+                    d="M 456 281 Q 475 280, 494 281"
+                    stroke="rgba(255,255,255,0.3)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
 
-                    <rect x="485" y="283" width="9" height="17" rx="2" fill="#111827" stroke="#334155" strokeWidth="0.8" />
-                    <line x1="487" y1="287" x2="492" y2="287" stroke="#334155" strokeWidth="1" />
-                    <line x1="487" y1="291" x2="492" y2="291" stroke="#334155" strokeWidth="1" />
-                    <line x1="487" y1="295" x2="492" y2="295" stroke="#334155" strokeWidth="1" />
-                  </>
-                )}
+                  {/* STAGE 4: Hombreras de Oro Blindadas */}
+                  {avatarUpgradeStage >= 4 && (
+                    <g>
+                      <path d="M 444 282 L 452 277 L 452 291 Z" fill="url(#mapGoldChassis)" stroke="#fef08a" strokeWidth="1" />
+                      <path d="M 506 282 L 498 277 L 498 291 Z" fill="url(#mapGoldChassis)" stroke="#fef08a" strokeWidth="1" />
+                      <rect x="458" y="278" width="34" height="4" rx="2" fill="url(#mapGoldChassis)" stroke="#fef08a" strokeWidth="0.8" />
+                    </g>
+                  )}
+
+                  {showFront ? (
+                    /* TORSO FRONT: CRT MONITOR & SCANLINES */
+                    <>
+                      <rect
+                        x="457"
+                        y="282"
+                        width="36"
+                        height="22"
+                        rx="5"
+                        fill="#020617"
+                        stroke={avatarUpgradeStage >= 4 ? '#fef08a' : '#334155'}
+                        strokeWidth="1.2"
+                        filter="url(#softGlow)"
+                      />
+                      <line x1="459" y1="286" x2="491" y2="286" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
+                      <line x1="459" y1="290" x2="491" y2="290" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
+                      <line x1="459" y1="294" x2="491" y2="294" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
+                      <line x1="459" y1="298" x2="491" y2="298" stroke="rgba(0,212,255,0.25)" strokeWidth="0.8" />
+                      <text
+                        x="475"
+                        y="297"
+                        textAnchor="middle"
+                        fill="#00D4FF"
+                        fontFamily="monospace"
+                        fontSize="10"
+                        fontWeight="900"
+                        filter="url(#cyanGlow)"
+                      >
+                        _
+                      </text>
+                    </>
+                  ) : (
+                    /* TORSO BACK: REAR CHASSIS & POWER COUPLING */
+                    <>
+                      <rect
+                        x="469"
+                        y="278"
+                        width="12"
+                        height="28"
+                        rx="3"
+                        fill="#0f172a"
+                        stroke={avatarUpgradeStage >= 4 ? '#f59e0b' : '#334155'}
+                        strokeWidth="0.8"
+                      />
+                      <line x1="471" y1="283" x2="479" y2="283" stroke="#00D4FF" strokeWidth="1" opacity="0.8" />
+                      <line x1="471" y1="288" x2="479" y2="288" stroke="#00D4FF" strokeWidth="1" opacity="0.8" />
+                      <rect
+                        x="472"
+                        y="295"
+                        width="6"
+                        height="2"
+                        rx="1"
+                        fill="#00D4FF"
+                        filter="url(#cyanGlow)"
+                      />
+                      <rect x="456" y="283" width="9" height="17" rx="2" fill="#111827" stroke="#334155" strokeWidth="0.8" />
+                      <line x1="458" y1="287" x2="463" y2="287" stroke="#334155" strokeWidth="1" />
+                      <line x1="458" y1="291" x2="463" y2="291" stroke="#334155" strokeWidth="1" />
+                      <line x1="458" y1="295" x2="463" y2="295" stroke="#334155" strokeWidth="1" />
+                      <rect x="485" y="283" width="9" height="17" rx="2" fill="#111827" stroke="#334155" strokeWidth="0.8" />
+                      <line x1="487" y1="287" x2="492" y2="287" stroke="#334155" strokeWidth="1" />
+                      <line x1="487" y1="291" x2="492" y2="291" stroke="#334155" strokeWidth="1" />
+                      <line x1="487" y1="295" x2="492" y2="295" stroke="#334155" strokeWidth="1" />
+                    </>
+                  )}
+                </g>
 
                 {/* ── MECHANICAL NECK ───────────────────────────────────── */}
                 <rect
@@ -1407,220 +1529,187 @@ export default function JourneyVisualStage({
                   stroke="#334155"
                   strokeWidth="0.8"
                 />
+                <line x1="471" y1="275" x2="479" y2="275" stroke="#64748b" strokeWidth="0.9" />
 
-                {/* ── LATERAL EAR DIALS (Potenciómetros con notch cyan) ─── */}
-                <rect
-                  x="438"
-                  y="241"
-                  width="7"
-                  height="18"
-                  rx="2"
-                  fill="url(#earDialGrad)"
-                  stroke="#475569"
-                  strokeWidth="0.8"
-                />
-                <rect
-                  x="439"
-                  y="249"
-                  width="3.5"
-                  height="2"
-                  rx="1"
-                  fill="#00D4FF"
-                  filter="url(#cyanGlow)"
+                {/* ── 3D HEAD CAST SHADOW ONTO TORSO ────────────────────── */}
+                <ellipse
+                  cx="475"
+                  cy="275"
+                  rx={Math.max(12, totalW_head * 0.42)}
+                  ry="3.5"
+                  fill="#090d16"
+                  opacity="0.55"
+                  filter="url(#softGlow)"
                 />
 
-                <rect
-                  x="505"
-                  y="241"
-                  width="7"
-                  height="18"
-                  rx="2"
-                  fill="url(#earDialGrad)"
-                  stroke="#475569"
-                  strokeWidth="0.8"
-                />
-                <rect
-                  x="507.5"
-                  y="249"
-                  width="3.5"
-                  height="2"
-                  rx="1"
-                  fill="#00D4FF"
-                  filter="url(#cyanGlow)"
-                />
+                {/* ── BACKGROUND EAR DIALS (Orbiting behind head) ──────── */}
+                {earLeftZ < 0 && renderEarDial(earLeftX)}
+                {earRightZ < 0 && renderEarDial(earRightX)}
 
-                {/* ── ROBOT HEAD (Carcasa con remaches) ────────────────── */}
-                <rect
-                  x="445"
-                  y="226"
-                  width="60"
-                  height="48"
-                  rx="12"
-                  fill="url(#robotChassis)"
-                  stroke={avatarUpgradeStage >= 4 ? 'url(#mapGoldChassis)' : '#4b5563'}
-                  strokeWidth={avatarUpgradeStage >= 4 ? 2.5 : 2}
-                />
+                {/* ── 3D ROBOT HEAD CHASSIS & SIDE FLANK ────────────────── */}
+                {/* 3D Side depth flank of head */}
+                {sideW_head > 0.5 && (
+                  <g>
+                    <rect
+                      x={sideX_head}
+                      y="226"
+                      width={sideW_head}
+                      height="48"
+                      rx={Math.min(6, sideW_head / 2)}
+                      fill="url(#robotSideFlank)"
+                      stroke={avatarUpgradeStage >= 4 ? 'url(#mapGoldChassis)' : '#334155'}
+                      strokeWidth="1"
+                    />
+                    {sideW_head > 6 && (
+                      <>
+                        <line
+                          x1={cosTheta >= 0 ? sideX_head : sideX_head + sideW_head}
+                          y1="230"
+                          x2={cosTheta >= 0 ? sideX_head : sideX_head + sideW_head}
+                          y2="270"
+                          stroke="rgba(255,255,255,0.3)"
+                          strokeWidth="1"
+                        />
+                        <circle
+                          cx={sideX_head + sideW_head / 2}
+                          cy="250"
+                          r="1.5"
+                          fill="#64748b"
+                          stroke="#1e293b"
+                          strokeWidth="0.5"
+                        />
+                      </>
+                    )}
+                  </g>
+                )}
 
-                {/* STAGE 4: Placa de oro en la frente / cejas */}
-                {avatarUpgradeStage >= 4 && (
+                {/* 3D Head Front/Back Face */}
+                <g
+                  transform={`translate(${faceCenterX_head}, 250) scale(${Math.max(0.02, absCos)}, 1) translate(-475, -250)`}
+                >
                   <rect
-                    x="447"
-                    y="227"
-                    width="56"
-                    height="5"
-                    rx="2.5"
-                    fill="url(#mapGoldChassis)"
-                    stroke="#fef08a"
-                    strokeWidth="0.8"
+                    x="445"
+                    y="226"
+                    width="60"
+                    height="48"
+                    rx="12"
+                    fill="url(#robotChassis3D)"
+                    stroke={avatarUpgradeStage >= 4 ? 'url(#mapGoldChassis)' : '#4b5563'}
+                    strokeWidth={avatarUpgradeStage >= 4 ? 2.5 : 2}
                   />
-                )}
+                  {/* 3D Top curved reflection bevel */}
+                  <path
+                    d="M 453 230 Q 475 228, 497 230"
+                    stroke="rgba(255,255,255,0.45)"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
 
-                {/* 4 Corner Rivets */}
-                <circle cx="451" cy="232" r="1.8" fill={avatarUpgradeStage >= 4 ? '#fef08a' : '#788a9e'} stroke="#334155" strokeWidth="0.6" />
-                <circle cx="499" cy="232" r="1.8" fill={avatarUpgradeStage >= 4 ? '#fef08a' : '#788a9e'} stroke="#334155" strokeWidth="0.6" />
-                <circle cx="451" cy="268" r="1.8" fill={avatarUpgradeStage >= 4 ? '#fef08a' : '#788a9e'} stroke="#334155" strokeWidth="0.6" />
-                <circle cx="499" cy="268" r="1.8" fill={avatarUpgradeStage >= 4 ? '#fef08a' : '#788a9e'} stroke="#334155" strokeWidth="0.6" />
-
-                {showFront ? (
-                  /* ─── HEAD FRONT: OJOS & VISOR HUD (STAGE 3) ─── */
-                  <>
-                    {/* Left Eye Socket */}
-                    <circle
-                      cx="463"
-                      cy="245"
-                      r="8.5"
-                      fill="#090d14"
-                      stroke="#334155"
-                      strokeWidth="1.5"
-                    />
-                    {/* Neon Pupil (Rojo táctico en Stage >= 3, Cian antes) */}
-                    <circle
-                      cx="463"
-                      cy="245"
-                      r="4.5"
-                      fill={avatarUpgradeStage >= 3 ? '#ef4444' : '#00D4FF'}
-                      filter="url(#cyanGlow)"
-                    />
-                    {/* Eye Glint */}
-                    <circle cx="461.5" cy="243.5" r="1.2" fill="#ffffff" />
-                    {/* Mechanical eyelid shutter line */}
-                    <line x1="455" y1="239" x2="471" y2="239" stroke="#475569" strokeWidth="1.2" />
-
-                    {/* Right Eye Socket */}
-                    <circle
-                      cx="487"
-                      cy="245"
-                      r="8.5"
-                      fill="#090d14"
-                      stroke="#334155"
-                      strokeWidth="1.5"
-                    />
-                    {/* Neon Pupil (Rojo táctico en Stage >= 3, Cian antes) */}
-                    <circle
-                      cx="487"
-                      cy="245"
-                      r="4.5"
-                      fill={avatarUpgradeStage >= 3 ? '#ef4444' : '#00D4FF'}
-                      filter="url(#cyanGlow)"
-                    />
-                    {/* Eye Glint */}
-                    <circle cx="485.5" cy="243.5" r="1.2" fill="#ffffff" />
-                    {/* Mechanical eyelid shutter line */}
-                    <line x1="479" y1="239" x2="495" y2="239" stroke="#475569" strokeWidth="1.2" />
-
-                    {/* STAGE 3: Visor Holográfico Frontal Neón Cian */}
-                    {avatarUpgradeStage >= 3 && (
-                      <g>
-                        <rect
-                          x="452"
-                          y="234"
-                          width="46"
-                          height="22"
-                          rx="5"
-                          fill="rgba(0, 229, 255, 0.42)"
-                          stroke="#00f0ff"
-                          strokeWidth="1.6"
-                          filter="url(#cyanGlow)"
-                        />
-                        <line x1="454" y1="245" x2="496" y2="245" stroke="#ffffff" strokeWidth="0.9" opacity="0.75" />
-                      </g>
-                    )}
-
-                    {/* Mouth Frame with Terminal Cursor '_' */}
+                  {/* STAGE 4: Placa de oro en la frente / cejas */}
+                  {avatarUpgradeStage >= 4 && (
                     <rect
-                      x="457"
-                      y="260"
-                      width="36"
-                      height="8"
-                      rx="3"
-                      fill="#090d14"
-                      stroke="#334155"
-                      strokeWidth="1.2"
+                      x="447"
+                      y="227"
+                      width="56"
+                      height="5"
+                      rx="2.5"
+                      fill="url(#mapGoldChassis)"
+                      stroke="#fef08a"
+                      strokeWidth="0.8"
                     />
-                    <text
-                      x="475"
-                      y="267"
-                      textAnchor="middle"
-                      fill="#00D4FF"
-                      fontFamily="monospace"
-                      fontSize="11"
-                      fontWeight="900"
-                      filter="url(#cyanGlow)"
-                    >
-                      _
-                    </text>
-                  </>
-                ) : (
-                  /* ─── HEAD BACK: MAINTENANCE HATCH & VISOR CORREA TRASERA (STAGE 3) ─── */
-                  <>
-                    <rect
-                      x="454"
-                      y="235"
-                      width="42"
-                      height="30"
-                      rx="6"
-                      fill="#141c2b"
-                      stroke="#334155"
-                      strokeWidth="1.2"
-                    />
-                    {/* Horizontal cooling fins */}
-                    <line x1="459" y1="243" x2="491" y2="243" stroke="#26354a" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="459" y1="250" x2="491" y2="250" stroke="#26354a" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="459" y1="257" x2="491" y2="257" stroke="#26354a" strokeWidth="2" strokeLinecap="round" />
-                    {/* Central cyan power/status diode */}
-                    <circle cx="475" cy="250" r="2.5" fill="#00D4FF" filter="url(#cyanGlow)" />
+                  )}
 
-                    {/* STAGE 3: Correa cibernética del visor envolviendo la espalda de la cabeza */}
-                    {avatarUpgradeStage >= 3 && (
-                      <g>
-                        <rect
-                          x="444"
-                          y="242"
-                          width="62"
-                          height="6"
-                          rx="2"
-                          fill="#0b1329"
-                          stroke="#00f0ff"
-                          strokeWidth="1.4"
-                          opacity="0.95"
-                          filter="url(#cyanGlow)"
-                        />
-                        <line x1="448" y1="245" x2="502" y2="245" stroke="#00f0ff" strokeWidth="1.4" strokeDasharray="4 2" />
-                      </g>
-                    )}
-                  </>
-                )}
+                  {/* 4 Corner Rivets */}
+                  <circle cx="451" cy="232" r="1.8" fill={avatarUpgradeStage >= 4 ? '#fef08a' : '#788a9e'} stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="499" cy="232" r="1.8" fill={avatarUpgradeStage >= 4 ? '#fef08a' : '#788a9e'} stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="451" cy="268" r="1.8" fill={avatarUpgradeStage >= 4 ? '#fef08a' : '#788a9e'} stroke="#334155" strokeWidth="0.6" />
+                  <circle cx="499" cy="268" r="1.8" fill={avatarUpgradeStage >= 4 ? '#fef08a' : '#788a9e'} stroke="#334155" strokeWidth="0.6" />
+
+                  {showFront ? (
+                    /* HEAD FRONT */
+                    <>
+                      <circle cx="463" cy="245" r="8.5" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
+                      <circle cx="463" cy="245" r="4.5" fill={avatarUpgradeStage >= 3 ? '#ef4444' : '#00D4FF'} filter="url(#cyanGlow)" />
+                      <circle cx="461.5" cy="243.5" r="1.2" fill="#ffffff" />
+                      <line x1="455" y1="239" x2="471" y2="239" stroke="#475569" strokeWidth="1.2" />
+
+                      <circle cx="487" cy="245" r="8.5" fill="#090d14" stroke="#334155" strokeWidth="1.5" />
+                      <circle cx="487" cy="245" r="4.5" fill={avatarUpgradeStage >= 3 ? '#ef4444' : '#00D4FF'} filter="url(#cyanGlow)" />
+                      <circle cx="485.5" cy="243.5" r="1.2" fill="#ffffff" />
+                      <line x1="479" y1="239" x2="495" y2="239" stroke="#475569" strokeWidth="1.2" />
+
+                      {avatarUpgradeStage >= 3 && (
+                        <g>
+                          <rect
+                            x="452"
+                            y="234"
+                            width="46"
+                            height="22"
+                            rx="5"
+                            fill="rgba(0, 229, 255, 0.42)"
+                            stroke="#00f0ff"
+                            strokeWidth="1.6"
+                            filter="url(#cyanGlow)"
+                          />
+                          <line x1="454" y1="245" x2="496" y2="245" stroke="#ffffff" strokeWidth="0.9" opacity="0.75" />
+                        </g>
+                      )}
+
+                      <rect x="457" y="260" width="36" height="8" rx="3" fill="#090d14" stroke="#334155" strokeWidth="1.2" />
+                      <text
+                        x="475"
+                        y="267"
+                        textAnchor="middle"
+                        fill="#00D4FF"
+                        fontFamily="monospace"
+                        fontSize="11"
+                        fontWeight="900"
+                        filter="url(#cyanGlow)"
+                      >
+                        _
+                      </text>
+                    </>
+                  ) : (
+                    /* HEAD BACK */
+                    <>
+                      <rect x="454" y="235" width="42" height="30" rx="6" fill="#141c2b" stroke="#334155" strokeWidth="1.2" />
+                      <line x1="459" y1="243" x2="491" y2="243" stroke="#26354a" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="459" y1="250" x2="491" y2="250" stroke="#26354a" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="459" y1="257" x2="491" y2="257" stroke="#26354a" strokeWidth="2" strokeLinecap="round" />
+                      <circle cx="475" cy="250" r="2.5" fill="#00D4FF" filter="url(#cyanGlow)" />
+
+                      {avatarUpgradeStage >= 3 && (
+                        <g>
+                          <rect x="444" y="242" width="62" height="6" rx="2" fill="#0b1329" stroke="#00f0ff" strokeWidth="1.4" opacity="0.95" filter="url(#cyanGlow)" />
+                          <line x1="448" y1="245" x2="502" y2="245" stroke="#00f0ff" strokeWidth="1.4" strokeDasharray="4 2" />
+                        </g>
+                      )}
+                    </>
+                  )}
+                </g>
+
+                {/* 3D Curved Roof Cap */}
+                <ellipse
+                  cx={475}
+                  cy={227}
+                  rx={Math.max(12, totalW_head * 0.46)}
+                  ry="3"
+                  fill="url(#topRoofHighlight)"
+                  opacity={0.65}
+                />
+
+                {/* ── FOREGROUND EAR DIALS (Orbiting in front of head) ── */}
+                {earLeftZ >= 0 && renderEarDial(earLeftX)}
+                {earRightZ >= 0 && renderEarDial(earRightX)}
 
                 {/* ── STAGE 5: BOBINA DE TESLA (O ANTENA EN STAGE < 5) ──── */}
                 {avatarUpgradeStage >= 5 ? (
                   <g>
                     <rect x="473.5" y="210" width="3" height="16" rx="1.5" fill="url(#antennaStemGrad)" />
-                    {/* Anillos de bobina de Tesla cuántica */}
                     <ellipse cx="475" cy="208" rx="10" ry="3" fill="none" stroke="#00D4FF" strokeWidth="1.8" filter="url(#cyanGlow)" />
                     <ellipse cx="475" cy="202" rx="7.5" ry="2.3" fill="none" stroke="#00D4FF" strokeWidth="1.8" filter="url(#cyanGlow)" />
                     <ellipse cx="475" cy="196" rx="5" ry="1.6" fill="none" stroke="#00D4FF" strokeWidth="1.8" filter="url(#cyanGlow)" />
                     <circle cx="475" cy="190" r="3.2" fill="#ffffff" stroke="#00D4FF" strokeWidth="1.2" filter="url(#cyanGlow)" />
-                    {/* Rayos eléctricos dinámicos oscilantes */}
                     <path d="M 464 205 L 460 199 L 466 196 L 463 190" stroke="#fef08a" strokeWidth="1.6" fill="none" strokeLinecap="round">
                       <animate attributeName="opacity" values="0.2;1;0.3;1;0.2" dur="0.25s" repeatCount="indefinite" />
                     </path>
@@ -1638,7 +1727,6 @@ export default function JourneyVisualStage({
                       rx="1.5"
                       fill="url(#antennaStemGrad)"
                     />
-                    {/* Glowing Vacuum Bulb */}
                     <circle
                       cx="475"
                       cy="203"
@@ -1647,7 +1735,6 @@ export default function JourneyVisualStage({
                       stroke="rgba(255,255,255,0.6)"
                       strokeWidth="1.2"
                     />
-                    {/* Glowing bulb bloom */}
                     <circle
                       cx="475"
                       cy="203"
@@ -1656,7 +1743,6 @@ export default function JourneyVisualStage({
                       opacity={0.35 + flameIntensity * 0.25}
                       filter="url(#cyanGlow)"
                     />
-                    {/* Bulb Filament */}
                     <path
                       d="M 473 205 C 473 200, 477 200, 477 205"
                       fill="none"
@@ -1666,10 +1752,9 @@ export default function JourneyVisualStage({
                   </g>
                 )}
 
-                {/* ── STAGE 7: MINI-DRON ORBITAL "GUIONCITO" (EJE X HORIZONTAL CON LUZ ROJA) ── */}
+                {/* ── STAGE 7: MINI-DRON ORBITAL "GUIONCITO" ── */}
                 {avatarUpgradeStage >= 7 && (
                   <g>
-                    {/* Chasis elíptico del mini-dron orbitando lateralmente */}
                     <ellipse cx={475 + 46} cy="265" rx="7.5" ry="4.5" fill="#1e293b" stroke="#00D4FF" strokeWidth="1.2" filter="url(#cyanGlow)">
                       <animate attributeName="cx" values="521;527;521" dur="2s" repeatCount="indefinite" />
                       <animate attributeName="cy" values="263;267;263" dur="1.6s" repeatCount="indefinite" />
@@ -1678,7 +1763,6 @@ export default function JourneyVisualStage({
                       <animate attributeName="cx" values="521;527;521" dur="2s" repeatCount="indefinite" />
                       <animate attributeName="cy" values="264.5;268.5;264.5" dur="1.6s" repeatCount="indefinite" />
                     </ellipse>
-                    {/* Bombillo rojo intermitente (estroboscópico) */}
                     <circle cx={475 + 46} cy="261" r="2.2" fill="#ef4444" filter="url(#cyanGlow)">
                       <animate attributeName="cx" values="521;527;521" dur="2s" repeatCount="indefinite" />
                       <animate attributeName="cy" values="259;263;259" dur="1.6s" repeatCount="indefinite" />
@@ -1696,7 +1780,6 @@ export default function JourneyVisualStage({
                       stroke="#fef08a"
                       strokeWidth="1.2"
                     />
-                    {/* Gemas preciosas */}
                     <circle cx="464" cy="177" r="1.5" fill="#ef4444" />
                     <circle cx="475" cy="173" r="1.8" fill="#3b82f6" />
                     <circle cx="486" cy="177" r="1.5" fill="#10b981" />

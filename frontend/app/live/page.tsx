@@ -24,7 +24,7 @@ import { toast } from 'react-hot-toast';
 
 import TutorAvatar, { TutorState } from '@/app/components/TutorPanel/TutorAvatar';
 import { getCurrentUpgradeStage, UpgradeStage } from '@/lib/guionbajoUpgrades';
-import { api, LiveAudioStreamQueue, getSavedPreferredVoice, MiniClassData } from '@/lib/api';
+import { api, LiveAudioStreamQueue, getSavedPreferredVoice, MiniClassData, playEnglishAudio } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import {
   FlankCardItem,
@@ -94,11 +94,11 @@ export default function LiveChatPage() {
 
   const handlePlayMiniClassAudio = async (phraseText: string) => {
     try {
-      const blob = await api.live.synthesizeChunk(phraseText, preferredVoice);
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => URL.revokeObjectURL(url);
-      await audio.play();
+      const cleanText = phraseText
+        .replace(/\s*\([^)]*(?:incorrect|correcto|wrong|error|bien|mal|nota|ojo)[^)]*\)/gi, '')
+        .replace(/\s*\[[^\]]*(?:incorrect|correcto|wrong|error|bien|mal|nota|ojo)[^\]]*\]/gi, '')
+        .trim();
+      await playEnglishAudio(cleanText);
     } catch (e) {
       console.warn('Failed to play mini-class audio snippet:', e);
     }

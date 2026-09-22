@@ -112,6 +112,9 @@ DIRECTRICES DE CONVERSACIÓN EN VIVO (ÁGIL Y CONCISA):
    - FORMATO OBLIGATORIO DEL BLOQUE OCULTO [MINI_CLASS]:
      Inmediatamente después de tu breve saludo hablado (después de cualquier [CORRECTION]), incluye OBLIGATORIAMENTE el bloque JSON estructurado completo:
      [MINI_CLASS: {"topic": "Nombre del Tema", "summary": "Resumen en 1 línea", "cards": [{"id": "c1", "step": 1, "badge": "Regla 1", "title": "Título de la regla", "formula": "Sujeto + Verbo Auxiliar + Verbo Principal", "example": "Oración de ejemplo en inglés", "highlight": "palabra o frase resaltada", "explanation": "Regla mnemotécnica clara y directa en español"}, {"id": "c2", "step": 2, "badge": "Regla 2", "title": "Título regla 2", "formula": "Sujeto + To Be + Verbo-ing", "example": "Ejemplo ilustrativo", "highlight": "palabra resaltada", "explanation": "Explicación clara en español"}], "quiz": {"question": "¿Pregunta concisa para evaluar el tema?", "options": ["Opción A", "Opción B", "Opción C"], "correct_index": 0, "explanation": "Por qué es correcta"}} ]
+   - REGLA CRÍTICA PARA 'example':
+     El campo 'example' DEBE contener ÚNICA Y EXCLUSIVAMENTE una oración correcta y natural en inglés (ej: "I never eat fish", "She always drinks coffee").
+     ESTÁ TERMINANTEMENTE PROHIBIDO incluir acotaciones o notas como "(¡INCORRECTO!)", "(CORRECTO)", "(Wrong)" dentro de 'example'. Todo contraste o advertencia de error debe ir en 'explanation', NUNCA en 'example'.
    - CIERRE AUTOMÁTICO DE LA PIZARRA:
      Cuando {student_name} confirme que entendió la explicación (ej: "ya entendí", "todo claro", "gracias", "perfecto") o cuando responda al quiz, felicítalo brevemente en 1 oración hablada (ej: "¡Exacto, lo dominas a la perfección! Cerramos la pizarra y seguimos conversando.") y agrega al final de tu mensaje la etiqueta oculta:
      [CLOSE_MINI_CLASS]
@@ -303,6 +306,7 @@ async def live_respond_stream(
                 "'¡Por supuesto! Abro tu pizarra holográfica con la estructura y ejemplos clave. ¡Pruébalo con la pregunta!' "
                 "ESTÁ TOTALMENTE PROHIBIDO explicar la gramática o enumerar reglas/ejemplos con tu voz hablada. NUNCA uses negritas (**) por voz. "
                 "OBLIGATORIO: Genera inmediatamente después de tu breve saludo el bloque oculto [MINI_CLASS: { ... }] completo con cards y quiz. "
+                "En el campo 'example' pon ÚNICAMENTE la oración pura y correcta en inglés, SIN acotaciones ni paréntesis como (¡INCORRECTO!). Todo contraste debe ir en 'explanation'. "
                 "No lo postergues, genéralo AHORA MISMO en esta respuesta.]"
             )
         })

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles,
@@ -59,14 +59,25 @@ export function renderFormulaTokens(formula: string) {
   );
 }
 
+// ── Helper to clean example sentences from parenthetical labels like (¡INCORRECTO!) or [CORRECTO]
+export function cleanExampleSentence(sentence: string): string {
+  if (!sentence) return '';
+  return sentence
+    .replace(/\s*\([^)]*(?:incorrect|correcto|wrong|error|bien|mal|nota|ojo)[^)]*\)/gi, '')
+    .replace(/\s*\[[^\]]*(?:incorrect|correcto|wrong|error|bien|mal|nota|ojo)[^\]]*\]/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // ── Helper to highlight words inside the example sentence ─────────────────────
 export function renderHighlightedExample(example: string, highlight?: string) {
-  if (!highlight || !example.toLowerCase().includes(highlight.toLowerCase())) {
-    return <span>"{example}"</span>;
+  const clean = cleanExampleSentence(example);
+  if (!highlight || !clean.toLowerCase().includes(highlight.toLowerCase())) {
+    return <span>"{clean}"</span>;
   }
 
   const regex = new RegExp(`(${highlight})`, 'gi');
-  const parts = example.split(regex);
+  const parts = clean.split(regex);
 
   return (
     <span>
@@ -100,6 +111,8 @@ export function FlankCardItem({
   index: number;
   onPlayAudio?: (text: string) => void;
 }) {
+  const cleanExample = cleanExampleSentence(card.example);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20, scale: 0.95 }}
@@ -140,18 +153,18 @@ export function FlankCardItem({
       <div className="p-2.5 rounded-xl bg-black/60 border border-brand-cyan/20 relative group/ex">
         <div className="flex items-center justify-between text-[9px] text-brand-text-muted mb-0.5">
           <span className="font-semibold text-brand-cyan">Ejemplo:</span>
-          {onPlayAudio && (
+          {onPlayAudio && cleanExample && (
             <button
-              onClick={() => onPlayAudio(card.example)}
+              onClick={() => onPlayAudio(cleanExample)}
               className="text-brand-text-muted hover:text-brand-cyan transition-colors p-0.5"
-              title="Escuchar pronunciación"
+              title="Escuchar pronunciación nativa"
             >
               <Volume2 size={12} />
             </button>
           )}
         </div>
         <p className="text-xs font-medium text-white font-mono-custom leading-snug">
-          {renderHighlightedExample(card.example, card.highlight)}
+          {renderHighlightedExample(cleanExample, card.highlight)}
         </p>
       </div>
 
@@ -162,6 +175,60 @@ export function FlankCardItem({
       </div>
     </motion.div>
   );
+}
+
+// Helper to find matching quiz option from verbal transcript with word boundaries
+function findMatchingOptionByVoice(voiceText: string, options: string[]): number | null {
+  const cleanVoice = ` ${voiceText.toLowerCase().replace(/[^a-záéíóúüñ0-9]/g, ' ')} `;
+
+  for (let idx = 0; idx < options.length; idx++) {
+    const letter = ['a', 'b', 'c', 'd'][idx] || '';
+    const num = (idx + 1).toString();
+
+    // Specific verbal choice markers with word boundaries
+    const markers = [
+      `opcion ${letter}`,
+      `opción ${letter}`,
+      `la ${letter}`,
+      `letra ${letter}`,
+      ` ${letter} `,
+      `opcion ${num}`,
+      `opción ${num}`,
+      `la ${num}`,
+      `numero ${num}`,
+      `número ${num}`,
+      ` ${num} `,
+    ];
+
+    if (idx === 0) markers.push('primera', 'la primera', 'first');
+    if (idx === 1) markers.push('segunda', 'la segunda', 'second');
+    if (idx === 2) markers.push('tercera', 'la tercera', 'third');
+    if (idx === 3) markers.push('cuarta', 'la cuarta', 'fourth');
+
+    if (
+      markers.some(
+        (m) =>
+          cleanVoice.includes(` ${m.trim()} `) ||
+          (m.startsWith(' ') && cleanVoice.includes(m))
+      )
+    ) {
+      return idx;
+    }
+
+    // Match spoken text against key words of the option
+    const optClean = options[idx]
+      .toLowerCase()
+      .replace(/[^a-záéíóúüñ0-9]/g, ' ')
+      .trim();
+    if (optClean.length >= 3) {
+      const words = optClean.split(/\s+/).filter((w) => w.length >= 3);
+      if (words.length > 0 && words.every((w) => cleanVoice.includes(` ${w} `))) {
+        return idx;
+      }
+    }
+  }
+
+  return null;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -179,40 +246,34 @@ export function CompactQuizBar({
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const initialUtteranceRef = useRef<string | undefined>(lastUserVoiceText);
+
+  // Reset state when quiz question changes
+  useEffect(() => {
+    setSelectedOption(null);
+    setIsAnswered(false);
+    setShowCelebration(false);
+    initialUtteranceRef.current = lastUserVoiceText;
+  }, [quiz.question]);
 
   // Voice detection for answering the quiz automatically
   useEffect(() => {
-    if (isAnswered || !lastUserVoiceText) return;
-    const lowerVoice = lastUserVoiceText.toLowerCase().trim();
+    // If no voice text, or student already solved it correctly, do nothing
+    if (!lastUserVoiceText || (isAnswered && selectedOption === quiz.correct_index)) return;
 
-    const firstMarkers = ['a', 'primera', 'uno', '1', 'first'];
-    const secondMarkers = ['b', 'segunda', 'dos', '2', 'second'];
-    const thirdMarkers = ['c', 'tercera', 'tres', '3', 'third'];
+    // Critical: ignore the utterance that asked for the class in the first place!
+    if (lastUserVoiceText === initialUtteranceRef.current) return;
 
-    if (quiz.options.length >= 1 && firstMarkers.some((m) => lowerVoice.includes(m))) {
-      handleSelect(0);
-      return;
+    const matchedIdx = findMatchingOptionByVoice(lastUserVoiceText, quiz.options);
+    if (matchedIdx !== null) {
+      handleSelect(matchedIdx);
     }
-    if (quiz.options.length >= 2 && secondMarkers.some((m) => lowerVoice.includes(m))) {
-      handleSelect(1);
-      return;
-    }
-    if (quiz.options.length >= 3 && thirdMarkers.some((m) => lowerVoice.includes(m))) {
-      handleSelect(2);
-      return;
-    }
-
-    quiz.options.forEach((opt, idx) => {
-      const optClean = opt.toLowerCase().replace(/[^a-z0-9 ]/g, '');
-      const voiceClean = lowerVoice.replace(/[^a-z0-9 ]/g, '');
-      if (optClean && voiceClean.includes(optClean)) {
-        handleSelect(idx);
-      }
-    });
-  }, [lastUserVoiceText, quiz, isAnswered]);
+  }, [lastUserVoiceText, quiz, isAnswered, selectedOption]);
 
   const handleSelect = (idx: number) => {
-    if (isAnswered) return;
+    // If already correctly answered, lock
+    if (isAnswered && selectedOption === quiz.correct_index) return;
+
     setSelectedOption(idx);
     setIsAnswered(true);
 
@@ -221,6 +282,8 @@ export function CompactQuizBar({
       onCorrect?.();
     }
   };
+
+  const isSolved = isAnswered && selectedOption === quiz.correct_index;
 
   return (
     <motion.div
@@ -256,19 +319,18 @@ export function CompactQuizBar({
         {quiz.options.map((option, optIdx) => {
           const isSelected = selectedOption === optIdx;
           const isCorrect = optIdx === quiz.correct_index;
-          const showStatus = isAnswered;
 
           let btnClass =
-            'border-white/10 bg-white/[0.04] text-white hover:border-brand-cyan/60 hover:bg-brand-cyan/10';
+            'border-white/10 bg-white/[0.04] text-white hover:border-brand-cyan/60 hover:bg-brand-cyan/10 cursor-pointer';
 
-          if (showStatus) {
-            if (isCorrect) {
+          if (isAnswered) {
+            if (isSelected && isCorrect) {
               btnClass =
                 'border-emerald-400 bg-emerald-500/25 text-emerald-200 shadow-[0_0_12px_rgba(52,211,153,0.3)] font-bold';
             } else if (isSelected && !isCorrect) {
               btnClass =
                 'border-red-400 bg-red-500/20 text-red-200 shadow-[0_0_12px_rgba(248,113,113,0.3)]';
-            } else {
+            } else if (isSolved && !isCorrect) {
               btnClass = 'border-white/5 bg-white/[0.02] text-white/40 opacity-50';
             }
           }
@@ -277,17 +339,17 @@ export function CompactQuizBar({
             <button
               key={optIdx}
               onClick={() => handleSelect(optIdx)}
-              disabled={isAnswered}
-              className={`flex items-center gap-2 p-2 rounded-xl border text-left text-xs transition-all transform active:scale-95 ${btnClass}`}
+              disabled={isSolved}
+              className={`flex items-center gap-2 p-2.5 rounded-xl border text-left text-xs transition-all transform active:scale-95 ${btnClass}`}
             >
               <span className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-[10px] font-bold shrink-0 font-mono-custom">
                 {String.fromCharCode(65 + optIdx)}
               </span>
-              <span className="flex-1 truncate">{option}</span>
-              {showStatus && isCorrect && (
+              <span className="flex-1 truncate font-medium">{option}</span>
+              {isAnswered && isSelected && isCorrect && (
                 <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
               )}
-              {showStatus && isSelected && !isCorrect && (
+              {isAnswered && isSelected && !isCorrect && (
                 <AlertCircle size={14} className="text-red-400 shrink-0" />
               )}
             </button>
@@ -301,22 +363,23 @@ export function CompactQuizBar({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
             className={`mt-2 pt-2 border-t text-[11px] flex items-start gap-1.5 ${
-              selectedOption === quiz.correct_index
+              isSolved
                 ? 'border-emerald-500/30 text-emerald-300'
                 : 'border-amber-500/30 text-amber-300'
             }`}
           >
-            {selectedOption === quiz.correct_index ? (
+            {isSolved ? (
               <CheckCircle2 size={13} className="text-emerald-400 shrink-0 mt-0.5" />
             ) : (
               <AlertCircle size={13} className="text-amber-400 shrink-0 mt-0.5" />
             )}
             <div>
               <span className="font-bold">
-                {selectedOption === quiz.correct_index
+                {isSolved
                   ? '¡Excelente! Regla dominada. Volviendo a la conversación...'
-                  : 'Buen intento. '}
+                  : 'Inténtalo de nuevo: '}
               </span>
               <span className="text-brand-text-secondary">{quiz.explanation}</span>
             </div>

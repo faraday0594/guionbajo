@@ -243,6 +243,45 @@ async def live_respond_stream(
         if m.role in ("user", "assistant"):
             formatted_messages.append({"role": m.role, "content": m.content})
 
+    # Check for mini-class / explanation intent
+    last_user_content = ""
+    for m in reversed(req.messages):
+        if m.role == "user":
+            last_user_content = (m.content or "").lower().strip()
+            break
+
+    CLASS_INTENT_KEYWORDS = [
+        "clase", "mini clase", "mini-clase", "explica", "explícame", "explicar",
+        "cómo se usa", "como se usa", "cuándo se usa", "cuando se usa",
+        "diferencia entre", "cuál es la diferencia", "que significa", "qué significa",
+        "regla", "gramática", "gramatica", "enseña", "enséñame", "lección", "leccion"
+    ]
+    is_class_requested = any(kw in last_user_content for kw in CLASS_INTENT_KEYWORDS)
+
+    # Also detect affirmative responses if previous assistant message offered a class/explanation
+    prev_assistant_content = ""
+    for m in reversed(req.messages[:-1]):
+        if m.role == "assistant":
+            prev_assistant_content = (m.content or "").lower()
+            break
+
+    AFFIRMATIVE_KEYWORDS = ["sí", "si", "dale", "hazla", "hazlo", "por favor", "me gustaría", "me gustaria", "quiero", "claro", "bueno", "ok"]
+    if any(kw in last_user_content for kw in AFFIRMATIVE_KEYWORDS):
+        if any(k in prev_assistant_content for k in ["clase", "explicar", "gustaría", "gustaria", "quieres", "tema"]):
+            is_class_requested = True
+
+    if is_class_requested:
+        logger.info(f"Mini-class requested by user: '{last_user_content[:60]}'. Injecting intent reinforcement.")
+        formatted_messages.append({
+            "role": "system",
+            "content": (
+                "[INSTRUCCIÓN CRÍTICA DE SISTEMA: El estudiante está pidiendo una clase o explicación sobre un tema. "
+                "Debes responder en 1 a 2 oraciones habladas enérgicas y amables anunciando que abres la pizarra holográfica "
+                "y OBLIGATORIAMENTE incluir al final de tu mensaje el bloque [MINI_CLASS: { ... }] completo con cards y quiz. "
+                "No lo postergues, genéralo AHORA MISMO en esta respuesta.]"
+            )
+        })
+
     client = AsyncOpenAI(
         api_key=api_key,
         base_url=settings.MINIMAX_BASE_URL,
@@ -255,13 +294,25 @@ async def live_respond_stream(
         clause_index = 0
         correction_detected = None
 
+        def _strip_hidden_tags(text: str) -> str:
+            if not text:
+                return ""
+            s = text
+            for tag in ("[MINI_CLASS:", "[CORRECTION:"):
+                pos = s.find(tag)
+                if pos != -1:
+                    s = s[:pos]
+            s = re.sub(r'[\u4e00-\u9fff]', '', s)
+            return s.strip()
+
         try:
             # Crucial: thinking disabled guarantees sub-second first-token response
+            # 800 tokens when class requested to allow full JSON without truncation
             stream = await client.chat.completions.create(
                 model=settings.MINIMAX_LLM_MODEL or "MiniMax-M3",
                 messages=formatted_messages,
                 temperature=0.8,
-                max_tokens=250,
+                max_tokens=850 if is_class_requested else 400,
                 stream=True,
                 extra_body={"thinking": {"type": "disabled"}}
             )
@@ -303,18 +354,14 @@ async def live_respond_stream(
                         clause_buffer = clause_buffer[split_pos:].lstrip()
 
                         if completed_clause and len(completed_clause) > 1:
-                            clean_c = re.sub(r'\[CORRECTION:.*?\]', '', completed_clause)
-                            clean_c = re.sub(r'\[MINI_CLASS:.*?\]', '', clean_c)
-                            clean_c = re.sub(r'[\u4e00-\u9fff]', '', clean_c).strip()
+                            clean_c = _strip_hidden_tags(completed_clause)
                             if clean_c and any(ch.isalnum() for ch in clean_c):
                                 yield f"event: clause\ndata: {json.dumps({'clause_index': clause_index, 'text': clean_c})}\n\n"
                                 clause_index += 1
 
             # Check remaining clause buffer at stream end
             if clause_buffer.strip():
-                clean_tail = re.sub(r'\[CORRECTION:.*?\]', '', clause_buffer)
-                clean_tail = re.sub(r'\[MINI_CLASS:.*?\]', '', clean_tail)
-                clean_tail = re.sub(r'[\u4e00-\u9fff]', '', clean_tail).strip()
+                clean_tail = _strip_hidden_tags(clause_buffer)
                 if clean_tail and any(ch.isalnum() for ch in clean_tail):
                     yield f"event: clause\ndata: {json.dumps({'clause_index': clause_index, 'text': clean_tail})}\n\n"
                     clause_index += 1
@@ -345,8 +392,7 @@ async def live_respond_stream(
                 yield f"event: miniclass\ndata: {json.dumps(miniclass_data)}\n\n"
 
             # Clean final text shown to user (without hidden tags)
-            clean_full = re.sub(r'\[CORRECTION:.*?\]', '', accumulated_text, flags=re.DOTALL)
-            clean_full = re.sub(r'\[MINI_CLASS:\s*\{.*\}\s*\]', '', clean_full, flags=re.DOTALL).strip()
+            clean_full = _strip_hidden_tags(accumulated_text)
             yield f"event: done\ndata: {json.dumps({'full_text': clean_full, 'total_clauses': clause_index})}\n\n"
 
         except Exception as e:

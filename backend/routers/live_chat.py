@@ -95,7 +95,7 @@ DIRECTRICES DE CONVERSACIÓN EN VIVO (ÁGIL Y CONCISA):
    - Si el estudiante comete un error gramatical, léxico o sintáctico en inglés (por ejemplo: "I have 25 years", "she don't like", "yesterday I go"):
      a) En tu respuesta hablada, NO lo regañes ni frenes la conversación. Modela la forma correcta de manera natural (recast) o menciona un tip breve y cariñoso, y continúa la charla.
      b) OBLIGATORIO: Si detectas un error claro, incluye al final de tu mensaje un bloque especial oculto en formato JSON con la corrección:
-        [CORRECTION: {{"original": "frase con error", "corrected": "frase correcta", "explanation": "Breve explicación en español en 1 línea"}}]
+        [CORRECTION: {"original": "frase con error", "corrected": "frase correcta", "explanation": "Breve explicación en español en 1 línea"}]
    - Si el estudiante habló correctamente, NO agregues la etiqueta [CORRECTION].
 
 6. MINI-CLASES EN VIVO Y PIZARRA HOLOGRÁFICA BAJO DEMANDA:
@@ -111,7 +111,7 @@ DIRECTRICES DE CONVERSACIÓN EN VIVO (ÁGIL Y CONCISA):
      TODO el contenido explicativo (fórmulas, reglas gramaticales, excepciones como -ing, tips y ejemplos) DEBE IR OBLIGATORIA Y EXCLUSIVAMENTE DENTRO DEL BLOQUE OCULTO [MINI_CLASS: {...}].
    - FORMATO OBLIGATORIO DEL BLOQUE OCULTO [MINI_CLASS]:
      Inmediatamente después de tu breve saludo hablado (después de cualquier [CORRECTION]), incluye OBLIGATORIAMENTE el bloque JSON estructurado completo:
-     [MINI_CLASS: {{"topic": "Nombre del Tema", "summary": "Resumen en 1 línea", "cards": [{{"id": "c1", "step": 1, "badge": "Regla 1", "title": "Título de la regla", "formula": "Sujeto + Verbo Auxiliar + Verbo Principal", "example": "Oración de ejemplo en inglés", "highlight": "palabra o frase resaltada", "explanation": "Regla mnemotécnica clara y directa en español"}}, {{"id": "c2", "step": 2, "badge": "Regla 2", "title": "Título regla 2", "formula": "Sujeto + To Be + Verbo-ing", "example": "Ejemplo ilustrativo", "highlight": "palabra resaltada", "explanation": "Explicación clara en español"}}], "quiz": {{"question": "¿Pregunta concisa para evaluar el tema?", "options": ["Opción A", "Opción B", "Opción C"], "correct_index": 0, "explanation": "Por qué es correcta"}}}} ]
+     [MINI_CLASS: {"topic": "Nombre del Tema", "summary": "Resumen en 1 línea", "cards": [{"id": "c1", "step": 1, "badge": "Regla 1", "title": "Título de la regla", "formula": "Sujeto + Verbo Auxiliar + Verbo Principal", "example": "Oración de ejemplo en inglés", "highlight": "palabra o frase resaltada", "explanation": "Regla mnemotécnica clara y directa en español"}, {"id": "c2", "step": 2, "badge": "Regla 2", "title": "Título regla 2", "formula": "Sujeto + To Be + Verbo-ing", "example": "Ejemplo ilustrativo", "highlight": "palabra resaltada", "explanation": "Explicación clara en español"}], "quiz": {"question": "¿Pregunta concisa para evaluar el tema?", "options": ["Opción A", "Opción B", "Opción C"], "correct_index": 0, "explanation": "Por qué es correcta"}} ]
    - CIERRE AUTOMÁTICO DE LA PIZARRA:
      Cuando {student_name} confirme que entendió la explicación (ej: "ya entendí", "todo claro", "gracias", "perfecto") o cuando responda al quiz, felicítalo brevemente en 1 oración hablada (ej: "¡Exacto, lo dominas a la perfección! Cerramos la pizarra y seguimos conversando.") y agrega al final de tu mensaje la etiqueta oculta:
      [CLOSE_MINI_CLASS]
@@ -238,9 +238,10 @@ async def live_respond_stream(
     if not api_key:
         raise HTTPException(status_code=500, detail="MINIMAX_API_KEY is not configured.")
 
-    system_prompt = GUIONBAJO_LIVE_SYSTEM_PROMPT.format(
-        student_name=req.student_name or "Estudiante",
-        student_level=req.student_level or "A1.2"
+    system_prompt = (
+        GUIONBAJO_LIVE_SYSTEM_PROMPT
+        .replace("{student_name}", req.student_name or "Estudiante")
+        .replace("{student_level}", req.student_level or "A1.2")
     )
 
     formatted_messages = [{"role": "system", "content": system_prompt}]
@@ -348,6 +349,9 @@ async def live_respond_stream(
             if idx == -1:
                 return None
             sub = raw_text[idx + len(prefix):].strip()
+            if sub.startswith("```"):
+                sub = re.sub(r"^```(?:json)?\s*", "", sub)
+                sub = re.sub(r"\s*```.*$", "", sub)
             if sub.startswith("{"):
                 try:
                     obj, _ = json.JSONDecoder().raw_decode(sub)

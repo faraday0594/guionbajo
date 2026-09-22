@@ -209,6 +209,31 @@ export const api = {
 
   getLessonCheckpoint: () => fetchWithAuth('/lesson/checkpoint'),
 
+  exportLessonMaterial: async (params: {
+    lesson_id?: string;
+    format: 'pptx' | 'docx' | 'pdf';
+    script_data?: any;
+    topic?: string;
+    sublevel?: string;
+  }): Promise<Blob> => {
+    const token = getToken();
+    const headers = new Headers();
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    headers.set('Content-Type', 'application/json');
+
+    const response = await fetch(`${API_BASE}/lesson/export`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al exportar material de la clase');
+    }
+    return await response.blob();
+  },
+
   // ─── Educational Games (Mystery Word & Twin Cards) ─
   generateGames: (topic: string, sublevel: string, lesson_id?: string, game_type = 'all', pair_count = 6) =>
     fetchWithAuth('/games/generate', {

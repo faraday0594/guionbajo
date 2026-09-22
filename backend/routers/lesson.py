@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
@@ -10,10 +11,20 @@ from schemas.lesson import LessonGenerateRequest
 from core.minimax_agent import TutorAgent
 from core.adaptive_engine import AdaptiveEngine
 from core.curriculum_graph import CURRICULUM_GRAPH, get_sublevel_info, get_class_node
+from core.lesson_exporter import (
+    export_lesson_materials,
+    PowerPointLessonExporter,
+    WordLessonExporter,
+    PdfLessonExporter,
+    LessonExportData
+)
 import logging
 import asyncio
+import tempfile
+import os
+import re
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from core.minimax_agent import TutorAgent, LEVEL_SEQUENCE
 
 logger = logging.getLogger(__name__)
@@ -520,3 +531,301 @@ async def complete_lesson(
 
         await db.commit()
     return {"status": "success", "message": "Lección completada y Knowledge Map actualizado"}
+
+
+class LessonExportRequest(BaseModel):
+    lesson_id: Optional[str] = None
+    format: str = "pptx"  # "pptx" | "docx" | "pdf"
+    script_data: Optional[Dict[str, Any]] = None
+    topic: Optional[str] = None
+    sublevel: Optional[str] = None
+
+
+def adapt_script_to_export_data(
+    script_data: Optional[Dict[str, Any]],
+    topic: str = "",
+    sublevel: str = ""
+) -> Dict[str, Any]:
+    """
+    Transforms either a Guionbajo raw lesson script (with 'phases') or an already
+    structured dictionary into the strict LessonExportData format.
+    """
+    if not script_data:
+        script_data = {}
+
+    # If already structured with stages, return as-is
+    if script_data.get("stages") and isinstance(script_data["stages"], list) and len(script_data["stages"]) > 0:
+        return script_data
+
+    cur_topic = script_data.get("topic") or topic or "Clase de Inglés"
+    cur_sublevel = script_data.get("sublevel") or sublevel or "B1.1"
+
+    phases = script_data.get("phases", [])
+    stages: List[Dict[str, Any]] = []
+    quiz_questions: List[Dict[str, Any]] = []
+
+    pedagogical_obj = (
+        script_data.get("pedagogical_objective")
+        or (phases[0].get("tutor_says") if phases else "")
+        or f"Dominio comunicativo y estructural de {cur_topic} ({cur_sublevel})."
+    )
+    mental_model = (
+        script_data.get("mental_model")
+        or (phases[1].get("tutor_says") if len(phases) > 1 else "")
+        or f"Comprender la función pragmática y la dinámica comunicativa de {cur_topic}."
+    )
+
+    stage_num = 1
+    quiz_num = 1
+
+    for p_idx, phase in enumerate(phases):
+        if not isinstance(phase, dict):
+            continue
+
+        p_name = phase.get("phase_name", f"Etapa {p_idx + 1}")
+        is_practice = phase.get("is_practice_slide") or phase.get("interaction_type") == "quiz"
+        exercises = phase.get("exercises") or []
+
+        if is_practice or exercises:
+            if exercises and isinstance(exercises, list):
+                for ex in exercises:
+                    if not isinstance(ex, dict):
+                        continue
+                    q_text = ex.get("sentence") or ex.get("question") or ex.get("task") or "Completa la oración:"
+                    opts_list = ex.get("options") or []
+                    opts_dict = {}
+                    if isinstance(opts_list, list):
+                        for oi, opt in enumerate(opts_list):
+                            char = chr(ord('A') + oi)
+                            clean_opt = re.sub(r'^[A-D]\)\s*', '', str(opt)).strip()
+                            opts_dict[char] = clean_opt
+                    elif isinstance(opts_list, dict):
+                        opts_dict = opts_list
+
+                    exp_ans = str(ex.get("expected_answer", "")).strip()
+                    correct_char = "A"
+                    if exp_ans.upper() in ["A", "B", "C", "D"]:
+                        correct_char = exp_ans.upper()
+                    else:
+                        for k, v in opts_dict.items():
+                            if v.lower() == exp_ans.lower():
+                                correct_char = k
+                                break
+
+                    quiz_questions.append({
+                        "question_number": quiz_num,
+                        "question": q_text,
+                        "options": opts_dict or {"A": "Opción 1", "B": "Opción 2", "C": "Opción 3", "D": "Opción 4"},
+                        "correct_option": correct_char,
+                        "explanation": ex.get("explanation") or ex.get("spanish_translation") or "Respuesta correcta basada en el modelo gramatical de la clase."
+                    })
+                    quiz_num += 1
+            elif phase.get("options"):
+                opts_list = phase.get("options") or []
+                opts_dict = {}
+                for oi, opt in enumerate(opts_list):
+                    char = chr(ord('A') + oi)
+                    clean_opt = re.sub(r'^[A-D]\)\s*', '', str(opt)).strip()
+                    opts_dict[char] = clean_opt
+                exp_ans = str(phase.get("expected_answer", "")).strip()
+                correct_char = "A"
+                if exp_ans.upper() in ["A", "B", "C", "D"]:
+                    correct_char = exp_ans.upper()
+                else:
+                    for k, v in opts_dict.items():
+                        if v.lower() == exp_ans.lower():
+                            correct_char = k
+                            break
+                quiz_questions.append({
+                    "question_number": quiz_num,
+                    "question": phase.get("student_task") or phase.get("tutor_says") or "Elige la opción correcta:",
+                    "options": opts_dict,
+                    "correct_option": correct_char,
+                    "explanation": phase.get("quiz_explanation") or "Opción gramaticalmente precisa."
+                })
+                quiz_num += 1
+            continue
+
+        # Conceptual stage
+        gs = phase.get("grammar_structure") or {}
+        tokens = []
+        raw_tokens = gs.get("formula_tokens") or []
+        for rt in raw_tokens:
+            if isinstance(rt, dict):
+                tokens.append({
+                    "role": rt.get("role", "Elemento"),
+                    "example": rt.get("pattern") or rt.get("example") or "",
+                    "color": rt.get("color", "blue")
+                })
+
+        examples = []
+        for it in phase.get("target_audio_items") or []:
+            if isinstance(it, dict) and it.get("english"):
+                examples.append({
+                    "english": it["english"],
+                    "spanish": it.get("translation", ""),
+                    "tip": it.get("label", "")
+                })
+        if not examples and gs.get("example_breakdowns"):
+            for eb in gs.get("example_breakdowns") or []:
+                if isinstance(eb, dict) and eb.get("english"):
+                    examples.append({
+                        "english": eb["english"],
+                        "spanish": eb.get("spanish", ""),
+                        "tip": ""
+                    })
+
+        mistake = None
+        if "error" in p_name.lower() or "duelo" in p_name.lower() or "trampa" in p_name.lower():
+            mistake = {
+                "incorrect": phase.get("incorrect_example") or "Error común frecuente de concordancia",
+                "correct": phase.get("correct_example") or (examples[0]["english"] if examples else "Oración correcta"),
+                "why": phase.get("tutor_says") or "Cuidado con la transferencia directa del español."
+            }
+
+        clean_name = re.sub(r'^(?:fase|stage|etapa|hook|slide)\s*\d*[\s:\-–—]+', '', p_name, flags=re.IGNORECASE).strip()
+        stages.append({
+            "stage_number": stage_num,
+            "title": clean_name or p_name,
+            "objective": phase.get("objective") or clean_name or f"Concepto clave {stage_num}",
+            "explanation": phase.get("tutor_says") or phase.get("board_content") or "",
+            "formula": gs.get("formula") or "",
+            "formula_tokens": tokens,
+            "examples": examples,
+            "common_mistake": mistake
+        })
+        stage_num += 1
+
+    contrast_table = script_data.get("contrast_table")
+    low_top = cur_topic.lower()
+
+    if not contrast_table:
+        if any(w in low_top for w in ["passive", "pasiva", "voz pasiva"]):
+            contrast_table = {
+                "title": "Matriz de Transformación por Tiempos Verbales (Voz Activa ➔ Voz Pasiva)",
+                "headers": ["Tiempo Verbal", "Voz Activa (Sujeto Agente)", "Voz Pasiva (Objeto Receptor)", "Fórmula Auxiliar"],
+                "rows": [
+                    ["Present Simple", "The chef prepares the dishes.", "The dishes are prepared by the chef.", "am / is / are + V3"],
+                    ["Past Simple", "The chef prepared the dishes.", "The dishes were prepared by the chef.", "was / were + V3"],
+                    ["Present Perfect", "The chef has prepared the dishes.", "The dishes have been prepared.", "has / have been + V3"],
+                    ["Modals (Must/Can)", "The chef must prepare the dishes.", "The dishes must be prepared.", "modal + be + V3"],
+                    ["Future (Will)", "The chef will prepare the dishes.", "The dishes will be prepared.", "will be + V3"]
+                ]
+            }
+        elif any(w in low_top for w in ["reported speech", "indirect speech", "discurso indirecto"]):
+            contrast_table = {
+                "title": "Matriz de Retroceso Temporal: Direct Speech vs. Reported Speech (Backshift)",
+                "headers": ["Tiempo Directo", "Oración Directa (Cita)", "Estilo Indirecto (Reported)", "Regla de Retroceso"],
+                "rows": [
+                    ["Present Simple", "\"I work in London.\"", "She said that she worked in London.", "Presente ➔ Pasado Simple"],
+                    ["Present Continuous", "\"I am studying now.\"", "He said he was studying then.", "Present Cont. ➔ Past Cont."],
+                    ["Past Simple", "\"I bought a car.\"", "She said she had bought a car.", "Past Simple ➔ Past Perfect"],
+                    ["Present Perfect", "\"We have finished the task.\"", "They said they had finished the task.", "Pres. Perfect ➔ Past Perfect"],
+                    ["Modal Will", "\"I will call you tomorrow.\"", "He told me he would call the next day.", "Will ➔ Would"],
+                    ["Modal Can", "\"I can solve this issue.\"", "She said she could solve that issue.", "Can ➔ Could"]
+                ]
+            }
+        elif any(w in low_top for w in ["present perfect vs past simple", "perfect vs past"]):
+            contrast_table = {
+                "title": "Duelo Didáctico: Present Perfect vs. Past Simple",
+                "headers": ["Dimensión", "Present Perfect (Tiempo Abierto)", "Past Simple (Tiempo Cerrado)"],
+                "rows": [
+                    ["Foco Temporal", "Conecta el pasado con el momento presente", "Evento finalizado en un momento específico del pasado"],
+                    ["Marcadores Clave", "ever, never, already, yet, so far, recently, since, for", "yesterday, in 2020, two days ago, last night, then"],
+                    ["Estructura", "Sujeto + have / has + Participio Pasado (V3)", "Sujeto + Verbo Pasado (V2)"],
+                    ["Ejemplo Modelo", "I have visited Tokyo twice. (mi vida sigue abierta)", "I visited Tokyo in 2019. (año finalizado)"]
+                ]
+            }
+
+    takeaways = script_data.get("summary_takeaways") or [
+        f"Comprender la función y estructura nuclear de {cur_topic}.",
+        "Reconocer las variaciones por sujeto, tiempo y contexto comunicativo.",
+        "Evitar los errores sintácticos comunes por interferencia del español.",
+        "Aplicar el patrón en oraciones completas con confianza y fluidez."
+    ]
+
+    return {
+        "topic": cur_topic,
+        "sublevel": cur_sublevel,
+        "pedagogical_objective": pedagogical_obj,
+        "mental_model": mental_model,
+        "stages": stages,
+        "contrast_table": contrast_table,
+        "quiz": quiz_questions,
+        "summary_takeaways": takeaways
+    }
+
+
+@router.post("/export")
+async def export_lesson(
+    req: LessonExportRequest,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Exports a comprehensive lesson material package in PPTX, DOCX, or PDF.
+    Can export directly from client state (script_data) or database (lesson_id).
+    """
+    fmt = (req.format or "pptx").lower().strip()
+    if fmt not in ["pptx", "docx", "pdf"]:
+        raise HTTPException(status_code=400, detail="Formato no soportado. Usa 'pptx', 'docx' o 'pdf'.")
+
+    script_data = req.script_data
+
+    # If script_data not sent directly, attempt loading from DB
+    if not script_data and req.lesson_id and current_user:
+        res = await db.execute(
+            select(LessonHistory).where(
+                LessonHistory.id == req.lesson_id,
+                LessonHistory.user_id == current_user.id
+            )
+        )
+        hist = res.scalars().first()
+        if hist and hist.lesson_data and isinstance(hist.lesson_data, dict):
+            script_data = hist.lesson_data
+            if not req.topic:
+                req.topic = hist.topic
+            if not req.sublevel:
+                req.sublevel = hist.sublevel
+
+    export_dict = adapt_script_to_export_data(
+        script_data=script_data,
+        topic=req.topic or "Clase de Inglés",
+        sublevel=req.sublevel or "B1.1"
+    )
+
+    clean_topic = re.sub(r'[^a-zA-Z0-9_\-]+', '_', export_dict.get("topic", "clase").lower().strip()).strip('_')
+    sub_tag = export_dict.get('sublevel', 'b1').lower().replace('.', '_')
+    base_name = f"clase_{clean_topic}_{sub_tag}"
+
+    export_cache_dir = os.path.join(tempfile.gettempdir(), "guionbajo_lesson_exports")
+    os.makedirs(export_cache_dir, exist_ok=True)
+
+    export_data = LessonExportData.from_dict(export_dict)
+    target_path = os.path.join(export_cache_dir, f"{base_name}.{fmt}")
+
+    try:
+        if fmt == "pptx":
+            exporter = PowerPointLessonExporter(export_data)
+            actual_path = exporter.export(target_path)
+            media_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        elif fmt == "docx":
+            exporter = WordLessonExporter(export_data)
+            actual_path = exporter.export(target_path)
+            media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        else:  # pdf
+            exporter = PdfLessonExporter(export_data)
+            actual_path = exporter.export(target_path)
+            media_type = "application/pdf"
+    except Exception as e:
+        logger.error(f"Error compiling lesson export {fmt}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error al compilar el archivo {fmt.upper()}: {str(e)}")
+
+    out_filename = os.path.basename(actual_path)
+    return FileResponse(
+        path=actual_path,
+        media_type=media_type,
+        filename=out_filename,
+        headers={"Content-Disposition": f'attachment; filename="{out_filename}"'}
+    )
+

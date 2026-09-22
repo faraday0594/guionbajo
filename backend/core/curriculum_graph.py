@@ -579,8 +579,7 @@ CURRICULUM_GRAPH: Dict[str, Dict[str, Any]] = {   'A1.1': {   'title': 'A1.1 —
                 'prerequisites': ['B1.3'],
                 'classes': [   {   'class_index': 1,
                                    'topic': 'Passive Voice',
-                                   'grammar_core': 'Present & Past Passive (Be + Past Participle), Modal Passive (Can '
-                                                   'be done, Should be checked)',
+                                   'grammar_core': 'Active vs. Passive Multi-Tense Transformation Matrix (Present Simple, Past Simple, Present Perfect, Modals: be + Past Participle), Agent focus vs Object focus (by + agent)',
                                    'vocabulary_core': 'Processes, News reports, Inventions, Scientific facts',
                                    'phonetic_contrast': None,
                                    'phonetic_focus_title': None,
@@ -590,7 +589,7 @@ CURRICULUM_GRAPH: Dict[str, Dict[str, Any]] = {   'A1.1': {   'title': 'A1.1 —
                                              'descriptions.'},
                                {   'class_index': 2,
                                    'topic': 'Reported Speech',
-                                   'grammar_core': 'Reported Statements, Questions & Commands (Backshifting tenses, say vs tell)',
+                                   'grammar_core': 'Direct vs. Reported Speech Multi-Tense Backshift Matrix (Present->Past, Past/Pres.Perf->Past Perfect, Will->Would, Can->Could), Pronoun & Time adjustments, Reporting verbs (say, tell, claim, admit)',
                                    'vocabulary_core': 'Reporting verbs (claim, admit, promise, warn, explain)',
                                    'phonetic_contrast': ['/ʒ/', '/dʒ/'],
                                    'phonetic_focus_title': 'Contraste postalveolar /ʒ/ (vision) vs /dʒ/ (judge)',

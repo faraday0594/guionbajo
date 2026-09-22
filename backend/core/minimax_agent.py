@@ -175,6 +175,23 @@ CRITICAL CINEMATIC INTERACTIVE LESSON RULES:
      c) IN-DEPTH DECONSTRUCTION OF BOARD EXAMPLES & PITFALLS: Take the specific English example shown on the board (e.g. "Good morning, teacher" or "She works in a hospital"), explain word-by-word why it is constructed that way, and contrast it with common pitfalls made by native Spanish speakers.
      d) SYNCHRONIZED BOARD MENTIONS: In `tutor_says`, explicitly pronounce and state the EXACT model sentences (e.g. "I jog every morning", "Do you work on weekends?") and formula tokens (e.g. "Sujeto", "Verbo", "Auxiliar", "Complemento") that appear on the board, so each card, token, and rule illuminates on screen at the exact second the tutor utters it.
 
+   4.1. CRITICAL PEDAGOGICAL METACOGNITION — GRAMMAR TYPOLOGY & TENSE MATRICES:
+      - Before drafting the phases and whiteboard, evaluate the didactic nature of the topic:
+        * IF THE TOPIC IS TRANSFORMATIONAL / STRUCTURAL SHIFT (Voz Pasiva, Reported Speech, Condicionales 0/1/2/3, Causativos have/get done, Inversión):
+          Un estudiante NUNCA puede dominar una estructura transformacional si se le enseña restringida a un único tiempo verbal aislado (ej. solo pasado simple).
+          En las diapositivas conceptuales (especialmente en el Desglose Gramatical), `board_content` y `tutor_says` DEBEN incluir la MATRIZ DE CONVERSIÓN POR TIEMPOS VERBALES:
+          Muestra cómo muta la transformación a través de los tiempos clave (Present Simple, Past Simple, Present Perfect y Modales/Futuro).
+          Ejemplo en Voz Pasiva:
+          - Present Simple: "Active: She writes reports" ➔ "Passive: Reports are written" (is/are + V3)
+          - Past Simple: "Active: She wrote reports" ➔ "Passive: Reports were written" (was/were + V3)
+          - Present Perfect: "Active: She has written reports" ➔ "Passive: Reports have been written" (has/have been + V3)
+          - Modals: "Active: She must write reports" ➔ "Passive: Reports must be written" (modal + be + V3)
+          En `tutor_says`, resalta la regla nuclear: "El verbo principal SIEMPRE va en participio pasado (V3); el único elemento que viaja y se conjuga por los tiempos es el auxiliar 'to be'."
+        * IF THE TOPIC IS A SPECIFIC BINARY CONTRAST (ej: Present Perfect vs Past Simple, Will vs Going to):
+          Contrasta la línea temporal, los marcadores temporales clave (since/for vs yesterday/ago) y el foco comunicativo (experiencia/resultado presente vs hecho concluido).
+        * IF THE TOPIC IS NON-TRANSFORMATIONAL (Preposiciones in/on/at, Phrasal Verbs, Artículos, Adjetivos, Vocabulario):
+          NO inventes matrices de tiempos verbales donde no aplican. Céntrate en vectores semánticos, patrones de colocación y matices contextuales.
+
 5. MANDATORY VISUAL ART DIRECTION FOR ILLUSTRATIONS (`image_prompt`, `image_prompts`, `image_style`):
    - For EACH slide, construct a rich, descriptive `image_prompt` in English illustrating the situation, characters, and action.
    - You can also specify `image_prompts` as an array if a slide contrasts 2 concepts side-by-side.
@@ -1864,8 +1881,13 @@ class TutorAgent:
             f"   - 'board_content': Pizarra con fórmulas claras, tokens y 2 oraciones modelo en inglés con traducción.\n"
             f"   - 'image_prompt': Ilustración 2D de la escena modelo, no text.\n"
             f"• Slide 3: DESGLOSE GRAMATICAL Y VARIACIONES SINTÁCTICAS ('is_hook': false, 'interaction_type': 'explanation').\n"
-            f"   - 'tutor_says': Desglose paso a paso explicando por qué las palabras van en ese orden exacto.\n"
-            f"   - 'board_content': Reglas ortográficas/morfológicas y patrones sintácticos desglosados.\n"
+            f"   - 'tutor_says': Desglose paso a paso explicando la arquitectura y orden de las palabras.\n"
+            f"   - EVALUACIÓN METAPEDAGÓGICA DE TIPOLOGÍA DEL TEMA:\n"
+            f"     * SI EL TEMA ES TRANSFORMACIONAL (Voz Pasiva, Reported Speech, Condicionales, Causativos, Inversión):\n"
+            f"       En 'board_content' es OBLIGATORIO incluir la MATRIZ DE CONVERSIÓN POR TIEMPOS VERBALES (ej: Present Simple vs Past Simple vs Present Perfect vs Modales). Muestra cómo muta la oración activa/directa a la pasiva/reportada y cómo cambia el verbo auxiliar ('is written', 'was written', 'has been written', 'will be written'). ¡Un estudiante jamás debe ver una estructura transformacional restringida a un único tiempo verbal!\n"
+            f"     * SI EL TEMA ES REGULAR O NO TRANSFORMACIONAL (Preposiciones, Phrasal Verbs, Artículos, Vocabulario):\n"
+            f"       Presenta los patrones de colocación, reglas morfológicas y distinciones semánticas propias del tema sin forzar tablas de tiempos ajenas.\n"
+            f"   - 'board_content': Reglas sintácticas y matriz de correspondencia desglosada.\n"
             f"• Slide 4: DUELO DE ERRORES SINTÁCTICOS Y COMUNICACIÓN REAL ('is_hook': false, 'interaction_type': 'explanation').\n"
             f"   - 'tutor_says': Explicación de los errores sintácticos y de concordancia más comunes en hispanohablantes al usar '{topic}' y cómo formular oraciones correctas. CERO explicaciones fonéticas o símbolos IPA aquí (la pronunciación va estrictamente en el bonus final).\n"
             f"   - 'board_content': Duelo de oraciones: ❌ Error sintáctico común vs ✅ Oración correcta.\n"
@@ -4001,27 +4023,42 @@ class TutorAgent:
                 }
             else:
                 return {
-                    "title": "Estructura: Voz Pasiva en Presente (Present Passive)",
-                    "formula": "[ Sujeto Receptor ] + [ am / is / are ] + [ Participio (V3) ] + [ (by + Agente) ]",
+                    "title": "Matriz de Transformación: Voz Activa vs. Pasiva por Tiempos Verbales",
+                    "formula": "[ Sujeto Receptor ] + [ TO BE (en tiempo correspondiente) ] + [ Participio (V3) ] + [ (by + Agente) ]",
                     "formula_tokens": [
-                        {"role": "Sujeto Receptor", "pattern": "English / Coffee / Smartphones", "color": "blue"},
-                        {"role": "Verbo To Be", "pattern": "is (singular) | are (plural)", "color": "purple"},
-                        {"role": "Participio V3", "pattern": "spoken / produced / made", "color": "emerald"},
-                        {"role": "Complemento", "pattern": "worldwide / in Colombia / in Asia", "color": "amber"}
+                        {"role": "Present Simple", "pattern": "Active: 'builds' ➔ Passive: is / are built", "color": "blue"},
+                        {"role": "Past Simple", "pattern": "Active: 'built' ➔ Passive: was / were built", "color": "purple"},
+                        {"role": "Present Perfect", "pattern": "Active: 'has built' ➔ Passive: has / have been built", "color": "emerald"},
+                        {"role": "Modales / Futuro", "pattern": "Active: 'will build' ➔ Passive: will / can be built", "color": "amber"}
                     ],
-                    "explanation": "En voz pasiva el verbo 'to be' lleva el tiempo gramatical y el verbo principal va siempre en Participio (V3).",
+                    "explanation": "Regla de Oro Universal: El verbo principal SIEMPRE permanece en Participio Pasado (V3); el único elemento que muta y viaja a través de los tiempos verbales es el auxiliar 'TO BE'.",
                     "example_breakdowns": [
                         {
-                            "english": first_audio or "English is spoken all around the world.",
-                            "spanish": "El inglés es hablado en todo el mundo.",
+                            "english": "Present: 'They make cars' ➔ 'Cars are made.'",
+                            "spanish": "Presente: Fabrican autos ➔ Los autos son fabricados.",
                             "parts": [
-                                {"role": "Receptor", "text": "English", "color": "blue"},
-                                {"role": "Pasiva", "text": "is spoken", "color": "purple"},
-                                {"role": "Lugar", "text": "all around the world.", "color": "amber"}
+                                {"role": "Activa", "text": "They make", "color": "blue"},
+                                {"role": "➔ Pasiva", "text": "are made", "color": "emerald"}
+                            ]
+                        },
+                        {
+                            "english": "Past: 'They made cars' ➔ 'Cars were made.'",
+                            "spanish": "Pasado: Fabricaron autos ➔ Los autos fueron fabricados.",
+                            "parts": [
+                                {"role": "Activa", "text": "They made", "color": "blue"},
+                                {"role": "➔ Pasiva", "text": "were made", "color": "purple"}
+                            ]
+                        },
+                        {
+                            "english": "Perfect: 'They have made cars' ➔ 'Cars have been made.'",
+                            "spanish": "Perfecto: Han fabricado autos ➔ Los autos han sido fabricados.",
+                            "parts": [
+                                {"role": "Activa", "text": "have made", "color": "blue"},
+                                {"role": "➔ Pasiva", "text": "have been made", "color": "emerald"}
                             ]
                         }
                     ],
-                    "tips": "Usa 'is' para singular e incontables; usa 'are' para plurales."
+                    "tips": "Para transformar a pasiva: 1) Pasa el objeto al inicio, 2) Conjuga 'to be' en el tiempo de la activa, 3) Coloca el verbo en Participio (V3)."
                 }
 
         # 9. Relative Clauses (who / which / that / where)
@@ -4049,28 +4086,37 @@ class TutorAgent:
                 "tips": "Usa 'who' para personas, 'which' para objetos/animales, y 'that' en estilo conversacional informal para ambos."
             }
 
-        # 10. Reported Speech
+        # 10. Reported Speech (Direct vs Reported Tense Backshift Matrix)
         if any(k in low_top for k in ["reported speech", "indirect speech", "discurso indirecto", "say vs tell"]):
             return {
-                "title": "Estructura: Reported Speech (Estilo Indirecto)",
-                "formula": "[ Sujeto ] + [ said / told me + (that) ] + [ Sujeto + Verbo en Pasado Retrocedido ]",
+                "title": "Matriz de Retroceso Temporal: Direct Speech ➔ Reported Speech (Backshift)",
+                "formula": "[ Sujeto ] + [ said / told me + (that) ] + [ Sujeto + Verbo con Retroceso Temporal ]",
                 "formula_tokens": [
-                    {"role": "Emisor", "pattern": "She / He / Carlos", "color": "blue"},
-                    {"role": "Verbo de Reporte", "pattern": "said (that) | told me (that)", "color": "purple"},
-                    {"role": "Backshift Temporal", "pattern": "was happy (am) | had arrived (arrived) | would come (will)", "color": "emerald"}
+                    {"role": "Present Simple ➔ Past Simple", "pattern": "'I work' ➔ She said she worked", "color": "blue"},
+                    {"role": "Present Cont. ➔ Past Cont.", "pattern": "'I am working' ➔ She said she was working", "color": "purple"},
+                    {"role": "Past / Pres. Perfect ➔ Past Perfect", "pattern": "'I worked / have worked' ➔ She said she had worked", "color": "emerald"},
+                    {"role": "Modales (Will/Can) ➔ Would/Could", "pattern": "'I will call' ➔ She said she would call", "color": "amber"}
                 ],
-                "explanation": "Al reportar lo que otra persona dijo, los tiempos verbales retroceden un grado hacia el pasado (Backshift).",
+                "explanation": "Al reportar lo que otra persona dijo, los verbos en presente retroceden a pasado, los pasados/perfectos retroceden a Past Perfect (had + V3), y los modales cambian a su forma en pasado (will ➔ would, can ➔ could).",
                 "example_breakdowns": [
                     {
-                        "english": first_audio or "She said that she was living in London.",
-                        "spanish": "Ella dijo que estaba viviendo en Londres.",
+                        "english": "Direct: 'I am tired' ➔ Reported: 'She said she was tired.'",
+                        "spanish": "Directo: 'Estoy cansada' ➔ Indirecto: Ella dijo que estaba cansada.",
                         "parts": [
-                            {"role": "Emisor", "text": "She said that", "color": "blue"},
-                            {"role": "Reporte", "text": "she was living in London.", "color": "emerald"}
+                            {"role": "Directo (Presente)", "text": "am", "color": "blue"},
+                            {"role": "➔ Retroceso (Pasado)", "text": "was", "color": "emerald"}
+                        ]
+                    },
+                    {
+                        "english": "Direct: 'We will help you' ➔ Reported: 'They told me they would help me.'",
+                        "spanish": "Directo: 'Te ayudaremos' ➔ Indirecto: Me dijeron que me ayudarían.",
+                        "parts": [
+                            {"role": "Directo (Will)", "text": "will help", "color": "blue"},
+                            {"role": "➔ Retroceso (Would)", "text": "would help", "color": "emerald"}
                         ]
                     }
                 ],
-                "tips": "'Say' no requiere persona ('He said that...'); 'Tell' SIEMPRE requiere pronombre de objeto ('He told ME that...')."
+                "tips": "Diferencia clave: 'Say' no lleva persona ('He said that...'), mientras 'Tell' exige a quién se le dijo ('He told me that...')."
             }
 
         # 11. Used to & Would (Past Habits)

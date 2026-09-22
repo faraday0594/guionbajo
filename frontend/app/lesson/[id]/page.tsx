@@ -45,6 +45,9 @@ import {
   Layers,
   Lock,
   Target,
+  Download,
+  FileText,
+  Presentation,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -3577,6 +3580,41 @@ export default function LessonPage() {
     return lesson.phases.findIndex((p: any) => p.is_practice_slide || p.interaction_type === 'quiz');
   }, [lesson]);
 
+  // ─── Export Material State & Downloader ────────────────────────────────────
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [exportingFormat, setExportingFormat] = useState<'pptx' | 'docx' | 'pdf' | null>(null);
+
+  const handleExportLesson = async (format: 'pptx' | 'docx' | 'pdf') => {
+    try {
+      setExportingFormat(format);
+      toast.loading(`Generando archivo ${format.toUpperCase()} profesional...`, { id: 'export-toast' });
+      const blob = await api.exportLessonMaterial({
+        lesson_id: lesson?.id || (lessonId !== 'new' ? lessonId : undefined),
+        format,
+        script_data: lesson,
+        topic: topicParam,
+        sublevel: sublevelParam,
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanTopic = (topicParam || 'clase').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      a.download = `clase_${cleanTopic}_${(sublevelParam || 'b1').toLowerCase().replace(/\./g, '_')}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      sfx.playSuccessChime();
+      toast.success(`¡Archivo ${format.toUpperCase()} descargado con éxito!`, { id: 'export-toast' });
+      setShowExportModal(false);
+    } catch (err: any) {
+      sfx.playMistake();
+      toast.error(err.message || 'Error al descargar material', { id: 'export-toast' });
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
   const syncCheckpoint = useCallback(async (updates: {
     slide?: number;
     mode?: 'board' | 'reading' | 'games';
@@ -5962,6 +6000,14 @@ export default function LessonPage() {
           {/* Mobile-only utilities group */}
           <div className="flex items-center gap-1.5 sm:hidden flex-shrink-0">
             <button
+              onClick={() => setShowExportModal(true)}
+              className="p-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/40 text-indigo-300 text-xs font-semibold transition-all shadow-sm"
+              title="Descargar material de la clase (PowerPoint, Word, PDF)"
+            >
+              <Download size={13} className="text-indigo-400" />
+            </button>
+
+            <button
               onClick={() => setShowDynamicSubtitles(!showDynamicSubtitles)}
               className={`p-1.5 rounded-xl border text-xs font-semibold transition-all ${
                 showDynamicSubtitles
@@ -6101,6 +6147,16 @@ export default function LessonPage() {
             >
               <Mic size={13} className="text-emerald-400" />
               <span>44 Fonemas</span>
+            </button>
+
+            {/* Material Export Download Button */}
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/40 hover:bg-indigo-900/50 text-indigo-300 text-xs font-semibold transition-all shadow-sm cursor-pointer"
+              title="Descargar material didáctico completo (PowerPoint, Word, PDF)"
+            >
+              <Download size={13} className="text-indigo-400" />
+              <span>Descargar Clase</span>
             </button>
 
             {/* Guionbajo Tutor State */}
@@ -6331,6 +6387,53 @@ export default function LessonPage() {
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   className="w-full flex-1 flex flex-col justify-between"
                 >
+                  {/* 📥 Pre-Quiz Material Download Banner */}
+                  <div className="mb-3 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-brand-accent/25 via-indigo-950/60 to-brand-cyan/20 border border-brand-accent/40 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-brand-accent/30 text-brand-cyan border border-brand-accent/50 flex-shrink-0">
+                        <Download size={18} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm font-bold text-white">¿Quieres guardar esta clase antes de resolver el Quiz?</span>
+                          <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-extrabold border border-emerald-500/40">Descarga</span>
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-brand-text-muted mt-0.5">
+                          Descarga el material con la fase explicativa, modelos mentales, fórmulas y ejercicios en PowerPoint, Word o PDF.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
+                      <button
+                        onClick={() => handleExportLesson('pptx')}
+                        disabled={exportingFormat !== null}
+                        className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs border border-indigo-400/40 flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/30 disabled:opacity-50 cursor-pointer"
+                        title="Descargar presentación 16:9 en PowerPoint"
+                      >
+                        {exportingFormat === 'pptx' ? <Loader2 size={13} className="animate-spin" /> : <Presentation size={13} />}
+                        <span>PowerPoint</span>
+                      </button>
+                      <button
+                        onClick={() => handleExportLesson('docx')}
+                        disabled={exportingFormat !== null}
+                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs border border-blue-400/40 flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/30 disabled:opacity-50 cursor-pointer"
+                        title="Descargar guía de estudio en Word"
+                      >
+                        {exportingFormat === 'docx' ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
+                        <span>Word</span>
+                      </button>
+                      <button
+                        onClick={() => handleExportLesson('pdf')}
+                        disabled={exportingFormat !== null}
+                        className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs border border-rose-400/40 flex items-center gap-1.5 transition-all shadow-md shadow-rose-600/30 disabled:opacity-50 cursor-pointer"
+                        title="Descargar documento editorial en PDF"
+                      >
+                        {exportingFormat === 'pdf' ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
+                        <span>PDF</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <InteractiveExerciseStage
                     exercises={
                       phase.exercises && phase.exercises.length > 0
@@ -6609,6 +6712,16 @@ export default function LessonPage() {
               >
                 <Mic size={13} className="text-emerald-400" />
                 <span>Tablero Fonético</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowExportModal(true)}
+                className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border border-indigo-500/30 bg-indigo-950/25 text-indigo-300 hover:bg-indigo-900/35 hover:text-white cursor-pointer"
+                title="Descargar material didáctico de la clase (PowerPoint, Word, PDF)"
+              >
+                <Download size={13} className="text-indigo-400" />
+                <span>Descargar</span>
               </button>
 
               <motion.button
@@ -7043,6 +7156,136 @@ export default function LessonPage() {
 
               <div className="flex-1 overflow-y-auto custom-scrollbar pt-4 pr-1">
                 <PhoneticBoard inLessonMode={true} onClose={() => setShowPhoneticModal(false)} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 📥 Material Export Modal (PowerPoint, Word, PDF) */}
+      <AnimatePresence>
+        {showExportModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
+            onClick={() => setShowExportModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-xl bg-zinc-950 border border-brand-border rounded-3xl shadow-2xl overflow-hidden flex flex-col p-5 sm:p-7"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                    <Download size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-outfit font-bold text-base sm:text-lg text-white">
+                      Descargar Material de la Clase
+                    </h3>
+                    <p className="text-xs text-brand-text-muted">
+                      {topicParam} • Nivel {sublevelParam}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowExportModal(false)}
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700/60 transition-colors cursor-pointer"
+                  title="Cerrar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="py-5 space-y-3">
+                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  Descarga la clase en el formato que prefieras. Todos los archivos incluyen la fase explicativa completa, modelos mentales, fórmulas sintácticas, matrices de conjugación y taller de evaluación:
+                </p>
+
+                {/* Option 1: PowerPoint */}
+                <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-indigo-500/50 transition-all flex items-center justify-between gap-3 group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-950 border border-indigo-500/30 flex items-center justify-center text-indigo-400 flex-shrink-0 group-hover:bg-indigo-900/40">
+                      <Presentation className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-xs sm:text-sm">PowerPoint (.pptx)</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold">16:9 Widescreen</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-400">
+                        Presentación visual dark-mode con tipografía corporativa y tarjetas conceptuales.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleExportLesson('pptx')}
+                    disabled={exportingFormat !== null}
+                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all flex-shrink-0 shadow-lg shadow-indigo-600/30 disabled:opacity-50 cursor-pointer"
+                  >
+                    {exportingFormat === 'pptx' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                    <span>Descargar</span>
+                  </button>
+                </div>
+
+                {/* Option 2: Word */}
+                <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-blue-500/50 transition-all flex items-center justify-between gap-3 group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-950 border border-blue-500/30 flex items-center justify-center text-blue-400 flex-shrink-0 group-hover:bg-blue-900/40">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-xs sm:text-sm">Microsoft Word (.docx)</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-semibold">Guía de Estudio</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-400">
+                        Guía estructurada con tablas de contraste y solucionario comentado.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleExportLesson('docx')}
+                    disabled={exportingFormat !== null}
+                    className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all flex-shrink-0 shadow-lg shadow-blue-600/30 disabled:opacity-50 cursor-pointer"
+                  >
+                    {exportingFormat === 'docx' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                    <span>Descargar</span>
+                  </button>
+                </div>
+
+                {/* Option 3: PDF */}
+                <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-rose-500/50 transition-all flex items-center justify-between gap-3 group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-rose-950 border border-rose-500/30 flex items-center justify-center text-rose-400 flex-shrink-0 group-hover:bg-rose-900/40">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-xs sm:text-sm">Documento PDF (.pdf)</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-semibold">Vectorial Letter</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-400">
+                        Documento editorial de alta resolución con numeración de páginas listo para imprimir.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleExportLesson('pdf')}
+                    disabled={exportingFormat !== null}
+                    className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all flex-shrink-0 shadow-lg shadow-rose-600/30 disabled:opacity-50 cursor-pointer"
+                  >
+                    {exportingFormat === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                    <span>Descargar</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

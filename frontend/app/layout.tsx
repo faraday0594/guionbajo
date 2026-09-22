@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
-      <body className="font-sans min-h-screen bg-brand-dark text-brand-text-primary selection:bg-brand-accent/30 selection:text-white antialiased">
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${outfit.variable}`}>
+      <body suppressHydrationWarning className="font-sans min-h-screen bg-brand-dark text-brand-text-primary selection:bg-brand-accent/30 selection:text-white antialiased">
         <AudioSupervisor />
         {children}
         <Toaster position="bottom-center" toastOptions={{ style: { background: '#12142A', color: '#FFF', border: '1px solid #252849' } }} />

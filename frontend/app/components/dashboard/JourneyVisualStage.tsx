@@ -323,6 +323,27 @@ export default function JourneyVisualStage({
       }
     : currentPoint;
 
+  // Curva continua del camino restante desde la estación actual hasta la meta final (x: 532, y: 30)
+  const getRemainingPathD = (currIdx: number, pt: { x: number; y: number }) => {
+    if (currIdx >= 63) return '';
+    const bx = Math.round(pt.x * 10) / 10;
+    const by = Math.round(pt.y * 10) / 10;
+    if (currIdx < 16) {
+      const cpA1 = Math.round(((bx + 154) / 2) * 10) / 10;
+      return `M ${bx} ${by} Q ${cpA1} 18, 154 36 Q 218 54, 280 34 Q 344 16, 406 36 Q 470 56, 532 30`;
+    } else if (currIdx < 32) {
+      const cpA2 = Math.round(((bx + 280) / 2) * 10) / 10;
+      return `M ${bx} ${by} Q ${cpA2} 54, 280 34 Q 344 16, 406 36 Q 470 56, 532 30`;
+    } else if (currIdx < 48) {
+      const cpB1 = Math.round(((bx + 406) / 2) * 10) / 10;
+      return `M ${bx} ${by} Q ${cpB1} 16, 406 36 Q 470 56, 532 30`;
+    } else {
+      const cpB2 = Math.round(((bx + 532) / 2) * 10) / 10;
+      return `M ${bx} ${by} Q ${cpB2} 56, 532 30`;
+    }
+  };
+  const remainingPathD = getRemainingPathD(currentIndex, beaconPoint);
+
   return (
     <div className="w-full rounded-3xl overflow-hidden border border-white/[0.08] shadow-2xl relative bg-[#0c1a0e] mb-8">
       {/* ==================== HEADER HUD ==================== */}
@@ -1855,6 +1876,38 @@ export default function JourneyVisualStage({
             <path d="M 406 36 Q 470 56, 532 30" fill="none" stroke="#c084fc" strokeWidth="5" strokeLinecap="round" opacity="0.85" filter="url(#miniGlow)" />
             <path d="M 406 36 Q 470 56, 532 30" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity="0.3" />
 
+            {/* 🌊 ONDA DE ENERGÍA QUE SIGUE LA RUTA DEL CAMINO RESTANTE */}
+            {remainingPathD && (
+              <g id="remainingPathWaveGroup">
+                {/* Estela pulsante sobre la curva del camino restante */}
+                <path
+                  d={remainingPathD}
+                  fill="none"
+                  stroke={currentIndex < targetIndex ? '#94a3b8' : palette.primary}
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray="20 48"
+                  opacity="0.9"
+                  filter="url(#miniGlow)"
+                >
+                  <animate
+                    attributeName="stroke-dashoffset"
+                    values="68;0"
+                    dur="1.7s"
+                    repeatCount="indefinite"
+                  />
+                </path>
+                {/* Onda / pulso de luz viajero que recorre la trayectoria curva */}
+                <circle r="3.5" fill="#ffffff" filter="url(#miniGlow)" opacity="0.95">
+                  <animateMotion
+                    path={remainingPathD}
+                    dur="2.4s"
+                    repeatCount="indefinite"
+                  />
+                </circle>
+              </g>
+            )}
+
             {/* Level labels */}
             <text x="92" y="14" fill="#34d399" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">A1</text>
             <text x="218" y="65" fill="#fbbf24" fontFamily="sans-serif" fontSize="11" fontWeight="bold" textAnchor="middle" opacity="0.9">A2</text>
@@ -1900,16 +1953,19 @@ export default function JourneyVisualStage({
 
             {/* 📍 Active beacon — smoothly glides during travel! */}
             <g id="activeRadarBeacon">
+              {/* Onda de radar concéntrica en su posición exacta (sin desplazamientos lineales erróneos) */}
               <circle
                 cx={beaconPoint.x}
                 cy={beaconPoint.y}
-                r="14"
+                r="6"
                 fill={currentIndex < targetIndex ? '#94a3b8' : palette.primary}
-                fillOpacity="0.2"
+                fillOpacity="0.25"
                 stroke={currentIndex < targetIndex ? '#94a3b8' : palette.primary}
                 strokeWidth="1.5"
-                className="animate-ping"
-              />
+              >
+                <animate attributeName="r" values="6;22;6" dur="2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.85;0;0.85" dur="2s" repeatCount="indefinite" />
+              </circle>
               <circle
                 cx={beaconPoint.x}
                 cy={beaconPoint.y}

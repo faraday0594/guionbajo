@@ -305,7 +305,7 @@ export function CompactQuizBar({
           <span className="text-[10px] font-bold text-yellow-300 uppercase tracking-wider">
             Micro-Quiz
           </span>
-          <span className="text-white text-xs font-semibold truncate">
+          <span className="text-white text-xs font-semibold leading-snug">
             {quiz.question}
           </span>
         </div>
@@ -340,17 +340,17 @@ export function CompactQuizBar({
               key={optIdx}
               onClick={() => handleSelect(optIdx)}
               disabled={isSolved}
-              className={`flex items-center gap-2 p-2.5 rounded-xl border text-left text-xs transition-all transform active:scale-95 ${btnClass}`}
+              className={`flex items-start sm:items-center gap-2.5 p-2.5 rounded-xl border text-left text-xs transition-all transform active:scale-95 min-h-[44px] ${btnClass}`}
             >
-              <span className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-[10px] font-bold shrink-0 font-mono-custom">
+              <span className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-[10px] font-bold shrink-0 font-mono-custom mt-0.5 sm:mt-0">
                 {String.fromCharCode(65 + optIdx)}
               </span>
-              <span className="flex-1 truncate font-medium">{option}</span>
+              <span className="flex-1 font-medium text-xs leading-snug break-words">{option}</span>
               {isAnswered && isSelected && isCorrect && (
-                <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+                <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
               )}
               {isAnswered && isSelected && !isCorrect && (
-                <AlertCircle size={14} className="text-red-400 shrink-0" />
+                <AlertCircle size={14} className="text-red-400 shrink-0 mt-0.5 sm:mt-0" />
               )}
             </button>
           );

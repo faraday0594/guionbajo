@@ -377,6 +377,7 @@ export const api = {
         student_level?: string;
         voice_id?: string;
         bilingual_mode?: boolean;
+        active_mini_class?: MiniClassData | null;
         signal?: AbortSignal;
       },
       callbacks: {
@@ -404,6 +405,7 @@ export const api = {
           student_level: options.student_level || 'A1.2',
           voice_id: options.voice_id || getSavedPreferredVoice(),
           bilingual_mode: options.bilingual_mode ?? true,
+          active_mini_class: options.active_mini_class || null,
         }),
         signal: options.signal,
       });

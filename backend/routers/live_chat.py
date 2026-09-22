@@ -55,6 +55,7 @@ class LiveChatRequest(BaseModel):
     student_level: Optional[str] = "A1.2"
     voice_id: Optional[str] = "es-US-AlonsoNeural"
     bilingual_mode: Optional[bool] = True
+    active_mini_class: Optional[Dict[str, Any]] = None
 
 class ChunkAudioRequest(BaseModel):
     text: str
@@ -103,18 +104,18 @@ DIRECTRICES DE CONVERSACIÓN EN VIVO (ÁGIL Y CONCISA):
      a) Cuando {student_name} mencione o pida una explicación, clase o duda sobre cualquier tema gramatical, tiempo verbal o vocabulario (ej: "explícame el presente progresivo", "quiero que me expliques...", "cómo se usa would like", "present continuous", "adverbios de frecuencia", "phrasal verbs", "pasado simple", etc.).
      b) O cuando {student_name} acepte una sugerencia tuya de aprender un tema (ej: "sí, explícame", "quiero aprenderlo").
      c) O cuando cometa un error conceptual importante y le propongas una mini-clase express.
-   - REGLA DE ORO DE LA VOZ HABLADA (CRÍTICO):
-     ESTÁ TOTALMENTE PROHIBIDO dar explicaciones gramaticales, listas o detalles de reglas ("primero...", "segundo...", excepciones) con tu voz hablada.
-     Tu voz hablada DEBE SER ÚNICAMENTE 1 O 2 FRASES CORTAS (máximo 12 a 18 palabras en total) anunciando con entusiasmo que abres la pizarra holográfica para él/ella.
-     Ejemplo hablado obligatorio: "¡Por supuesto! Abro tu pizarra holográfica con las reglas clave del tema. ¡Mírala en pantalla y prueba tu respuesta!"
-     NUNCA uses formato markdown (como negritas ** ni guiones de lista) en tu voz hablada.
-     TODO el contenido explicativo (fórmulas, reglas gramaticales, excepciones como -ing, tips y ejemplos) DEBE IR OBLIGATORIA Y EXCLUSIVAMENTE DENTRO DEL BLOQUE OCULTO [MINI_CLASS: {...}].
+   - REGLA DE ORO DE LA VOZ HABLADA PARA MINI-CLASES (CRÍTICO):
+     1. Comienza SIEMPRE con una primera frase gancho muy corta de 2 a 4 palabras (ej: "¡Claro que sí!", "¡Excelente tema!", "¡Buena pregunta!") para que el estudiante empiece a escucharte en menos de 1 segundo.
+     2. DA UNA EXPLICACIÓN CLARA, NATURAL Y CÁLIDA CON TUS PROPIAS PALABRAS sobre qué es el tema y para qué sirve en la vida real (2 a 3 oraciones sencillas, vivas y fluidas en español, sin tecnicismos pesados ni monólogos aburridos).
+     3. Invita al estudiante a mirar la pizarra holográfica que abriste a sus lados con las fórmulas y ejemplos, y a probar su respuesta en el quiz interactivo de abajo.
+        Ejemplo hablado de referencia: "¡Claro que sí! El presente simple lo usamos para hablar de rutinas, hábitos o hechos reales que no cambian, como lo que haces a diario o tus gustos. Te abrí tu pizarra a los lados para que veas la estructura exacta con he, she e it. ¡Échale un vistazo y prueba tu respuesta en el quiz de abajo!"
+     4. NUNCA uses formato markdown (como negritas ** ni guiones de lista) en tu voz hablada.
    - FORMATO OBLIGATORIO DEL BLOQUE OCULTO [MINI_CLASS]:
-     Inmediatamente después de tu breve saludo hablado (después de cualquier [CORRECTION]), incluye OBLIGATORIAMENTE el bloque JSON estructurado completo:
+     Inmediatamente después de tu explicación hablada (y de cualquier [CORRECTION]), incluye OBLIGATORIAMENTE el bloque JSON estructurado completo:
      [MINI_CLASS: {"topic": "Nombre del Tema", "summary": "Resumen en 1 línea", "cards": [{"id": "c1", "step": 1, "badge": "Regla 1", "title": "Título de la regla", "formula": "Sujeto + Verbo Auxiliar + Verbo Principal", "example": "Oración de ejemplo en inglés", "highlight": "palabra o frase resaltada", "explanation": "Regla mnemotécnica clara y directa en español"}, {"id": "c2", "step": 2, "badge": "Regla 2", "title": "Título regla 2", "formula": "Sujeto + To Be + Verbo-ing", "example": "Ejemplo ilustrativo", "highlight": "palabra resaltada", "explanation": "Explicación clara en español"}], "quiz": {"question": "¿Pregunta concisa para evaluar el tema?", "options": ["Opción A", "Opción B", "Opción C"], "correct_index": 0, "explanation": "Por qué es correcta"}} ]
-   - REGLA CRÍTICA PARA 'example':
-     El campo 'example' DEBE contener ÚNICA Y EXCLUSIVAMENTE una oración correcta y natural en inglés (ej: "I never eat fish", "She always drinks coffee").
-     ESTÁ TERMINANTEMENTE PROHIBIDO incluir acotaciones o notas como "(¡INCORRECTO!)", "(CORRECTO)", "(Wrong)" dentro de 'example'. Todo contraste o advertencia de error debe ir en 'explanation', NUNCA en 'example'.
+   - REGLA CRÍTICA PARA 'example' Y 'options':
+     a) El campo 'example' DEBE contener ÚNICA Y EXCLUSIVAMENTE una oración correcta y natural en inglés (ej: "I never eat fish", "She always drinks coffee"). ESTÁ TERMINANTEMENTE PROHIBIDO incluir acotaciones o notas como "(¡INCORRECTO!)", "(CORRECTO)", "(Wrong)" dentro de 'example'. Todo contraste o advertencia de error debe ir en 'explanation', NUNCA en 'example'.
+     b) En 'quiz.options', escribe opciones directas, claras y COMPLETAS (oraciones o respuestas completas de 3 a 8 palabras, NUNCA uses puntos suspensivos '...' ni dejes texto a medias).
    - CIERRE AUTOMÁTICO DE LA PIZARRA:
      Cuando {student_name} confirme que entendió la explicación (ej: "ya entendí", "todo claro", "gracias", "perfecto") o cuando responda al quiz, felicítalo brevemente en 1 oración hablada (ej: "¡Exacto, lo dominas a la perfección! Cerramos la pizarra y seguimos conversando.") y agrega al final de tu mensaje la etiqueta oculta:
      [CLOSE_MINI_CLASS]
@@ -301,12 +302,16 @@ async def live_respond_stream(
         formatted_messages.append({
             "role": "system",
             "content": (
-                "[INSTRUCCIÓN CRÍTICA DE SISTEMA: El estudiante está pidiendo una clase o explicación sobre un tema. "
-                "TU VOZ HABLADA DEBE TENER MÁXIMO 1 O 2 FRASES CORTAS (10 a 15 palabras en total), por ejemplo: "
-                "'¡Por supuesto! Abro tu pizarra holográfica con la estructura y ejemplos clave. ¡Pruébalo con la pregunta!' "
-                "ESTÁ TOTALMENTE PROHIBIDO explicar la gramática o enumerar reglas/ejemplos con tu voz hablada. NUNCA uses negritas (**) por voz. "
-                "OBLIGATORIO: Genera inmediatamente después de tu breve saludo el bloque oculto [MINI_CLASS: { ... }] completo con cards y quiz. "
-                "En el campo 'example' pon ÚNICAMENTE la oración pura y correcta en inglés, SIN acotaciones ni paréntesis como (¡INCORRECTO!). Todo contraste debe ir en 'explanation'. "
+                "[INSTRUCCIÓN CRÍTICA DE SISTEMA: El estudiante está pidiendo una clase o explicación sobre un tema.\n"
+                "1. TU VOZ HABLADA DEBE EXPLICAR EL TEMA CON TUS PROPIAS PALABRAS:\n"
+                "   - Comienza con 1 frase gancho muy corta de 2 a 4 palabras (ej: '¡Claro que sí!', '¡Excelente pregunta!').\n"
+                "   - En 2 o 3 oraciones naturales, cálidas y claras en español, explica qué es el tema y para qué sirve en la vida diaria (sin tecnicismos pesados ni listas monótonas).\n"
+                "   - Invita al estudiante a mirar la pizarra holográfica que abriste a sus lados para ver las fórmulas exactas y responder el quiz de abajo.\n"
+                "   - NUNCA uses formato markdown (como negritas ** ni guiones de lista) en tu voz hablada.\n"
+                "2. BLOQUE OCULTO [MINI_CLASS: { ... }]:\n"
+                "   - Genera inmediatamente después de tu breve explicación hablada el bloque JSON completo estructurado con las tarjetas y el quiz.\n"
+                "   - En cada tarjeta, pon 'example' con una oración completa, natural y correcta en inglés (SIN notas como (¡INCORRECTO!)).\n"
+                "   - En el quiz, escribe opciones directas, claras y COMPLETAS (oraciones o respuestas completas de 3 a 8 palabras, NUNCA uses puntos suspensivos '...' ni dejes texto a medias).\n"
                 "No lo postergues, genéralo AHORA MISMO en esta respuesta.]"
             )
         })
@@ -320,6 +325,40 @@ async def live_respond_stream(
                 "continúa la conversación en inglés. OBLIGATORIAMENTE incluye al final de tu respuesta la etiqueta: [CLOSE_MINI_CLASS]]"
             )
         })
+
+    # Visual board awareness: let Guionbajo know what is currently visible on the student's screen
+    if req.active_mini_class and isinstance(req.active_mini_class, dict) and req.active_mini_class.get("topic") and not is_understood:
+        hud = req.active_mini_class
+        cards_summary = []
+        for c in hud.get("cards", []):
+            cards_summary.append(
+                f"- Tarjeta {c.get('badge', 'Regla')}: '{c.get('title', '')}' | Estructura: '{c.get('formula', '')}' | Ejemplo: '{c.get('example', '')}' | Tip: '{c.get('explanation', '')}'"
+            )
+        quiz_summary = ""
+        if hud.get("quiz") and isinstance(hud["quiz"], dict):
+            q = hud["quiz"]
+            opts = q.get("options", [])
+            corr_idx = q.get("correct_index", 0)
+            corr_text = opts[corr_idx] if 0 <= corr_idx < len(opts) else ""
+            quiz_summary = (
+                f"- Micro-Quiz activo en pantalla: Pregunta: '{q.get('question', '')}'\n"
+                f"  Opciones: {opts}\n"
+                f"  Respuesta correcta: Opción {chr(65 + corr_idx)} ('{corr_text}')\n"
+                f"  Explicación del quiz: '{q.get('explanation', '')}'"
+            )
+
+        board_context = (
+            f"[CONTEXTO VISUAL ACTUAL EN LA PANTALLA DEL ESTUDIANTE:\n"
+            f"El estudiante tiene desplegada a tus lados la pizarra holográfica sobre '{hud.get('topic')}':\n"
+            + "\n".join(cards_summary) + "\n"
+            + quiz_summary + "\n"
+            f"DIRECTRICES DE CONTEXTO VISUAL:\n"
+            f"- El estudiante está viendo exactamente estas tarjetas y este quiz en este instante.\n"
+            f"- Si el estudiante te hace preguntas, dudas o comentarios sobre las tarjetas, ejemplos o quiz, respóndele con total conocimiento de lo que ve.\n"
+            f"- Si pide pistas o ayuda con el quiz, dale una pista pedagógica amable sin revelarle la respuesta de golpe.\n"
+            f"- Si el estudiante no está pidiendo un tema nuevo, NO regeneres [MINI_CLASS]. Mantén la conversación fluida respondiendo a su duda.]"
+        )
+        formatted_messages.append({"role": "system", "content": board_context})
 
     client = AsyncOpenAI(
         api_key=api_key,
@@ -366,12 +405,12 @@ async def live_respond_stream(
 
         try:
             # Crucial: thinking disabled guarantees sub-second first-token response
-            # 950 tokens when class requested to guarantee complete JSON payload
+            # 1400 tokens when class requested to guarantee complete JSON payload and speech
             stream = await client.chat.completions.create(
                 model=settings.MINIMAX_LLM_MODEL or "MiniMax-M3",
                 messages=formatted_messages,
                 temperature=0.8,
-                max_tokens=950 if is_class_requested else 400,
+                max_tokens=1400 if is_class_requested else 450,
                 stream=True,
                 extra_body={"thinking": {"type": "disabled"}}
             )

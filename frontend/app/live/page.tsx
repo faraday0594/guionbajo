@@ -585,6 +585,7 @@ export default function LiveChatPage() {
           student_name: userName,
           student_level: userLevel,
           voice_id: preferredVoice || 'es-US-AlonsoNeural',
+          active_mini_class: activeMiniClass,
           signal: abortController.signal,
         },
         {

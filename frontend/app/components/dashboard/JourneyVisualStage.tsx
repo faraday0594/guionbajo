@@ -1110,8 +1110,6 @@ export default function JourneyVisualStage({
             const totalW_torso = faceW_torso + sideW_torso;
 
             // Centers and offsets:
-            // When cosTheta >= 0 (Back view), side flank is on the right side.
-            // When cosTheta < 0 (Front view), side flank is on the left side.
             const faceCenterX_head = cosTheta >= 0
               ? 475 - sideW_head / 2
               : 475 + sideW_head / 2;
@@ -1126,7 +1124,24 @@ export default function JourneyVisualStage({
               ? faceCenterX_torso + faceW_torso / 2
               : 475 - totalW_torso / 2;
 
-            // 3D Ear dials positions (orbiting on the lateral perimeter):
+            // ── 3D Accessory Coordinates: Shoulders, Arms, Jetpack, Swords ──
+            // Shoulders:
+            const shoulderLeftX = 475 - 24 * cosTheta - 5 * sinTheta;
+            const shoulderLeftZ = 24 * sinTheta - 5 * cosTheta;
+            const shoulderRightX = 475 + 24 * cosTheta + 5 * sinTheta;
+            const shoulderRightZ = -24 * sinTheta + 5 * cosTheta;
+
+            // Jetpack Canisters (Stage 2):
+            const canisterLeftX = 475 - 18 * cosTheta - 10 * sinTheta;
+            const canisterLeftZ = 18 * sinTheta - 10 * cosTheta;
+            const canisterRightX = 475 + 18 * cosTheta + 10 * sinTheta;
+            const canisterRightZ = -18 * sinTheta - 10 * cosTheta;
+
+            // Swords Mount (Stage 6):
+            const swordsMountX = 475 - 10 * sinTheta;
+            const swordsMountZ = -10 * cosTheta;
+
+            // 3D Ear dials positions:
             const earLeftX = 475 - (W_head / 2) * cosTheta - (D_head / 2) * sinTheta;
             const earLeftZ = (W_head / 2) * sinTheta - (D_head / 2) * cosTheta;
             const earRightX = 475 + (W_head / 2) * cosTheta + (D_head / 2) * sinTheta;
@@ -1156,6 +1171,7 @@ export default function JourneyVisualStage({
             // Ground glow dimensions
             const groundGlowR = (16 + flameIntensity * 26) * (isMegaFlame ? 1.35 : 1.0);
 
+            // ── Helper: 3D Ear Dial ──
             const renderEarDial = (x: number) => (
               <g transform={`translate(${x - 3.5}, 241)`}>
                 <rect
@@ -1182,6 +1198,137 @@ export default function JourneyVisualStage({
               </g>
             );
 
+            // ── Helper: 3D Articulated Arm (Stage 1) ──
+            const renderArm = (
+              shoulderX: number,
+              shoulderZ: number,
+              isLeft: boolean
+            ) => {
+              const sign = isLeft ? -1 : 1;
+              const elbowX = shoulderX + sign * (12 * absCos + 4 * sinTheta);
+              const elbowY = isFlying ? 300 - flameIntensity * 8 : 304;
+              const clampX = elbowX + sign * (4 * absCos - 2 * sinTheta);
+              const clampY = isFlying ? 310 - flameIntensity * 8 : 316;
+
+              return (
+                <g key={`arm-${isLeft ? 'left' : 'right'}`} opacity={shoulderZ < 0 && absCos < 0.25 ? 0.75 : 1}>
+                  {/* Upper arm */}
+                  <path
+                    d={`M ${shoulderX} 282 Q ${(shoulderX + elbowX) / 2} ${288 - (isFlying ? flameIntensity * 6 : 0)}, ${elbowX} ${elbowY}`}
+                    fill="none"
+                    stroke={avatarUpgradeStage >= 1 ? '#94a3b8' : '#475569'}
+                    strokeWidth={avatarUpgradeStage >= 1 ? 7 : 5}
+                    strokeLinecap="round"
+                  />
+                  {/* Elbow ball joint */}
+                  <circle
+                    cx={elbowX}
+                    cy={elbowY}
+                    r={avatarUpgradeStage >= 1 ? 4.5 : 3.5}
+                    fill="#334155"
+                    stroke={avatarUpgradeStage >= 1 ? '#00D4FF' : '#64748b'}
+                    strokeWidth={avatarUpgradeStage >= 1 ? 1.5 : 1}
+                  />
+                  {/* Forearm */}
+                  <path
+                    d={`M ${elbowX} ${elbowY} L ${clampX} ${clampY}`}
+                    fill="none"
+                    stroke={avatarUpgradeStage >= 1 ? '#cbd5e1' : '#334155'}
+                    strokeWidth={avatarUpgradeStage >= 1 ? 5.5 : 4}
+                    strokeLinecap="round"
+                  />
+                  {/* Pincer clamp */}
+                  <circle
+                    cx={clampX}
+                    cy={clampY}
+                    r={avatarUpgradeStage >= 1 ? 3.5 : 2.8}
+                    fill={avatarUpgradeStage >= 1 ? '#00D4FF' : '#64748b'}
+                    filter={avatarUpgradeStage >= 1 ? 'url(#cyanGlow)' : undefined}
+                  />
+                </g>
+              );
+            };
+
+            // ── Helper: 3D Jetpack Canister (Stage 2) ──
+            const renderJetpackCanister = (
+              cx: number,
+              cz: number,
+              isLeft: boolean
+            ) => {
+              const w = Math.max(4, 11 * absCos + 7 * sinTheta);
+              const flameRx = Math.max(2, (3.5 + flameIntensity * 2) * (0.6 + 0.4 * absCos));
+              const flameRy = 6 + flameIntensity * 14;
+
+              return (
+                <g key={`canister-${isLeft ? 'left' : 'right'}`}>
+                  <rect
+                    x={cx - w / 2}
+                    y="274"
+                    width={w}
+                    height="28"
+                    rx="3"
+                    fill="url(#antennaStemGrad)"
+                    stroke="#64748b"
+                    strokeWidth="1.2"
+                  />
+                  <line
+                    x1={cx - w / 2}
+                    y1="282"
+                    x2={cx + w / 2}
+                    y2="282"
+                    stroke="#f59e0b"
+                    strokeWidth="1.5"
+                  />
+                  <rect
+                    x={cx - w * 0.38}
+                    y="302"
+                    width={w * 0.76}
+                    height="4"
+                    rx="1"
+                    fill="#334155"
+                    stroke="#64748b"
+                    strokeWidth="0.8"
+                  />
+                  <ellipse
+                    cx={cx}
+                    cy={310 + flameIntensity * 12}
+                    rx={flameRx}
+                    ry={flameRy}
+                    fill="url(#plasmaFlameOuter)"
+                    opacity={flameOpacity}
+                    filter="url(#cyanGlow)"
+                  />
+                </g>
+              );
+            };
+
+            // ── Helper: 3D Dual Cyber Swords (Stage 6) ──
+            const renderSwords = (isBehind: boolean) => (
+              <g
+                transform={`translate(${swordsMountX}, 292) scale(${Math.max(0.05, absCos)}, 1) translate(-475, -292)`}
+                opacity={isBehind ? 0.9 : 1}
+              >
+                {/* Tahalí de sujeción en la espalda */}
+                <line x1="454" y1="288" x2="496" y2="298" stroke="#334155" strokeWidth="2.5" strokeDasharray="3 1" />
+                <rect x="471" y="290" width="8" height="6" rx="1.5" fill="#475569" stroke="#94a3b8" strokeWidth="0.8" />
+
+                {/* Espada izquierda (-48°) cruzada */}
+                <g transform="rotate(-48 460 295)">
+                  <rect x="458" y="254" width="4.5" height="38" rx="2" fill="url(#mapSwordGrad)" stroke="#e9d5ff" strokeWidth="0.8" filter="url(#cyanGlow)" />
+                  <rect x="453" y="292" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="0.8" />
+                  <rect x="458.5" y="295.5" width="3" height="11" rx="1" fill="#1e293b" />
+                  <circle cx="460" cy="307" r="2.2" fill="#a855f7" />
+                </g>
+                {/* Espada derecha (+48°) cruzada */}
+                <g transform="rotate(48 490 295)">
+                  <rect x="487.5" y="254" width="4.5" height="38" rx="2" fill="url(#mapSwordGrad)" stroke="#e9d5ff" strokeWidth="0.8" filter="url(#cyanGlow)" />
+                  <rect x="483" y="292" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="0.8" />
+                  <rect x="488.5" y="295.5" width="3" height="11" rx="1" fill="#1e293b" />
+                  <circle cx="490" cy="307" r="2.2" fill="#a855f7" />
+                </g>
+              </g>
+            );
+
             return (
               <g
                 style={{
@@ -1203,59 +1350,6 @@ export default function JourneyVisualStage({
                   />
                 )}
 
-                {/* ── STAGE 6: ESPADAS GEMELAS CYBER EN LA ESPALDA ──────── */}
-                {avatarUpgradeStage >= 6 && (
-                  <g>
-                    {/* Tahalí / arnés de sujeción en la espalda */}
-                    <line x1="454" y1="288" x2="496" y2="298" stroke="#334155" strokeWidth="2.5" strokeDasharray="3 1" />
-                    <rect x="471" y="290" width="8" height="6" rx="1.5" fill="#475569" stroke="#94a3b8" strokeWidth="0.8" />
-
-                    {/* Espada izquierda (-48°) cruzada en torso */}
-                    <g transform="rotate(-48 460 295)">
-                      <rect x="458" y="254" width="4.5" height="38" rx="2" fill="url(#mapSwordGrad)" stroke="#e9d5ff" strokeWidth="0.8" filter="url(#cyanGlow)" />
-                      <rect x="453" y="292" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="0.8" />
-                      <rect x="458.5" y="295.5" width="3" height="11" rx="1" fill="#1e293b" />
-                      <circle cx="460" cy="307" r="2.2" fill="#a855f7" />
-                    </g>
-                    {/* Espada derecha (+48°) cruzada en torso */}
-                    <g transform="rotate(48 490 295)">
-                      <rect x="487.5" y="254" width="4.5" height="38" rx="2" fill="url(#mapSwordGrad)" stroke="#e9d5ff" strokeWidth="0.8" filter="url(#cyanGlow)" />
-                      <rect x="483" y="292" width="14" height="3.5" rx="1" fill="#475569" stroke="#cbd5e1" strokeWidth="0.8" />
-                      <rect x="488.5" y="295.5" width="3" height="11" rx="1" fill="#1e293b" />
-                      <circle cx="490" cy="307" r="2.2" fill="#a855f7" />
-                    </g>
-                  </g>
-                )}
-
-                {/* ── STAGE 2: JETPACK DORSAL DOBLE TOBERA ── */}
-                {avatarUpgradeStage >= 2 && (
-                  <g>
-                    {!showFront ? (
-                      <>
-                        <rect x="453" y="274" width="11" height="28" rx="3" fill="url(#antennaStemGrad)" stroke="#64748b" strokeWidth="1.2" />
-                        <line x1="453" y1="282" x2="464" y2="282" stroke="#f59e0b" strokeWidth="1.5" />
-                        <rect x="454.5" y="302" width="8" height="4" rx="1" fill="#334155" stroke="#64748b" strokeWidth="0.8" />
-                        <ellipse cx="458.5" cy={310 + flameIntensity * 12} rx={3.5 + flameIntensity * 2} ry={6 + flameIntensity * 14} fill="url(#plasmaFlameOuter)" opacity={flameOpacity} filter="url(#cyanGlow)" />
-
-                        <rect x="486" y="274" width="11" height="28" rx="3" fill="url(#antennaStemGrad)" stroke="#64748b" strokeWidth="1.2" />
-                        <line x1="486" y1="282" x2="497" y2="282" stroke="#f59e0b" strokeWidth="1.5" />
-                        <rect x="487.5" y="302" width="8" height="4" rx="1" fill="#334155" stroke="#64748b" strokeWidth="0.8" />
-                        <ellipse cx="491.5" cy={310 + flameIntensity * 12} rx={3.5 + flameIntensity * 2} ry={6 + flameIntensity * 14} fill="url(#plasmaFlameOuter)" opacity={flameOpacity} filter="url(#cyanGlow)" />
-                      </>
-                    ) : (
-                      <>
-                        <rect x="443" y="276" width="8" height="24" rx="2.5" fill="url(#antennaStemGrad)" stroke="#64748b" strokeWidth="1" />
-                        <line x1="443" y1="284" x2="451" y2="284" stroke="#f59e0b" strokeWidth="1.5" />
-                        <ellipse cx="447" cy={308 + flameIntensity * 10} rx="3" ry={5 + flameIntensity * 10} fill="url(#plasmaFlameOuter)" opacity={flameOpacity} filter="url(#cyanGlow)" />
-
-                        <rect x="499" y="276" width="8" height="24" rx="2.5" fill="url(#antennaStemGrad)" stroke="#64748b" strokeWidth="1" />
-                        <line x1="499" y1="284" x2="507" y2="284" stroke="#f59e0b" strokeWidth="1.5" />
-                        <ellipse cx="503" cy={308 + flameIntensity * 10} rx="3" ry={5 + flameIntensity * 10} fill="url(#plasmaFlameOuter)" opacity={flameOpacity} filter="url(#cyanGlow)" />
-                      </>
-                    )}
-                  </g>
-                )}
-
                 {/* ── Ground shadow & plasma light bloom ────────────────── */}
                 <ellipse
                   cx="475"
@@ -1273,6 +1367,19 @@ export default function JourneyVisualStage({
                   fill="url(#groundPlasmaGlow)"
                   opacity={flameIntensity * 0.85}
                 />
+
+                {/* ── ACCESSORIES BEHIND BODY (When facing front: Swords & Jetpack are behind) ── */}
+                {avatarUpgradeStage >= 6 && cosTheta < 0 && renderSwords(true)}
+                {avatarUpgradeStage >= 2 && cosTheta < 0 && (
+                  <>
+                    {renderJetpackCanister(canisterLeftX, canisterLeftZ, true)}
+                    {renderJetpackCanister(canisterRightX, canisterRightZ, false)}
+                  </>
+                )}
+
+                {/* ── BACKGROUND ARMS (Arm whose shoulder is on the far side) ── */}
+                {shoulderLeftZ < 0 && renderArm(shoulderLeftX, shoulderLeftZ, true)}
+                {shoulderRightZ < 0 && renderArm(shoulderRightX, shoulderRightZ, false)}
 
                 {/* ── 3D MAGNETIC HOVER THRUSTER (Base del cuerpo) ─────────── */}
                 <path
@@ -1320,77 +1427,6 @@ export default function JourneyVisualStage({
                   ry="2"
                   fill="#ffffff"
                   opacity={0.85 + flameIntensity * 0.15}
-                />
-
-                {/* ── STAGE 1: BRAZOS MECÁNICOS ARTICULADOS ────────────── */}
-                {/* Left arm */}
-                <path
-                  d={isFlying
-                    ? `M 451 282 Q 440 ${288 - flameIntensity * 6}, 438 ${300 - flameIntensity * 8}`
-                    : 'M 451 282 Q 441 292, 439 304'}
-                  fill="none"
-                  stroke={avatarUpgradeStage >= 1 ? '#94a3b8' : '#475569'}
-                  strokeWidth={avatarUpgradeStage >= 1 ? 7 : 5}
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx={isFlying ? 438 : 439}
-                  cy={isFlying ? 300 - flameIntensity * 8 : 304}
-                  r={avatarUpgradeStage >= 1 ? 4.5 : 3.5}
-                  fill="#334155"
-                  stroke={avatarUpgradeStage >= 1 ? '#00D4FF' : '#64748b'}
-                  strokeWidth={avatarUpgradeStage >= 1 ? 1.5 : 1}
-                />
-                <path
-                  d={isFlying
-                    ? `M 438 ${300 - flameIntensity * 8} L 441 ${309 - flameIntensity * 8}`
-                    : 'M 439 304 L 443 315'}
-                  fill="none"
-                  stroke={avatarUpgradeStage >= 1 ? '#cbd5e1' : '#334155'}
-                  strokeWidth={avatarUpgradeStage >= 1 ? 5.5 : 4}
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx={isFlying ? 441 : 443}
-                  cy={isFlying ? 310 - flameIntensity * 8 : 316}
-                  r={avatarUpgradeStage >= 1 ? 3.5 : 2.8}
-                  fill={avatarUpgradeStage >= 1 ? '#00D4FF' : '#64748b'}
-                  filter={avatarUpgradeStage >= 1 ? 'url(#cyanGlow)' : undefined}
-                />
-
-                {/* Right arm */}
-                <path
-                  d={isFlying
-                    ? `M 499 282 Q 510 ${288 - flameIntensity * 6}, 512 ${300 - flameIntensity * 8}`
-                    : 'M 499 282 Q 509 292, 511 304'}
-                  fill="none"
-                  stroke={avatarUpgradeStage >= 1 ? '#94a3b8' : '#475569'}
-                  strokeWidth={avatarUpgradeStage >= 1 ? 7 : 5}
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx={isFlying ? 512 : 511}
-                  cy={isFlying ? 300 - flameIntensity * 8 : 304}
-                  r={avatarUpgradeStage >= 1 ? 4.5 : 3.5}
-                  fill="#334155"
-                  stroke={avatarUpgradeStage >= 1 ? '#00D4FF' : '#64748b'}
-                  strokeWidth={avatarUpgradeStage >= 1 ? 1.5 : 1}
-                />
-                <path
-                  d={isFlying
-                    ? `M 512 ${300 - flameIntensity * 8} L 509 ${309 - flameIntensity * 8}`
-                    : 'M 511 304 L 507 315'}
-                  fill="none"
-                  stroke={avatarUpgradeStage >= 1 ? '#cbd5e1' : '#334155'}
-                  strokeWidth={avatarUpgradeStage >= 1 ? 5.5 : 4}
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx={isFlying ? 509 : 507}
-                  cy={isFlying ? 310 - flameIntensity * 8 : 316}
-                  r={avatarUpgradeStage >= 1 ? 3.5 : 2.8}
-                  fill={avatarUpgradeStage >= 1 ? '#00D4FF' : '#64748b'}
-                  filter={avatarUpgradeStage >= 1 ? 'url(#cyanGlow)' : undefined}
                 />
 
                 {/* ── 3D ROBOT TORSO / BODY ─────────────────────────────────── */}
@@ -1441,15 +1477,6 @@ export default function JourneyVisualStage({
                     strokeWidth="1.5"
                     strokeLinecap="round"
                   />
-
-                  {/* STAGE 4: Hombreras de Oro Blindadas */}
-                  {avatarUpgradeStage >= 4 && (
-                    <g>
-                      <path d="M 444 282 L 452 277 L 452 291 Z" fill="url(#mapGoldChassis)" stroke="#fef08a" strokeWidth="1" />
-                      <path d="M 506 282 L 498 277 L 498 291 Z" fill="url(#mapGoldChassis)" stroke="#fef08a" strokeWidth="1" />
-                      <rect x="458" y="278" width="34" height="4" rx="2" fill="url(#mapGoldChassis)" stroke="#fef08a" strokeWidth="0.8" />
-                    </g>
-                  )}
 
                   {showFront ? (
                     /* TORSO FRONT: CRT MONITOR & SCANLINES */
@@ -1517,6 +1544,15 @@ export default function JourneyVisualStage({
                     </>
                   )}
                 </g>
+
+                {/* ── ACCESSORIES ON BACK (When facing back: Swords & Jetpack are in foreground) ── */}
+                {avatarUpgradeStage >= 6 && cosTheta >= 0 && renderSwords(false)}
+                {avatarUpgradeStage >= 2 && cosTheta >= 0 && (
+                  <>
+                    {renderJetpackCanister(canisterLeftX, canisterLeftZ, true)}
+                    {renderJetpackCanister(canisterRightX, canisterRightZ, false)}
+                  </>
+                )}
 
                 {/* ── MECHANICAL NECK ───────────────────────────────────── */}
                 <rect
@@ -1605,8 +1641,8 @@ export default function JourneyVisualStage({
                     strokeLinecap="round"
                   />
 
-                  {/* STAGE 4: Placa de oro en la frente / cejas */}
-                  {avatarUpgradeStage >= 4 && (
+                  {/* STAGE 4: Placa de oro en la frente (solo cara frontal) */}
+                  {avatarUpgradeStage >= 4 && showFront && (
                     <rect
                       x="447"
                       y="227"
@@ -1702,13 +1738,50 @@ export default function JourneyVisualStage({
                 {earLeftZ >= 0 && renderEarDial(earLeftX)}
                 {earRightZ >= 0 && renderEarDial(earRightX)}
 
+                {/* ── FOREGROUND ARMS (Arm whose shoulder is on the near side) ── */}
+                {shoulderLeftZ >= 0 && renderArm(shoulderLeftX, shoulderLeftZ, true)}
+                {shoulderRightZ >= 0 && renderArm(shoulderRightX, shoulderRightZ, false)}
+
+                {/* ── STAGE 4: HOMBRERAS DE ORO BLINDADAS (Ancladas en 3D a los hombros) ── */}
+                {avatarUpgradeStage >= 4 && (
+                  <g>
+                    {/* Hombrera Izquierda */}
+                    <path
+                      d={`M ${shoulderLeftX - 6 * absCos} 282 L ${shoulderLeftX + 2 * absCos} 276 L ${shoulderLeftX + 2 * absCos} 290 Z`}
+                      fill="url(#mapGoldChassis)"
+                      stroke="#fef08a"
+                      strokeWidth="1"
+                    />
+                    {/* Hombrera Derecha */}
+                    <path
+                      d={`M ${shoulderRightX + 6 * absCos} 282 L ${shoulderRightX - 2 * absCos} 276 L ${shoulderRightX - 2 * absCos} 290 Z`}
+                      fill="url(#mapGoldChassis)"
+                      stroke="#fef08a"
+                      strokeWidth="1"
+                    />
+                    {/* Placa pectoral frontal de oro (solo cara frontal) */}
+                    {showFront && (
+                      <rect
+                        x={faceCenterX_torso - 17 * absCos}
+                        y="278"
+                        width={34 * absCos}
+                        height="4"
+                        rx="2"
+                        fill="url(#mapGoldChassis)"
+                        stroke="#fef08a"
+                        strokeWidth="0.8"
+                      />
+                    )}
+                  </g>
+                )}
+
                 {/* ── STAGE 5: BOBINA DE TESLA (O ANTENA EN STAGE < 5) ──── */}
                 {avatarUpgradeStage >= 5 ? (
-                  <g>
+                  <g transform={`translate(${faceCenterX_head - 475}, 0)`}>
                     <rect x="473.5" y="210" width="3" height="16" rx="1.5" fill="url(#antennaStemGrad)" />
-                    <ellipse cx="475" cy="208" rx="10" ry="3" fill="none" stroke="#00D4FF" strokeWidth="1.8" filter="url(#cyanGlow)" />
-                    <ellipse cx="475" cy="202" rx="7.5" ry="2.3" fill="none" stroke="#00D4FF" strokeWidth="1.8" filter="url(#cyanGlow)" />
-                    <ellipse cx="475" cy="196" rx="5" ry="1.6" fill="none" stroke="#00D4FF" strokeWidth="1.8" filter="url(#cyanGlow)" />
+                    <ellipse cx="475" cy="208" rx={10 * (0.6 + 0.4 * absCos)} ry={3 * (0.6 + 0.4 * sinTheta)} fill="none" stroke="#00D4FF" strokeWidth="1.8" filter="url(#cyanGlow)" />
+                    <ellipse cx="475" cy="202" rx={7.5 * (0.6 + 0.4 * absCos)} ry={2.3 * (0.6 + 0.4 * sinTheta)} fill="none" stroke="#00D4FF" strokeWidth="1.8" filter="url(#cyanGlow)" />
+                    <ellipse cx="475" cy="196" rx={5 * (0.6 + 0.4 * absCos)} ry={1.6 * (0.6 + 0.4 * sinTheta)} fill="none" stroke="#00D4FF" strokeWidth="1.8" filter="url(#cyanGlow)" />
                     <circle cx="475" cy="190" r="3.2" fill="#ffffff" stroke="#00D4FF" strokeWidth="1.2" filter="url(#cyanGlow)" />
                     <path d="M 464 205 L 460 199 L 466 196 L 463 190" stroke="#fef08a" strokeWidth="1.6" fill="none" strokeLinecap="round">
                       <animate attributeName="opacity" values="0.2;1;0.3;1;0.2" dur="0.25s" repeatCount="indefinite" />
@@ -1718,7 +1791,7 @@ export default function JourneyVisualStage({
                     </path>
                   </g>
                 ) : (
-                  <g>
+                  <g transform={`translate(${faceCenterX_head - 475}, 0)`}>
                     <rect
                       x="473.5"
                       y="210"
@@ -1755,16 +1828,16 @@ export default function JourneyVisualStage({
                 {/* ── STAGE 7: MINI-DRON ORBITAL "GUIONCITO" ── */}
                 {avatarUpgradeStage >= 7 && (
                   <g>
-                    <ellipse cx={475 + 46} cy="265" rx="7.5" ry="4.5" fill="#1e293b" stroke="#00D4FF" strokeWidth="1.2" filter="url(#cyanGlow)">
-                      <animate attributeName="cx" values="521;527;521" dur="2s" repeatCount="indefinite" />
+                    <ellipse cx={475 + 46 * (cosTheta >= 0 ? 1 : -1)} cy="265" rx="7.5" ry="4.5" fill="#1e293b" stroke="#00D4FF" strokeWidth="1.2" filter="url(#cyanGlow)">
+                      <animate attributeName="cx" values={`${475 + 46 * (cosTheta >= 0 ? 1 : -1)};${475 + 52 * (cosTheta >= 0 ? 1 : -1)};${475 + 46 * (cosTheta >= 0 ? 1 : -1)}`} dur="2s" repeatCount="indefinite" />
                       <animate attributeName="cy" values="263;267;263" dur="1.6s" repeatCount="indefinite" />
                     </ellipse>
-                    <ellipse cx={475 + 46} cy="266.5" rx="5" ry="2" fill="none" stroke="#00D4FF" strokeWidth="0.8">
-                      <animate attributeName="cx" values="521;527;521" dur="2s" repeatCount="indefinite" />
+                    <ellipse cx={475 + 46 * (cosTheta >= 0 ? 1 : -1)} cy="266.5" rx="5" ry="2" fill="none" stroke="#00D4FF" strokeWidth="0.8">
+                      <animate attributeName="cx" values={`${475 + 46 * (cosTheta >= 0 ? 1 : -1)};${475 + 52 * (cosTheta >= 0 ? 1 : -1)};${475 + 46 * (cosTheta >= 0 ? 1 : -1)}`} dur="2s" repeatCount="indefinite" />
                       <animate attributeName="cy" values="264.5;268.5;264.5" dur="1.6s" repeatCount="indefinite" />
                     </ellipse>
-                    <circle cx={475 + 46} cy="261" r="2.2" fill="#ef4444" filter="url(#cyanGlow)">
-                      <animate attributeName="cx" values="521;527;521" dur="2s" repeatCount="indefinite" />
+                    <circle cx={475 + 46 * (cosTheta >= 0 ? 1 : -1)} cy="261" r="2.2" fill="#ef4444" filter="url(#cyanGlow)">
+                      <animate attributeName="cx" values={`${475 + 46 * (cosTheta >= 0 ? 1 : -1)};${475 + 52 * (cosTheta >= 0 ? 1 : -1)};${475 + 46 * (cosTheta >= 0 ? 1 : -1)}`} dur="2s" repeatCount="indefinite" />
                       <animate attributeName="cy" values="259;263;259" dur="1.6s" repeatCount="indefinite" />
                       <animate attributeName="opacity" values="1;0.1;1" dur="0.75s" repeatCount="indefinite" />
                     </circle>
@@ -1773,7 +1846,9 @@ export default function JourneyVisualStage({
 
                 {/* ── STAGE 8: CORONA IMPERIAL DE MAESTRO ───────────────── */}
                 {avatarUpgradeStage >= 8 && (
-                  <g>
+                  <g
+                    transform={`translate(${faceCenterX_head}, 187) scale(${0.35 + 0.65 * absCos}, 1) translate(-475, -187)`}
+                  >
                     <path
                       d="M 461 187 L 464 175 L 470 182 L 475 171 L 480 182 L 486 175 L 489 187 Z"
                       fill="url(#mapGoldChassis)"

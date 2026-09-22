@@ -384,6 +384,7 @@ export const api = {
         onClause?: (clause: { clause_index: number; text: string }) => void;
         onCorrection?: (correction: { original: string; corrected: string; explanation: string }) => void;
         onMiniClass?: (miniClass: MiniClassData) => void;
+        onCloseMiniClass?: () => void;
         onDone?: (data: { full_text: string; total_clauses: number }) => void;
         onError?: (error: string) => void;
       }
@@ -447,6 +448,8 @@ export const api = {
                   callbacks.onCorrection(data);
                 } else if (currentEvent === 'miniclass' && callbacks.onMiniClass) {
                   callbacks.onMiniClass(data);
+                } else if (currentEvent === 'close_miniclass' && callbacks.onCloseMiniClass) {
+                  callbacks.onCloseMiniClass();
                 } else if (currentEvent === 'done' && callbacks.onDone) {
                   callbacks.onDone(data);
                 } else if (currentEvent === 'error' && callbacks.onError) {

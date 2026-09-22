@@ -110,6 +110,9 @@ DIRECTRICES DE CONVERSACIÓN EN VIVO (ÁGIL Y CONCISA):
    - FORMATO OBLIGATORIO DEL BLOQUE OCULTO [MINI_CLASS]:
      Al final de tu respuesta (después de cualquier [CORRECTION]), incluye OBLIGATORIAMENTE el bloque JSON estructurado:
      [MINI_CLASS: {{"topic": "Nombre del Tema", "summary": "Resumen en 1 línea", "cards": [{{"id": "c1", "step": 1, "badge": "Regla 1", "title": "Título de la regla", "formula": "Sujeto + Adverbio + Verbo", "example": "Oración de ejemplo en inglés", "highlight": "palabra o frase resaltada", "explanation": "Regla mnemotécnica clara y directa en español"}}, {{"id": "c2", "step": 2, "badge": "Regla 2", "title": "Título regla 2", "formula": "Sujeto + To Be + Adverbio", "example": "Ejemplo con To Be", "highlight": "palabra resaltada", "explanation": "Explicación en español"}}], "quiz": {{"question": "¿Pregunta concisa para evaluar el tema?", "options": ["Opción A", "Opción B", "Opción C"], "correct_index": 0, "explanation": "Por qué es correcta"}}}} ]
+   - CIERRE AUTOMÁTICO DE LA PIZARRA:
+     Cuando {student_name} confirme que entendió la explicación (ej: "ya entendí", "todo claro", "gracias", "perfecto") o cuando responda al quiz, felicítalo brevemente en 1 oración hablada (ej: "¡Exacto, lo dominas a la perfección! Cerramos la pizarra y seguimos conversando.") y agrega al final de tu mensaje la etiqueta oculta:
+     [CLOSE_MINI_CLASS]
    - Si la conversación es charla cotidiana sin solicitud de explicación ni mini-clase, NO incluyas [MINI_CLASS].
 """
 
@@ -270,6 +273,13 @@ async def live_respond_stream(
         if any(k in prev_assistant_content for k in ["clase", "explicar", "gustaría", "gustaria", "quieres", "tema"]):
             is_class_requested = True
 
+    UNDERSTOOD_KEYWORDS = [
+        "ya entendí", "ya entendi", "todo claro", "me quedó claro", "me quedo claro",
+        "perfecto", "got it", "understood", "ya me quedó claro", "gracias ya entendí",
+        "ya comprendí", "ya comprendi"
+    ]
+    is_understood = any(kw in last_user_content for kw in UNDERSTOOD_KEYWORDS)
+
     if is_class_requested:
         logger.info(f"Mini-class requested by user: '{last_user_content[:60]}'. Injecting intent reinforcement.")
         formatted_messages.append({
@@ -279,6 +289,16 @@ async def live_respond_stream(
                 "Debes responder en 1 a 2 oraciones habladas enérgicas y amables anunciando que abres la pizarra holográfica "
                 "y OBLIGATORIAMENTE incluir al final de tu mensaje el bloque [MINI_CLASS: { ... }] completo con cards y quiz. "
                 "No lo postergues, genéralo AHORA MISMO en esta respuesta.]"
+            )
+        })
+    elif is_understood:
+        logger.info(f"Student confirmed understanding: '{last_user_content[:60]}'. Injecting close instruction.")
+        formatted_messages.append({
+            "role": "system",
+            "content": (
+                "[INSTRUCCIÓN DE SISTEMA: El estudiante confirma que ya entendió la explicación o clase. "
+                "Felicítalo brevemente en 1 sola frase entusiasta y amigable diciendo que cerramos la pizarra y "
+                "continúa la conversación en inglés. OBLIGATORIAMENTE incluye al final de tu respuesta la etiqueta: [CLOSE_MINI_CLASS]]"
             )
         })
 
@@ -298,7 +318,7 @@ async def live_respond_stream(
             if not text:
                 return ""
             s = text
-            for tag in ("[MINI_CLASS:", "[CORRECTION:"):
+            for tag in ("[MINI_CLASS:", "[CLOSE_MINI_CLASS]", "[CORRECTION:"):
                 pos = s.find(tag)
                 if pos != -1:
                     s = s[:pos]
@@ -342,8 +362,8 @@ async def live_respond_stream(
                 yield f"event: token\ndata: {json.dumps({'token': content})}\n\n"
 
                 # Check if clause buffer has reached a natural speaking pause
-                # Avoid emitting if we are inside a [CORRECTION: ...] or [MINI_CLASS: ...] tag
-                if "[CORRECTION:" not in clause_buffer and "[MINI_CLASS:" not in clause_buffer:
+                # Avoid emitting if we are inside a [CORRECTION: ...], [MINI_CLASS: ...], or [CLOSE_MINI_CLASS] tag
+                if "[CORRECTION:" not in clause_buffer and "[MINI_CLASS:" not in clause_buffer and "[CLOSE_MINI_CLASS]" not in clause_buffer:
                     match = clause_delimiters.search(clause_buffer)
                     # For clause 0: 2-3 words or first punctuation for instant start
                     threshold_words = 3 if clause_index == 0 else 6
@@ -390,6 +410,10 @@ async def live_respond_stream(
             miniclass_data = _extract_tag("MINI_CLASS", accumulated_text)
             if miniclass_data:
                 yield f"event: miniclass\ndata: {json.dumps(miniclass_data)}\n\n"
+
+            # Check if student understood and mini class should close
+            if "[CLOSE_MINI_CLASS]" in accumulated_text:
+                yield f"event: close_miniclass\ndata: {{}}\n\n"
 
             # Clean final text shown to user (without hidden tags)
             clean_full = _strip_hidden_tags(accumulated_text)

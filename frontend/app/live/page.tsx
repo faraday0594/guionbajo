@@ -18,6 +18,7 @@ import {
   Send,
   CheckCircle2,
   Zap,
+  X,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -25,7 +26,11 @@ import TutorAvatar, { TutorState } from '@/app/components/TutorPanel/TutorAvatar
 import { getCurrentUpgradeStage, UpgradeStage } from '@/lib/guionbajoUpgrades';
 import { api, LiveAudioStreamQueue, getSavedPreferredVoice, MiniClassData } from '@/lib/api';
 import { getToken } from '@/lib/auth';
-import { HolographicMiniClassHUD } from './components/HolographicMiniClassHUD';
+import {
+  FlankCardItem,
+  CompactQuizBar,
+  HolographicMiniClassHUD,
+} from './components/HolographicMiniClassHUD';
 
 interface Message {
   id: string;
@@ -97,6 +102,47 @@ export default function LiveChatPage() {
       console.warn('Failed to play mini-class audio snippet:', e);
     }
   };
+
+  const handleQuizCorrect = () => {
+    toast.success('¡Respuesta correcta! Regla dominada.', {
+      icon: '🎉',
+      duration: 3000,
+    });
+    // Give 2.5s celebration feedback so the student sees their success, then return to normal conversation
+    setTimeout(() => {
+      setActiveMiniClass(null);
+    }, 2500);
+  };
+
+  // Verbal Understanding Detector: auto-dismiss mini-class when student says "ya entendí", "todo claro", etc.
+  useEffect(() => {
+    if (!activeMiniClass || !lastUserUtterance) return;
+    const lower = lastUserUtterance.toLowerCase().trim();
+    const UNDERSTOOD_PATTERNS = [
+      'ya entendí',
+      'ya entendi',
+      'todo claro',
+      'me quedó claro',
+      'me quedo claro',
+      'ya comprendí',
+      'ya comprendi',
+      'perfecto',
+      'got it',
+      'understood',
+      'ya me quedó claro',
+      'ya me quedo claro',
+      'i understand',
+      'muchas gracias',
+      'gracias guionbajo',
+    ];
+
+    if (UNDERSTOOD_PATTERNS.some((p) => lower.includes(p))) {
+      const timer = setTimeout(() => {
+        setActiveMiniClass(null);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastUserUtterance, activeMiniClass]);
 
   // Audio Pipeline References (PERSISTENT REFS TO PREVENT V8 GARBAGE COLLECTION)
   const audioStreamRef = useRef<MediaStream | null>(null);
@@ -568,6 +614,13 @@ export default function LiveChatPage() {
               { duration: 5000 }
             );
           },
+          onCloseMiniClass: () => {
+            setActiveMiniClass(null);
+            toast.success('¡Excelente! Has dominado el tema. Volviendo a la charla.', {
+              icon: '✨',
+              duration: 3000,
+            });
+          },
           onDone: (doneData) => {
             audioQueue.markStreamComplete();
             if (doneData?.full_text) {
@@ -689,6 +742,171 @@ export default function LiveChatPage() {
     });
   };
 
+  // Mini-class cards flanking layout helpers
+  const allMiniClassCards = activeMiniClass?.cards || [];
+  const leftCards = allMiniClassCards.filter((_, i) => i % 2 === 0);
+  const rightCards =
+    allMiniClassCards.length > 1
+      ? allMiniClassCards.filter((_, i) => i % 2 !== 0)
+      : allMiniClassCards.length === 1
+      ? [
+          {
+            id: 'summary-card',
+            step: 2,
+            badge: 'Resumen',
+            title: 'Idea Principal',
+            formula: '',
+            example: activeMiniClass?.summary || 'Aplica esta regla clave al hablar.',
+            highlight: '',
+            explanation: 'Sigue conversando o responde la pregunta para dominarla.',
+          },
+        ]
+      : [];
+
+  const renderAvatarHero = (isCompact = false) => (
+    <div
+      className={`w-full flex flex-col items-center justify-center ${
+        isCompact ? 'py-4 px-3' : 'py-6 px-4'
+      } glass rounded-3xl border border-brand-accent/30 shadow-2xl relative overflow-hidden bg-gradient-to-b from-brand-surface/40 to-black/60`}
+    >
+      {/* Dynamic Background Glow */}
+      <div
+        className={`absolute -top-24 w-72 h-72 rounded-full blur-3xl pointer-events-none transition-all duration-700 ${
+          tutorState === 'speaking'
+            ? 'bg-brand-cyan/25 scale-125'
+            : isSpeechDetected
+            ? 'bg-red-500/30 scale-125'
+            : tutorState === 'listening'
+            ? 'bg-emerald-500/20 scale-105'
+            : tutorState === 'thinking'
+            ? 'bg-brand-gold/25 animate-pulse'
+            : 'bg-brand-accent/10'
+        }`}
+      />
+
+      {/* Continuous Hands-Free Status Banner */}
+      <div className="flex items-center gap-2 mb-2 z-10">
+        <div
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+            !isSessionActive
+              ? 'glass border-brand-border text-brand-text-muted'
+              : tutorState === 'speaking'
+              ? 'bg-brand-cyan/20 border-brand-cyan text-brand-cyan'
+              : isSpeechDetected
+              ? 'bg-red-500/20 border-red-400 text-red-300 animate-pulse'
+              : tutorState === 'thinking'
+              ? 'bg-brand-gold/20 border-brand-gold text-brand-gold animate-pulse'
+              : 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+          }`}
+        >
+          <Radio
+            size={14}
+            className={
+              isSpeechDetected
+                ? 'animate-ping'
+                : tutorState === 'speaking'
+                ? 'animate-pulse'
+                : ''
+            }
+          />
+          <span>
+            {!isSessionActive
+              ? 'Sesión en pausa'
+              : tutorState === 'speaking'
+              ? 'Guionbajo está hablando (puedes interrumpirlo)'
+              : isSpeechDetected
+              ? '🎙️ ¡Detectando tu voz...!'
+              : tutorState === 'thinking'
+              ? 'Guionbajo está pensando...'
+              : '🟢 Micrófono abierto — Habla con naturalidad'}
+          </span>
+        </div>
+      </div>
+
+      {/* Animated Guionbajo Avatar con Upgrades */}
+      <div className={`relative z-10 ${isCompact ? 'my-1' : 'my-2'}`}>
+        <TutorAvatar
+          state={tutorState}
+          text={tutorState === 'speaking' ? currentTutorSubtitle : ''}
+          size={isCompact ? 'md' : 'lg'}
+          audioElement={activeAudio}
+          upgradeStage={avatarUpgradeStage}
+        />
+      </div>
+
+      {/* Live Audio Level Meter (Visual Confidence) */}
+      {isSessionActive && (
+        <div className="w-64 max-w-full flex flex-col items-center gap-1 mt-2 z-10">
+          <div className="w-full flex items-center justify-between text-[10px] text-brand-text-muted font-mono-custom">
+            <span>Nivel de voz: {micVolume}%</span>
+            <span className={micVolume >= 8 ? 'text-emerald-400 font-bold' : ''}>
+              {micVolume >= 8 ? 'Hablando' : 'Silencio'}
+            </span>
+          </div>
+          <div className="w-full bg-black/40 rounded-full h-2.5 p-0.5 border border-white/10 relative overflow-hidden">
+            <motion.div
+              className={`h-full rounded-full transition-all duration-75 ${
+                micVolume >= 8
+                  ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 shadow-sm shadow-cyan-400/50'
+                  : 'bg-brand-border/60'
+              }`}
+              style={{ width: `${Math.max(2, Math.min(100, micVolume * 2))}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 1.5s Silence Countdown Bar */}
+      {silenceProgress > 0 && (
+        <div className="w-48 bg-black/40 rounded-full h-1.5 mt-2 overflow-hidden border border-white/10 z-10">
+          <div
+            className="bg-brand-cyan h-full transition-all duration-100 ease-linear"
+            style={{ width: `${silenceProgress}%` }}
+          />
+        </div>
+      )}
+      {silenceProgress > 0 && (
+        <span className="text-[10px] text-brand-cyan mt-1 z-10 font-mono-custom animate-pulse">
+          Pausa detectada (1.5s): enviando...
+        </span>
+      )}
+
+      {/* Master Hands-Free Session Button */}
+      <div className={`${isCompact ? 'mt-3' : 'mt-5'} flex flex-col items-center gap-1.5 z-10`}>
+        <button
+          onClick={isSessionActive ? stopHandsFreeSession : startHandsFreeSession}
+          className={`flex items-center gap-2.5 ${
+            isCompact ? 'px-5 py-2.5 text-xs' : 'px-6 py-3 text-xs sm:text-sm'
+          } rounded-2xl font-bold shadow-xl transition-all transform active:scale-95 ${
+            isSessionActive
+              ? 'bg-brand-surface border border-red-500/40 text-red-400 hover:bg-red-500/20'
+              : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/30 hover:scale-[1.02]'
+          }`}
+        >
+          {isSessionActive ? (
+            <>
+              <Pause size={16} />
+              <span>Pausar Manos Libres</span>
+            </>
+          ) : (
+            <>
+              <Play size={16} fill="currentColor" />
+              <span>Iniciar Conversación Manos Libres</span>
+            </>
+          )}
+        </button>
+
+        {!isCompact && (
+          <p className="text-[11px] text-brand-text-secondary text-center max-w-md">
+            {isSessionActive
+              ? 'El micrófono permanece abierto. Guionbajo procesa cuando haces una pausa breve y se pausa si lo interrumpes.'
+              : 'Haz clic para abrir el micrófono continuo. No necesitarás presionar ningún botón más.'}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-brand-dark flex flex-col text-white">
       {/* ─── Top Header Bar ─────────────────────────────────── */}
@@ -778,154 +996,99 @@ export default function LiveChatPage() {
 
       {/* ─── Main Content Split Layout ─────────────────────── */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* LEFT / CENTER: Interactive Voice Stage */}
-        <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full">
-          {/* Stage Hero: Avatar, Live Meter & Hands-Free Controller */}
-          <div className="flex flex-col items-center justify-center py-6 px-4 glass rounded-3xl border border-brand-accent/30 shadow-2xl relative overflow-hidden mb-6 bg-gradient-to-b from-brand-surface/40 to-black/60">
-            {/* Dynamic Background Glow */}
+            {/* LEFT / CENTER: Interactive Voice Stage */}
             <div
-              className={`absolute -top-24 w-72 h-72 rounded-full blur-3xl pointer-events-none transition-all duration-700 ${
-                tutorState === 'speaking'
-                  ? 'bg-brand-cyan/25 scale-125'
-                  : isSpeechDetected
-                  ? 'bg-red-500/30 scale-125'
-                  : tutorState === 'listening'
-                  ? 'bg-emerald-500/20 scale-105'
-                  : tutorState === 'thinking'
-                  ? 'bg-brand-gold/25 animate-pulse'
-                  : 'bg-brand-accent/10'
+              className={`flex-1 flex flex-col p-4 sm:p-6 lg:p-8 mx-auto w-full transition-all duration-500 ease-in-out ${
+                activeMiniClass ? 'max-w-6xl' : 'max-w-3xl'
               }`}
-            />
-
-            {/* Continuous Hands-Free Status Banner */}
-            <div className="flex items-center gap-2 mb-2 z-10">
-              <div
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all ${
-                  !isSessionActive
-                    ? 'glass border-brand-border text-brand-text-muted'
-                    : tutorState === 'speaking'
-                    ? 'bg-brand-cyan/20 border-brand-cyan text-brand-cyan'
-                    : isSpeechDetected
-                    ? 'bg-red-500/20 border-red-400 text-red-300 animate-pulse'
-                    : tutorState === 'thinking'
-                    ? 'bg-brand-gold/20 border-brand-gold text-brand-gold animate-pulse'
-                    : 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                }`}
-              >
-                <Radio
-                  size={14}
-                  className={
-                    isSpeechDetected
-                      ? 'animate-ping'
-                      : tutorState === 'speaking'
-                      ? 'animate-pulse'
-                      : ''
-                  }
-                />
-                <span>
-                  {!isSessionActive
-                    ? 'Sesión en pausa'
-                    : tutorState === 'speaking'
-                    ? 'Guionbajo está hablando (puedes interrumpirlo)'
-                    : isSpeechDetected
-                    ? '🎙️ ¡Detectando tu voz...!'
-                    : tutorState === 'thinking'
-                    ? 'Guionbajo está pensando...'
-                    : '🟢 Micrófono abierto — Habla con naturalidad'}
-                </span>
-              </div>
-            </div>
-
-            {/* Animated Guionbajo Avatar con Upgrades */}
-            <div className="relative z-10 my-2">
-              <TutorAvatar
-                state={tutorState}
-                text={tutorState === 'speaking' ? currentTutorSubtitle : ''}
-                size="lg"
-                audioElement={activeAudio}
-                upgradeStage={avatarUpgradeStage}
-              />
-            </div>
-
-            {/* Live Audio Level Meter (Visual Confidence) */}
-            {isSessionActive && (
-              <div className="w-64 max-w-full flex flex-col items-center gap-1 mt-2 z-10">
-                <div className="w-full flex items-center justify-between text-[10px] text-brand-text-muted font-mono-custom">
-                  <span>Nivel de voz: {micVolume}%</span>
-                  <span className={micVolume >= 8 ? 'text-emerald-400 font-bold' : ''}>
-                    {micVolume >= 8 ? 'Hablando' : 'Silencio'}
-                  </span>
-                </div>
-                <div className="w-full bg-black/40 rounded-full h-2.5 p-0.5 border border-white/10 relative overflow-hidden">
+            >
+              {/* Cockpit Flanking Layout vs Normal Centered Stage */}
+              <AnimatePresence mode="wait">
+                {activeMiniClass ? (
                   <motion.div
-                    className={`h-full rounded-full transition-all duration-75 ${
-                      micVolume >= 8
-                        ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 shadow-sm shadow-cyan-400/50'
-                        : 'bg-brand-border/60'
-                    }`}
-                    style={{ width: `${Math.max(2, Math.min(100, micVolume * 2))}%` }}
-                  />
-                </div>
-              </div>
-            )}
+                    key="cockpit-stage"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.35 }}
+                    className="w-full grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start mb-3"
+                  >
+                    {/* LEFT FLANK: Card 1 (and Card 3) */}
+                    <div className="lg:col-span-3 flex flex-col gap-2.5 order-2 lg:order-1">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-brand-cyan uppercase tracking-wider px-1">
+                        <span className="flex items-center gap-1.5 truncate">
+                          <Sparkles size={12} className="shrink-0 text-brand-cyan" />
+                          <span className="truncate">{activeMiniClass.topic || 'Pizarra'}</span>
+                        </span>
+                        <span className="text-[9px] font-mono-custom text-brand-text-muted shrink-0">
+                          Regla 1
+                        </span>
+                      </div>
+                      {leftCards.map((card, idx) => (
+                        <FlankCardItem
+                          key={card.id || `left-${idx}`}
+                          card={card}
+                          index={idx * 2}
+                          onPlayAudio={handlePlayMiniClassAudio}
+                        />
+                      ))}
+                    </div>
 
-            {/* 1.5s Silence Countdown Bar */}
-            {silenceProgress > 0 && (
-              <div className="w-48 bg-black/40 rounded-full h-1.5 mt-3 overflow-hidden border border-white/10 z-10">
-                <div
-                  className="bg-brand-cyan h-full transition-all duration-100 ease-linear"
-                  style={{ width: `${silenceProgress}%` }}
-                />
-              </div>
-            )}
-            {silenceProgress > 0 && (
-              <span className="text-[10px] text-brand-cyan mt-1 z-10 font-mono-custom animate-pulse">
-                Pausa detectada (1.5s): enviando...
-              </span>
-            )}
+                    {/* CENTER: Guionbajo Hero + Compact Micro Quiz */}
+                    <div className="lg:col-span-6 flex flex-col items-center order-1 lg:order-2">
+                      {renderAvatarHero(true)}
 
-            {/* Master Hands-Free Session Button */}
-            <div className="mt-5 flex flex-col items-center gap-2 z-10">
-              <button
-                onClick={isSessionActive ? stopHandsFreeSession : startHandsFreeSession}
-                className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-bold text-xs sm:text-sm shadow-xl transition-all transform active:scale-95 ${
-                  isSessionActive
-                    ? 'bg-brand-surface border border-red-500/40 text-red-400 hover:bg-red-500/20'
-                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/30 hover:scale-[1.02]'
-                }`}
-              >
-                {isSessionActive ? (
-                  <>
-                    <Pause size={18} />
-                    <span>Pausar Manos Libres</span>
-                  </>
+                      {/* Compact Horizontal Micro-Quiz Bar Directly Below Guionbajo */}
+                      {activeMiniClass.quiz && (
+                        <div className="w-full">
+                          <CompactQuizBar
+                            quiz={activeMiniClass.quiz}
+                            lastUserVoiceText={lastUserUtterance}
+                            onCorrect={handleQuizCorrect}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* RIGHT FLANK: Card 2 (and Card 4) */}
+                    <div className="lg:col-span-3 flex flex-col gap-2.5 order-3">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-purple-300 uppercase tracking-wider px-1">
+                        <span className="flex items-center gap-1.5">
+                          <Zap size={12} className="shrink-0 text-purple-300" />
+                          <span>Estructuras</span>
+                        </span>
+                        <button
+                          onClick={() => setActiveMiniClass(null)}
+                          className="text-brand-text-muted hover:text-white flex items-center gap-1 text-[10px] transition-colors p-1 rounded-lg hover:bg-white/10"
+                          title="Cerrar pizarra holográfica y volver a normal"
+                        >
+                          <span>Cerrar</span>
+                          <X size={12} />
+                        </button>
+                      </div>
+                      {rightCards.map((card, idx) => (
+                        <FlankCardItem
+                          key={card.id || `right-${idx}`}
+                          card={card}
+                          index={idx * 2 + 1}
+                          onPlayAudio={handlePlayMiniClassAudio}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
                 ) : (
-                  <>
-                    <Play size={18} fill="currentColor" />
-                    <span>Iniciar Conversación Manos Libres</span>
-                  </>
+                  <motion.div
+                    key="normal-stage"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.35 }}
+                    className="w-full mb-5"
+                  >
+                    {renderAvatarHero(false)}
+                  </motion.div>
                 )}
-              </button>
-
-              <p className="text-[11px] text-brand-text-secondary text-center max-w-md">
-                {isSessionActive
-                  ? 'El micrófono permanece abierto. Guionbajo procesa cuando haces una pausa breve y se pausa si lo interrumpes.'
-                  : 'Haz clic para abrir el micrófono continuo. No necesitarás presionar ningún botón más.'}
-              </p>
-            </div>
-          </div>
-
-          {/* ── Holographic Mini-Class & Micro-Quiz HUD ── */}
-          <AnimatePresence>
-            {activeMiniClass && (
-              <HolographicMiniClassHUD
-                data={activeMiniClass}
-                onClose={() => setActiveMiniClass(null)}
-                onPlayAudio={handlePlayMiniClassAudio}
-                lastUserVoiceText={lastUserUtterance}
-              />
-            )}
-          </AnimatePresence>
+              </AnimatePresence>
 
           {/* ── Subtítulos Dinámicos en Vivo (Modo Voz Pura — Sin Chat) ── */}
           <div className="w-full max-w-xl mx-auto text-center mt-2 mb-4 p-5 rounded-3xl glass border border-brand-cyan/30 bg-black/40 backdrop-blur-md shadow-2xl space-y-2">

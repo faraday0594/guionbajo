@@ -383,6 +383,7 @@ export const api = {
         onToken?: (token: string) => void;
         onClause?: (clause: { clause_index: number; text: string }) => void;
         onCorrection?: (correction: { original: string; corrected: string; explanation: string }) => void;
+        onMiniClass?: (miniClass: MiniClassData) => void;
         onDone?: (data: { full_text: string; total_clauses: number }) => void;
         onError?: (error: string) => void;
       }
@@ -444,6 +445,8 @@ export const api = {
                   callbacks.onClause(data);
                 } else if (currentEvent === 'correction' && callbacks.onCorrection) {
                   callbacks.onCorrection(data);
+                } else if (currentEvent === 'miniclass' && callbacks.onMiniClass) {
+                  callbacks.onMiniClass(data);
                 } else if (currentEvent === 'done' && callbacks.onDone) {
                   callbacks.onDone(data);
                 } else if (currentEvent === 'error' && callbacks.onError) {
@@ -463,6 +466,31 @@ export const api = {
     },
   },
 };
+
+export interface MiniClassCard {
+  id: string;
+  step?: number;
+  badge?: string;
+  title: string;
+  formula: string;
+  example: string;
+  highlight?: string;
+  explanation: string;
+}
+
+export interface MiniClassQuiz {
+  question: string;
+  options: string[];
+  correct_index: number;
+  explanation: string;
+}
+
+export interface MiniClassData {
+  topic: string;
+  summary?: string;
+  cards: MiniClassCard[];
+  quiz?: MiniClassQuiz;
+}
 
 export interface AudioQueueItem {
   clauseIndex: number;

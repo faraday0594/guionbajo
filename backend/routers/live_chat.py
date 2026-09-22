@@ -97,6 +97,20 @@ DIRECTRICES DE CONVERSACIÓN EN VIVO (ÁGIL Y CONCISA):
      b) OBLIGATORIO: Si detectas un error claro, incluye al final de tu mensaje un bloque especial oculto en formato JSON con la corrección:
         [CORRECTION: {{"original": "frase con error", "corrected": "frase correcta", "explanation": "Breve explicación en español en 1 línea"}}]
    - Si el estudiante habló correctamente, NO agregues la etiqueta [CORRECTION].
+
+6. MINI-CLASES EN VIVO Y PIZARRA HOLOGRÁFICA BAJO DEMANDA:
+   - CUÁNDO ACTIVARLA:
+     a) Cuando {student_name} te pida explícitamente una explicación gramatical, de vocabulario o pronunciación (ej: "explícame los adverbios de frecuencia", "¿cómo se usa would like?", "cuál es la diferencia entre make y do").
+     b) O cuando {student_name} acepte una sugerencia tuya de aprender un tema (ej: "sí, explícame", "quiero aprenderlo").
+     c) O cuando cometa un error conceptual importante y le propongas una mini-clase express.
+   - CÓMO HABLARLO (VOZ NATURAL Y DINÁMICA):
+     a) Responde en 2 a 3 oraciones concisas, cálidas y motivadoras. Anuncia que abres la pizarra holográfica para él/ella (ej: "¡Excelente pregunta! Fíjate en los contenedores que acabo de abrir en tu pantalla con las reglas clave...").
+     b) Explica el principio clave verbalmente sin abrumar.
+     c) Cierra tu turno invitándolo a responder el micro-quiz interactivo (ej: "¿Te quedó claro? ¡Pruébalo con la pregunta que tienes enfrente!").
+   - FORMATO OBLIGATORIO DEL BLOQUE OCULTO [MINI_CLASS]:
+     Al final de tu respuesta (después de cualquier [CORRECTION]), incluye OBLIGATORIAMENTE el bloque JSON estructurado:
+     [MINI_CLASS: {{"topic": "Nombre del Tema", "summary": "Resumen en 1 línea", "cards": [{{"id": "c1", "step": 1, "badge": "Regla 1", "title": "Título de la regla", "formula": "Sujeto + Adverbio + Verbo", "example": "Oración de ejemplo en inglés", "highlight": "palabra o frase resaltada", "explanation": "Regla mnemotécnica clara y directa en español"}}, {{"id": "c2", "step": 2, "badge": "Regla 2", "title": "Título regla 2", "formula": "Sujeto + To Be + Adverbio", "example": "Ejemplo con To Be", "highlight": "palabra resaltada", "explanation": "Explicación en español"}}], "quiz": {{"question": "¿Pregunta concisa para evaluar el tema?", "options": ["Opción A", "Opción B", "Opción C"], "correct_index": 0, "explanation": "Por qué es correcta"}}}} ]
+   - Si la conversación es charla cotidiana sin solicitud de explicación ni mini-clase, NO incluyas [MINI_CLASS].
 """
 
 
@@ -277,8 +291,8 @@ async def live_respond_stream(
                 yield f"event: token\ndata: {json.dumps({'token': content})}\n\n"
 
                 # Check if clause buffer has reached a natural speaking pause
-                # Avoid emitting if we are inside a [CORRECTION: ...] tag
-                if "[CORRECTION:" not in clause_buffer:
+                # Avoid emitting if we are inside a [CORRECTION: ...] or [MINI_CLASS: ...] tag
+                if "[CORRECTION:" not in clause_buffer and "[MINI_CLASS:" not in clause_buffer:
                     match = clause_delimiters.search(clause_buffer)
                     # For clause 0: 2-3 words or first punctuation for instant start
                     threshold_words = 3 if clause_index == 0 else 6
@@ -290,6 +304,7 @@ async def live_respond_stream(
 
                         if completed_clause and len(completed_clause) > 1:
                             clean_c = re.sub(r'\[CORRECTION:.*?\]', '', completed_clause)
+                            clean_c = re.sub(r'\[MINI_CLASS:.*?\]', '', clean_c)
                             clean_c = re.sub(r'[\u4e00-\u9fff]', '', clean_c).strip()
                             if clean_c and any(ch.isalnum() for ch in clean_c):
                                 yield f"event: clause\ndata: {json.dumps({'clause_index': clause_index, 'text': clean_c})}\n\n"
@@ -298,22 +313,40 @@ async def live_respond_stream(
             # Check remaining clause buffer at stream end
             if clause_buffer.strip():
                 clean_tail = re.sub(r'\[CORRECTION:.*?\]', '', clause_buffer)
+                clean_tail = re.sub(r'\[MINI_CLASS:.*?\]', '', clean_tail)
                 clean_tail = re.sub(r'[\u4e00-\u9fff]', '', clean_tail).strip()
                 if clean_tail and any(ch.isalnum() for ch in clean_tail):
                     yield f"event: clause\ndata: {json.dumps({'clause_index': clause_index, 'text': clean_tail})}\n\n"
                     clause_index += 1
 
+            # Helper to extract structured JSON payloads from tags with nested braces
+            def _extract_tag(tag_name: str, raw_text: str):
+                prefix = f"[{tag_name}:"
+                idx = raw_text.find(prefix)
+                if idx == -1:
+                    return None
+                sub = raw_text[idx + len(prefix):].strip()
+                if sub.startswith("{"):
+                    try:
+                        obj, _ = json.JSONDecoder().raw_decode(sub)
+                        return obj
+                    except Exception as err:
+                        logger.warning(f"Failed to raw_decode {tag_name} JSON: {err}")
+                return None
+
             # Extract any [CORRECTION: {...}] tag
-            corr_match = re.search(r'\[CORRECTION:\s*(\{.*?\})\s*\]', accumulated_text, re.DOTALL)
-            if corr_match:
-                try:
-                    corr_data = json.loads(corr_match.group(1))
-                    yield f"event: correction\ndata: {json.dumps(corr_data)}\n\n"
-                except Exception as e:
-                    logger.warning(f"Failed to parse correction JSON: {e}")
+            corr_data = _extract_tag("CORRECTION", accumulated_text)
+            if corr_data:
+                yield f"event: correction\ndata: {json.dumps(corr_data)}\n\n"
+
+            # Extract any [MINI_CLASS: {...}] tag
+            miniclass_data = _extract_tag("MINI_CLASS", accumulated_text)
+            if miniclass_data:
+                yield f"event: miniclass\ndata: {json.dumps(miniclass_data)}\n\n"
 
             # Clean final text shown to user (without hidden tags)
-            clean_full = re.sub(r'\[CORRECTION:.*?\]', '', accumulated_text).strip()
+            clean_full = re.sub(r'\[CORRECTION:.*?\]', '', accumulated_text, flags=re.DOTALL)
+            clean_full = re.sub(r'\[MINI_CLASS:\s*\{.*\}\s*\]', '', clean_full, flags=re.DOTALL).strip()
             yield f"event: done\ndata: {json.dumps({'full_text': clean_full, 'total_clauses': clause_index})}\n\n"
 
         except Exception as e:

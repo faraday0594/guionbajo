@@ -17,13 +17,15 @@ import {
   Play,
   Send,
   CheckCircle2,
+  Zap,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 import TutorAvatar, { TutorState } from '@/app/components/TutorPanel/TutorAvatar';
 import { getCurrentUpgradeStage, UpgradeStage } from '@/lib/guionbajoUpgrades';
-import { api, LiveAudioStreamQueue, getSavedPreferredVoice } from '@/lib/api';
+import { api, LiveAudioStreamQueue, getSavedPreferredVoice, MiniClassData } from '@/lib/api';
 import { getToken } from '@/lib/auth';
+import { HolographicMiniClassHUD } from './components/HolographicMiniClassHUD';
 
 interface Message {
   id: string;
@@ -42,9 +44,10 @@ interface GrammarCorrection {
 }
 
 const CONVERSATION_STARTERS = [
+  { label: '🧭 Adverbios de Frecuencia', prompt: 'Guionbajo, explícame los adverbios de frecuencia y su posición en la oración.' },
+  { label: '✨ Would like vs Will', prompt: 'Hola Guionbajo, ¿cuándo se usa would like to y cuál es la diferencia con will?' },
   { label: '☕ How was your day?', prompt: 'Hello Guionbajo! How was your day? I want to practice my English today.' },
   { label: '✈️ Favorite travel spot', prompt: 'Hola Guionbajo! Where is your favorite place to travel, and why?' },
-  { label: '🍕 Food & cooking', prompt: 'What kind of food do you like the most? Can you tell me in English?' },
   { label: '🎲 ¡Sorpréndeme Guionbajo!', prompt: '¡Hola Guionbajo! Sorpréndeme con un tema interesante para conversar hoy.' },
 ];
 
@@ -81,6 +84,19 @@ export default function LiveChatPage() {
   ]);
   const [corrections, setCorrections] = useState<GrammarCorrection[]>([]);
   const [showCorrections, setShowCorrections] = useState<boolean>(false);
+  const [activeMiniClass, setActiveMiniClass] = useState<MiniClassData | null>(null);
+
+  const handlePlayMiniClassAudio = async (phraseText: string) => {
+    try {
+      const blob = await api.live.synthesizeChunk(phraseText, preferredVoice);
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      await audio.play();
+    } catch (e) {
+      console.warn('Failed to play mini-class audio snippet:', e);
+    }
+  };
 
   // Audio Pipeline References (PERSISTENT REFS TO PREVENT V8 GARBAGE COLLECTION)
   const audioStreamRef = useRef<MediaStream | null>(null);
@@ -530,6 +546,28 @@ export default function LiveChatPage() {
               { duration: 6000 }
             );
           },
+          onMiniClass: (miniClassData) => {
+            setActiveMiniClass(miniClassData);
+            toast.custom(
+              (t) => (
+                <div
+                  className={`${
+                    t.visible ? 'animate-enter' : 'animate-leave'
+                  } max-w-md w-full bg-brand-surface border border-purple-500/50 shadow-2xl rounded-2xl pointer-events-auto flex p-4 gap-3 text-white`}
+                >
+                  <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300 shrink-0 h-fit">
+                    <Zap size={20} />
+                  </div>
+                  <div className="flex-1 text-xs">
+                    <p className="font-bold text-purple-300 text-sm">Pizarra Holográfica Desplegada:</p>
+                    <p className="font-semibold text-white mt-0.5">{miniClassData.topic}</p>
+                    <p className="text-brand-text-muted mt-0.5">{miniClassData.summary || 'Mini-clase interactiva abierta en pantalla.'}</p>
+                  </div>
+                </div>
+              ),
+              { duration: 5000 }
+            );
+          },
           onDone: (doneData) => {
             audioQueue.markStreamComplete();
             if (doneData?.full_text) {
@@ -625,6 +663,7 @@ export default function LiveChatPage() {
       },
     ]);
     setCorrections([]);
+    setActiveMiniClass(null);
     setCurrentTutorSubtitle('¡Conversación reiniciada! Estoy listo para escucharte.');
     setLastUserUtterance('');
     toast.success('Memoria de la conversación reiniciada.');
@@ -723,6 +762,17 @@ export default function LiveChatPage() {
               {corrections.length}
             </span>
           </button>
+
+          {/* Active Mini-Class Badge */}
+          {activeMiniClass && (
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold bg-purple-500/20 border-purple-400 text-purple-300 shadow-sm shadow-purple-500/20 animate-pulse"
+              title={`Mini-clase activa: ${activeMiniClass.topic}`}
+            >
+              <Zap size={14} className="text-purple-300" />
+              <span className="hidden sm:inline">Pizarra</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -864,6 +914,18 @@ export default function LiveChatPage() {
               </p>
             </div>
           </div>
+
+          {/* ── Holographic Mini-Class & Micro-Quiz HUD ── */}
+          <AnimatePresence>
+            {activeMiniClass && (
+              <HolographicMiniClassHUD
+                data={activeMiniClass}
+                onClose={() => setActiveMiniClass(null)}
+                onPlayAudio={handlePlayMiniClassAudio}
+                lastUserVoiceText={lastUserUtterance}
+              />
+            )}
+          </AnimatePresence>
 
           {/* ── Subtítulos Dinámicos en Vivo (Modo Voz Pura — Sin Chat) ── */}
           <div className="w-full max-w-xl mx-auto text-center mt-2 mb-4 p-5 rounded-3xl glass border border-brand-cyan/30 bg-black/40 backdrop-blur-md shadow-2xl space-y-2">

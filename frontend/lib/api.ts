@@ -386,7 +386,7 @@ export const api = {
         onCorrection?: (correction: { original: string; corrected: string; explanation: string }) => void;
         onMiniClass?: (miniClass: MiniClassData) => void;
         onCloseMiniClass?: () => void;
-        onDone?: (data: { full_text: string; total_clauses: number }) => void;
+        onDone?: (data: { full_text: string; total_clauses: number; miniclass?: MiniClassData | null }) => void;
         onError?: (error: string) => void;
       }
     ): Promise<void> => {
@@ -422,44 +422,62 @@ export const api = {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let currentEvent = 'message';
+      let currentData = '';
+
+      const dispatchEvent = () => {
+        if (!currentData) {
+          currentEvent = 'message';
+          return;
+        }
+        try {
+          const data = JSON.parse(currentData);
+          if (currentEvent === 'token' && callbacks.onToken) {
+            callbacks.onToken(data.token);
+          } else if (currentEvent === 'clause' && callbacks.onClause) {
+            callbacks.onClause(data);
+          } else if (currentEvent === 'correction' && callbacks.onCorrection) {
+            callbacks.onCorrection(data);
+          } else if (
+            (currentEvent === 'miniclass' || (data && data.topic && Array.isArray(data.cards))) &&
+            callbacks.onMiniClass
+          ) {
+            callbacks.onMiniClass(data);
+          } else if (currentEvent === 'close_miniclass' && callbacks.onCloseMiniClass) {
+            callbacks.onCloseMiniClass();
+          } else if (currentEvent === 'done' && callbacks.onDone) {
+            callbacks.onDone(data);
+          } else if (currentEvent === 'error' && callbacks.onError) {
+            callbacks.onError(data.error);
+          }
+        } catch (e) {
+          console.warn('Failed to parse SSE data for event:', currentEvent, currentData, e);
+        }
+        currentEvent = 'message';
+        currentData = '';
+      };
 
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            dispatchEvent();
+            break;
+          }
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
           buffer = lines.pop() || '';
 
-          let currentEvent = 'message';
           for (const line of lines) {
             const trimmed = line.trim();
-            if (!trimmed) continue;
-            if (trimmed.startsWith('event:')) {
+            if (trimmed === '') {
+              dispatchEvent();
+            } else if (trimmed.startsWith('event:')) {
               currentEvent = trimmed.slice(6).trim();
             } else if (trimmed.startsWith('data:')) {
               const dataStr = trimmed.slice(5).trim();
-              try {
-                const data = JSON.parse(dataStr);
-                if (currentEvent === 'token' && callbacks.onToken) {
-                  callbacks.onToken(data.token);
-                } else if (currentEvent === 'clause' && callbacks.onClause) {
-                  callbacks.onClause(data);
-                } else if (currentEvent === 'correction' && callbacks.onCorrection) {
-                  callbacks.onCorrection(data);
-                } else if (currentEvent === 'miniclass' && callbacks.onMiniClass) {
-                  callbacks.onMiniClass(data);
-                } else if (currentEvent === 'close_miniclass' && callbacks.onCloseMiniClass) {
-                  callbacks.onCloseMiniClass();
-                } else if (currentEvent === 'done' && callbacks.onDone) {
-                  callbacks.onDone(data);
-                } else if (currentEvent === 'error' && callbacks.onError) {
-                  callbacks.onError(data.error);
-                }
-              } catch (e) {
-                console.warn('Failed to parse SSE data:', dataStr, e);
-              }
+              currentData = currentData ? `${currentData}\n${dataStr}` : dataStr;
             }
           }
         }

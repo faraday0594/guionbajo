@@ -658,6 +658,9 @@ export default function LiveChatPage() {
             if (doneData?.full_text) {
               setCurrentTutorSubtitle(doneData.full_text);
             }
+            if (doneData?.miniclass) {
+              setActiveMiniClass(doneData.miniclass);
+            }
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMsgId
@@ -1030,7 +1033,7 @@ export default function LiveChatPage() {
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
             {/* LEFT / CENTER: Interactive Voice Stage */}
             <div
-              className={`flex-1 flex flex-col p-4 sm:p-6 lg:p-8 mx-auto w-full transition-all duration-500 ease-in-out ${
+              className={`flex-1 flex flex-col p-4 sm:p-6 lg:p-8 mx-auto w-full overflow-y-auto transition-all duration-500 ease-in-out ${
                 activeMiniClass ? 'max-w-6xl' : 'max-w-3xl'
               }`}
             >

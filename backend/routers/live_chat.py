@@ -372,36 +372,64 @@ async def live_respond_stream(
         clause_index = 0
         miniclass_emitted = False
         correction_emitted = False
+        miniclass_data = None
+        corr_data = None
 
         def _strip_hidden_tags(text: str) -> str:
             if not text:
                 return ""
             s = text
-            for tag in ("[MINI_CLASS:", "[CLOSE_MINI_CLASS]", "[CORRECTION:"):
-                pos = s.find(tag)
-                if pos != -1:
-                    s = s[:pos]
+            tag_match = re.search(r'\[\s*(?:MINI[_\s]CLASS|CLOSE[_\s]MINI[_\s]CLASS|CORRECTION)\b', s, re.IGNORECASE)
+            if tag_match:
+                s = s[:tag_match.start()]
             s = s.replace("**", "")  # Strip markdown bold asterisks from speech
             s = re.sub(r'[\u4e00-\u9fff]', '', s)
             return s.strip()
 
         # Helper to extract structured JSON payloads from tags with nested braces
         def _extract_tag(tag_name: str, raw_text: str):
-            prefix = f"[{tag_name}:"
-            idx = raw_text.find(prefix)
-            if idx == -1:
+            tag_clean = tag_name.replace('_', r'[_\s]')
+            pattern = re.compile(rf'\[\s*{tag_clean}\s*:\s*', re.IGNORECASE)
+            match = pattern.search(raw_text)
+            if not match:
                 return None
-            sub = raw_text[idx + len(prefix):].strip()
-            if sub.startswith("```"):
-                sub = re.sub(r"^```(?:json)?\s*", "", sub)
-                sub = re.sub(r"\s*```.*$", "", sub)
-            if sub.startswith("{"):
+            sub = raw_text[match.end():].strip()
+            if sub.startswith('```'):
+                sub = re.sub(r'^```(?:json)?\s*', '', sub)
+            brace_idx = sub.find('{')
+            if brace_idx == -1:
+                return None
+            sub = sub[brace_idx:]
+
+            try:
+                obj, _ = json.JSONDecoder().raw_decode(sub)
+                return obj
+            except Exception:
+                # Fallback: balance braces and clean trailing commas
                 try:
-                    obj, _ = json.JSONDecoder().raw_decode(sub)
-                    return obj
+                    depth = 0
+                    end_pos = -1
+                    in_str = False
+                    escape = False
+                    for i, ch in enumerate(sub):
+                        if ch == '"' and not escape:
+                            in_str = not in_str
+                        elif not in_str:
+                            if ch == '{':
+                                depth += 1
+                            elif ch == '}':
+                                depth -= 1
+                                if depth == 0:
+                                    end_pos = i + 1
+                                    break
+                        escape = (ch == '\\') if not escape else False
+                    if end_pos != -1:
+                        candidate = sub[:end_pos]
+                        candidate = re.sub(r',\s*([}\]])', r'\1', candidate)
+                        return json.loads(candidate)
                 except Exception:
-                    return None
-            return None
+                    pass
+                return None
 
         try:
             # Crucial: thinking disabled guarantees sub-second first-token response
@@ -440,14 +468,14 @@ async def live_respond_stream(
                 yield f"event: token\ndata: {json.dumps({'token': content})}\n\n"
 
                 # Real-time extraction of [MINI_CLASS: ...] as soon as tag JSON completes mid-stream
-                if not miniclass_emitted and "[MINI_CLASS:" in accumulated_text:
+                if not miniclass_emitted and re.search(r'\[\s*MINI[_\s]CLASS\s*:', accumulated_text, re.IGNORECASE):
                     miniclass_data = _extract_tag("MINI_CLASS", accumulated_text)
                     if miniclass_data:
                         yield f"event: miniclass\ndata: {json.dumps(miniclass_data)}\n\n"
                         miniclass_emitted = True
 
                 # Real-time extraction of [CORRECTION: ...] mid-stream
-                if not correction_emitted and "[CORRECTION:" in accumulated_text:
+                if not correction_emitted and re.search(r'\[\s*CORRECTION\s*:', accumulated_text, re.IGNORECASE):
                     corr_data = _extract_tag("CORRECTION", accumulated_text)
                     if corr_data:
                         yield f"event: correction\ndata: {json.dumps(corr_data)}\n\n"
@@ -455,7 +483,8 @@ async def live_respond_stream(
 
                 # Check if clause buffer has reached a natural speaking pause
                 # Avoid emitting if we are inside a [CORRECTION: ...], [MINI_CLASS: ...], or [CLOSE_MINI_CLASS] tag
-                if "[CORRECTION:" not in clause_buffer and "[MINI_CLASS:" not in clause_buffer and "[CLOSE_MINI_CLASS]" not in clause_buffer:
+                has_tag_start = bool(re.search(r'\[\s*(?:MINI[_\s]CLASS|CLOSE[_\s]MINI[_\s]CLASS|CORRECTION)\b', clause_buffer, re.IGNORECASE))
+                if not has_tag_start:
                     match = clause_delimiters.search(clause_buffer)
                     # For clause 0: 2-3 words or first punctuation for instant start
                     threshold_words = 3 if clause_index == 0 else 6
@@ -488,14 +517,18 @@ async def live_respond_stream(
                 miniclass_data = _extract_tag("MINI_CLASS", accumulated_text)
                 if miniclass_data:
                     yield f"event: miniclass\ndata: {json.dumps(miniclass_data)}\n\n"
+                    miniclass_emitted = True
 
             # Check if student understood and mini class should close
-            if "[CLOSE_MINI_CLASS]" in accumulated_text:
+            if re.search(r'\[\s*CLOSE[_\s]MINI[_\s]CLASS\s*\]', accumulated_text, re.IGNORECASE):
                 yield f"event: close_miniclass\ndata: {{}}\n\n"
 
             # Clean final text shown to user (without hidden tags)
             clean_full = _strip_hidden_tags(accumulated_text)
-            yield f"event: done\ndata: {json.dumps({'full_text': clean_full, 'total_clauses': clause_index})}\n\n"
+            done_payload = {'full_text': clean_full, 'total_clauses': clause_index}
+            if miniclass_data:
+                done_payload['miniclass'] = miniclass_data
+            yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
 
         except Exception as e:
             logger.error(f"Error in live_respond_stream: {e}")

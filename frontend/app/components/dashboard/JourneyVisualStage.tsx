@@ -810,6 +810,18 @@ export default function JourneyVisualStage({
           {/* ─── GREEN GROUND PLANE (perspective meadow) ─── */}
           <rect x="0" y="156" width="960" height="184" fill="url(#groundGrad)" />
 
+          {/* Far static background trees (Rendered in the far background behind trail & main trees) */}
+          <g opacity="0.75">
+            <circle cx="562" cy="160" r="12" fill="url(#canopyMidTone)" />
+            <circle cx="562" cy="154" r="8" fill="url(#canopySunlit)" />
+
+            <circle cx="412" cy="158" r="11" fill="url(#canopyMidTone)" />
+            <circle cx="412" cy="152" r="7" fill="url(#canopySunlit)" />
+
+            <circle cx="632" cy="159" r="10" fill="url(#canopyMidTone)" />
+            <circle cx="348" cy="160" r="9" fill="url(#canopyMidTone)" />
+          </g>
+
           {/* Organic Meadow Grass Texture in True Depth Perspective */}
           {/* Distant tiny grass tufts (y = 160-195) */}
           <g stroke="#3a8b4f" strokeWidth="1" fill="none" opacity="0.55">
@@ -1116,17 +1128,6 @@ export default function JourneyVisualStage({
             );
           })()}
 
-          {/* Far static background trees */}
-          <g opacity="0.75">
-            <circle cx="562" cy="160" r="12" fill="url(#canopyMidTone)" />
-            <circle cx="562" cy="154" r="8" fill="url(#canopySunlit)" />
-
-            <circle cx="412" cy="158" r="11" fill="url(#canopyMidTone)" />
-            <circle cx="412" cy="152" r="7" fill="url(#canopySunlit)" />
-
-            <circle cx="632" cy="159" r="10" fill="url(#canopyMidTone)" />
-            <circle cx="348" cy="160" r="9" fill="url(#canopyMidTone)" />
-          </g>
 
           {/* ══════════════════════════════════════════════════════════════
               🚩 THE MILESTONE FLAGS (SMOOTH KINEMATIC TRANSITION)

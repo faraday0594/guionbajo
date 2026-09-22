@@ -910,84 +910,211 @@ export default function JourneyVisualStage({
             </g>
           )}
 
-          {/* ─── TREES FLANKING PATH (optically drift in perspective based on travel direction) ─── */}
-          {/* Left Trees Group */}
-          <g
-            style={{
-              transform: isTraveling
-                ? travelDirection === 'backward'
-                  ? `translate(${travelProgress * 20}px, ${-travelProgress * 12}px)`
-                  : `translate(${-travelProgress * 30}px, ${travelProgress * 18}px)`
-                : 'none',
-              transformOrigin: '220px 200px',
-            }}
-          >
-            {/* L1: Big near tree */}
-            <ellipse cx="198" cy="236" rx="44" ry="12" fill="#0c2e17" opacity="0.45" filter="url(#flagGlow)" />
-            <path
-              d="M 174 235 Q 177 205, 180 182 L 188 182 Q 186 205, 191 235 Z"
-              fill="url(#treeBarkGrad)"
-            />
-            <path d="M 183 195 Q 192 188, 196 182 L 194 180 Q 188 186, 182 191 Z" fill="#4a2c16" />
-            <ellipse cx="184" cy="184" rx="38" ry="34" fill="url(#canopyShadow)" />
-            <circle cx="166" cy="170" r="28" fill="url(#canopyMidTone)" />
-            <circle cx="200" cy="172" r="26" fill="url(#canopyMidTone)" />
-            <circle cx="182" cy="155" r="25" fill="url(#canopySunlit)" />
-            <circle cx="176" cy="148" r="14" fill="#6ee7b7" opacity="0.35" />
+          {/* ══════════════════════════════════════════════════════════════
+              🌲 CONTINUOUS PERSPECTIVE TREE CAROUSEL (SEAMLESS PARALLAX)
+              • When traveling forward:
+                - Near tree (Slot 1) passes viewer into foreground and fades out.
+                - Mid tree (Slot 2) scales up and glides to Slot 1.
+                - Far tree (Slot 3) scales up and glides to Slot 2.
+                - Distant tree (Slot 4) emerges from horizon and glides to Slot 3.
+              • When traveling backward:
+                - Foreground tree (Slot 0) emerges and glides to Slot 1.
+                - Tree 1 moves back to Slot 2.
+                - Tree 2 moves back to Slot 3.
+                - Tree 3 moves back to Slot 4 and fades into horizon.
+              • At the end of travel (p = 1), tree coordinates match the resting slots
+                with sub-pixel precision — ZERO snapback, maintaining final position!
+             ══════════════════════════════════════════════════════════════ */}
+          {(() => {
+            const p = travelProgress;
+            const isFwd = travelDirection === 'forward';
 
-            {/* L2: Mid tree */}
-            <ellipse cx="282" cy="214" rx="28" ry="8" fill="#0c2e17" opacity="0.38" filter="url(#flagGlow)" />
-            <path d="M 269 214 Q 272 195, 274 176 L 279 176 Q 278 195, 282 214 Z" fill="url(#treeBarkGrad)" />
-            <ellipse cx="276" cy="176" rx="26" ry="24" fill="url(#canopyShadow)" />
-            <circle cx="264" cy="168" r="19" fill="url(#canopyMidTone)" />
-            <circle cx="288" cy="169" r="18" fill="url(#canopyMidTone)" />
-            <circle cx="276" cy="156" r="17" fill="url(#canopySunlit)" />
+            // Left side dynamic transforms
+            const l1Transform = isTraveling
+              ? isFwd
+                ? `translate(${-103 * p}px, ${32 * p}px) scale(${1 + 0.35 * p})`
+                : `translate(${84 * p}px, ${-22 * p}px) scale(${1 - 0.28 * p})`
+              : 'none';
+            const l1Opacity = isTraveling && isFwd ? Math.max(0, 1 - p * 1.25) : 1;
 
-            {/* L3: Small tree */}
-            <ellipse cx="346" cy="192" rx="18" ry="5" fill="#0c2e17" opacity="0.3" filter="url(#flagGlow)" />
-            <rect x="339" y="168" width="5" height="24" rx="1.5" fill="url(#treeBarkGrad)" />
-            <ellipse cx="342" cy="168" rx="17" ry="16" fill="url(#canopyMidTone)" />
-            <circle cx="342" cy="158" r="12" fill="url(#canopySunlit)" />
-          </g>
+            const l2Transform = isTraveling
+              ? isFwd
+                ? `translate(${-84 * p}px, ${22 * p}px) scale(${1 + 0.38 * p})`
+                : `translate(${64 * p}px, ${-22 * p}px) scale(${1 - 0.3 * p})`
+              : 'none';
 
-          {/* Right Trees Group */}
-          <g
-            style={{
-              transform: isTraveling
-                ? travelDirection === 'backward'
-                  ? `translate(${-travelProgress * 20}px, ${-travelProgress * 12}px)`
-                  : `translate(${travelProgress * 30}px, ${travelProgress * 18}px)`
-                : 'none',
-              transformOrigin: '720px 200px',
-            }}
-          >
-            {/* R1: Big near tree */}
-            <ellipse cx="766" cy="242" rx="46" ry="13" fill="#0c2e17" opacity="0.45" filter="url(#flagGlow)" />
-            <path
-              d="M 746 242 Q 750 208, 752 185 L 761 185 Q 759 208, 764 242 Z"
-              fill="url(#treeBarkGrad)"
-            />
-            <path d="M 755 200 Q 746 192, 742 185 L 744 183 Q 750 189, 756 195 Z" fill="#4a2c16" />
-            <ellipse cx="756" cy="186" rx="42" ry="36" fill="url(#canopyShadow)" />
-            <circle cx="736" cy="174" r="29" fill="url(#canopyMidTone)" />
-            <circle cx="774" cy="176" r="28" fill="url(#canopyMidTone)" />
-            <circle cx="755" cy="156" r="27" fill="url(#canopySunlit)" />
-            <circle cx="748" cy="148" r="15" fill="#6ee7b7" opacity="0.35" />
+            const l3Transform = isTraveling
+              ? isFwd
+                ? `translate(${-64 * p}px, ${22 * p}px) scale(${1 + 0.42 * p})`
+                : `translate(${66 * p}px, ${-20 * p}px) scale(${1 - 0.35 * p})`
+              : 'none';
+            const l3Opacity = isTraveling && !isFwd ? Math.max(0, 1 - p * 1.25) : 1;
 
-            {/* R2: Mid tree */}
-            <ellipse cx="680" cy="216" rx="30" ry="8" fill="#0c2e17" opacity="0.38" filter="url(#flagGlow)" />
-            <path d="M 669 216 Q 672 196, 674 178 L 679 178 Q 678 196, 682 216 Z" fill="url(#treeBarkGrad)" />
-            <ellipse cx="675" cy="178" rx="28" ry="25" fill="url(#canopyShadow)" />
-            <circle cx="663" cy="170" r="20" fill="url(#canopyMidTone)" />
-            <circle cx="688" cy="171" r="19" fill="url(#canopyMidTone)" />
-            <circle cx="675" cy="158" r="18" fill="url(#canopySunlit)" />
+            const l4Transform = isTraveling && isFwd
+              ? `translate(${-66 * p}px, ${20 * p}px) scale(${1 + 0.45 * p})`
+              : 'none';
+            const l4Opacity = isTraveling && isFwd ? Math.min(1, p * 1.35) : 0;
 
-            {/* R3: Small tree */}
-            <ellipse cx="606" cy="194" rx="18" ry="5" fill="#0c2e17" opacity="0.3" filter="url(#flagGlow)" />
-            <rect x="599" y="170" width="5" height="25" rx="1.5" fill="url(#treeBarkGrad)" />
-            <ellipse cx="602" cy="170" rx="18" ry="17" fill="url(#canopyMidTone)" />
-            <circle cx="602" cy="160" r="13" fill="url(#canopySunlit)" />
-          </g>
+            const l0Transform = isTraveling && !isFwd
+              ? `translate(${103 * p}px, ${-32 * p}px) scale(${1.35 - 0.35 * p})`
+              : 'none';
+            const l0Opacity = isTraveling && !isFwd ? Math.min(1, p * 1.35) : 0;
+
+            // Right side dynamic transforms
+            const r1Transform = isTraveling
+              ? isFwd
+                ? `translate(${104 * p}px, ${33 * p}px) scale(${1 + 0.35 * p})`
+                : `translate(${-86 * p}px, ${-26 * p}px) scale(${1 - 0.28 * p})`
+              : 'none';
+            const r1Opacity = isTraveling && isFwd ? Math.max(0, 1 - p * 1.25) : 1;
+
+            const r2Transform = isTraveling
+              ? isFwd
+                ? `translate(${86 * p}px, ${26 * p}px) scale(${1 + 0.38 * p})`
+                : `translate(${-74 * p}px, ${-22 * p}px) scale(${1 - 0.3 * p})`
+              : 'none';
+
+            const r3Transform = isTraveling
+              ? isFwd
+                ? `translate(${74 * p}px, ${22 * p}px) scale(${1 + 0.42 * p})`
+                : `translate(${-54 * p}px, ${-22 * p}px) scale(${1 - 0.35 * p})`
+              : 'none';
+            const r3Opacity = isTraveling && !isFwd ? Math.max(0, 1 - p * 1.25) : 1;
+
+            const r4Transform = isTraveling && isFwd
+              ? `translate(${54 * p}px, ${22 * p}px) scale(${1 + 0.45 * p})`
+              : 'none';
+            const r4Opacity = isTraveling && isFwd ? Math.min(1, p * 1.35) : 0;
+
+            const r0Transform = isTraveling && !isFwd
+              ? `translate(${-104 * p}px, ${-33 * p}px) scale(${1.35 - 0.35 * p})`
+              : 'none';
+            const r0Opacity = isTraveling && !isFwd ? Math.min(1, p * 1.35) : 0;
+
+            return (
+              <g>
+                {/* ─── LEFT FOREST GROUP ─── */}
+                <g>
+                  {/* L0: Foreground entering tree (Backward travel only) */}
+                  {isTraveling && !isFwd && (
+                    <g style={{ transform: l0Transform, transformOrigin: '95px 268px' }} opacity={l0Opacity}>
+                      <ellipse cx="95" cy="268" rx="58" ry="15" fill="#0c2e17" opacity="0.45" filter="url(#flagGlow)" />
+                      <path d="M 64 268 Q 68 232, 72 205 L 82 205 Q 80 232, 86 268 Z" fill="url(#treeBarkGrad)" />
+                      <path d="M 76 220 Q 86 212, 92 205 L 89 203 Q 83 209, 75 215 Z" fill="#4a2c16" />
+                      <ellipse cx="78" cy="206" rx="48" ry="42" fill="url(#canopyShadow)" />
+                      <circle cx="56" cy="190" r="36" fill="url(#canopyMidTone)" />
+                      <circle cx="98" cy="192" r="34" fill="url(#canopyMidTone)" />
+                      <circle cx="76" cy="170" r="32" fill="url(#canopySunlit)" />
+                      <circle cx="68" cy="160" r="18" fill="#6ee7b7" opacity="0.35" />
+                    </g>
+                  )}
+
+                  {/* L1: Big near tree */}
+                  <g style={{ transform: l1Transform, transformOrigin: '198px 236px' }} opacity={l1Opacity}>
+                    <ellipse cx="198" cy="236" rx="44" ry="12" fill="#0c2e17" opacity="0.45" filter="url(#flagGlow)" />
+                    <path
+                      d="M 174 235 Q 177 205, 180 182 L 188 182 Q 186 205, 191 235 Z"
+                      fill="url(#treeBarkGrad)"
+                    />
+                    <path d="M 183 195 Q 192 188, 196 182 L 194 180 Q 188 186, 182 191 Z" fill="#4a2c16" />
+                    <ellipse cx="184" cy="184" rx="38" ry="34" fill="url(#canopyShadow)" />
+                    <circle cx="166" cy="170" r="28" fill="url(#canopyMidTone)" />
+                    <circle cx="200" cy="172" r="26" fill="url(#canopyMidTone)" />
+                    <circle cx="182" cy="155" r="25" fill="url(#canopySunlit)" />
+                    <circle cx="176" cy="148" r="14" fill="#6ee7b7" opacity="0.35" />
+                  </g>
+
+                  {/* L2: Mid tree */}
+                  <g style={{ transform: l2Transform, transformOrigin: '282px 214px' }}>
+                    <ellipse cx="282" cy="214" rx="28" ry="8" fill="#0c2e17" opacity="0.38" filter="url(#flagGlow)" />
+                    <path d="M 269 214 Q 272 195, 274 176 L 279 176 Q 278 195, 282 214 Z" fill="url(#treeBarkGrad)" />
+                    <ellipse cx="276" cy="176" rx="26" ry="24" fill="url(#canopyShadow)" />
+                    <circle cx="264" cy="168" r="19" fill="url(#canopyMidTone)" />
+                    <circle cx="288" cy="169" r="18" fill="url(#canopyMidTone)" />
+                    <circle cx="276" cy="156" r="17" fill="url(#canopySunlit)" />
+                  </g>
+
+                  {/* L3: Small tree */}
+                  <g style={{ transform: l3Transform, transformOrigin: '346px 192px' }} opacity={l3Opacity}>
+                    <ellipse cx="346" cy="192" rx="18" ry="5" fill="#0c2e17" opacity="0.3" filter="url(#flagGlow)" />
+                    <rect x="339" y="168" width="5" height="24" rx="1.5" fill="url(#treeBarkGrad)" />
+                    <ellipse cx="342" cy="168" rx="17" ry="16" fill="url(#canopyMidTone)" />
+                    <circle cx="342" cy="158" r="12" fill="url(#canopySunlit)" />
+                  </g>
+
+                  {/* L4: Horizon entrant tree (Forward travel only) */}
+                  {isTraveling && isFwd && (
+                    <g style={{ transform: l4Transform, transformOrigin: '412px 172px' }} opacity={l4Opacity}>
+                      <ellipse cx="412" cy="172" rx="12" ry="3.5" fill="#0c2e17" opacity="0.2" filter="url(#flagGlow)" />
+                      <rect x="409" y="156" width="3.5" height="17" rx="1" fill="url(#treeBarkGrad)" />
+                      <ellipse cx="411" cy="156" rx="12" ry="11" fill="url(#canopyMidTone)" />
+                      <circle cx="411" cy="150" r="8" fill="url(#canopySunlit)" />
+                    </g>
+                  )}
+                </g>
+
+                {/* ─── RIGHT FOREST GROUP ─── */}
+                <g>
+                  {/* R0: Foreground entering tree (Backward travel only) */}
+                  {isTraveling && !isFwd && (
+                    <g style={{ transform: r0Transform, transformOrigin: '870px 275px' }} opacity={r0Opacity}>
+                      <ellipse cx="870" cy="275" rx="60" ry="16" fill="#0c2e17" opacity="0.45" filter="url(#flagGlow)" />
+                      <path d="M 846 275 Q 850 238, 854 210 L 865 210 Q 863 238, 868 275 Z" fill="url(#treeBarkGrad)" />
+                      <path d="M 858 226 Q 848 217, 843 210 L 845 208 Q 852 214, 860 221 Z" fill="#4a2c16" />
+                      <ellipse cx="858" cy="212" rx="52" ry="44" fill="url(#canopyShadow)" />
+                      <circle cx="834" cy="196" r="36" fill="url(#canopyMidTone)" />
+                      <circle cx="882" cy="198" r="35" fill="url(#canopyMidTone)" />
+                      <circle cx="858" cy="174" r="34" fill="url(#canopySunlit)" />
+                      <circle cx="850" cy="164" r="19" fill="#6ee7b7" opacity="0.35" />
+                    </g>
+                  )}
+
+                  {/* R1: Big near tree */}
+                  <g style={{ transform: r1Transform, transformOrigin: '766px 242px' }} opacity={r1Opacity}>
+                    <ellipse cx="766" cy="242" rx="46" ry="13" fill="#0c2e17" opacity="0.45" filter="url(#flagGlow)" />
+                    <path
+                      d="M 746 242 Q 750 208, 752 185 L 761 185 Q 759 208, 764 242 Z"
+                      fill="url(#treeBarkGrad)"
+                    />
+                    <path d="M 755 200 Q 746 192, 742 185 L 744 183 Q 750 189, 756 195 Z" fill="#4a2c16" />
+                    <ellipse cx="756" cy="186" rx="42" ry="36" fill="url(#canopyShadow)" />
+                    <circle cx="736" cy="174" r="29" fill="url(#canopyMidTone)" />
+                    <circle cx="774" cy="176" r="28" fill="url(#canopyMidTone)" />
+                    <circle cx="755" cy="156" r="27" fill="url(#canopySunlit)" />
+                    <circle cx="748" cy="148" r="15" fill="#6ee7b7" opacity="0.35" />
+                  </g>
+
+                  {/* R2: Mid tree */}
+                  <g style={{ transform: r2Transform, transformOrigin: '680px 216px' }}>
+                    <ellipse cx="680" cy="216" rx="30" ry="8" fill="#0c2e17" opacity="0.38" filter="url(#flagGlow)" />
+                    <path d="M 669 216 Q 672 196, 674 178 L 679 178 Q 678 196, 682 216 Z" fill="url(#treeBarkGrad)" />
+                    <ellipse cx="675" cy="178" rx="28" ry="25" fill="url(#canopyShadow)" />
+                    <circle cx="663" cy="170" r="20" fill="url(#canopyMidTone)" />
+                    <circle cx="688" cy="171" r="19" fill="url(#canopyMidTone)" />
+                    <circle cx="675" cy="158" r="18" fill="url(#canopySunlit)" />
+                  </g>
+
+                  {/* R3: Small tree */}
+                  <g style={{ transform: r3Transform, transformOrigin: '606px 194px' }} opacity={r3Opacity}>
+                    <ellipse cx="606" cy="194" rx="18" ry="5" fill="#0c2e17" opacity="0.3" filter="url(#flagGlow)" />
+                    <rect x="599" y="170" width="5" height="25" rx="1.5" fill="url(#treeBarkGrad)" />
+                    <ellipse cx="602" cy="170" rx="18" ry="17" fill="url(#canopyMidTone)" />
+                    <circle cx="602" cy="160" r="13" fill="url(#canopySunlit)" />
+                  </g>
+
+                  {/* R4: Horizon entrant tree (Forward travel only) */}
+                  {isTraveling && isFwd && (
+                    <g style={{ transform: r4Transform, transformOrigin: '552px 172px' }} opacity={r4Opacity}>
+                      <ellipse cx="554" cy="173" rx="12" ry="3.5" fill="#0c2e17" opacity="0.2" filter="url(#flagGlow)" />
+                      <rect x="550" y="157" width="3.5" height="17" rx="1" fill="url(#treeBarkGrad)" />
+                      <ellipse cx="552" cy="157" rx="13" ry="12" fill="url(#canopyMidTone)" />
+                      <circle cx="552" cy="151" r="9" fill="url(#canopySunlit)" />
+                    </g>
+                  )}
+                </g>
+              </g>
+            );
+          })()}
 
           {/* Far static background trees */}
           <g opacity="0.75">

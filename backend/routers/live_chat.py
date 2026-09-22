@@ -31,6 +31,20 @@ router = APIRouter(prefix="/live", tags=["live_chat"])
 # In-memory LRU audio chunk cache for rapid re-play
 LIVE_AUDIO_CACHE: Dict[str, bytes] = {}
 
+# Valid MPEG Layer-3 silent frame (prevents 500 crashes on punctuation-only or empty speech chunks)
+SILENT_MP3_FRAME = (
+    b'\xff\xfb\x90d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+)
+
 class ChatMessage(BaseModel):
     role: str  # "user" | "assistant" | "system"
     content: str
@@ -277,7 +291,7 @@ async def live_respond_stream(
                         if completed_clause and len(completed_clause) > 1:
                             clean_c = re.sub(r'\[CORRECTION:.*?\]', '', completed_clause)
                             clean_c = re.sub(r'[\u4e00-\u9fff]', '', clean_c).strip()
-                            if clean_c:
+                            if clean_c and any(ch.isalnum() for ch in clean_c):
                                 yield f"event: clause\ndata: {json.dumps({'clause_index': clause_index, 'text': clean_c})}\n\n"
                                 clause_index += 1
 
@@ -285,7 +299,7 @@ async def live_respond_stream(
             if clause_buffer.strip():
                 clean_tail = re.sub(r'\[CORRECTION:.*?\]', '', clause_buffer)
                 clean_tail = re.sub(r'[\u4e00-\u9fff]', '', clean_tail).strip()
-                if clean_tail:
+                if clean_tail and any(ch.isalnum() for ch in clean_tail):
                     yield f"event: clause\ndata: {json.dumps({'clause_index': clause_index, 'text': clean_tail})}\n\n"
                     clause_index += 1
 
@@ -317,10 +331,15 @@ async def synthesize_clause_chunk(
     """
     Ultra-fast clause-level TTS synthesis for real-time live streaming audio.
     Caches identical phrases in-memory for 0ms replay.
+    Gracefully handles empty/punctuation phrases by returning a valid silent frame.
     """
     clean_text = req.text.strip()
-    if not clean_text:
-        raise HTTPException(status_code=400, detail="Empty text provided.")
+    if not clean_text or not any(c.isalnum() for c in clean_text):
+        return Response(
+            content=SILENT_MP3_FRAME,
+            media_type="audio/mpeg",
+            headers={"X-Silent": "true", "Cache-Control": "public, max-age=86400"}
+        )
 
     cache_key = f"{req.voice_id}:{req.speed}:{clean_text}"
     if cache_key in LIVE_AUDIO_CACHE:
@@ -337,7 +356,12 @@ async def synthesize_clause_chunk(
             speed=req.speed or 1.0,
         )
         if not audio_bytes:
-            raise HTTPException(status_code=500, detail="Voice synthesis returned empty audio.")
+            logger.warning(f"Voice synthesis returned empty audio for '{clean_text[:40]}'. Returning silent frame.")
+            return Response(
+                content=SILENT_MP3_FRAME,
+                media_type="audio/mpeg",
+                headers={"X-Silent": "true", "Cache-Control": "public, max-age=86400"}
+            )
 
         if len(LIVE_AUDIO_CACHE) < 500:
             LIVE_AUDIO_CACHE[cache_key] = audio_bytes
@@ -349,4 +373,8 @@ async def synthesize_clause_chunk(
         )
     except Exception as e:
         logger.error(f"Failed to synthesize clause chunk: {e}")
-        raise HTTPException(status_code=500, detail=f"Synthesis error: {e}")
+        return Response(
+            content=SILENT_MP3_FRAME,
+            media_type="audio/mpeg",
+            headers={"X-Silent": "true", "X-Error": str(e)[:100]}
+        )

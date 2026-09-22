@@ -508,7 +508,7 @@ export class LiveAudioStreamQueue {
   enqueue(clauseIndex: number, text: string) {
     if (this.isStopped) return;
     const timeoutPromise = new Promise<Blob>((_, reject) =>
-      setTimeout(() => reject(new Error('TTS chunk synthesis timeout')), 6000)
+      setTimeout(() => reject(new Error('TTS chunk synthesis timeout')), 15000)
     );
     const blobPromise = Promise.race([
       api.live.synthesizeChunk(text, this.voiceId),
@@ -571,6 +571,7 @@ export class LiveAudioStreamQueue {
 
     if (item.status === 'failed' || !item.audioUrl) {
       item.status = 'played';
+      this.onClausePlay?.(item.clauseIndex, item.text);
       this.processNext();
       return;
     }

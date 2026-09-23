@@ -7,6 +7,8 @@ import time
 import re
 import logging
 import httpx
+import subprocess
+import shutil
 from typing import Dict, Any, Optional
 from config import settings
 from openai import AsyncOpenAI
@@ -24,6 +26,41 @@ HALLUCINATION_PATTERNS = [
     r'subscribe to our channel',
     r'please subscribe',
 ]
+
+
+def normalize_audio_for_stt(audio_bytes: bytes, filename: str, mime_type: str) -> tuple[bytes, str, str]:
+    """
+    Ensures the audio stream has an explicit duration in its container header.
+    Browser MediaRecorder WebM streams lack container duration headers, causing
+    MiniMax ASR to reject them with 'duration is N/A (2013)'.
+    Transcoding to 16kHz mono WAV creates a valid 44-byte WAV header with exact duration.
+    """
+    if audio_bytes.startswith(b"RIFF") and b"WAVE" in audio_bytes[:16]:
+        return audio_bytes, filename if filename.endswith(".wav") else "audio.wav", "audio/wav"
+
+    ffmpeg_bin = shutil.which("ffmpeg") or "ffmpeg"
+    try:
+        cmd = [
+            ffmpeg_bin,
+            "-y",
+            "-i", "pipe:0",
+            "-vn",
+            "-ar", "16000",
+            "-ac", "1",
+            "-c:a", "pcm_s16le",
+            "-f", "wav",
+            "pipe:1",
+        ]
+        p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate(input=audio_bytes, timeout=12.0)
+        if p.returncode == 0 and out and len(out) > 44:
+            return out, "audio.wav", "audio/wav"
+        else:
+            logger.warning(f"ffmpeg conversion returned code {p.returncode}: {err[:200] if err else ''}")
+    except Exception as e:
+        logger.warning(f"ffmpeg audio conversion failed ({e}), continuing with raw bytes")
+
+    return audio_bytes, filename, mime_type
 
 
 async def transcribe_audio_stt(
@@ -51,8 +88,8 @@ async def transcribe_audio_stt(
             "latency_ms": 0,
         }
 
-    if "webm" in mime_type.lower():
-        mime_type = "audio/webm"
+    # Normalize audio container to 16kHz mono WAV to guarantee duration header
+    audio_bytes, filename, mime_type = normalize_audio_for_stt(audio_bytes, filename, mime_type)
 
     # ──────────────────────────────────────────────────────────────────────────
     # 1. Primary Engine: MiniMax Speech to Text (asr-1.0)

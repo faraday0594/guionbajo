@@ -330,13 +330,16 @@ export const api = {
     audioBlob: Blob,
     chunkWords: any[],
     chunkId?: string,
-    lessonId?: string
+    lessonId?: string,
+    fallbackTranscript?: string
   ): Promise<any> => {
     const formData = new FormData();
-    formData.append('audio', audioBlob, 'reading_attempt.webm');
+    const filename = audioBlob.type.includes('wav') ? 'reading_attempt.wav' : 'reading_attempt.webm';
+    formData.append('audio', audioBlob, filename);
     formData.append('chunk_words', JSON.stringify(chunkWords));
     if (chunkId) formData.append('chunk_id', chunkId);
     if (lessonId) formData.append('lesson_id', lessonId);
+    if (fallbackTranscript) formData.append('fallback_transcript', fallbackTranscript);
 
     return fetchWithAuth('/reading/evaluate-chunk-audio', {
       method: 'POST',

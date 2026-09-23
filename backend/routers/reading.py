@@ -150,6 +150,7 @@ async def evaluate_reading_chunk_audio(
     chunk_words: str = Form(...),
     lesson_id: Optional[str] = Form(None),
     chunk_id: Optional[str] = Form(None),
+    fallback_transcript: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -172,13 +173,21 @@ async def evaluate_reading_chunk_audio(
     # 1. Transcribe audio with MiniMax STT (primary) + Groq Whisper fallback
     stt_res = await transcribe_audio_stt(
         audio_bytes=audio_bytes,
-        filename=audio.filename or "reading.webm",
-        mime_type=audio.content_type or "audio/webm",
+        filename=audio.filename or "reading.wav",
+        mime_type=audio.content_type or "audio/wav",
         language="en",
         minimax_api_key=profile.minimax_api_key if profile else None,
         groq_api_key=profile.groq_api_key if profile else None,
     )
     transcript = stt_res.get("text", "").strip()
+
+    # Use live browser transcript fallback if acoustic STT returned silence/empty
+    if not transcript and fallback_transcript and fallback_transcript.strip():
+        logger.info(f"Using live browser speech fallback transcript: '{fallback_transcript.strip()}'")
+        transcript = fallback_transcript.strip()
+        stt_res["engine"] = "browser-speech-fallback"
+
+    logger.info(f"Reading chunk audio transcript: '{transcript}' (engine: {stt_res.get('engine')})")
 
     # 2. Parse chunk_words JSON
     try:
@@ -191,6 +200,7 @@ async def evaluate_reading_chunk_audio(
     generator = ReadingGenerator(api_key=profile.minimax_api_key if profile else None)
     eval_result = generator.evaluate_reading_attempt(words_list, transcript)
     eval_result["engine"] = stt_res.get("engine", "minimax-asr-1.0")
+    eval_result["transcript"] = transcript
     eval_result["chunk_id"] = chunk_id
     eval_result["lesson_id"] = lesson_id
 

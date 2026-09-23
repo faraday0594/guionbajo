@@ -549,7 +549,7 @@ export default function ReadingPracticeArena({
       let res: any;
       if (hasAudio) {
         // High accuracy evaluation using MiniMax STT asr-1.0
-        res = await api.evaluateReadingChunkAudio(audioBlob!, chunkWordsToSend, chunk.chunk_id, lessonId);
+        res = await api.evaluateReadingChunkAudio(audioBlob!, chunkWordsToSend, chunk.chunk_id, lessonId, fallbackTranscript);
       } else {
         res = await api.evaluateReadingChunk({
           chunk_words: chunkWordsToSend,

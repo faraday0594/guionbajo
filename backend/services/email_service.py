@@ -2,6 +2,8 @@ import asyncio
 import logging
 import smtplib
 import httpx
+import os
+import base64
 from datetime import datetime, timezone
 from email.message import EmailMessage
 from config import settings
@@ -9,22 +11,30 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 
-async def _send_via_resend(to_email: str, subject: str, html_body: str, text_body: str = "") -> bool:
+async def _send_via_resend(
+    to_email: str,
+    subject: str,
+    html_body: str,
+    text_body: str = "",
+    attachments: list = None
+) -> bool:
     """
-    Envía un correo electrónico de forma asíncrona mediante la API REST de Resend.
+    Envía un correo electrónico de forma asíncrona mediante la API REST de Resend con soporte para adjuntos.
     """
     if not settings.RESEND_API_KEY:
         return False
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             payload = {
-                "from": settings.RESEND_FROM_EMAIL or "Tutor AI <onboarding@resend.dev>",
+                "from": settings.RESEND_FROM_EMAIL or "Guionbajo <onboarding@resend.dev>",
                 "to": [to_email],
                 "subject": subject,
                 "html": html_body,
             }
             if text_body:
                 payload["text"] = text_body
+            if attachments:
+                payload["attachments"] = attachments
 
             resp = await client.post(
                 "https://api.resend.com/emails",
@@ -87,13 +97,19 @@ def _send_email_sync(to_email: str, subject: str, html_body: str, text_body: str
         return False
 
 
-async def send_email_async(to_email: str, subject: str, html_body: str, text_body: str = "") -> bool:
+async def send_email_async(
+    to_email: str,
+    subject: str,
+    html_body: str,
+    text_body: str = "",
+    attachments: list = None
+) -> bool:
     """
     Envía correo usando Resend como proveedor primario.
     Si Resend no está disponible o falla, recurre a SMTP como respaldo.
     """
     if settings.RESEND_API_KEY:
-        sent = await _send_via_resend(to_email, subject, html_body, text_body)
+        sent = await _send_via_resend(to_email, subject, html_body, text_body, attachments=attachments)
         if sent:
             return True
         logger.info("[EmailService] Resend no completó el envío; intentando vía SMTP...")
@@ -103,7 +119,7 @@ async def send_email_async(to_email: str, subject: str, html_body: str, text_bod
 
 def _render_base_email_template(title: str, badge_text: str, badge_color: str, content_html: str) -> str:
     """
-    Plantilla HTML estilizada y moderna para notificaciones de Tutor AI.
+    Plantilla HTML estilizada y moderna para notificaciones de Guionbajo.
     """
     return f"""
     <!DOCTYPE html>
@@ -144,7 +160,7 @@ def _render_base_email_template(title: str, badge_text: str, badge_color: str, c
                 color: #ffffff;
             }}
             .logo span {{
-                color: #10b981;
+                color: #00d4ff;
             }}
             .badge {{
                 display: inline-block;
@@ -200,14 +216,13 @@ def _render_base_email_template(title: str, badge_text: str, badge_color: str, c
     <body>
         <div class="container">
             <div class="header">
-                <div class="logo">Tutor<span>AI</span></div>
+                <div class="logo">Guion<span>bajo</span></div>
                 <div class="badge">{badge_text}</div>
             </div>
             <h1 class="title">{title}</h1>
             {content_html}
             <div class="footer">
-                Notificación automática enviada a {settings.NOTIFICATION_EMAIL}.<br>
-                Tutor AI &copy; {datetime.now(timezone.utc).year} - Sistema de Aprendizaje Inteligente
+                Guionbajo &copy; {datetime.now(timezone.utc).year} — Tutor de Inglés con Inteligencia Artificial
             </div>
         </div>
     </body>
@@ -412,18 +427,66 @@ async def send_registered_users_report(users_data: list) -> bool:
 
 async def send_password_reset_email(to_email: str, reset_url: str, user_name: str = "") -> bool:
     """
-    Despacha un correo electrónico con enlace seguro para restablecer la contraseña.
+    Despacha un correo electrónico con enlace seguro para restablecer la contraseña,
+    con la identidad oficial de Guionbajo y el avatar en su versión B2 máxima (Master Stage).
     """
     display_name = user_name if user_name else "Estudiante"
-    subject = "🔐 Restablece tu contraseña - Tutor AI"
+    subject = "Restablece tu contraseña - Guionbajo"
+
+    # Preparar el avatar de Guionbajo B2 Master Stage (Corona imperial, bobina Tesla, espadas cyber, mini-dron)
+    attachments = []
+    avatar_public_url = "https://raw.githubusercontent.com/faraday0594/guionbajo/main/frontend/public/images/guionbajo_b2.jpg"
+
+    candidate_paths = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "guionbajo_b2.jpg"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "frontend", "public", "images", "guionbajo_b2.jpg"),
+        r"d:\tutor ai\backend\static\guionbajo_b2.jpg",
+        r"d:\tutor ai\frontend\public\images\guionbajo_b2.jpg",
+    ]
+
+    img_b64 = None
+    for p in candidate_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "rb") as f:
+                    img_b64 = base64.b64encode(f.read()).decode("utf-8")
+                if img_b64:
+                    break
+            except Exception as e:
+                logger.warning(f"[EmailService] No se pudo leer {p}: {e}")
+
+    if img_b64:
+        attachments.append({
+            "filename": "guionbajo_b2.jpg",
+            "content": img_b64,
+            "content_type": "image/jpeg"
+        })
+        img_src = "cid:guionbajo_b2.jpg"
+    else:
+        img_src = avatar_public_url
+
+    avatar_badge_html = f"""
+        <div style="text-align: center; margin: 0 auto 24px auto;">
+            <div style="display: inline-block; width: 140px; height: 140px; border-radius: 50%; border: 3px solid #fbbf24; box-shadow: 0 0 25px rgba(251, 191, 36, 0.45); overflow: hidden; background: #09090b;">
+                <img src="{img_src}" alt="Guionbajo B2 Master" width="140" height="140" style="display: block; border-radius: 50%; object-fit: cover; width: 140px; height: 140px;" />
+            </div>
+            <div style="margin-top: 10px;">
+                <span style="display: inline-block; padding: 4px 14px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 9999px; color: #38bdf8; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;">
+                    👑 Guionbajo • B2 Master Edition
+                </span>
+            </div>
+        </div>
+    """
 
     content_html = f"""
-        <p style="color: #f4f4f5; font-size: 16px; margin: 0 0 16px 0;">
-            Hola <strong>{display_name}</strong>,
+        {avatar_badge_html}
+
+        <p style="color: #f4f4f5; font-size: 16px; margin: 0 0 16px 0; text-align: center;">
+            ¡Hola <strong>{display_name}</strong>! 👋
         </p>
-        <p style="color: #d4d4d8; font-size: 14px; line-height: 1.6; margin: 0 0 24px 0;">
-            Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>Tutor AI</strong>.
-            Haz clic en el siguiente botón para definir una nueva contraseña:
+        <p style="color: #d4d4d8; font-size: 14px; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
+            Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>Guionbajo</strong>.
+            Haz clic en el siguiente botón para elegir una nueva contraseña y continuar tu aprendizaje:
         </p>
         <div style="text-align: center; margin: 32px 0;">
             <a href="{reset_url}" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #00d4ff 100%); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 212, 255, 0.35);">
@@ -438,7 +501,7 @@ async def send_password_reset_email(to_email: str, reset_url: str, user_name: st
                 Si tú no solicitaste este cambio, puedes ignorar este correo con tranquilidad. Tu contraseña actual no se modificará.
             </p>
         </div>
-        <p style="color: #71717a; font-size: 11px; margin-top: 24px;">
+        <p style="color: #71717a; font-size: 11px; margin-top: 24px; text-align: center;">
             Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:<br>
             <a href="{reset_url}" style="color: #38bdf8; word-break: break-all;">{reset_url}</a>
         </p>
@@ -446,7 +509,7 @@ async def send_password_reset_email(to_email: str, reset_url: str, user_name: st
 
     text_body = (
         f"Hola {display_name},\n\n"
-        f"Recibimos una solicitud para restablecer tu contraseña en Tutor AI.\n"
+        f"Recibimos una solicitud para restablecer tu contraseña en Guionbajo.\n"
         f"Para continuar, abre el siguiente enlace en tu navegador (válido por 30 minutos):\n\n"
         f"{reset_url}\n\n"
         f"Si no solicitaste este cambio, puedes ignorar este mensaje.\n"
@@ -463,6 +526,8 @@ async def send_password_reset_email(to_email: str, reset_url: str, user_name: st
         to_email=to_email,
         subject=subject,
         html_body=html_email,
-        text_body=text_body
+        text_body=text_body,
+        attachments=attachments if attachments else None
     )
+
 

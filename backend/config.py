@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     
     # Notificaciones y correos transaccionales
     RESEND_API_KEY: str = ""
-    RESEND_FROM_EMAIL: str = "Tutor AI <onboarding@resend.dev>"
+    RESEND_FROM_EMAIL: str = "Guionbajo <onboarding@resend.dev>"
     FRONTEND_URL: str = "http://localhost:3000"
 
     SMTP_HOST: str = "smtp.gmail.com"
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     NOTIFICATION_EMAIL: str = "megafer1994@gmail.com"
-    EMAIL_FROM_NAME: str = "Tutor AI"
+    EMAIL_FROM_NAME: str = "Guionbajo"
     
     class Config:
         env_file = _env_path

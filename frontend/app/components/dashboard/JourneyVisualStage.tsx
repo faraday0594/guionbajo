@@ -2340,53 +2340,60 @@ export default function JourneyVisualStage({
           <ChevronRight size={20} className="sm:w-6 sm:h-6 transition-transform group-hover:translate-x-0.5" />
         </button>
 
-        {/* ─── FLOATING STATION BADGE ─── */}
+        {/* ─── FLOATING STATION BADGE (Interactive Class Launcher) ─── */}
         <div className="absolute top-3 left-0 right-0 z-10 pointer-events-none flex flex-col items-center px-4">
-          <div
-            className="px-4 sm:px-6 py-2 rounded-2xl border backdrop-blur-md transition-all duration-500 text-center max-w-[92%] sm:max-w-lg shadow-2xl pointer-events-auto"
-            style={{
-              backgroundColor: 'rgba(10, 20, 14, 0.85)',
-              borderColor: isTraveling
-                ? `${getPalette(destinationTopic.levelColor).primary}66`
-                : currentIndex < targetIndex
-                ? '#94a3b888'
-                : `${palette.primary}44`,
-              boxShadow: `0 0 30px ${
-                isTraveling
-                  ? getPalette(destinationTopic.levelColor).primary
-                  : currentIndex < targetIndex
-                  ? '#94a3b822'
-                  : palette.primary
-              }15, 0 4px 20px rgba(0,0,0,0.3)`,
-              transform: isTraveling ? 'scale(1.02)' : 'scale(1)',
-            }}
+          <button
+            type="button"
+            onClick={() => !isTraveling && onLaunchClass(currentTopic.module, currentTopic.classNum)}
+            disabled={isTraveling}
+            title={isTraveling ? 'Viajando...' : currentIndex < targetIndex ? 'Haz clic para repetir esta clase' : 'Haz clic para iniciar la clase'}
+            className={`group relative px-4 sm:px-6 py-2 sm:py-2.5 rounded-2xl border backdrop-blur-md transition-all duration-300 text-center max-w-[92%] sm:max-w-lg shadow-2xl pointer-events-auto overflow-hidden ${
+              isTraveling
+                ? 'opacity-85 cursor-wait'
+                : 'cursor-pointer hover:scale-[1.03] active:scale-[0.98]'
+            } ${
+              currentIndex < targetIndex
+                ? 'bg-gradient-to-r from-emerald-600/90 via-teal-600/90 to-brand-cyan/90 hover:from-emerald-500 hover:to-cyan-400 border-emerald-300/40 shadow-[0_4px_20px_rgba(16,185,129,0.35)] hover:shadow-[0_6px_25px_rgba(0,212,255,0.45)]'
+                : 'bg-gradient-to-r from-brand-accent via-[#6366f1] to-brand-cyan hover:from-brand-accent/90 hover:to-cyan-400 border-white/25 shadow-[0_4px_20px_rgba(99,102,241,0.35)] hover:shadow-[0_6px_25px_rgba(0,212,255,0.5)]'
+            }`}
           >
-            <div
-              className="text-[10px] sm:text-xs font-bold tracking-widest font-mono uppercase mb-0.5 transition-colors duration-500"
-              style={{
-                color: isTraveling
-                  ? getPalette(destinationTopic.levelColor).primary
+            {/* Subtle Shimmer light sweep on hover */}
+            <div className="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-700 ease-out pointer-events-none" />
+
+            <div className="relative z-10">
+              <div className="text-[10px] sm:text-xs font-bold tracking-widest font-mono uppercase mb-0.5 text-cyan-100/90 group-hover:text-white transition-colors duration-300 drop-shadow-sm">
+                {isTraveling
+                  ? `${travelDirection === 'backward' ? 'RETROCEDIENDO' : 'AVANZANDO'} A CLASE ${destinationTopic.classNum} • NIVEL ${destinationTopic.level}...`
                   : currentIndex < targetIndex
-                  ? '#cbd5e1'
-                  : palette.primary,
-              }}
-            >
-              {isTraveling
-                ? `${travelDirection === 'backward' ? 'RETROCEDIENDO' : 'AVANZANDO'} A CLASE ${destinationTopic.classNum} • NIVEL ${destinationTopic.level}...`
-                : currentIndex < targetIndex
-                ? `NIVEL ${currentTopic.level} • ${currentTopic.module} — CLASE ${currentTopic.classNum} (COMPLETADA)`
-                : `NIVEL ${currentTopic.level} • ${currentTopic.module} — CLASE ${currentTopic.classNum}`}
-            </div>
-            <div className="text-sm sm:text-base md:text-lg font-outfit font-black text-white tracking-wide leading-tight transition-opacity duration-300">
-              {isTraveling ? destinationTopic.title.toUpperCase() : currentTopic.title.toUpperCase()}
-            </div>
-            {currentIndex < targetIndex && !isTraveling && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-full bg-slate-800/80 border border-slate-600/70 text-slate-300 text-[10px] font-bold tracking-wider uppercase">
-                <CheckCircle2 size={11} className="text-emerald-400 flex-shrink-0" />
-                <span>Clase Aprobada • Puedes repetirla para mejorar tu nota</span>
+                  ? `NIVEL ${currentTopic.level} • ${currentTopic.module} — CLASE ${currentTopic.classNum} (COMPLETADA)`
+                  : `NIVEL ${currentTopic.level} • ${currentTopic.module} — CLASE ${currentTopic.classNum}`}
               </div>
-            )}
-          </div>
+              <div className="text-sm sm:text-base md:text-lg font-outfit font-black text-white tracking-wide leading-tight drop-shadow-md flex items-center justify-center gap-2">
+                <span>{isTraveling ? destinationTopic.title.toUpperCase() : currentTopic.title.toUpperCase()}</span>
+              </div>
+              {!isTraveling && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 mt-1 rounded-full bg-black/25 group-hover:bg-black/35 border border-white/20 text-white text-[10px] sm:text-[11px] font-bold tracking-wider uppercase transition-all shadow-inner">
+                  {currentIndex < targetIndex ? (
+                    <>
+                      <RotateCcw size={11} className="text-white group-hover:-rotate-45 transition-transform flex-shrink-0" />
+                      <span>Clase Aprobada • Clic para repetir</span>
+                    </>
+                  ) : activeCheckpoint ? (
+                    <>
+                      <Play size={10} className="fill-current text-white flex-shrink-0" />
+                      <span>Progreso listo • Clic para continuar</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={10} className="fill-current text-white group-hover:scale-110 transition-transform flex-shrink-0" />
+                      <span>Clic para iniciar clase</span>
+                    </>
+                  )}
+                  <ChevronRight size={12} className="flex-shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </div>
+              )}
+            </div>
+          </button>
         </div>
       </div>
 

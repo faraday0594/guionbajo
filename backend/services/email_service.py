@@ -428,58 +428,77 @@ async def send_registered_users_report(users_data: list) -> bool:
 async def send_password_reset_email(to_email: str, reset_url: str, user_name: str = "") -> bool:
     """
     Despacha un correo electrónico con enlace seguro para restablecer la contraseña,
-    con la identidad oficial de Guionbajo y el avatar en su versión B2 máxima (Master Stage).
+    con la identidad oficial de Guionbajo y el avatar en su versión clásica e inicial (Stage 0).
+    Renderizado en HTML/CSS nativo para garantizar compatibilidad del 100% en Gmail y todos los clientes.
     """
     display_name = user_name if user_name else "Estudiante"
     subject = "Restablece tu contraseña - Guionbajo"
 
-    # Preparar el avatar de Guionbajo B2 Master Stage (Corona imperial, bobina Tesla, espadas cyber, mini-dron)
-    attachments = []
-    avatar_public_url = "https://raw.githubusercontent.com/faraday0594/guionbajo/main/frontend/public/images/guionbajo_b2.jpg"
+    # Avatar de Guionbajo Versión Inicial (Cabeza CRT, antena con bombillo de vacío, diales y ojos cian)
+    avatar_html = """
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto 20px auto;">
+          <tr>
+            <td align="center">
+              <!-- Antena con Bombillo de Vacío -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
+                <tr>
+                  <td align="center">
+                    <div style="width: 18px; height: 18px; border-radius: 50%; background: #00d4ff; box-shadow: 0 0 14px #00d4ff; border: 2px solid #ffffff; margin: 0 auto;"></div>
+                    <div style="width: 4px; height: 16px; background: #64748b; margin: 0 auto;"></div>
+                  </td>
+                </tr>
+              </table>
 
-    candidate_paths = [
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "guionbajo_b2.jpg"),
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "frontend", "public", "images", "guionbajo_b2.jpg"),
-        r"d:\tutor ai\backend\static\guionbajo_b2.jpg",
-        r"d:\tutor ai\frontend\public\images\guionbajo_b2.jpg",
-    ]
+              <!-- Cabeza con Diales Laterales -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
+                <tr>
+                  <!-- Dial Izquierdo -->
+                  <td valign="middle" style="padding: 0;">
+                    <div style="width: 6px; height: 26px; background: #475569; border-radius: 4px 0 0 4px; border: 1px solid #334155; border-right: none;"></div>
+                  </td>
 
-    img_b64 = None
-    for p in candidate_paths:
-        if os.path.exists(p):
-            try:
-                with open(p, "rb") as f:
-                    img_b64 = base64.b64encode(f.read()).decode("utf-8")
-                if img_b64:
-                    break
-            except Exception as e:
-                logger.warning(f"[EmailService] No se pudo leer {p}: {e}")
+                  <!-- Chasis de Cabeza -->
+                  <td valign="middle" style="padding: 0;">
+                    <div style="width: 140px; height: 110px; background: #1e293b; border: 2px solid #475569; border-radius: 22px; box-shadow: 0 8px 24px rgba(0,0,0,0.6); padding: 12px; box-sizing: border-box;">
+                      <!-- Pantalla CRT Neón -->
+                      <div style="width: 112px; height: 82px; background: #030712; border: 2px solid #00d4ff; border-radius: 14px; box-shadow: inset 0 0 14px rgba(0, 212, 255, 0.4), 0 0 12px rgba(0, 212, 255, 0.3); padding-top: 16px; box-sizing: border-box;">
+                        <!-- Ojos Expresivos -->
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
+                          <tr>
+                            <td style="padding: 0 9px;">
+                              <div style="width: 15px; height: 20px; background: #00f0ff; border-radius: 5px; box-shadow: 0 0 12px #00f0ff;"></div>
+                            </td>
+                            <td style="padding: 0 9px;">
+                              <div style="width: 15px; height: 20px; background: #00f0ff; border-radius: 5px; box-shadow: 0 0 12px #00f0ff;"></div>
+                            </td>
+                          </tr>
+                        </table>
+                        <!-- Sonrisa Amigable -->
+                        <div style="width: 26px; height: 9px; border-bottom: 2.5px solid #00f0ff; border-radius: 0 0 14px 14px; margin: 8px auto 0 auto; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.6);"></div>
+                      </div>
+                    </div>
+                  </td>
 
-    if img_b64:
-        attachments.append({
-            "filename": "guionbajo_b2.jpg",
-            "content": img_b64,
-            "content_type": "image/jpeg"
-        })
-        img_src = "cid:guionbajo_b2.jpg"
-    else:
-        img_src = avatar_public_url
+                  <!-- Dial Derecho -->
+                  <td valign="middle" style="padding: 0;">
+                    <div style="width: 6px; height: 26px; background: #475569; border-radius: 0 4px 4px 0; border: 1px solid #334155; border-left: none;"></div>
+                  </td>
+                </tr>
+              </table>
 
-    avatar_badge_html = f"""
-        <div style="text-align: center; margin: 0 auto 24px auto;">
-            <div style="display: inline-block; width: 140px; height: 140px; border-radius: 50%; border: 3px solid #fbbf24; box-shadow: 0 0 25px rgba(251, 191, 36, 0.45); overflow: hidden; background: #09090b;">
-                <img src="{img_src}" alt="Guionbajo B2 Master" width="140" height="140" style="display: block; border-radius: 50%; object-fit: cover; width: 140px; height: 140px;" />
-            </div>
-            <div style="margin-top: 10px;">
-                <span style="display: inline-block; padding: 4px 14px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 9999px; color: #38bdf8; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;">
-                    👑 Guionbajo • B2 Master Edition
+              <!-- Insignia -->
+              <div style="margin-top: 14px;">
+                <span style="display: inline-block; padding: 4px 16px; background: rgba(0, 212, 255, 0.12); border: 1px solid rgba(0, 212, 255, 0.35); border-radius: 9999px; color: #00d4ff; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;">
+                  🤖 Guionbajo • Tutor de Inglés
                 </span>
-            </div>
-        </div>
+              </div>
+            </td>
+          </tr>
+        </table>
     """
 
     content_html = f"""
-        {avatar_badge_html}
+        {avatar_html}
 
         <p style="color: #f4f4f5; font-size: 16px; margin: 0 0 16px 0; text-align: center;">
             ¡Hola <strong>{display_name}</strong>! 👋
@@ -489,7 +508,7 @@ async def send_password_reset_email(to_email: str, reset_url: str, user_name: st
             Haz clic en el siguiente botón para elegir una nueva contraseña y continuar tu aprendizaje:
         </p>
         <div style="text-align: center; margin: 32px 0;">
-            <a href="{reset_url}" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #00d4ff 100%); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 212, 255, 0.35);">
+            <a href="{reset_url}" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #00d4ff 100%); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 34px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 212, 255, 0.35);">
                 Restablecer mi Contraseña
             </a>
         </div>
@@ -526,8 +545,7 @@ async def send_password_reset_email(to_email: str, reset_url: str, user_name: st
         to_email=to_email,
         subject=subject,
         html_body=html_email,
-        text_body=text_body,
-        attachments=attachments if attachments else None
+        text_body=text_body
     )
 
 

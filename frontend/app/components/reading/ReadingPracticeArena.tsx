@@ -206,6 +206,46 @@ export default function ReadingPracticeArena({
   const isEvaluatingRef = useRef<boolean>(false);
   const arenaTopRef = useRef<HTMLDivElement | null>(null);
 
+  // ⏱️ Voice Activity Detection (VAD) & 1.5s Silence Auto-Stop
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const vadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const hasSpokenRef = useRef<boolean>(false);
+  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearSilenceTimers = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+      safetyTimeoutRef.current = null;
+    }
+    if (vadIntervalRef.current) {
+      clearInterval(vadIntervalRef.current);
+      vadIntervalRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      try { audioCtxRef.current.close(); } catch (_) {}
+      audioCtxRef.current = null;
+    }
+    hasSpokenRef.current = false;
+  }, []);
+
+  // Cleanup audio & VAD timers on unmount
+  useEffect(() => {
+    return () => {
+      clearSilenceTimers();
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (_) {}
+      }
+      if (mediaStreamRef.current) {
+        try { mediaStreamRef.current.getTracks().forEach((t) => t.stop()); } catch (_) {}
+      }
+    };
+  }, [clearSilenceTimers]);
+
   // 📜 Smooth Auto-scroll to Top of Reading Arena on Slide Transitions
   const scrollToTop = useCallback(() => {
     // 1. Native element scrollIntoView (aligns to viewport top smoothly)
@@ -414,9 +454,11 @@ export default function ReadingPracticeArena({
     }
   };
 
-  // Start Speech Recognition & MediaRecorder for a specific chunk
+  // Start Speech Recognition & MediaRecorder for a specific chunk with 1.5s Silence VAD Auto-Stop
   const startChunkRecognition = async (chunk: ReadingChunk) => {
     if (typeof window === 'undefined') return;
+
+    clearSilenceTimers();
 
     if (recognitionRef.current) {
       try { recognitionRef.current.abort(); } catch (_) {}
@@ -432,8 +474,14 @@ export default function ReadingPracticeArena({
     setLiveTranscript('');
     audioChunksRef.current = [];
     setRecordingChunkId(chunk.chunk_id);
+    hasSpokenRef.current = false;
 
-    // 1. Capture microphone stream for MiniMax STT via MediaRecorder
+    // Safety timeout: 25 seconds maximum recording if student never pauses or speaks
+    safetyTimeoutRef.current = setTimeout(() => {
+      stopChunkRecognition(chunk);
+    }, 25000);
+
+    // 1. Capture microphone stream for MiniMax STT via MediaRecorder & start acoustic VAD
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
@@ -451,6 +499,49 @@ export default function ReadingPracticeArena({
       };
       mediaRecorderRef.current = mr;
       mr.start(100);
+
+      // ⏱️ Acoustic Voice Activity Detection (VAD) via AudioContext AnalyserNode
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const actx = new AudioCtx();
+          audioCtxRef.current = actx;
+          const source = actx.createMediaStreamSource(stream);
+          const analyser = actx.createAnalyser();
+          analyser.fftSize = 256;
+          source.connect(analyser);
+
+          const freqData = new Uint8Array(analyser.frequencyBinCount);
+
+          vadIntervalRef.current = setInterval(() => {
+            if (!analyser || isEvaluatingRef.current) return;
+            analyser.getByteFrequencyData(freqData);
+            let sum = 0;
+            for (let i = 0; i < freqData.length; i++) {
+              sum += freqData[i];
+            }
+            const avgVolume = sum / freqData.length;
+
+            // Volume threshold: background room noise is usually 0-5. Spoken words are > 8.5.
+            if (avgVolume > 8.5) {
+              hasSpokenRef.current = true;
+              if (silenceTimerRef.current) {
+                clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = null;
+              }
+            } else if (hasSpokenRef.current) {
+              // Student was speaking, now paused/silent for > 1.5s
+              if (!silenceTimerRef.current) {
+                silenceTimerRef.current = setTimeout(() => {
+                  stopChunkRecognition(chunk);
+                }, 1500);
+              }
+            }
+          }, 80);
+        }
+      } catch (vadErr) {
+        console.warn('Acoustic VAD initialization skipped:', vadErr);
+      }
     } catch (err) {
       console.warn('MediaRecorder getUserMedia error:', err);
     }
@@ -472,6 +563,17 @@ export default function ReadingPracticeArena({
         const cleaned = fullTranscript.trim();
         transcriptRef.current = cleaned;
         setLiveTranscript(cleaned);
+
+        if (cleaned) {
+          hasSpokenRef.current = true;
+          // Reset 1.5s silence countdown whenever new words are recognized
+          if (silenceTimerRef.current) {
+            clearTimeout(silenceTimerRef.current);
+          }
+          silenceTimerRef.current = setTimeout(() => {
+            stopChunkRecognition(chunk);
+          }, 1500);
+        }
       };
 
       rec.onerror = (e: any) => {
@@ -492,6 +594,7 @@ export default function ReadingPracticeArena({
   };
 
   const stopChunkRecognition = (chunk: ReadingChunk) => {
+    clearSilenceTimers();
     setRecordingChunkId(null);
     try { sfx.playMicStop(); } catch (_) {}
 
@@ -512,7 +615,7 @@ export default function ReadingPracticeArena({
         }
         evaluateChunkAttempt(chunk, transcriptRef.current.trim() || liveTranscript.trim(), audioBlob);
       };
-      mr.stop();
+      try { mr.stop(); } catch (_) {}
     } else {
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
@@ -1063,7 +1166,7 @@ export default function ReadingPracticeArena({
                           {isEvaluatingThis
                             ? 'Calificando...'
                             : isRecordingThis
-                            ? 'Detener y Calificar'
+                            ? 'Detener (o auto al pausar)'
                             : evaluation
                             ? 'Reintentar Lectura 🔄'
                             : 'Leer en Voz Alta 🎤'}
@@ -1083,7 +1186,7 @@ export default function ReadingPracticeArena({
                   </div>
 
                   <span className="text-[11px] text-zinc-400 italic hidden sm:inline">
-                    {isPassed ? '✅ Parte completada satisfactoriamente' : 'Se requiere al menos 80% de precisión'}
+                    {isPassed ? '✅ Parte completada satisfactoriamente' : isRecordingThis ? '⏱️ Se califica automáticamente al pausar por 1.5s' : 'Se requiere al menos 80% de precisión'}
                   </span>
                 </div>
 
@@ -1096,9 +1199,14 @@ export default function ReadingPracticeArena({
                   >
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <span className="text-rose-400 font-bold uppercase tracking-wider block text-[9px]">
-                        Escuchando... Lee la Parte {chunk.part_number || pIdx + 1} en inglés:
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-rose-400 font-bold uppercase tracking-wider block text-[9px]">
+                          Escuchando... Lee la Parte {chunk.part_number || pIdx + 1} en inglés:
+                        </span>
+                        <span className="text-[9px] text-rose-300 font-medium bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-400/30">
+                          Auto-califica tras 1.5s de silencio
+                        </span>
+                      </div>
                       <p className="font-mono text-white text-xs truncate mt-0.5">
                         {liveTranscript || 'Habla con naturalidad cerca del micrófono...'}
                       </p>

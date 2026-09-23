@@ -95,6 +95,12 @@ export const api = {
   register: (data: { name: string; email: string; password: string; native_language: string }) =>
     fetchWithAuth('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
 
+  forgotPassword: (email: string) =>
+    fetchWithAuth('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+
+  resetPassword: (data: { token: string; new_password: string }) =>
+    fetchWithAuth('/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
+
   getMe: () => fetchWithAuth('/auth/me'),
 
   // ─── Diagnosis ───────────────────────────────────

@@ -1,14 +1,34 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from auth.jwt import get_password_hash, verify_password, create_access_token
+from auth.jwt import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    create_password_reset_token,
+    verify_password_reset_token,
+)
 from auth.dependencies import get_current_user
 from database import get_db
 from models.user import User, StudentProfile
-from schemas.auth import UserCreate, UserLogin, Token, UserResponse
+from schemas.auth import (
+    UserCreate,
+    UserLogin,
+    Token,
+    UserResponse,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    MessageResponse,
+)
 from core.minimax_agent import TutorAgent
-from services.email_service import notify_new_registration, notify_user_login, send_registered_users_report
+from services.email_service import (
+    notify_new_registration,
+    notify_user_login,
+    send_registered_users_report,
+    send_password_reset_email,
+)
 import logging
+from urllib.parse import urlparse
 from config import settings
 import uuid
 
@@ -145,6 +165,101 @@ async def get_me(current_user: User = Depends(get_current_user)):
 @router.post("/logout")
 async def logout():
     return {"message": "Successfully logged out"}
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Recibe el email del usuario. Si existe, genera un token firmado (30m)
+    y envía un correo mediante Resend con el enlace para restablecer la contraseña.
+    """
+    clean_email = data.email.lower().strip()
+    result = await db.execute(select(User).where(User.email == clean_email))
+    user = result.scalars().first()
+
+    # Si no existe el usuario, respondemos con éxito para evitar enumeración de correos
+    if not user:
+        return {"message": "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña en los próximos minutos."}
+
+    token = create_password_reset_token(
+        user_id=user.id,
+        email=user.email,
+        current_password_hash=user.password_hash or ""
+    )
+
+    # Detectar el origen dinámicamente (Vercel o localhost)
+    origin = request.headers.get("origin") or request.headers.get("referer")
+    if origin:
+        base_url = origin.split("?")[0].rstrip("/")
+        parsed = urlparse(base_url)
+        if parsed.scheme and parsed.netloc:
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+    else:
+        base_url = settings.FRONTEND_URL.rstrip("/")
+
+    reset_url = f"{base_url}/reset-password?token={token}"
+
+    background_tasks.add_task(
+        send_password_reset_email,
+        to_email=user.email,
+        reset_url=reset_url,
+        user_name=user.name or ""
+    )
+
+    return {"message": "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña en los próximos minutos."}
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+async def reset_password(
+    data: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Verifica el token recibido y actualiza la contraseña del usuario en la base de datos.
+    Invalida el token una vez procesado (single-use).
+    """
+    payload = verify_password_reset_token(data.token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El enlace de recuperación es inválido o ha expirado. Por favor solicita uno nuevo."
+        )
+
+    user_id = payload.get("sub")
+    token_pwh = payload.get("pwh")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuario no encontrado."
+        )
+
+    # Protección de un solo uso: si la contraseña ya cambió, el prefijo del hash no coincidirá
+    current_pwh = (user.password_hash or "")[:12]
+    if token_pwh and token_pwh != current_pwh:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Este enlace ya fue utilizado previamente. Solicita uno nuevo si necesitas restablecer tu contraseña."
+        )
+
+    if len(data.new_password.strip()) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva contraseña debe contener al menos 6 caracteres."
+        )
+
+    user.password_hash = get_password_hash(data.new_password.strip())
+    await db.commit()
+
+    return {"message": "¡Tu contraseña ha sido actualizada con éxito! Ya puedes iniciar sesión."}
+
 
 @router.get("/admin/users-report")
 async def get_and_send_users_report(

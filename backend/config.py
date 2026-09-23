@@ -18,7 +18,11 @@ class Settings(BaseSettings):
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     GROQ_WHISPER_MODEL: str = "whisper-large-v3-turbo"
     
-    # Notificaciones por correo
+    # Notificaciones y correos transaccionales
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "Tutor AI <onboarding@resend.dev>"
+    FRONTEND_URL: str = "http://localhost:3000"
+
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USER: str = ""

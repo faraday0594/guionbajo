@@ -1,11 +1,49 @@
 import asyncio
 import logging
 import smtplib
+import httpx
 from datetime import datetime, timezone
 from email.message import EmailMessage
 from config import settings
 
 logger = logging.getLogger(__name__)
+
+
+async def _send_via_resend(to_email: str, subject: str, html_body: str, text_body: str = "") -> bool:
+    """
+    Envía un correo electrónico de forma asíncrona mediante la API REST de Resend.
+    """
+    if not settings.RESEND_API_KEY:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            payload = {
+                "from": settings.RESEND_FROM_EMAIL or "Tutor AI <onboarding@resend.dev>",
+                "to": [to_email],
+                "subject": subject,
+                "html": html_body,
+            }
+            if text_body:
+                payload["text"] = text_body
+
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload
+            )
+            if resp.status_code in (200, 201):
+                data = resp.json()
+                logger.info(f"[EmailService/Resend] Correo enviado exitosamente a {to_email} | ID: {data.get('id')}")
+                return True
+            else:
+                logger.warning(f"[EmailService/Resend] Error HTTP {resp.status_code}: {resp.text}")
+                return False
+    except Exception as e:
+        logger.error(f"[EmailService/Resend] Excepción al enviar correo a {to_email}: {e}")
+        return False
 
 
 def _send_email_sync(to_email: str, subject: str, html_body: str, text_body: str = "") -> bool:
@@ -51,8 +89,15 @@ def _send_email_sync(to_email: str, subject: str, html_body: str, text_body: str
 
 async def send_email_async(to_email: str, subject: str, html_body: str, text_body: str = "") -> bool:
     """
-    Wrapper asíncrono para enviar correo sin bloquear el event loop de FastAPI.
+    Envía correo usando Resend como proveedor primario.
+    Si Resend no está disponible o falla, recurre a SMTP como respaldo.
     """
+    if settings.RESEND_API_KEY:
+        sent = await _send_via_resend(to_email, subject, html_body, text_body)
+        if sent:
+            return True
+        logger.info("[EmailService] Resend no completó el envío; intentando vía SMTP...")
+
     return await asyncio.to_thread(_send_email_sync, to_email, subject, html_body, text_body)
 
 
@@ -359,6 +404,63 @@ async def send_registered_users_report(users_data: list) -> bool:
 
     return await send_email_async(
         to_email=settings.NOTIFICATION_EMAIL,
+        subject=subject,
+        html_body=html_email,
+        text_body=text_body
+    )
+
+
+async def send_password_reset_email(to_email: str, reset_url: str, user_name: str = "") -> bool:
+    """
+    Despacha un correo electrónico con enlace seguro para restablecer la contraseña.
+    """
+    display_name = user_name if user_name else "Estudiante"
+    subject = "🔐 Restablece tu contraseña - Tutor AI"
+
+    content_html = f"""
+        <p style="color: #f4f4f5; font-size: 16px; margin: 0 0 16px 0;">
+            Hola <strong>{display_name}</strong>,
+        </p>
+        <p style="color: #d4d4d8; font-size: 14px; line-height: 1.6; margin: 0 0 24px 0;">
+            Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>Tutor AI</strong>.
+            Haz clic en el siguiente botón para definir una nueva contraseña:
+        </p>
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="{reset_url}" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #00d4ff 100%); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 212, 255, 0.35);">
+                Restablecer mi Contraseña
+            </a>
+        </div>
+        <div style="background-color: #09090b; border: 1px solid #27272a; border-radius: 12px; padding: 16px; margin: 24px 0;">
+            <p style="color: #a1a1aa; font-size: 12px; line-height: 1.5; margin: 0 0 8px 0;">
+                ⚠️ <strong>Nota de seguridad:</strong> Este enlace expirará automáticamente en <strong>30 minutos</strong> y solo puede ser utilizado una vez.
+            </p>
+            <p style="color: #71717a; font-size: 12px; line-height: 1.5; margin: 0;">
+                Si tú no solicitaste este cambio, puedes ignorar este correo con tranquilidad. Tu contraseña actual no se modificará.
+            </p>
+        </div>
+        <p style="color: #71717a; font-size: 11px; margin-top: 24px;">
+            Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:<br>
+            <a href="{reset_url}" style="color: #38bdf8; word-break: break-all;">{reset_url}</a>
+        </p>
+    """
+
+    text_body = (
+        f"Hola {display_name},\n\n"
+        f"Recibimos una solicitud para restablecer tu contraseña en Tutor AI.\n"
+        f"Para continuar, abre el siguiente enlace en tu navegador (válido por 30 minutos):\n\n"
+        f"{reset_url}\n\n"
+        f"Si no solicitaste este cambio, puedes ignorar este mensaje.\n"
+    )
+
+    html_email = _render_base_email_template(
+        title="Restablecimiento de Contraseña",
+        badge_text="Seguridad",
+        badge_color="#38bdf8",
+        content_html=content_html
+    )
+
+    return await send_email_async(
+        to_email=to_email,
         subject=subject,
         html_body=html_email,
         text_body=text_body

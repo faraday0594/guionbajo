@@ -322,10 +322,10 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura:
     }}
   ]
 }}
-\"\"\"
+"""
 
     if has_rich_sample:
-        user_prompt_content = f\"\"\"AQUÍ TIENES EL GUION Y DIÁLOGOS REALES DE ESTE CAPÍTULO DE '{req.show_title}' ({req.episode_title}):
+        user_prompt_content = f"""AQUÍ TIENES EL GUION Y DIÁLOGOS REALES DE ESTE CAPÍTULO DE '{req.show_title}' ({req.episode_title}):
 ======================================================================
 {sample}
 ======================================================================
@@ -333,7 +333,7 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura:
 INSTRUCCIONES DE EXTRACCIÓN OBLIGATORIAS:
 1. Extrae entre 10 y 15 phrasal verbs, idioms y vocabulario auténtico que aparezcan REALMENTE en los diálogos anteriores.
 2. Descarta cualquier muletilla o adverbio trivial como 'not necessarily', 'of course', 'really', 'maybe'. Busca términos con verdadero valor pedagógico (phrasal verbs y modismos ricos).
-3. En la sección gramatical, las oraciones en 'dialogue_sentence' DEBEN ser citas textuales exactas dichas por los personajes en los diálogos anteriores.\"\"\"
+3. En la sección gramatical, las oraciones en 'dialogue_sentence' DEBEN ser citas textuales exactas dichas por los personajes en los diálogos anteriores."""
     else:
         user_prompt_content = f"El estudiante {current_user.name} está preparándose para ver el capítulo de la serie '{req.show_title}' ({req.episode_title}). Genera la Masterclass pre-watch completa con 10 a 15 phrasal verbs, idioms y vocabulario semi-avanzado característico de esta serie y su trama (sin anclarte a frases triviales)."
 

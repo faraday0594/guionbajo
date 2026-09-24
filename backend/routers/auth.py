@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 from auth.jwt import (
     get_password_hash,
     verify_password,
@@ -179,12 +180,15 @@ async def forgot_password(
     y envía un correo mediante Resend con el enlace para restablecer la contraseña.
     """
     clean_email = data.email.lower().strip()
-    result = await db.execute(select(User).where(User.email == clean_email))
+    result = await db.execute(select(User).where(func.lower(User.email) == clean_email))
     user = result.scalars().first()
 
-    # Si no existe el usuario, respondemos con éxito para evitar enumeración de correos
     if not user:
-        return {"message": "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña en los próximos minutos."}
+        logger.warning(f"⚠️ [PASSWORD RESET] No existe ninguna cuenta registrada con el correo: '{clean_email}'")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No encontramos ninguna cuenta registrada con este correo electrónico. Por favor verifica que esté bien escrito o regístrate."
+        )
 
     token = create_password_reset_token(
         user_id=user.id,
@@ -205,15 +209,23 @@ async def forgot_password(
     reset_url = f"{base_url}/reset-password?token={token}"
 
     logger.info(f"🔑 [PASSWORD RESET] Solicitud para {user.email} -> Enlace: {reset_url}")
+    print(f"🔑 [PASSWORD RESET] Despachando correo para {user.email}...")
 
-    background_tasks.add_task(
-        send_password_reset_email,
+    sent = await send_password_reset_email(
         to_email=user.email,
         reset_url=reset_url,
         user_name=user.name or ""
     )
 
-    return {"message": "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña en los próximos minutos."}
+    if not sent:
+        logger.error(f"❌ [PASSWORD RESET] Falló el despacho de correo para {user.email}")
+        print(f"❌ [PASSWORD RESET] Falló el despacho de correo para {user.email}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No se pudo enviar el correo de recuperación en este momento. Por favor verifica que las credenciales de correo (SMTP de Gmail o Resend) estén configuradas en el servidor."
+        )
+
+    return {"message": "Hemos enviado el enlace para restablecer tu contraseña a tu correo electrónico."}
 
 
 @router.post("/reset-password", response_model=MessageResponse)

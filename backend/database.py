@@ -8,7 +8,10 @@ logger = logging.getLogger(__name__)
 
 import re
 
-raw_url = settings.DATABASE_URL.strip() if settings.DATABASE_URL else "sqlite+aiosqlite:///./guionbajo.db"
+import os
+
+_default_db = os.path.join(os.path.dirname(os.path.abspath(__file__)), "guionbajo.db")
+raw_url = settings.DATABASE_URL.strip() if settings.DATABASE_URL else f"sqlite+aiosqlite:///{_default_db}"
 
 # Auto-strip accidental square brackets around password (common mistake when copying from Supabase [YOUR-PASSWORD])
 raw_url = re.sub(r':\[(.*?)\]@', r':\1@', raw_url)

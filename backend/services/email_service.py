@@ -47,6 +47,7 @@ async def _send_via_resend(
             if resp.status_code in (200, 201):
                 data = resp.json()
                 logger.info(f"[EmailService/Resend] Correo enviado exitosamente a {to_email} | ID: {data.get('id')}")
+                print(f"✅ [EmailService/Resend] Correo enviado exitosamente a {to_email} | ID: {data.get('id')}")
                 return True
             else:
                 err_text = resp.text
@@ -57,17 +58,19 @@ async def _send_via_resend(
                     pass
 
                 if resp.status_code == 403 and "testing emails" in err_text:
-                    logger.warning(
+                    msg = (
                         f"\n⚠️  [RESEND 403 FORBIDDEN] Resend con 'onboarding@resend.dev' solo permite enviar a tu propio correo ({settings.NOTIFICATION_EMAIL}).\n"
-                        f"    Para enviar a otros destinatarios ({to_email}), puedes:\n"
-                        f"    1) Configurar tu Gmail (SMTP_USER y SMTP_PASSWORD de 16 letras) en backend/.env (¡funciona con cualquier correo y es gratis!).\n"
-                        f"    2) O verificar un dominio web propio en https://resend.com/domains.\n"
+                        f"    Para enviar a otros destinatarios ({to_email}), necesitas configurar tu Gmail SMTP (SMTP_USER y SMTP_PASSWORD) en Render.\n"
                     )
+                    logger.warning(msg)
+                    print(msg)
                 else:
                     logger.warning(f"[EmailService/Resend] Error HTTP {resp.status_code} al enviar a {to_email}: {err_text}")
+                    print(f"⚠️ [EmailService/Resend] Error HTTP {resp.status_code} al enviar a {to_email}: {err_text}")
                 return False
     except Exception as e:
         logger.error(f"[EmailService/Resend] Excepción al enviar correo a {to_email}: {e}")
+        print(f"❌ [EmailService/Resend] Excepción al enviar correo a {to_email}: {e}")
         return False
 
 
@@ -77,10 +80,12 @@ def _send_email_sync(to_email: str, subject: str, html_body: str, text_body: str
     Si las credenciales SMTP no están configuradas en .env, omite el envío de forma segura.
     """
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        logger.info(
-            f"[EmailService] Notificación omitida (credenciales SMTP no configuradas en .env). "
-            f"Destinatario: {to_email} | Asunto: {subject}"
+        msg = (
+            f"⚠️ [EmailService] Envío SMTP omitido: SMTP_USER o SMTP_PASSWORD no están configurados en las variables de entorno. "
+            f"Destinatario: {to_email}"
         )
+        logger.warning(msg)
+        print(msg)
         return False
 
     try:
@@ -106,9 +111,11 @@ def _send_email_sync(to_email: str, subject: str, html_body: str, text_body: str
             server.send_message(msg)
 
         logger.info(f"[EmailService] Correo enviado exitosamente a {to_email} | Asunto: {subject}")
+        print(f"✅ [EmailService/SMTP] Correo enviado exitosamente a {to_email} vía Gmail SMTP!")
         return True
     except Exception as e:
         logger.error(f"[EmailService] Error al enviar correo a {to_email}: {e}", exc_info=True)
+        print(f"❌ [EmailService/SMTP] Error al enviar correo a {to_email}: {e}")
         return False
 
 
@@ -130,19 +137,22 @@ async def send_email_async(
 
     # Si Resend está en dominio de prueba y el destinatario es un alumno diferente, usar directamente Gmail SMTP
     if settings.SMTP_USER and settings.SMTP_PASSWORD and not is_notification_owner and is_resend_test_domain:
-        logger.info(f"[EmailService] Enviando correo a {to_email} vía Gmail SMTP...")
+        print(f"📧 [EmailService] Alumno externo detectado ({to_email}). Enviando vía Gmail SMTP...")
         sent = await asyncio.to_thread(_send_email_sync, to_email, subject, html_body, text_body)
         if sent:
             return True
+        print(f"⚠️ [EmailService] Gmail SMTP falló al enviar a {to_email}. Probando Resend como respaldo...")
 
     # Intentar con Resend
     if settings.RESEND_API_KEY:
+        print(f"📧 [EmailService] Enviando a {to_email} vía Resend API...")
         sent = await _send_via_resend(to_email, subject, html_body, text_body, attachments=attachments)
         if sent:
             return True
-        logger.info("[EmailService] Resend no completó el envío; intentando vía SMTP...")
+        print(f"⚠️ [EmailService] Resend no completó el envío; intentando vía SMTP...")
 
     # Fallback final a SMTP
+    print(f"📧 [EmailService] Intentando envío final a {to_email} vía SMTP...")
     return await asyncio.to_thread(_send_email_sync, to_email, subject, html_body, text_body)
 
 

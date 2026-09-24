@@ -71,10 +71,10 @@
   const capturedSubtitleUrls = new Set();
   let isExtractingSubtitles = false;
 
-  function updateFullScriptBadge(count) {
+  function updateFullScriptBadge() {
     const badge = document.getElementById("gb-header-script-tag");
     if (badge) {
-      badge.innerText = `📜 Guion Completo (${count})`;
+      badge.innerText = `🎬 Diálogos Sincronizados`;
       badge.style.display = "inline-flex";
     }
   }
@@ -868,7 +868,7 @@
           <span class="gb-brand-logo">🎓</span>
           <span class="gb-brand-name">Guionbajo AI</span>
           <span class="gb-student-chip" id="gb-header-student-tag" style="display:none;">Estudiante</span>
-          <span class="gb-script-chip" id="gb-header-script-tag" style="display:none;" title="Guion completo del capítulo cargado">📜 Guion Completo</span>
+          <span class="gb-script-chip" id="gb-header-script-tag" style="display:none;" title="Diálogos del capítulo sincronizados">🎬 Diálogos Sincronizados</span>
           <button class="gb-switch-mode-chip" id="gb-switch-mode-btn" style="display:none;">🔄 Cambiar Modo</button>
         </div>
         <button class="gb-close-btn" id="gb-modal-close" title="Cerrar (Esc)">&times;</button>
@@ -1430,22 +1430,29 @@
     const { showTitle, episodeTitle } = getNetflixShowInfo();
 
     // 1. Select the richest possible subtitles sample:
-    // Priority A: The 100% complete episode transcript intercepted from Netflix CDN (45-min script)
-    // Priority B: Buffered recent dialogue lines from playback (>= 6 lines)
-    // Fallback: Empty string (AI generates using deep series universe knowledge)
     let sampleSubtitles = "";
     let isFullScript = false;
 
     if (fullEpisodeTranscript && fullEpisodeTranscript.length >= 25) {
       isFullScript = true;
-      const total = fullEpisodeTranscript.length;
-      const sampled = [];
-      const step = Math.max(1, Math.floor(total / 120));
-      for (let i = 0; i < total && sampled.length < 120; i += step) {
-        sampled.push(fullEpisodeTranscript[i]);
+      // Filter out purely sound cues like [music], (gasps), ♪...♪ and very short tokens
+      const cleaned = fullEpisodeTranscript.filter((line) => {
+        if (!line || typeof line !== "string") return false;
+        const trimmed = line.trim();
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) return false;
+        if (trimmed.startsWith("(") && trimmed.endsWith(")")) return false;
+        if (trimmed.startsWith("♪") || trimmed.endsWith("♪")) return false;
+        if (trimmed.length < 3) return false;
+        return true;
+      });
+
+      // Assemble contiguous dialogues up to ~32,000 characters for complete authenticity
+      let joined = "";
+      for (const line of cleaned) {
+        if (joined.length + line.length > 32000) break;
+        joined += line + "\n";
       }
-      sampleSubtitles = sampled.join("\n");
-      console.log(`[Guionbajo AI] 🎬 Generando Masterclass usando el guion completo de '${showTitle}' (${total} diálogos interceptados, muestra de ${sampled.length} líneas).`);
+      sampleSubtitles = joined.trim();
     } else if (subtitleHistory.length >= 6) {
       sampleSubtitles = subtitleHistory.join("\n");
     }
@@ -1453,11 +1460,7 @@
     resultsContainer.innerHTML = `
       <div class="gb-loading-state" style="margin-top:14px;">
         <div class="gb-spinner"></div>
-        <span>${
-          isFullScript
-            ? `Analizando el <b>guion completo de ${escapeHtml(showTitle)}</b> (${fullEpisodeTranscript.length} diálogos del capítulo)... Extrayendo las 10-15 expresiones y tiempos verbales reales.`
-            : `Generando Clase Previa para <b>${escapeHtml(showTitle)}</b> con 10-15 expresiones y análisis de tiempos verbales...`
-        }</span>
+        <span>Analizando los diálogos de <b>${escapeHtml(showTitle)}</b>... Seleccionando las expresiones y tiempos verbales clave de este capítulo.</span>
       </div>
     `;
 
@@ -1490,7 +1493,7 @@
         resultsContainer.innerHTML = `
           <div class="gb-loading-state" style="margin-top:14px;">
             <div class="gb-spinner"></div>
-            <span>Generando ilustración conceptual inicial para "${escapeHtml(firstVocab.term)}" con MiniMax...</span>
+            <span>Preparando ilustración para "<b>${escapeHtml(firstVocab.term)}</b>"...</span>
           </div>
         `;
         const firstImgUrl = await fetchMiniMaxImage(firstVocab.term, firstVocab.image_prompt, settings);
@@ -1825,7 +1828,7 @@
           <div class="gb-slide-image-box" id="gb-slide-img-box" data-term="${escapeHtml(item.term)}">
             <div class="gb-slide-image-skeleton">
               <div class="gb-spinner"></div>
-              <span>🎨 MiniMax creando ilustración conceptual (sin texto)...</span>
+              <span>🎨 Ilustrando la escena...</span>
             </div>
           </div>
 

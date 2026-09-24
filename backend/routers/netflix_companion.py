@@ -222,7 +222,7 @@ async def generate_netflix_full_class(
     3. Synthesizes an introductory audio lesson.
     4. Saves the generated Masterclass in Guionbajo's database under the student's history.
     """
-    sample = (req.subtitles_sample or "").strip()[:6000]
+    sample = (req.subtitles_sample or "").strip()[:35000]
     has_rich_sample = len(sample.splitlines()) >= 6 and len(sample) >= 120
 
     user_level = req.student_level or "B1"
@@ -234,36 +234,38 @@ Nivel del estudiante: {user_level}.
 Tu misión es crear una CLASE MAESTRA PREVIA (Pre-watch Masterclass) de alto valor pedagógico para preparar al estudiante ANTES o DURANTE el visionado de este capítulo.
 
 REGLAS CRÍTICAS DE SELECCIÓN Y CONTENIDO:
-1. AUTONOMÍA Y RIQUEZA TEMÁTICA DE LA SERIE:
-   - La clase debe reflejar el vocabulario, modismos y tono dramático o temático de la serie '{req.show_title}'.
-   - PROHIBIDO ANCLARTE A FRASES CASUALES O TRIVIALES: NUNCA elijas muletillas, rellenos conversacionales básicos o adverbios obvios como "not necessarily", "of course", "yes", "no", "really", "maybe", "I think so", "come on", "hello", "thank you", "well".
-   - Si la muestra de diálogos proporcionada es corta o contiene frases triviales sueltas, IGNÓRALAS y recurre a tu profundo conocimiento de la serie '{req.show_title}' (sus tramas de intriga, lealtad, conflicto, estrategia o relaciones según el género) para seleccionar expresiones reales, elegantes y poderosas que un estudiante necesita dominar.
+1. AUTENTICIDAD TOTAL BASADA EN EL GUION REAL DEL CAPÍTULO:
+   - CADA UNA DE LAS 10 A 15 EXPRESIONES, PHRASAL VERBS Y MODISMOS DEBE HABER SIDO DICHA LITERALMENTE POR LOS PERSONAJES EN LOS DIÁLOGOS REALES PROPORCIONADOS DE ESTE EPISODIO.
+   - NUNCA inventes frases o expresiones ajenas al guion. El estudiante está viendo este episodio y debe reconocer las expresiones exactamente cuando los actores las digan en pantalla.
+   - PROHIBIDO ANCLARTE A MULETILLAS O ADVERBIOS TRIVIALES: NUNCA elijas palabras de relleno básico como "not necessarily", "of course", "yes", "no", "really", "maybe", "I think so", "come on", "hello", "thank you", "well". Extrae verdaderos Phrasal Verbs (ej: 'look out for', 'figure out', 'turn down', 'back off', 'run into', 'screw up', 'freak out'), idioms coloquiales y giros lingüísticos auténticos presentes en el texto.
 
 2. SECCIÓN VOCABULARIO (EXACTAMENTE ENTRE 10 Y 15 ELEMENTOS):
    - Selecciona exactamente entre 10 y 15 expresiones que incluyan:
-     * Phrasal Verbs auténticos de nivel B1 a C1.
-     * Idioms y modismos coloquiales de alto impacto.
-     * Vocabulario semi-avanzado, sustantivos clave, adjetivos y adverbios ricos.
+     * Phrasal Verbs auténticos de nivel B1 a C1 dichos en el episodio.
+     * Idioms y modismos coloquiales de alto impacto dichos en el episodio.
+     * Vocabulario semi-avanzado, sustantivos clave, adjetivos y adverbios ricos del texto.
    - Para CADA elemento incluye:
-     * term: La expresión o phrasal verb en inglés.
+     * term: La expresión o phrasal verb en inglés tal como aparece en los diálogos.
      * type: "phrasal_verb" | "idiom" | "noun" | "adjective" | "adverb" | "semi_advanced".
      * meaning_es: Significado preciso en español.
-     * scene_context: Cómo y en qué contexto dramático de la serie se utiliza.
+     * scene_context: Cómo y en qué contexto dramático o escena del capítulo se utiliza.
      * tutor_speech_text: Explicación hablada entusiasta del tutor en español (2 a 3 oraciones, entre 35 y 55 palabras), explicando la expresión, su matiz y cómo usarla en la vida real.
      * image_prompt: Prompt en inglés para generar una ilustración 2D ÚNICA Y DISTINTA PARA CADA EXPRESIÓN.
        REGLA OBLIGATORIA DE IMAGEN:
        - Para CADA expresión debes crear un prompt visual totalmente diferente que describa una escena concreta de la acción o situación (ej: para 'turn your back' describe a un personaje alejándose de espaldas de una asamblea en la penumbra; para 'have someone's word' describe a dos personas estrechándose la mano con lealtad; para 'give up' describe a alguien exhausto a punto de abandonar).
        - EXCEPCIÓN CUANDO LA EXPRESIÓN ES DEMASIADO ABSTRACTA O COMPLEJA: Si consideras que la expresión es demasiado abstracta o difícil de representar visualmente en una escena física (por ejemplo conectores, adverbios o modismos metafóricos oscuros), el prompt DEBE describir a un estudiante estudiando inglés con concentración y entusiasmo en su escritorio moderno con audífonos, laptop y libreta ('A focused student happily studying English with headphones, notebook and laptop at a cozy study desk').
        - EN TODOS LOS CASOS: Completamente sin texto, sin letras, sin palabras escritas, sin letreros (completely textless, zero text, clean flat 2D vector educational illustration).
-     * simulated_events: EXACTAMENTE 2 eventos/situaciones donde se use la expresión (Evento 1: en la serie/drama; Evento 2: en la vida real/trabajo/amistad), cada uno con su oración en inglés y traducción al español.
+     * simulated_events: EXACTAMENTE 2 eventos/situaciones donde se use la expresión:
+       - Evento 1: Cita la frase real exacta y escena concreta del capítulo donde se dijo la expresión.
+       - Evento 2: Un ejemplo práctico en la vida cotidiana/trabajo/estudio con su oración en inglés y traducción al español.
 
 3. SECCIÓN GRAMÁTICA Y TIEMPOS VERBALES EN DIÁLOGO (3 A 4 ORACIONES):
-   - Selecciona 3 o 4 oraciones auténticas características de los personajes de '{req.show_title}' que utilicen tiempos verbales específicos (Future Simple para promesas/decisiones espontáneas, Present Perfect para experiencias/reproches, Past Continuous para acciones interrumpidas, First/Second Conditional, Modal Verbs de deducción o certeza).
+   - CITA TEXTUAL EXACTA: Selecciona 3 o 4 oraciones auténticas dichas textualmente por los personajes en estos diálogos que utilicen tiempos verbales específicos (Future Simple para promesas/decisiones, Present Perfect, Past Continuous para acciones interrumpidas, Condicionales, Verbos Modales).
    - Para cada oración explica con rigor pedagógico:
-     * dialogue_sentence: La oración en inglés.
+     * dialogue_sentence: La oración en inglés (copiada exactamente de los diálogos).
      * verb_tense: Nombre del tiempo verbal.
      * formula: Estructura gramatical paso a paso.
-     * why_this_tense: Por qué el hablante usó este tiempo verbal específico y qué intención comunicativa transmite.
+     * why_this_tense: Por qué el personaje usó este tiempo verbal específico aquí y qué intención comunicativa transmite.
      * contrast_explanation: Qué matiz cambiaría si usara otro tiempo verbal.
      * tutor_speech_text: Explicación hablada amigable en español (2 oraciones) explicando el tiempo verbal.
      * quiz: Mini-quiz interactivo con question, options (3 opciones), correct_index y explanation.
@@ -289,27 +291,27 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura:
       "image_prompt": "Prompt visual en inglés ÚNICO para esta expresión específica (o de estudiante estudiando si es abstracta), clean flat 2D vector educational illustration, completely textless scene, zero text, no words, no letters",
       "simulated_events": [
         {{
-          "event_name": "Evento 1: En la serie / Alianza",
-          "sentence_en": "Oración en inglés usando la expresión",
+          "event_name": "Evento 1: En la serie (Cita real)",
+          "sentence_en": "Oración real dicha en el capítulo",
           "sentence_es": "Traducción al español",
-          "situation_note": "Breve nota de la situación"
+          "situation_note": "Momento de la escena"
         }},
         {{
           "event_name": "Evento 2: En la vida cotidiana / Trabajo",
           "sentence_en": "Segunda oración cotidiana en inglés",
           "sentence_es": "Traducción al español",
-          "situation_note": "Breve nota de la situación cotidiana"
+          "situation_note": "Situación cotidiana"
         }}
       ]
     }}
   ],
   "grammar_verb_tenses": [
     {{
-      "dialogue_sentence": "Oración dicha en la serie (ej: And I have Ragnar's word that we will all be equal)",
-      "verb_tense": "Future Simple (will + base form)",
-      "formula": "Subject + will + base verb + complement",
+      "dialogue_sentence": "Oración textual dicha en el capítulo (ej: She said she was trying to help us)",
+      "verb_tense": "Past Continuous (was/were + verb-ing)",
+      "formula": "Subject + was/were + verb-ing + complement",
       "why_this_tense": "Explicación de por qué el personaje usó este tiempo verbal específico aquí",
-      "contrast_explanation": "Qué significaría si hubiera usado 'going to' o presente continuo",
+      "contrast_explanation": "Qué significaría si hubiera usado past simple",
       "tutor_speech_text": "Breve explicación hablada en español por el tutor de este tiempo verbal",
       "quiz": {{
         "question": "Pregunta de aplicación práctica",
@@ -320,10 +322,18 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura:
     }}
   ]
 }}
-"""
+\"\"\"
 
     if has_rich_sample:
-        user_prompt_content = f"El estudiante está viendo '{req.show_title}' ({req.episode_title}). Extrae y complementa 10 a 15 phrasal verbs, idioms y vocabulario semi-avanzado relevante a partir de estos diálogos (descarta cualquier muletilla o adverbio trivial como 'not necessarily'):\n{sample}"
+        user_prompt_content = f\"\"\"AQUÍ TIENES EL GUION Y DIÁLOGOS REALES DE ESTE CAPÍTULO DE '{req.show_title}' ({req.episode_title}):
+======================================================================
+{sample}
+======================================================================
+
+INSTRUCCIONES DE EXTRACCIÓN OBLIGATORIAS:
+1. Extrae entre 10 y 15 phrasal verbs, idioms y vocabulario auténtico que aparezcan REALMENTE en los diálogos anteriores.
+2. Descarta cualquier muletilla o adverbio trivial como 'not necessarily', 'of course', 'really', 'maybe'. Busca términos con verdadero valor pedagógico (phrasal verbs y modismos ricos).
+3. En la sección gramatical, las oraciones en 'dialogue_sentence' DEBEN ser citas textuales exactas dichas por los personajes en los diálogos anteriores.\"\"\"
     else:
         user_prompt_content = f"El estudiante {current_user.name} está preparándose para ver el capítulo de la serie '{req.show_title}' ({req.episode_title}). Genera la Masterclass pre-watch completa con 10 a 15 phrasal verbs, idioms y vocabulario semi-avanzado característico de esta serie y su trama (sin anclarte a frases triviales)."
 

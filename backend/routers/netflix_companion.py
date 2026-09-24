@@ -249,7 +249,7 @@ REGLAS CRÍTICAS DE SELECCIÓN Y CONTENIDO:
      * type: "phrasal_verb" | "idiom" | "noun" | "adjective" | "adverb" | "semi_advanced".
      * meaning_es: Significado preciso en español.
      * scene_context: Cómo y en qué contexto dramático o escena del capítulo se utiliza.
-     * tutor_speech_text: Explicación hablada entusiasta del tutor en español (2 a 3 oraciones, entre 35 y 55 palabras), explicando la expresión, su matiz y cómo usarla en la vida real.
+     * tutor_speech_text: Explicacion hablada entusiasta del tutor en espanol (2 a 3 oraciones, entre 35 y 55 palabras), explicando la expresion, su matiz y como usarla en la vida real. REGLA OBLIGATORIA: PROHIBIDO decir el nombre del estudiante o decir saludos (NUNCA digas 'Hola {current_user.name}' ni menciones su nombre). El saludo ya se hizo en la introduccion. Ve directo a explicar la expresion.
      * image_prompt: Prompt en inglés para generar una ilustración 2D ÚNICA Y DISTINTA PARA CADA EXPRESIÓN.
        REGLA OBLIGATORIA DE IMAGEN:
        - Para CADA expresión debes crear un prompt visual totalmente diferente que describa una escena concreta de la acción o situación (ej: para 'turn your back' describe a un personaje alejándose de espaldas de una asamblea en la penumbra; para 'have someone's word' describe a dos personas estrechándose la mano con lealtad; para 'give up' describe a alguien exhausto a punto de abandonar).
@@ -272,6 +272,10 @@ REGLAS CRÍTICAS DE SELECCIÓN Y CONTENIDO:
 
 4. INTRODUCCIÓN HABLADA DEL TUTOR:
    - Redacta una introducción enérgica y motivadora de 3 oraciones en español donde el tutor saluda al alumno por su nombre ({current_user.name}), le presenta la Masterclass de '{req.show_title}' y lo anima a dominar estas expresiones antes de seguir viendo el show.
+
+5. REGLA ESTRICTA DE MENCIONES DEL NOMBRE:
+   - El nombre '{current_user.name}' SOLO se menciona UNA VEZ en toda la clase: en 'tutor_intro_speech'.
+   - En las 10 a 15 slides de vocabulario y en las slides de gramatica, esta TOTALMENTE PROHIBIDO saludar de nuevo o decir el nombre del estudiante. El tutor debe sonar agil, directo y profesional.
 
 Devuelve ÚNICAMENTE un JSON válido con esta estructura:
 {{

@@ -7,8 +7,6 @@
   if (window.__guionbajoInpageLoaded) return;
   window.__guionbajoInpageLoaded = true;
 
-  const MANIFEST_PATTERN = /manifest|licensedManifest/i;
-
   function broadcastTracks(timedTextTracks, movieId = null) {
     if (!timedTextTracks || !Array.isArray(timedTextTracks) || timedTextTracks.length === 0) return;
 
@@ -30,13 +28,15 @@
   JSON.parse = function () {
     const data = origParse.apply(this, arguments);
     try {
-      if (
-        data &&
-        data.result &&
-        data.result.timedtexttracks &&
-        Array.isArray(data.result.timedtexttracks)
-      ) {
-        broadcastTracks(data.result.timedtexttracks, data.result.movieId);
+      if (data && typeof data === "object") {
+        const tracks =
+          data.result?.timedtexttracks ||
+          data.result?.timedTextTracks ||
+          data.timedtexttracks ||
+          data.timedTextTracks;
+        if (tracks && Array.isArray(tracks) && tracks.length > 0) {
+          broadcastTracks(tracks, data.result?.movieId || data.movieId);
+        }
       }
     } catch (_) {}
     return data;
@@ -96,12 +96,12 @@
     }
   });
 
-  // 4. Polling check during initial player load (first 12 seconds)
+  // 4. Polling check during initial player load (first 15 seconds)
   let attempts = 0;
   const pollInterval = setInterval(() => {
     attempts++;
     const found = queryPlayerApi();
-    if (found || attempts > 24) {
+    if (found || attempts > 30) {
       clearInterval(pollInterval);
     }
   }, 500);
@@ -110,4 +110,15 @@
   window.addEventListener("popstate", () => {
     setTimeout(queryPlayerApi, 1000);
   });
+
+  // 6. Check when HTML5 video element is found or starts playing
+  setInterval(() => {
+    const video = document.querySelector("video");
+    if (video && !video.__gb_hooked) {
+      video.__gb_hooked = true;
+      video.addEventListener("play", () => setTimeout(queryPlayerApi, 400));
+      video.addEventListener("loadedmetadata", () => setTimeout(queryPlayerApi, 400));
+      queryPlayerApi();
+    }
+  }, 1000);
 })();

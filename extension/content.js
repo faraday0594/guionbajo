@@ -55,6 +55,17 @@
     });
   }
 
+  // Inject inpage.js into DOM to ensure it runs in the MAIN world across all Chrome versions
+  try {
+    if (!document.getElementById("gb-inpage-script")) {
+      const sc = document.createElement("script");
+      sc.id = "gb-inpage-script";
+      sc.src = chrome.runtime.getURL("inpage.js");
+      sc.onload = () => sc.remove();
+      (document.head || document.documentElement).appendChild(sc);
+    }
+  } catch (_) {}
+
   // ── Full Episode Subtitle Track Interceptor (Captures 100% of the 45-min script) ──
   let fullEpisodeTranscript = []; // Spoken dialogues from the complete episode file
   const capturedSubtitleUrls = new Set();
@@ -165,6 +176,54 @@
     }
   }
 
+  function extractDownloadUrlFromTrack(track) {
+    if (!track) return null;
+    const downloadablesObj =
+      track.ttDownloadables ||
+      track.rawTrack?.ttDownloadables ||
+      track.downloadables ||
+      track.ttDownloadable;
+
+    if (downloadablesObj) {
+      const preferredFormats = [
+        "webvtt-lssdh-ios8",
+        "webvtt",
+        "dfxp-ls-sdh",
+        "simplesdh",
+        "imsc1.1",
+      ];
+      for (const fmt of preferredFormats) {
+        const item = downloadablesObj[fmt];
+        if (item) {
+          if (item.downloadUrls) {
+            const urls = Object.values(item.downloadUrls);
+            if (urls.length > 0 && urls[0]) return urls[0];
+          }
+          if (item.urls && item.urls.length > 0) {
+            const u = item.urls[0].url || item.urls[0];
+            if (u) return u;
+          }
+        }
+      }
+      for (const key of Object.keys(downloadablesObj)) {
+        const item = downloadablesObj[key];
+        if (item?.downloadUrls) {
+          const urls = Object.values(item.downloadUrls);
+          if (urls.length > 0 && urls[0]) return urls[0];
+        }
+      }
+    }
+
+    if (track.urls && track.urls.length > 0) {
+      return track.urls[0].url || track.urls[0];
+    }
+    if (track.downloadUrls) {
+      const urls = Object.values(track.downloadUrls);
+      if (urls.length > 0 && urls[0]) return urls[0];
+    }
+    return null;
+  }
+
   // 1. Process tracks array from Netflix Cadmium Player API or manifest
   function processManifestTracks(tracks) {
     if (!tracks || !Array.isArray(tracks) || tracks.length === 0) return;
@@ -176,57 +235,17 @@
         (t) =>
           (t.language === "en" || t.language?.startsWith("en")) &&
           !t.isForcedNarrative &&
-          !t.isNoneTrack &&
-          t.ttDownloadables
+          !t.isNoneTrack
       ) ||
       tracks.find(
         (t) =>
           (t.language === "en" || t.language?.startsWith("en")) &&
-          !t.isNoneTrack &&
-          t.ttDownloadables
+          !t.isNoneTrack
       ) ||
-      tracks.find((t) => !t.isNoneTrack && t.ttDownloadables);
+      tracks.find((t) => !t.isNoneTrack);
 
-    if (!chosenTrack || !chosenTrack.ttDownloadables) return;
-
-    const preferredFormats = [
-      "webvtt-lssdh-ios8",
-      "webvtt",
-      "dfxp-ls-sdh",
-      "simplesdh",
-      "imsc1.1",
-    ];
-
-    let downloadUrl = null;
-    for (const fmt of preferredFormats) {
-      const downloadable = chosenTrack.ttDownloadables[fmt];
-      if (downloadable) {
-        if (downloadable.downloadUrls) {
-          const urls = Object.values(downloadable.downloadUrls);
-          if (urls.length > 0 && urls[0]) {
-            downloadUrl = urls[0];
-            break;
-          }
-        } else if (downloadable.urls && downloadable.urls.length > 0) {
-          downloadUrl = downloadable.urls[0].url || downloadable.urls[0];
-          break;
-        }
-      }
-    }
-
-    if (!downloadUrl) {
-      // Fallback: search all formats in ttDownloadables
-      for (const fmt of Object.keys(chosenTrack.ttDownloadables)) {
-        const d = chosenTrack.ttDownloadables[fmt];
-        if (d && d.downloadUrls) {
-          const urls = Object.values(d.downloadUrls);
-          if (urls.length > 0 && urls[0]) {
-            downloadUrl = urls[0];
-            break;
-          }
-        }
-      }
-    }
+    if (!chosenTrack) return;
+    const downloadUrl = extractDownloadUrlFromTrack(chosenTrack);
 
     if (downloadUrl) {
       console.log(

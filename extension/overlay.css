@@ -1589,36 +1589,24 @@
   box-shadow: 0 0 4px rgba(255,255,200,0.9);
 }
 
-/* Modo Habla Activa */
+/* Modo Habla Activa (60 FPS JS Real-time Engine) */
 .gb-avatar-wrapper.gb-speaking .gb-mouth-frame {
-  height: 14px;
+  transition: none !important;
   border-color: #00D4FF;
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
 }
 
 .gb-avatar-wrapper.gb-speaking .gb-terminal-cursor {
-  display: none;
+  display: none !important;
 }
 
 .gb-avatar-wrapper.gb-speaking .gb-teeth-grille {
-  display: flex;
+  display: flex !important;
 }
 
 .gb-avatar-wrapper.gb-speaking .gb-tooth-bar {
-  animation: gb-tooth-dance 0.3s ease-in-out infinite alternate;
-}
-
-.gb-tooth-bar:nth-child(1) { height: 5px; animation-delay: 0.05s; }
-.gb-tooth-bar:nth-child(2) { height: 9px; animation-delay: 0.15s; }
-.gb-tooth-bar:nth-child(3) { height: 11px; animation-delay: 0.25s; }
-.gb-tooth-bar:nth-child(4) { height: 12px; animation-delay: 0.10s; }
-.gb-tooth-bar:nth-child(5) { height: 10px; animation-delay: 0.20s; }
-.gb-tooth-bar:nth-child(6) { height: 8px; animation-delay: 0.30s; }
-.gb-tooth-bar:nth-child(7) { height: 5px; animation-delay: 0.05s; }
-
-@keyframes gb-tooth-dance {
-  0% { transform: scaleY(0.4); opacity: 0.6; }
-  100% { transform: scaleY(1.2); opacity: 1; }
+  transition: none !important;
+  animation: none !important; /* Articulated cleanly by 60 FPS syllabic rAF engine */
 }
 
 /* ── Torso / Pantalla CRT ── */

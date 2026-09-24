@@ -60,17 +60,17 @@
     return document.querySelector("video");
   }
 
-  // 2. Strict Anti-Duplication Text Cleaner
+  // 2. Subtitle text cleaner (removes shadow duplication without cutting lines)
   function cleanSubtitleDeduplication(rawText) {
     if (!rawText) return "";
     let clean = rawText.replace(/\s+/g, " ").trim();
 
-    // Catch full-sentence duplication (e.g. "Phrase A Phrase A")
+    // Catch full-sentence duplication where the entire block is repeated (e.g. "Phrase A Phrase A")
     const len = clean.length;
     const half = Math.floor(len / 2);
-    for (let offset = -4; offset <= 4; offset++) {
+    for (let offset = -3; offset <= 3; offset++) {
       const splitIdx = half + offset;
-      if (splitIdx > 3 && splitIdx < len) {
+      if (splitIdx > 6 && splitIdx < len) {
         const left = clean.substring(0, splitIdx).trim();
         const right = clean.substring(splitIdx).trim();
         if (left.toLowerCase() === right.toLowerCase()) {
@@ -79,50 +79,103 @@
       }
     }
 
-    // Catch repeated clauses/consecutive words
-    clean = clean.replace(/\b([a-zA-Z0-9',.\- ]{6,}?)\s+\1\b/gi, "$1");
     return clean.trim();
   }
 
-  // 3. Read live subtitles from Netflix timedtext DOM container
+  // 3. Read live subtitles from Netflix timedtext DOM container (Captures BOTH Line 1 and Line 2 without missing either)
   function readCurrentSubtitle() {
     const container = document.querySelector(".player-timedtext");
     if (!container) return "";
 
-    const rawLines = [];
-    const textContainers = container.querySelectorAll(".player-timedtext-text-container");
+    const collectedLines = [];
+    const textContainers = Array.from(container.querySelectorAll(".player-timedtext-text-container"));
 
     if (textContainers && textContainers.length > 0) {
-      textContainers.forEach((tc) => {
-        // Select ONLY leaf spans (spans that do NOT contain other spans to prevent shadow/parent duplication)
-        const leafSpans = Array.from(tc.querySelectorAll("span")).filter(
-          (s) => s.children.length === 0 && s.textContent.trim().length > 0
-        );
-        const lineText = leafSpans.map((s) => s.textContent.trim()).join(" ");
-        if (lineText) {
-          rawLines.push(lineText);
-        }
+      // Sort containers by vertical position so Line 1 (higher up on screen) ALWAYS comes before Line 2
+      textContainers.sort((a, b) => {
+        const topA = parseFloat(a.style.top) || a.getBoundingClientRect().top || 0;
+        const topB = parseFloat(b.style.top) || b.getBoundingClientRect().top || 0;
+        return topA - topB;
       });
-    } else {
-      const leafSpans = Array.from(container.querySelectorAll("span")).filter(
-        (s) => s.children.length === 0 && s.textContent.trim().length > 0
-      );
-      leafSpans.forEach((s) => {
-        const t = s.textContent.trim();
-        if (t) rawLines.push(t);
+
+      textContainers.forEach((tc) => {
+        // Collect text using innerText or fallback to textContent
+        let txt = tc.innerText;
+        if (!txt || !txt.trim()) {
+          txt = tc.textContent;
+        }
+        if (txt) {
+          const lines = txt.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+          lines.forEach((l) => {
+            if (l && !collectedLines.includes(l)) {
+              collectedLines.push(l);
+            }
+          });
+        }
       });
     }
 
-    const uniqueLines = [];
-    for (const l of rawLines) {
-      const cleaned = cleanSubtitleDeduplication(l);
-      if (cleaned && !uniqueLines.includes(cleaned)) {
-        uniqueLines.push(cleaned);
+    // Fallback if no .player-timedtext-text-container was found
+    if (collectedLines.length === 0) {
+      let fullText = container.innerText;
+      if (!fullText || !fullText.trim()) {
+        fullText = container.textContent || "";
+      }
+      if (fullText) {
+        fullText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).forEach((l) => {
+          if (l && !collectedLines.includes(l)) {
+            collectedLines.push(l);
+          }
+        });
       }
     }
 
-    const joined = uniqueLines.join(" ").replace(/\s+/g, " ").trim();
-    return cleanSubtitleDeduplication(joined);
+    if (collectedLines.length === 0) return "";
+
+    // Join all collected lines preserving exact order (e.g. Line 1 + Line 2)
+    const rawJoined = collectedLines.join(" ").replace(/\s+/g, " ").trim();
+    return cleanSubtitleDeduplication(rawJoined);
+  }
+
+  // Helper to extract clean Netflix show title and episode title
+  function getNetflixShowInfo() {
+    let showTitle = "";
+    let episodeTitle = "";
+
+    // 1. Try Netflix Player DOM metadata
+    const titleContainer =
+      document.querySelector('[data-uia="video-title"]') ||
+      document.querySelector(".video-title");
+
+    if (titleContainer) {
+      const h4 =
+        titleContainer.querySelector("h4") ||
+        titleContainer.querySelector(".ellipsize-text") ||
+        titleContainer.firstElementChild;
+      const span = titleContainer.querySelector("span");
+      if (h4) showTitle = (h4.innerText || h4.textContent || "").trim();
+      if (span) episodeTitle = (span.innerText || span.textContent || "").trim();
+    }
+
+    // 2. Fallback to document.title
+    if (!showTitle) {
+      let rawTitle = document.title || "";
+      rawTitle = rawTitle.replace(/^(Watch|Ver)\s+/i, "");
+      rawTitle = rawTitle.replace(/\s*[-|]\s*Netflix.*$/i, "").trim();
+
+      if (rawTitle) {
+        const parts = rawTitle.split(/:\s*|\s*-\s*/);
+        showTitle = parts[0] ? parts[0].trim() : rawTitle;
+        if (parts.length > 1) {
+          episodeTitle = parts.slice(1).join(" - ").trim();
+        }
+      }
+    }
+
+    return {
+      showTitle: showTitle || "Netflix Series",
+      episodeTitle: episodeTitle || "Capítulo Actual",
+    };
   }
 
   // 4. Subtitle buffer observer (collects dialogue context for Masterclass)
@@ -226,14 +279,120 @@
     `;
   }
 
-  function setAvatarSpeakingState(avatarId, isSpeaking) {
-    const el = document.getElementById(avatarId);
-    if (el) {
-      if (isSpeaking) {
-        el.classList.add("gb-speaking");
-      } else {
-        el.classList.remove("gb-speaking");
+  // ── 60 FPS Real-time Lip-Sync Engine for Guionbajo Avatar (Identical to TutorAvatar.tsx) ──
+  const avatarAnimState = {
+    rafId: null,
+    startTime: 0,
+    activeAvatarId: null,
+  };
+
+  function startAvatarSpeechAnimation(avatarId) {
+    stopAvatarSpeechAnimation();
+    const avatarEl = document.getElementById(avatarId);
+    if (!avatarEl) return;
+
+    avatarAnimState.activeAvatarId = avatarId;
+    avatarAnimState.startTime = performance.now();
+    avatarEl.classList.add("gb-speaking");
+
+    const mouthFrame = avatarEl.querySelector(".gb-mouth-frame");
+    const head = avatarEl.querySelector(".gb-robot-head");
+    const toothBars = Array.from(avatarEl.querySelectorAll(".gb-tooth-bar"));
+    const crtBars = Array.from(avatarEl.querySelectorAll(".gb-crt-bar"));
+    const bulb = avatarEl.querySelector(".gb-vacuum-bulb");
+
+    function frame(time) {
+      if (!avatarAnimState.activeAvatarId) return;
+
+      const elapsed = (time - avatarAnimState.startTime) / 1000;
+      // Multi-harmonic cadence: primary syllable waves matching TutorAvatar.tsx
+      const primarySyllable =
+        Math.abs(Math.sin(elapsed * 12)) * 0.6 +
+        Math.abs(Math.sin(elapsed * 6)) * 0.4;
+      const rawAperture = Math.min(0.85, Math.max(0.08, primarySyllable * 0.72));
+
+      // Dynamic mouth jaw opening: expands and contracts between 7px and 22px
+      const dynamicMouthHeight = Math.round(7 + rawAperture * 15);
+      if (mouthFrame) {
+        mouthFrame.style.height = `${dynamicMouthHeight}px`;
       }
+
+      // Head articulates up and down slightly with speech cadence
+      if (head) {
+        head.style.transform = `translateY(${(-rawAperture * 3.5).toFixed(1)}px)`;
+      }
+
+      // 7 teeth bars dynamic height & lighting
+      if (toothBars && toothBars.length === 7) {
+        const bands = [
+          rawAperture * 0.6,
+          rawAperture * 0.8,
+          rawAperture * 1.0,
+          rawAperture * 1.0,
+          rawAperture * 1.0,
+          rawAperture * 0.8,
+          rawAperture * 0.6,
+        ];
+        toothBars.forEach((bar, idx) => {
+          const energy = bands[idx] || 0;
+          const barH = Math.max(
+            3,
+            Math.round(dynamicMouthHeight * (0.35 + energy * 0.55 + 0.1))
+          );
+          bar.style.height = `${barH}px`;
+          bar.style.opacity = rawAperture > 0.1 ? "1" : "0.3";
+          bar.style.boxShadow =
+            rawAperture > 0.1
+              ? `0 0 ${Math.max(2, Math.round(rawAperture * 8))}px 2px rgba(255,255,200,0.95)`
+              : "none";
+        });
+      }
+
+      // CRT Equalizer bars bouncing dynamically
+      if (crtBars && crtBars.length === 3) {
+        crtBars[0].style.height = `${Math.round(20 + Math.abs(Math.sin(elapsed * 11)) * 70)}%`;
+        crtBars[1].style.height = `${Math.round(35 + Math.abs(Math.cos(elapsed * 14)) * 60)}%`;
+        crtBars[2].style.height = `${Math.round(20 + Math.abs(Math.sin(elapsed * 8.5)) * 75)}%`;
+      }
+
+      // Vacuum bulb sparks with speech intensity
+      if (bulb) {
+        const glow = Math.round(6 + rawAperture * 14);
+        bulb.style.boxShadow = `0 0 ${glow}px ${Math.round(glow / 2.5)}px rgba(0, 212, 255, 0.95)`;
+      }
+
+      avatarAnimState.rafId = requestAnimationFrame(frame);
+    }
+
+    avatarAnimState.rafId = requestAnimationFrame(frame);
+  }
+
+  function stopAvatarSpeechAnimation() {
+    if (avatarAnimState.rafId) {
+      cancelAnimationFrame(avatarAnimState.rafId);
+      avatarAnimState.rafId = null;
+    }
+
+    if (avatarAnimState.activeAvatarId) {
+      const avatarEl = document.getElementById(avatarAnimState.activeAvatarId);
+      if (avatarEl) {
+        avatarEl.classList.remove("gb-speaking");
+        const mouthFrame = avatarEl.querySelector(".gb-mouth-frame");
+        const head = avatarEl.querySelector(".gb-robot-head");
+        const bulb = avatarEl.querySelector(".gb-vacuum-bulb");
+        if (mouthFrame) mouthFrame.style.height = "";
+        if (head) head.style.transform = "";
+        if (bulb) bulb.style.boxShadow = "";
+      }
+      avatarAnimState.activeAvatarId = null;
+    }
+  }
+
+  function setAvatarSpeakingState(avatarId, isSpeaking) {
+    if (isSpeaking) {
+      startAvatarSpeechAnimation(avatarId);
+    } else {
+      stopAvatarSpeechAnimation();
     }
   }
 
@@ -249,7 +408,7 @@
     modal.innerHTML = `
       <div class="gb-modal-header">
         <div class="gb-brand-group">
-          ${buildGuionbajoAvatarHtml("gb-header-avatar", "mini")}
+          <span class="gb-brand-logo">🎓</span>
           <span class="gb-brand-name">Guionbajo AI</span>
           <span class="gb-student-chip" id="gb-header-student-tag" style="display:none;">Estudiante</span>
           <button class="gb-switch-mode-chip" id="gb-switch-mode-btn" style="display:none;">🔄 Cambiar Modo</button>
@@ -671,7 +830,7 @@
           student_question: studentQuestion,
           student_level: settings.studentLevel,
           voice_id: settings.voiceId,
-          show_title: document.title.replace(" - Netflix", "").trim() || "Netflix Series",
+          show_title: getNetflixShowInfo().showTitle,
         }),
       });
 
@@ -807,8 +966,10 @@
     `;
 
     const settings = await getSettings();
-    const showTitle = document.title.replace(" - Netflix", "").trim() || "Netflix Series";
-    const sampleSubtitles = subtitleHistory.join("\n") || currentSubtitle || "Diálogos del capítulo";
+    const { showTitle, episodeTitle } = getNetflixShowInfo();
+    // Do NOT anchor the Masterclass on a casual 1-second subtitle (e.g. "not necessarily").
+    // Only pass subtitle sample if we have accumulated a genuine dialogue buffer (>= 6 lines).
+    const sampleSubtitles = subtitleHistory.length >= 6 ? subtitleHistory.join("\n") : "";
 
     try {
       const resp = await fetch(`${settings.apiUrl}/netflix/generate-full-class`, {
@@ -819,7 +980,7 @@
         },
         body: JSON.stringify({
           show_title: showTitle,
-          episode_title: "Episodio Actual",
+          episode_title: episodeTitle,
           subtitles_sample: sampleSubtitles,
           student_level: settings.studentLevel,
           voice_id: settings.voiceId,

@@ -223,29 +223,33 @@ async def generate_netflix_full_class(
     4. Saves the generated Masterclass in Guionbajo's database under the student's history.
     """
     sample = (req.subtitles_sample or "").strip()[:6000]
-    if not sample:
-        # Fallback sample if user hasn't collected enough lines yet
-        sample = f"Diálogos del capítulo de {req.show_title} ({req.episode_title})."
+    has_rich_sample = len(sample.splitlines()) >= 6 and len(sample) >= 120
 
     user_level = req.student_level or "B1"
 
     system_prompt = f"""Eres el Diseñador Pedagógico Master de Guionbajo.
-El estudiante {current_user.name} está estudiando inglés a través de su serie de Netflix: '{req.show_title}' ({req.episode_title}).
+El estudiante {current_user.name} va a ver o está estudiando con el capítulo de la serie de Netflix: '{req.show_title}' ({req.episode_title}).
 Nivel del estudiante: {user_level}.
 
-A partir de los diálogos y el contexto de este episodio, genera una CLASE MAESTRA COMPLETA y de alta calidad pedagógica.
+Tu misión es crear una CLASE MAESTRA PREVIA (Pre-watch Masterclass) de alto valor pedagógico para preparar al estudiante ANTES o DURANTE el visionado de este capítulo.
 
-REQUERIMIENTOS ESTRICTOS:
-1. SECCIÓN VOCABULARIO (10 A 15 ELEMENTOS):
+REGLAS CRÍTICAS DE SELECCIÓN Y CONTENIDO:
+1. AUTONOMÍA Y RIQUEZA TEMÁTICA DE LA SERIE:
+   - La clase debe reflejar el vocabulario, modismos y tono dramático o temático de la serie '{req.show_title}'.
+   - PROHIBIDO ANCLARTE A FRASES CASUALES O TRIVIALES: NUNCA elijas muletillas, rellenos conversacionales básicos o adverbios obvios como "not necessarily", "of course", "yes", "no", "really", "maybe", "I think so", "come on", "hello", "thank you", "well".
+   - Si la muestra de diálogos proporcionada es corta o contiene frases triviales sueltas, IGNÓRALAS y recurre a tu profundo conocimiento de la serie '{req.show_title}' (sus tramas de intriga, lealtad, conflicto, estrategia o relaciones según el género) para seleccionar expresiones reales, elegantes y poderosas que un estudiante necesita dominar.
+
+2. SECCIÓN VOCABULARIO (EXACTAMENTE ENTRE 10 Y 15 ELEMENTOS):
    - Selecciona exactamente entre 10 y 15 expresiones que incluyan:
-     * Phrasal Verbs reales usados en la serie.
-     * Idioms y modismos coloquiales.
-     * Vocabulario semi-avanzado (B1/B2/C1), sustantivos, adjetivos o adverbios que enriquezcan al alumno.
+     * Phrasal Verbs auténticos de nivel B1 a C1.
+     * Idioms y modismos coloquiales de alto impacto.
+     * Vocabulario semi-avanzado, sustantivos clave, adjetivos y adverbios ricos.
    - Para CADA elemento incluye:
-     * término y tipo gramatical.
-     * significado en español claro y conciso.
-     * contexto de la escena en la serie.
-     * tutor_speech_text: Breve explicación amigable, entusiasta y pedagógica en español (2 a 3 oraciones) hablada por el tutor, explicando qué significa la expresión, cómo la usaron en la serie y cómo aplicarla en la vida diaria.
+     * term: La expresión o phrasal verb en inglés.
+     * type: "phrasal_verb" | "idiom" | "noun" | "adjective" | "adverb" | "semi_advanced".
+     * meaning_es: Significado preciso en español.
+     * scene_context: Cómo y en qué contexto dramático de la serie se utiliza.
+     * tutor_speech_text: Explicación hablada entusiasta del tutor en español (2 a 3 oraciones, entre 35 y 55 palabras), explicando la expresión, su matiz y cómo usarla en la vida real.
      * image_prompt: Prompt en inglés para generar una ilustración 2D ÚNICA Y DISTINTA PARA CADA EXPRESIÓN.
        REGLA OBLIGATORIA DE IMAGEN:
        - Para CADA expresión debes crear un prompt visual totalmente diferente que describa una escena concreta de la acción o situación (ej: para 'turn your back' describe a un personaje alejándose de espaldas de una asamblea en la penumbra; para 'have someone's word' describe a dos personas estrechándose la mano con lealtad; para 'give up' describe a alguien exhausto a punto de abandonar).
@@ -253,19 +257,19 @@ REQUERIMIENTOS ESTRICTOS:
        - EN TODOS LOS CASOS: Completamente sin texto, sin letras, sin palabras escritas, sin letreros (completely textless, zero text, clean flat 2D vector educational illustration).
      * simulated_events: EXACTAMENTE 2 eventos/situaciones donde se use la expresión (Evento 1: en la serie/drama; Evento 2: en la vida real/trabajo/amistad), cada uno con su oración en inglés y traducción al español.
 
-2. SECCIÓN GRAMÁTICA Y TIEMPOS VERBALES EN DIÁLOGO (3 A 4 ORACIONES REALES):
-   - Selecciona o formula 3 o 4 oraciones reales que los personajes dicen en este tipo de show que utilicen tiempos verbales específicos (por ejemplo: Future Simple con will para promesas, Present Perfect para experiencias/reproches, Past Continuous para acciones interrumpidas, First/Second Conditional).
+3. SECCIÓN GRAMÁTICA Y TIEMPOS VERBALES EN DIÁLOGO (3 A 4 ORACIONES):
+   - Selecciona 3 o 4 oraciones auténticas características de los personajes de '{req.show_title}' que utilicen tiempos verbales específicos (Future Simple para promesas/decisiones espontáneas, Present Perfect para experiencias/reproches, Past Continuous para acciones interrumpidas, First/Second Conditional, Modal Verbs de deducción o certeza).
    - Para cada oración explica con rigor pedagógico:
-     * La oración original en inglés.
-     * El tiempo verbal exacto al que pertenece.
-     * La fórmula estructural paso a paso.
-     * ¿POR QUÉ el personaje usó ese tiempo verbal en ese momento exacto? (intención comunicativa: ej. promesa de honor, hecho consumado, hipótesis).
-     * Contraste: ¿Qué cambiaría si usara otro tiempo verbal?
-     * tutor_speech_text: Breve explicación hablada en español (2 oraciones) donde el tutor explica con voz amena la razón del tiempo verbal.
-     * Mini-quiz interactivo para que el alumno aplique la regla.
+     * dialogue_sentence: La oración en inglés.
+     * verb_tense: Nombre del tiempo verbal.
+     * formula: Estructura gramatical paso a paso.
+     * why_this_tense: Por qué el hablante usó este tiempo verbal específico y qué intención comunicativa transmite.
+     * contrast_explanation: Qué matiz cambiaría si usara otro tiempo verbal.
+     * tutor_speech_text: Explicación hablada amigable en español (2 oraciones) explicando el tiempo verbal.
+     * quiz: Mini-quiz interactivo con question, options (3 opciones), correct_index y explanation.
 
-3. INTRODUCCIÓN HABLADA DEL TUTOR:
-   - Redacta una introducción enérgica y amigable de 3 oraciones en español donde el tutor saluda al alumno por su nombre ({current_user.name}), le cuenta qué serie van a analizar hoy y qué aprenderán.
+4. INTRODUCCIÓN HABLADA DEL TUTOR:
+   - Redacta una introducción enérgica y motivadora de 3 oraciones en español donde el tutor saluda al alumno por su nombre ({current_user.name}), le presenta la Masterclass de '{req.show_title}' y lo anima a dominar estas expresiones antes de seguir viendo el show.
 
 Devuelve ÚNICAMENTE un JSON válido con esta estructura:
 {{
@@ -318,13 +322,18 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura:
 }}
 """
 
+    if has_rich_sample:
+        user_prompt_content = f"El estudiante está viendo '{req.show_title}' ({req.episode_title}). Extrae y complementa 10 a 15 phrasal verbs, idioms y vocabulario semi-avanzado relevante a partir de estos diálogos (descarta cualquier muletilla o adverbio trivial como 'not necessarily'):\n{sample}"
+    else:
+        user_prompt_content = f"El estudiante {current_user.name} está preparándose para ver el capítulo de la serie '{req.show_title}' ({req.episode_title}). Genera la Masterclass pre-watch completa con 10 a 15 phrasal verbs, idioms y vocabulario semi-avanzado característico de esta serie y su trama (sin anclarte a frases triviales)."
+
     client = get_ai_client()
     try:
         completion = await client.chat.completions.create(
             model=settings.MINIMAX_LLM_MODEL or "MiniMax-M3",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Genera la clase a partir de estos diálogos de {req.show_title}:\n{sample}"}
+                {"role": "user", "content": user_prompt_content}
             ],
             temperature=0.3,
             max_tokens=8192,

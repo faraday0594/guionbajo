@@ -11,29 +11,46 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 
 # PowerPoint
-from pptx import Presentation
-from pptx.util import Inches, Pt
-from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
-from pptx.enum.shapes import MSO_SHAPE
+try:
+    from pptx import Presentation
+    from pptx.util import Inches, Pt
+    from pptx.dml.color import RGBColor
+    from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+    from pptx.enum.shapes import MSO_SHAPE
+    HAS_PPTX = True
+except ImportError:
+    Presentation = Inches = Pt = RGBColor = PP_ALIGN = MSO_ANCHOR = MSO_SHAPE = None
+    HAS_PPTX = False
 
 # Word
-import docx
-from docx import Document
-from docx.shared import Inches as DocxInches, Pt as DocxPt, RGBColor as DocxRGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.oxml import parse_xml, OxmlElement
-from docx.oxml.ns import nsdecls, qn
+try:
+    import docx
+    from docx import Document
+    from docx.shared import Inches as DocxInches, Pt as DocxPt, RGBColor as DocxRGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.oxml import parse_xml, OxmlElement
+    from docx.oxml.ns import nsdecls, qn
+    HAS_DOCX = True
+except ImportError:
+    docx = Document = DocxInches = DocxPt = DocxRGBColor = None
+    WD_ALIGN_PARAGRAPH = WD_TABLE_ALIGNMENT = parse_xml = OxmlElement = nsdecls = qn = None
+    HAS_DOCX = False
 
 # PDF (ReportLab)
-from reportlab.lib.pagesizes import letter as letter_pagesize
-from reportlab.lib import colors
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, HRFlowable
-)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.pdfgen import canvas
+try:
+    from reportlab.lib.pagesizes import letter as letter_pagesize
+    from reportlab.lib import colors
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, HRFlowable
+    )
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.pdfgen import canvas
+    HAS_REPORTLAB = True
+except ImportError:
+    letter_pagesize = colors = SimpleDocTemplate = Paragraph = Spacer = Table = TableStyle = None
+    PageBreak = KeepTogether = HRFlowable = getSampleStyleSheet = ParagraphStyle = canvas = None
+    HAS_REPORTLAB = False
 
 
 # ─── ESTRUCTURAS DE DATOS DE LA CLASE ──────────────────────────────────────────

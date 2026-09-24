@@ -351,43 +351,60 @@
     document.body.appendChild(launcher);
   }
 
-  // 5.5 Guionbajo Robot Avatar Component Generator
-  function buildGuionbajoAvatarHtml(avatarId = "gb-tutor-avatar", size = "normal") {
-    const isMini = size === "mini";
+  // 5.5 Guionbajo Robot Avatar Component Generator (Authentic Canonical TutorAvatar design)
+  function buildGuionbajoAvatarHtml(avatarId = "gb-tutor-avatar") {
     return `
-      <div class="gb-avatar-wrapper ${isMini ? "gb-avatar-mini" : ""}" id="${avatarId}" title="Guionbajo AI Tutor">
+      <div class="gb-avatar-wrapper" id="${avatarId}" title="Guionbajo AI Tutor">
+        <!-- Chorro de vapor (Angry / Alterado) -->
+        <div class="gb-steam-container">
+          <div class="gb-steam-jet gb-steam-left"></div>
+          <div class="gb-steam-jet gb-steam-right"></div>
+        </div>
+
+        <!-- Cabeza del Robot (68px x 60px) -->
         <div class="gb-robot-head">
+          <!-- Diales laterales -->
+          <div class="gb-ear-dial gb-ear-left"><div class="gb-dial-notch"></div></div>
+          <div class="gb-ear-dial gb-ear-right"><div class="gb-dial-notch"></div></div>
+
+          <!-- 4 Remaches en esquinas -->
+          <div class="gb-rivet gb-r-tl"></div>
+          <div class="gb-rivet gb-r-tr"></div>
+          <div class="gb-rivet gb-r-bl"></div>
+          <div class="gb-rivet gb-r-br"></div>
+
+          <!-- Antena con bulbo de vacío y filamento -->
           <div class="gb-robot-antenna">
             <div class="gb-antenna-stem"></div>
             <div class="gb-vacuum-bulb">
               <div class="gb-bulb-filament"></div>
             </div>
           </div>
-          <div class="gb-ear-dial gb-ear-left"><div class="gb-dial-notch"></div></div>
-          <div class="gb-ear-dial gb-ear-right"><div class="gb-dial-notch"></div></div>
-          <div class="gb-rivet gb-r-tl"></div>
-          <div class="gb-rivet gb-r-tr"></div>
-          <div class="gb-rivet gb-r-bl"></div>
-          <div class="gb-rivet gb-r-br"></div>
+
+          <!-- Ojos con obturadores/párpados mecánicos -->
           <div class="gb-robot-eyes">
             <div class="gb-eye-socket">
-              <div class="gb-shutter-top"></div>
+              <div class="gb-shutter gb-shutter-top"></div>
               <div class="gb-eye-lens">
                 <div class="gb-pupil"></div>
                 <div class="gb-eye-glint"></div>
               </div>
+              <div class="gb-shutter gb-shutter-bottom"></div>
             </div>
             <div class="gb-eye-socket">
-              <div class="gb-shutter-top"></div>
+              <div class="gb-shutter gb-shutter-top"></div>
               <div class="gb-eye-lens">
                 <div class="gb-pupil"></div>
                 <div class="gb-eye-glint"></div>
               </div>
+              <div class="gb-shutter gb-shutter-bottom"></div>
             </div>
           </div>
-          <div class="gb-mouth-frame">
+
+          <!-- Boca: Dientes Bender de 7 barras o Cursor Terminal '_' en reposo -->
+          <div class="gb-mouth-frame gb-mouth-closed">
             <div class="gb-terminal-cursor">_</div>
-            <div class="gb-teeth-grille">
+            <div class="gb-bender-teeth-grille" style="display:none;">
               <div class="gb-tooth-bar"></div>
               <div class="gb-tooth-bar"></div>
               <div class="gb-tooth-bar"></div>
@@ -398,20 +415,35 @@
             </div>
           </div>
         </div>
+
+        <!-- Torso / Pantalla CRT abombada (52px x 34px) -->
         <div class="gb-robot-body">
-          <div class="gb-robot-arm gb-arm-left"></div>
-          <div class="gb-robot-arm gb-arm-right"></div>
+          <!-- Brazos Mecánicos (3 Segmentos Articulados) -->
+          <div class="gb-robot-arm gb-arm-left">
+            <div class="gb-arm-upper"></div>
+            <div class="gb-arm-joint"></div>
+            <div class="gb-arm-forearm"></div>
+          </div>
+          <div class="gb-robot-arm gb-arm-right">
+            <div class="gb-arm-upper"></div>
+            <div class="gb-arm-joint"></div>
+            <div class="gb-arm-forearm"></div>
+          </div>
+
+          <!-- Pantalla CRT -->
           <div class="gb-crt-monitor">
             <div class="gb-crt-scanlines"></div>
             <div class="gb-crt-content">
-              <span class="gb-crt-idle-text">^_^</span>
-              <div class="gb-crt-eq">
-                <div class="gb-crt-bar"></div>
-                <div class="gb-crt-bar"></div>
-                <div class="gb-crt-bar"></div>
+              <div class="gb-eq-container" style="display:none;">
+                <div class="gb-eq-bar"></div>
+                <div class="gb-eq-bar"></div>
+                <div class="gb-eq-bar"></div>
               </div>
+              <span class="gb-crt-glyph">^_^</span>
             </div>
           </div>
+
+          <!-- Micropropulsor Magnético Inferior -->
           <div class="gb-hover-thruster">
             <div class="gb-thruster-nozzle"></div>
             <div class="gb-plasma-flame"></div>
@@ -419,6 +451,146 @@
         </div>
       </div>
     `;
+  }
+
+  // ── Web Audio API Real-time Speech Analysis Engine (Port of audioAnalyzer.ts from learning path) ──
+  let webAudioCtx = null;
+  let webAudioAnalyser = null;
+  let activeAnalyzedAudio = null;
+  const mediaSourceMap = new WeakMap();
+  let cachedFreqData = null;
+  let cachedTimeData = null;
+  let lastAperture = 0;
+
+  function getWebAudioContext() {
+    if (!webAudioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        webAudioCtx = new AudioContextClass();
+      }
+    }
+    if (webAudioCtx && webAudioCtx.state === "suspended") {
+      webAudioCtx.resume().catch(() => {});
+    }
+    return webAudioCtx;
+  }
+
+  function attachAudioElementToAnalyzer(audioEl) {
+    if (!audioEl) return;
+    activeAnalyzedAudio = audioEl;
+    const ctx = getWebAudioContext();
+    if (!ctx) return;
+
+    try {
+      if (!webAudioAnalyser) {
+        webAudioAnalyser = ctx.createAnalyser();
+        webAudioAnalyser.fftSize = 256;
+        webAudioAnalyser.smoothingTimeConstant = 0.12; // Zero delay, ultra-crisp phonetic response
+        webAudioAnalyser.connect(ctx.destination);
+      }
+
+      if (!mediaSourceMap.has(audioEl)) {
+        const source = ctx.createMediaElementSource(audioEl);
+        source.connect(webAudioAnalyser);
+        mediaSourceMap.set(audioEl, source);
+      }
+    } catch (e) {
+      console.debug("[Guionbajo AI] Web Audio attach notice:", e);
+    }
+  }
+
+  function getAudioSpeechMetrics() {
+    if (
+      !activeAnalyzedAudio ||
+      activeAnalyzedAudio.paused ||
+      activeAnalyzedAudio.ended ||
+      !webAudioAnalyser ||
+      !webAudioCtx ||
+      !mediaSourceMap.has(activeAnalyzedAudio)
+    ) {
+      lastAperture = Math.max(0, lastAperture * 0.7 - 0.05);
+      return {
+        aperture: lastAperture > 0.02 ? lastAperture : 0,
+        isSpeaking: false,
+        bandEnergies: [0, 0, 0, 0, 0, 0, 0],
+        hasActiveAudio: false,
+      };
+    }
+
+    const binCount = webAudioAnalyser.frequencyBinCount;
+    if (!cachedFreqData || cachedFreqData.length !== binCount) {
+      cachedFreqData = new Uint8Array(binCount);
+      cachedTimeData = new Uint8Array(binCount);
+    }
+
+    webAudioAnalyser.getByteFrequencyData(cachedFreqData);
+    webAudioAnalyser.getByteTimeDomainData(cachedTimeData);
+
+    // 1. RMS volume from Time Domain Data
+    let sumSquares = 0;
+    for (let i = 0; i < binCount; i++) {
+      const norm = (cachedTimeData[i] - 128) / 128;
+      sumSquares += norm * norm;
+    }
+    const rms = Math.sqrt(sumSquares / binCount);
+
+    // 2. Vocal Formant Energy (Bins 2 through 32 ≈ 150 Hz to 4000 Hz human vocal range)
+    let vocalSum = 0;
+    const startBin = 2;
+    const endBin = Math.min(32, binCount);
+    const binSpan = endBin - startBin;
+
+    for (let i = startBin; i < endBin; i++) {
+      vocalSum += cachedFreqData[i];
+    }
+    const avgVocalFreq = binSpan > 0 ? vocalSum / binSpan : 0;
+
+    const NOISE_FLOOR = 12;
+    const effectiveFreq = Math.max(0, avgVocalFreq - NOISE_FLOOR);
+    const freqEnergy = Math.min(1, effectiveFreq / 85);
+    const rmsEnergy = Math.min(1, rms * 4.2);
+
+    // Blended acoustic energy (80% frequency formant + 20% RMS volume)
+    const combinedEnergy = freqEnergy * 0.8 + rmsEnergy * 0.2;
+
+    let targetAperture = 0;
+    if (combinedEnergy > 0.04) {
+      targetAperture = Math.min(1, Math.pow(combinedEnergy, 0.85) * 1.25);
+    }
+
+    if (targetAperture > lastAperture) {
+      // Instant attack (0ms delay)
+      lastAperture = targetAperture;
+    } else {
+      // Natural fast decay (~25ms)
+      lastAperture = lastAperture * 0.78 + targetAperture * 0.22;
+    }
+
+    if (lastAperture < 0.01) lastAperture = 0;
+
+    // 3. 7 Discrete Frequency Bands for the Bender Teeth Grille
+    const bandEnergies = [0, 0, 0, 0, 0, 0, 0];
+    const binsPerBand = Math.max(1, Math.floor(binSpan / 7));
+
+    for (let b = 0; b < 7; b++) {
+      let bandSum = 0;
+      const bStart = startBin + b * binsPerBand;
+      const bEnd = Math.min(bStart + binsPerBand, endBin);
+      const count = Math.max(1, bEnd - bStart);
+
+      for (let i = bStart; i < bEnd; i++) {
+        bandSum += cachedFreqData[i];
+      }
+      const bandAvg = bandSum / count;
+      bandEnergies[b] = Math.min(1, Math.max(0, (bandAvg - NOISE_FLOOR) / 95));
+    }
+
+    return {
+      aperture: Math.min(1, Math.max(0, lastAperture)),
+      isSpeaking: lastAperture > 0.05,
+      bandEnergies,
+      hasActiveAudio: true,
+    };
   }
 
   // ── 60 FPS Real-time Lip-Sync Engine for Guionbajo Avatar (Identical to TutorAvatar.tsx) ──
@@ -437,36 +609,48 @@
     avatarAnimState.startTime = performance.now();
     avatarEl.classList.add("gb-speaking");
 
-    const mouthFrame = avatarEl.querySelector(".gb-mouth-frame");
     const head = avatarEl.querySelector(".gb-robot-head");
+    const mouthFrame = avatarEl.querySelector(".gb-mouth-frame");
+    const terminalCursor = avatarEl.querySelector(".gb-terminal-cursor");
+    const teethGrille = avatarEl.querySelector(".gb-bender-teeth-grille");
     const toothBars = Array.from(avatarEl.querySelectorAll(".gb-tooth-bar"));
-    const crtBars = Array.from(avatarEl.querySelectorAll(".gb-crt-bar"));
-    const bulb = avatarEl.querySelector(".gb-vacuum-bulb");
+    const vacuumBulb = avatarEl.querySelector(".gb-vacuum-bulb");
+    const pupils = Array.from(avatarEl.querySelectorAll(".gb-pupil"));
+    const armsLeft = avatarEl.querySelector(".gb-arm-left");
+    const armsRight = avatarEl.querySelector(".gb-arm-right");
+    const crtGlyph = avatarEl.querySelector(".gb-crt-glyph");
+    const crtEq = avatarEl.querySelector(".gb-eq-container");
+    const plasmaFlame = avatarEl.querySelector(".gb-plasma-flame");
+
+    if (head) head.classList.add("gb-head-speaking");
+    if (vacuumBulb) vacuumBulb.classList.add("gb-bulb-active");
+    pupils.forEach((p) => p.classList.add("gb-speaking-pupil"));
+    if (armsLeft) armsLeft.classList.add("gb-arm-speaking-left");
+    if (armsRight) armsRight.classList.add("gb-arm-speaking-right");
+    if (crtGlyph) crtGlyph.style.display = "none";
+    if (crtEq) crtEq.style.display = "flex";
+    if (plasmaFlame) plasmaFlame.classList.add("gb-plasma-high");
+
+    const minMouthHeight = 6;
+    const maxMouthHeight = 18;
 
     function frame(time) {
       if (!avatarAnimState.activeAvatarId) return;
 
-      const elapsed = (time - avatarAnimState.startTime) / 1000;
-      // Multi-harmonic cadence: primary syllable waves matching TutorAvatar.tsx
-      const primarySyllable =
-        Math.abs(Math.sin(elapsed * 12)) * 0.6 +
-        Math.abs(Math.sin(elapsed * 6)) * 0.4;
-      const rawAperture = Math.min(0.85, Math.max(0.08, primarySyllable * 0.72));
+      // Real-time Web Audio API Speech Analysis (Identical to learning path)
+      const metrics = getAudioSpeechMetrics();
+      let rawAperture = 0;
+      let bandEnergies = [0, 0, 0, 0, 0, 0, 0];
 
-      // Dynamic mouth jaw opening: expands and contracts between 7px and 22px
-      const dynamicMouthHeight = Math.round(7 + rawAperture * 15);
-      if (mouthFrame) {
-        mouthFrame.style.height = `${dynamicMouthHeight}px`;
-      }
-
-      // Head articulates up and down slightly with speech cadence
-      if (head) {
-        head.style.transform = `translateY(${(-rawAperture * 3.5).toFixed(1)}px)`;
-      }
-
-      // 7 teeth bars dynamic height & lighting
-      if (toothBars && toothBars.length === 7) {
-        const bands = [
+      if (metrics.hasActiveAudio) {
+        rawAperture = metrics.aperture;
+        bandEnergies = metrics.bandEnergies;
+      } else if (activeAnalyzedAudio && !activeAnalyzedAudio.paused && !activeAnalyzedAudio.ended) {
+        // Fallback acoustic wave while Web Audio attaches
+        const elapsed = (time - avatarAnimState.startTime) / 1000;
+        const primarySyllable = Math.abs(Math.sin(elapsed * 12)) * 0.6 + Math.abs(Math.sin(elapsed * 6)) * 0.4;
+        rawAperture = Math.min(0.85, Math.max(0.04, primarySyllable * 0.7));
+        bandEnergies = [
           rawAperture * 0.6,
           rawAperture * 0.8,
           rawAperture * 1.0,
@@ -475,32 +659,50 @@
           rawAperture * 0.8,
           rawAperture * 0.6,
         ];
-        toothBars.forEach((bar, idx) => {
-          const energy = bands[idx] || 0;
-          const barH = Math.max(
-            3,
-            Math.round(dynamicMouthHeight * (0.35 + energy * 0.55 + 0.1))
-          );
-          bar.style.height = `${barH}px`;
-          bar.style.opacity = rawAperture > 0.1 ? "1" : "0.3";
-          bar.style.boxShadow =
-            rawAperture > 0.1
+      }
+
+      const isMouthArticulating = rawAperture > 0.04;
+
+      if (!isMouthArticulating) {
+        // Voice is silent/paused: mouth closed with '_' cursor
+        if (mouthFrame) {
+          mouthFrame.classList.add("gb-mouth-closed");
+          mouthFrame.classList.remove("gb-mouth-speaking");
+          mouthFrame.style.height = `${minMouthHeight}px`;
+        }
+        if (terminalCursor) terminalCursor.style.display = "block";
+        if (teethGrille) teethGrille.style.display = "none";
+        if (head) head.style.transform = "";
+      } else {
+        // Voice is actively speaking phoneme/syllable
+        if (mouthFrame) {
+          mouthFrame.classList.remove("gb-mouth-closed");
+          mouthFrame.classList.add("gb-mouth-speaking");
+          const dynamicHeight = Math.round(minMouthHeight + rawAperture * (maxMouthHeight - minMouthHeight));
+          mouthFrame.style.height = `${dynamicHeight}px`;
+        }
+        if (terminalCursor) terminalCursor.style.display = "none";
+        if (teethGrille) teethGrille.style.display = "flex";
+        if (head) head.style.transform = `translateY(${(-rawAperture * 2.5).toFixed(1)}px)`;
+
+        // 7 bender teeth bars dynamic height & lighting
+        if (toothBars && toothBars.length === 7) {
+          const dynamicHeight = Math.round(minMouthHeight + rawAperture * (maxMouthHeight - minMouthHeight));
+          toothBars.forEach((bar, idx) => {
+            const energy = bandEnergies[idx] || 0;
+            const isCenter = idx >= 2 && idx <= 4;
+            const isLit = rawAperture > 0.05 && (energy > 0.15 || (isCenter && rawAperture > 0.2));
+            const barH = Math.max(
+              3,
+              Math.round(dynamicHeight * (0.35 + (isLit ? energy * 0.55 + 0.1 : 0.1)))
+            );
+            bar.style.height = `${barH}px`;
+            bar.style.opacity = isLit ? Math.min(1, 0.4 + energy * 0.6).toFixed(2) : "0.2";
+            bar.style.boxShadow = isLit
               ? `0 0 ${Math.max(2, Math.round(rawAperture * 8))}px 2px rgba(255,255,200,0.95)`
               : "none";
-        });
-      }
-
-      // CRT Equalizer bars bouncing dynamically
-      if (crtBars && crtBars.length === 3) {
-        crtBars[0].style.height = `${Math.round(20 + Math.abs(Math.sin(elapsed * 11)) * 70)}%`;
-        crtBars[1].style.height = `${Math.round(35 + Math.abs(Math.cos(elapsed * 14)) * 60)}%`;
-        crtBars[2].style.height = `${Math.round(20 + Math.abs(Math.sin(elapsed * 8.5)) * 75)}%`;
-      }
-
-      // Vacuum bulb sparks with speech intensity
-      if (bulb) {
-        const glow = Math.round(6 + rawAperture * 14);
-        bulb.style.boxShadow = `0 0 ${glow}px ${Math.round(glow / 2.5)}px rgba(0, 212, 255, 0.95)`;
+          });
+        }
       }
 
       avatarAnimState.rafId = requestAnimationFrame(frame);
@@ -519,12 +721,36 @@
       const avatarEl = document.getElementById(avatarAnimState.activeAvatarId);
       if (avatarEl) {
         avatarEl.classList.remove("gb-speaking");
-        const mouthFrame = avatarEl.querySelector(".gb-mouth-frame");
         const head = avatarEl.querySelector(".gb-robot-head");
-        const bulb = avatarEl.querySelector(".gb-vacuum-bulb");
-        if (mouthFrame) mouthFrame.style.height = "";
-        if (head) head.style.transform = "";
-        if (bulb) bulb.style.boxShadow = "";
+        const mouthFrame = avatarEl.querySelector(".gb-mouth-frame");
+        const terminalCursor = avatarEl.querySelector(".gb-terminal-cursor");
+        const teethGrille = avatarEl.querySelector(".gb-bender-teeth-grille");
+        const vacuumBulb = avatarEl.querySelector(".gb-vacuum-bulb");
+        const pupils = Array.from(avatarEl.querySelectorAll(".gb-pupil"));
+        const armsLeft = avatarEl.querySelector(".gb-arm-left");
+        const armsRight = avatarEl.querySelector(".gb-arm-right");
+        const crtGlyph = avatarEl.querySelector(".gb-crt-glyph");
+        const crtEq = avatarEl.querySelector(".gb-eq-container");
+        const plasmaFlame = avatarEl.querySelector(".gb-plasma-flame");
+
+        if (head) {
+          head.classList.remove("gb-head-speaking");
+          head.style.transform = "";
+        }
+        if (mouthFrame) {
+          mouthFrame.classList.add("gb-mouth-closed");
+          mouthFrame.classList.remove("gb-mouth-speaking");
+          mouthFrame.style.height = "";
+        }
+        if (terminalCursor) terminalCursor.style.display = "block";
+        if (teethGrille) teethGrille.style.display = "none";
+        if (vacuumBulb) vacuumBulb.classList.remove("gb-bulb-active");
+        pupils.forEach((p) => p.classList.remove("gb-speaking-pupil"));
+        if (armsLeft) armsLeft.classList.remove("gb-arm-speaking-left");
+        if (armsRight) armsRight.classList.remove("gb-arm-speaking-right");
+        if (crtGlyph) crtGlyph.style.display = "inline";
+        if (crtEq) crtEq.style.display = "none";
+        if (plasmaFlame) plasmaFlame.classList.remove("gb-plasma-high");
       }
       avatarAnimState.activeAvatarId = null;
     }
@@ -939,6 +1165,7 @@
     if (activeAudio) {
       activeAudio.pause();
     }
+    stopAvatarSpeechAnimation();
   }
 
   // 11. Call Guionbajo Backend for Scene Explanation
@@ -1032,7 +1259,7 @@
           data.audio_base64
             ? `
           <div class="gb-slide-audio-box" id="gb-scene-audio-box" style="margin-top:12px;">
-            ${buildGuionbajoAvatarHtml("gb-scene-tutor-avatar", "normal")}
+            ${buildGuionbajoAvatarHtml("gb-scene-tutor-avatar")}
             <button class="gb-slide-audio-btn" id="gb-play-audio-btn" title="Escuchar explicación">
               <span id="gb-scene-audio-icon">▶</span>
             </button>
@@ -1052,6 +1279,7 @@
     if (data.audio_base64) {
       if (activeAudio) activeAudio.pause();
       activeAudio = new Audio("data:audio/mp3;base64," + data.audio_base64);
+      attachAudioElementToAnalyzer(activeAudio);
 
       const playBtn = document.getElementById("gb-play-audio-btn");
       const playIcon = document.getElementById("gb-scene-audio-icon");
@@ -1088,7 +1316,11 @@
         sceneAvatar.addEventListener("click", () => playBtn.click());
       }
 
-      activeAudio.addEventListener("play", () => updateSceneAudioUI(true));
+      activeAudio.addEventListener("play", () => {
+        const ctx = getWebAudioContext();
+        if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+        updateSceneAudioUI(true);
+      });
       activeAudio.addEventListener("pause", () => updateSceneAudioUI(false));
       activeAudio.addEventListener("ended", () => updateSceneAudioUI(false));
 
@@ -1465,7 +1697,7 @@
 
           <!-- Tutor Voice Explanation Player (Sin mostrar el texto hablado en pantalla) -->
           <div class="gb-slide-audio-box" id="gb-slide-audio-box">
-            ${buildGuionbajoAvatarHtml("gb-slide-vocab-avatar", "normal")}
+            ${buildGuionbajoAvatarHtml("gb-slide-vocab-avatar")}
             <button class="gb-slide-audio-btn" id="gb-slide-audio-btn" title="Reproducir / Pausar explicación del tutor">
               <span id="gb-slide-audio-icon">▶</span>
             </button>
@@ -1552,7 +1784,12 @@
       function playVocabAudio(b64) {
         if (activeAudio) activeAudio.pause();
         activeAudio = new Audio("data:audio/mp3;base64," + b64);
-        activeAudio.addEventListener("play", () => updateVocabAudioUI(true));
+        attachAudioElementToAnalyzer(activeAudio);
+        activeAudio.addEventListener("play", () => {
+          const ctx = getWebAudioContext();
+          if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+          updateVocabAudioUI(true);
+        });
         activeAudio.addEventListener("pause", () => updateVocabAudioUI(false));
         activeAudio.addEventListener("ended", () => updateVocabAudioUI(false));
         activeAudio.play().catch((err) => console.log("Slide audio autoplay notice:", err));
@@ -1689,7 +1926,7 @@
 
           <!-- Tutor Voice Explanation Player (Sin texto transcript en pantalla) -->
           <div class="gb-slide-audio-box" id="gb-grammar-audio-box" style="margin-bottom:12px;">
-            ${buildGuionbajoAvatarHtml("gb-slide-grammar-avatar", "normal")}
+            ${buildGuionbajoAvatarHtml("gb-slide-grammar-avatar")}
             <button class="gb-slide-audio-btn" id="gb-grammar-audio-btn" title="Reproducir / Pausar explicación del tutor">
               <span id="gb-grammar-audio-icon">▶</span>
             </button>
@@ -1780,7 +2017,12 @@
       function playGrammarAudio(b64) {
         if (activeAudio) activeAudio.pause();
         activeAudio = new Audio("data:audio/mp3;base64," + b64);
-        activeAudio.addEventListener("play", () => updateGrammarAudioUI(true));
+        attachAudioElementToAnalyzer(activeAudio);
+        activeAudio.addEventListener("play", () => {
+          const ctx = getWebAudioContext();
+          if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+          updateGrammarAudioUI(true);
+        });
         activeAudio.addEventListener("pause", () => updateGrammarAudioUI(false));
         activeAudio.addEventListener("ended", () => updateGrammarAudioUI(false));
         activeAudio.play().catch((err) => console.log("Grammar audio autoplay notice:", err));

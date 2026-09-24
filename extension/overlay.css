@@ -1333,222 +1333,267 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GUIONBAJO ROBOT AVATAR (Interactive Speaking Mascot)
+   GUIONBAJO ROBOT AVATAR (Canonical Retro-Futuristic Design identical to TutorAvatar.tsx)
    ═══════════════════════════════════════════════════════════════════════════ */
 .gb-avatar-wrapper {
   position: relative;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  cursor: pointer;
   user-select: none;
-  animation: gb-avatar-float 3.5s ease-in-out infinite;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: gb-hover-float 3.6s ease-in-out infinite;
+  will-change: transform;
   flex-shrink: 0;
+  cursor: pointer;
+  transform: scale(0.85);
+  transform-origin: center center;
+  margin: -4px -6px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .gb-avatar-wrapper:hover {
-  transform: scale(1.06);
-}
-
-.gb-avatar-mini {
-  transform: scale(0.62);
-  transform-origin: center center;
-  margin: -8px -6px;
-}
-
-@keyframes gb-avatar-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+  transform: scale(0.92);
 }
 
 .gb-avatar-wrapper.gb-speaking {
-  animation: gb-avatar-speak-float 1.6s ease-in-out infinite;
+  animation: gb-avatar-speak-float 1.8s ease-in-out infinite;
+}
+
+@keyframes gb-hover-float {
+  0%, 100% { transform: scale(0.85) translateY(0px); }
+  50%      { transform: scale(0.85) translateY(-4px); }
 }
 
 @keyframes gb-avatar-speak-float {
-  0%, 100% { transform: translateY(0) scale(1.02); }
-  50% { transform: translateY(-4px) scale(1.02); }
+  0%, 100% { transform: scale(0.88) translateY(0px); }
+  50%      { transform: scale(0.88) translateY(-5px); }
 }
 
-/* ── Cabeza del Robot ── */
+/* ── Chorro de Vapor / Humo ── */
+.gb-steam-container {
+  position: absolute;
+  top: 10px;
+  width: 100px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.gb-steam-jet {
+  width: 16px;
+  height: 8px;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(56,189,248,0.4) 50%, transparent 80%);
+  border-radius: 50%;
+  opacity: 0;
+  filter: blur(1.5px);
+  transition: opacity 0.2s;
+}
+
+/* ── Cabeza del Robot (Canonical 68px x 60px) ── */
 .gb-robot-head {
   position: relative;
-  width: 54px;
-  height: 44px;
   background: linear-gradient(145deg, #374151 0%, #1f2937 60%, #111827 100%);
   border-radius: 12px;
-  border: 1.8px solid #4b5563;
+  border: 2px solid #4b5563;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.2);
-  transition: all 0.25s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  transition: background 0.4s, border-color 0.4s, box-shadow 0.4s;
   z-index: 10;
-  gap: 3px;
+  width: 68px;
+  height: 60px;
+  gap: 4px;
 }
 
-.gb-avatar-wrapper.gb-speaking .gb-robot-head {
-  border-color: #00D4FF;
-  box-shadow: 0 0 16px rgba(0, 212, 255, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+.gb-head-speaking {
+  transition: none !important;
+  border-color: #00E676 !important;
+  box-shadow: 0 4px 22px rgba(0, 230, 118, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
 }
 
-/* ── Antena y Bulbo ── */
-.gb-robot-antenna {
+/* Remaches en las 4 esquinas */
+.gb-rivet {
   position: absolute;
-  top: -14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.gb-antenna-stem {
-  width: 2.5px;
-  height: 7px;
-  background: linear-gradient(180deg, #94a3b8, #475569);
-  border-radius: 1px;
-}
-
-.gb-vacuum-bulb {
-  width: 10px;
-  height: 10px;
-  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.6) 0%, rgba(251,191,36,0.3) 60%, rgba(0,0,0,0.3) 100%);
-  border: 1.5px solid rgba(251,191,36,0.7);
+  width: 4px;
+  height: 4px;
+  background: #788a9e;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 5px rgba(251,191,36,0.4);
-  transition: all 0.25s ease;
+  box-shadow: inset 1px 1px 1px #fff, 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
+.gb-r-tl { top: 5px; left: 5px; }
+.gb-r-tr { top: 5px; right: 5px; }
+.gb-r-bl { bottom: 5px; left: 5px; }
+.gb-r-br { bottom: 5px; right: 5px; }
 
-.gb-bulb-filament {
-  width: 3px;
-  height: 3px;
-  border: 1px solid #fbbf24;
-  border-bottom: none;
-  border-radius: 2px 2px 0 0;
-}
-
-.gb-avatar-wrapper.gb-speaking .gb-vacuum-bulb {
-  background: radial-gradient(circle at center, rgba(0,212,255,0.9) 0%, rgba(108,99,255,0.6) 70%, transparent 100%);
-  border-color: #00D4FF;
-  box-shadow: 0 0 14px 4px rgba(0, 212, 255, 0.85);
-  animation: gb-bulb-spark 0.4s infinite alternate;
-}
-
-@keyframes gb-bulb-spark {
-  from { box-shadow: 0 0 8px rgba(0, 212, 255, 0.6); }
-  to { box-shadow: 0 0 16px 5px rgba(0, 212, 255, 1); }
-}
-
-/* ── Orejeras / Diales ── */
+/* Diales laterales (orejeras de potenciómetro) */
 .gb-ear-dial {
   position: absolute;
-  top: 38%;
-  width: 5px;
-  height: 14px;
   background: linear-gradient(180deg, #64748b, #334155, #1e293b);
   border: 1px solid #475569;
-  border-radius: 2px;
+  border-radius: 3px;
+  top: 40%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  width: 6px;
+  height: 16px;
 }
-
-.gb-ear-left { left: -5px; }
-.gb-ear-right { right: -5px; }
+.gb-ear-left  { left: -7px; }
+.gb-ear-right { right: -7px; }
 
 .gb-dial-notch {
-  width: 2px;
+  width: 3px;
   height: 2px;
   background: #00D4FF;
   border-radius: 1px;
   box-shadow: 0 0 3px #00D4FF;
 }
 
-/* ── Remaches ── */
-.gb-rivet {
+/* ── Antena con Bulbo de Vacío y Filamento ── */
+.gb-robot-antenna {
   position: absolute;
-  width: 3px;
-  height: 3px;
-  background: #788a9e;
-  border-radius: 50%;
-  box-shadow: inset 1px 1px 1px #fff, 1px 1px 2px rgba(0,0,0,0.8);
+  top: -16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.gb-r-tl { top: 3px; left: 3px; }
-.gb-r-tr { top: 3px; right: 3px; }
-.gb-r-bl { bottom: 3px; left: 3px; }
-.gb-r-br { bottom: 3px; right: 3px; }
 
-/* ── Ojos ── */
+.gb-antenna-stem {
+  height: 8px;
+  width: 2px;
+  background: linear-gradient(180deg, #94a3b8, #475569);
+  border-radius: 2px;
+}
+
+.gb-vacuum-bulb {
+  width: 10px;
+  height: 10px;
+  border-width: 1px;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 200, 100, 0.15) 60%, rgba(0, 0, 0, 0.3) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 5px rgba(251, 191, 36, 0.3);
+  transition: all 0.25s;
+}
+
+.gb-bulb-filament {
+  width: 4px;
+  height: 4px;
+  border: 1px solid #fbbf24;
+  border-bottom: none;
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 0 3px #f59e0b;
+}
+
+.gb-bulb-active {
+  background: radial-gradient(circle at center, rgba(0, 212, 255, 0.8) 0%, rgba(108, 99, 255, 0.4) 70%, transparent 100%) !important;
+  box-shadow: 0 0 12px 5px rgba(0, 212, 255, 0.8) !important;
+  border-color: #00D4FF !important;
+  animation: gb-spark-pulse 0.4s infinite alternate;
+}
+
+@keyframes gb-spark-pulse {
+  from { box-shadow: 0 0 5px rgba(108, 99, 255, 0.4); border-color: #6C63FF; }
+  to   { box-shadow: 0 0 16px 7px rgba(0, 212, 255, 0.95); border-color: #fff; }
+}
+
+/* ── Ojos y Párpados Mecánicos ── */
 .gb-robot-eyes {
   display: flex;
-  gap: 7px;
-  margin-top: 1px;
+  gap: 8px;
+  margin-top: 2px;
 }
 
 .gb-eye-socket {
   position: relative;
-  width: 14px;
-  height: 14px;
   background: #090d14;
   border-radius: 50%;
-  border: 1px solid #334155;
+  border: 1.5px solid #334155;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(255, 255, 255, 0.1);
+  width: 18px;
+  height: 18px;
+}
+
+.gb-shutter {
+  position: absolute;
+  width: 100%;
+  background: linear-gradient(180deg, #475569, #1e293b);
+  border-radius: 2px;
+  transition: all 0.35s ease;
+  z-index: 3;
 }
 
 .gb-shutter-top {
-  position: absolute;
   top: 0;
-  width: 100%;
   height: 0%;
-  background: linear-gradient(180deg, #475569, #1e293b);
   border-bottom: 1px solid #64748b;
-  z-index: 3;
-  animation: gb-eye-blink 4.5s infinite;
+  animation: gb-idle-blink 4s infinite;
 }
 
-@keyframes gb-eye-blink {
+.gb-shutter-bottom {
+  bottom: 0;
+  height: 0%;
+  border-top: 1px solid #64748b;
+}
+
+@keyframes gb-idle-blink {
   0%, 94%, 100% { height: 0%; }
-  96%, 98% { height: 70%; }
+  97% { height: 80%; }
 }
 
 .gb-eye-lens {
   position: relative;
-  width: 100%;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: 100%;
   z-index: 2;
 }
 
 .gb-pupil {
-  width: 6.5px;
-  height: 6.5px;
   background: #00D4FF;
   border-radius: 50%;
-  box-shadow: 0 0 6px 2px rgba(0,212,255,0.75);
-  transition: all 0.3s ease;
+  box-shadow: 0 0 8px 3px rgba(0, 212, 255, 0.75);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 8px;
+  height: 8px;
+  animation: gb-idle-look-around 8s infinite ease-in-out;
 }
 
-.gb-avatar-wrapper.gb-speaking .gb-pupil {
-  background: #00E676;
-  box-shadow: 0 0 8px 3px rgba(0,230,118,0.85);
+@keyframes gb-idle-look-around {
+  0%, 100% { transform: translate(0, 0); }
+  20%      { transform: translate(1px, -1px); }
+  40%      { transform: translate(-1px, 1px); }
+  60%      { transform: translate(1.5px, 0px); }
+  80%      { transform: translate(-1px, -1px); }
+}
+
+.gb-speaking-pupil {
+  background: #00E676 !important;
+  box-shadow: 0 0 10px 4px rgba(0, 230, 118, 0.85) !important;
+  transform: translateY(-1px) !important;
+  animation: none !important;
 }
 
 .gb-eye-glint {
   position: absolute;
-  top: 2px;
-  left: 3px;
-  width: 1.5px;
-  height: 1.5px;
+  top: 20%;
+  left: 25%;
+  width: 2px;
+  height: 2px;
   background: #ffffff;
   border-radius: 50%;
   opacity: 0.85;
@@ -1556,187 +1601,195 @@
 
 /* ── Boca: Dientes Bender / Cursor Terminal '_' ── */
 .gb-mouth-frame {
-  width: 36px;
-  height: 8px;
   background: #090d14;
-  border-radius: 4px;
-  border: 1.2px solid #334155;
+  border-radius: 6px;
+  border: 1.5px solid #334155;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
-  transition: height 0.2s ease, border-color 0.2s ease;
-  padding: 0 2px;
+  transition: border-color 0.2s;
+  padding: 1px 2px;
+  width: 44px;
+}
+
+.gb-mouth-closed {
+  height: 6px !important;
+  border-radius: 3px;
+  transition: height 0.15s ease-out, border-color 0.2s !important;
+}
+
+.gb-mouth-speaking {
+  transition: none !important;
+  border-color: #00D4FF !important;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 212, 255, 0.4) !important;
 }
 
 .gb-terminal-cursor {
   color: #00D4FF;
   font-family: 'Courier New', monospace;
   font-weight: 900;
-  font-size: 10px;
   line-height: 1;
-  text-shadow: 0 0 6px rgba(0,212,255,0.9);
-  animation: gb-cursor-blink 1s infinite alternate;
-  display: block;
+  font-size: 0.8rem;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.9);
+  animation: gb-cursor-blink 0.9s infinite alternate;
 }
 
 @keyframes gb-cursor-blink {
-  0%, 40% { opacity: 1; }
-  60%, 100% { opacity: 0.2; }
+  0%, 40%   { opacity: 1; text-shadow: 0 0 10px #00D4FF; }
+  60%, 100% { opacity: 0.15; text-shadow: none; }
 }
 
-.gb-teeth-grille {
-  display: none;
+.gb-bender-teeth-grille {
   width: 100%;
   height: 100%;
+  display: flex;
   align-items: center;
   justify-content: space-evenly;
-  gap: 1.5px;
+  gap: 2px;
 }
 
 .gb-tooth-bar {
-  width: 2.5px;
   background: #fffde7;
-  border-radius: 1px;
-  box-shadow: 0 0 4px rgba(255,255,200,0.9);
+  border-radius: 1.5px;
+  transition: none;
+  width: 4px;
 }
 
-/* Modo Habla Activa (60 FPS JS Real-time Engine) */
-.gb-avatar-wrapper.gb-speaking .gb-mouth-frame {
-  transition: none !important;
-  border-color: #00D4FF;
-  box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
-}
-
-.gb-avatar-wrapper.gb-speaking .gb-terminal-cursor {
-  display: none !important;
-}
-
-.gb-avatar-wrapper.gb-speaking .gb-teeth-grille {
-  display: flex !important;
-}
-
-.gb-avatar-wrapper.gb-speaking .gb-tooth-bar {
-  transition: none !important;
-  animation: none !important; /* Articulated cleanly by 60 FPS syllabic rAF engine */
-}
-
-/* ── Torso / Pantalla CRT ── */
+/* ── Torso / Pantalla CRT abombada (Canonical 52px x 34px) ── */
 .gb-robot-body {
-  position: relative;
-  width: 44px;
-  height: 24px;
   background: linear-gradient(145deg, #374151 0%, #1f2937 60%, #111827 100%);
-  border: 1.5px solid #4b5563;
+  border: 2px solid #4b5563;
   border-top: none;
-  border-radius: 0 0 8px 8px;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
   z-index: 5;
+  width: 52px;
+  height: 34px;
+  border-radius: 0 0 10px 10px;
 }
 
+/* Brazos Mecánicos (3 Segmentos Articulados) */
 .gb-robot-arm {
   position: absolute;
-  top: 1px;
-  width: 3.5px;
-  height: 12px;
-  background: linear-gradient(180deg, #64748b, #334155);
-  border-radius: 2px;
-  border: 1px solid #475569;
+  top: 15%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   transform-origin: top center;
+  transition: transform 0.4s ease;
+  z-index: -1;
 }
 
-.gb-arm-left { left: -5px; }
-.gb-arm-right { right: -5px; }
+.gb-arm-left  { left: -8px; transform: rotate(15deg); }
+.gb-arm-right { right: -8px; transform: rotate(-15deg); }
 
-.gb-avatar-wrapper.gb-speaking .gb-arm-left {
-  animation: gb-arm-gesture 1s ease-in-out infinite alternate;
-}
-.gb-avatar-wrapper.gb-speaking .gb-arm-right {
-  animation: gb-arm-gesture 1s ease-in-out infinite alternate 0.5s;
-}
-
-@keyframes gb-arm-gesture {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(-18deg); }
+.gb-arm-upper {
+  background: linear-gradient(90deg, #4b5563, #374151);
+  border: 1px solid #1f2937;
+  border-radius: 2px;
+  width: 4px;
+  height: 10px;
 }
 
-/* ── Monitor CRT ── */
+.gb-arm-joint {
+  background: #1f2937;
+  border: 1px solid #111827;
+  border-radius: 50%;
+  width: 6px;
+  height: 6px;
+}
+
+.gb-arm-forearm {
+  background: linear-gradient(90deg, #374151, #1f2937);
+  border: 1px solid #111827;
+  border-radius: 0 0 4px 4px;
+  width: 5px;
+  height: 12px;
+}
+
+.gb-arm-speaking-left {
+  animation: gb-arm-gesticulate-left 2s infinite alternate ease-in-out !important;
+}
+
+.gb-arm-speaking-right {
+  animation: gb-arm-gesticulate-right 2.3s infinite alternate ease-in-out !important;
+}
+
+@keyframes gb-arm-gesticulate-left {
+  0%   { transform: rotate(15deg); }
+  100% { transform: rotate(35deg) translateY(-2px); }
+}
+
+@keyframes gb-arm-gesticulate-right {
+  0%   { transform: rotate(-15deg); }
+  100% { transform: rotate(-40deg) translateY(-3px); }
+}
+
+/* Pantalla CRT (34px x 18px) */
 .gb-crt-monitor {
-  position: relative;
-  width: 28px;
-  height: 14px;
   background: #020617;
-  border: 1px solid #334155;
-  border-radius: 3px;
+  border: 1.5px solid #334155;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 212, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 5px rgba(0,212,255,0.2);
+  width: 34px;
+  height: 18px;
 }
 
 .gb-crt-scanlines {
   position: absolute;
   inset: 0;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.45) 50%);
-  background-size: 100% 2px;
+  background-size: 100% 3px;
   pointer-events: none;
   z-index: 2;
 }
 
 .gb-crt-content {
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+  z-index: 1;
+  text-shadow: 0 0 6px currentColor;
+  font-size: 0.65rem;
+  color: #00D4FF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Courier New', monospace;
-  font-size: 8px;
-  font-weight: 900;
-  color: #00D4FF;
-  text-shadow: 0 0 5px #00D4FF;
-  z-index: 1;
 }
 
-.gb-crt-idle-text {
-  display: block;
-}
-
-.gb-crt-eq {
-  display: none;
-  align-items: flex-end;
-  gap: 2px;
-  height: 9px;
-}
-
-.gb-crt-bar {
-  width: 2.5px;
-  background: #00E676;
-  border-radius: 1px;
-  box-shadow: 0 0 3px #00E676;
-  animation: gb-crt-bounce 0.4s ease-in-out infinite alternate;
-}
-
-.gb-crt-bar:nth-child(1) { height: 60%; animation-delay: 0.1s; }
-.gb-crt-bar:nth-child(2) { height: 100%; animation-delay: 0.25s; }
-.gb-crt-bar:nth-child(3) { height: 40%; animation-delay: 0.05s; }
-
-@keyframes gb-crt-bounce {
-  0% { transform: scaleY(0.3); }
-  100% { transform: scaleY(1); }
-}
-
-.gb-avatar-wrapper.gb-speaking .gb-crt-idle-text {
-  display: none;
-}
-.gb-avatar-wrapper.gb-speaking .gb-crt-eq {
+.gb-eq-container {
   display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  height: 60%;
 }
 
-/* ── Propulsor Plasma Inferior ── */
+.gb-eq-bar {
+  width: 3.5px;
+  background-color: #00E676;
+  animation: gb-eq-bounce 0.5s infinite alternate ease-in-out;
+}
+
+.gb-eq-bar:nth-child(2) { animation-delay: 0.15s; }
+.gb-eq-bar:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes gb-eq-bounce {
+  0%   { height: 20%; }
+  100% { height: 100%; }
+}
+
+/* Micropropulsor Magnético Inferior */
 .gb-hover-thruster {
   position: absolute;
   bottom: -6px;
@@ -1746,32 +1799,31 @@
 }
 
 .gb-thruster-nozzle {
-  width: 10px;
-  height: 2px;
-  background: #475569;
-  border-radius: 1px;
+  background: linear-gradient(180deg, #475569, #1e293b);
+  border: 1px solid #334155;
+  border-radius: 2px;
+  width: 16px;
+  height: 3px;
 }
 
 .gb-plasma-flame {
-  width: 6px;
-  height: 6px;
-  background: radial-gradient(ellipse at top, #ffffff 0%, #00D4FF 50%, transparent 100%);
+  background: radial-gradient(ellipse at top, #00D4FF 0%, #6C63FF 60%, transparent 100%);
   border-radius: 50%;
-  opacity: 0.7;
-  filter: blur(0.5px);
-  animation: gb-plasma-flame 0.25s infinite alternate;
-}
-
-.gb-avatar-wrapper.gb-speaking .gb-plasma-flame {
+  filter: blur(1px);
+  animation: gb-plasma-flicker 0.15s infinite alternate;
   width: 8px;
-  height: 9px;
-  opacity: 1;
-  filter: drop-shadow(0 0 6px #00D4FF);
+  height: 6px;
 }
 
-@keyframes gb-plasma-flame {
-  0% { transform: scaleY(0.7); opacity: 0.5; }
-  100% { transform: scaleY(1.3); opacity: 0.9; }
+.gb-plasma-high {
+  height: 12px !important;
+  width: 12px !important;
+  box-shadow: 0 0 10px 4px rgba(0, 212, 255, 0.85);
+}
+
+@keyframes gb-plasma-flicker {
+  0%   { transform: scaleX(0.85) scaleY(0.9); opacity: 0.75; }
+  100% { transform: scaleX(1.15) scaleY(1.15); opacity: 1; }
 }
 
 /* ── Avatar Speaking Bubble / Tag ── */

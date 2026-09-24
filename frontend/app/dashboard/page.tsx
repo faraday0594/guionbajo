@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getToken, clearToken } from '@/lib/auth';
-import { Settings, Lock, Play, CheckCircle2, Flame, Award, Loader2, Sparkles, BookOpen, Layers, Check, ChevronRight, Mic, Activity, LogOut, Radio, Tv, Download, ExternalLink, Film, Laptop } from 'lucide-react';
+import { Settings, Lock, Play, CheckCircle2, Flame, Award, Loader2, Sparkles, BookOpen, Layers, Check, ChevronRight, Mic, Activity, LogOut, Radio, Tv, Download, ExternalLink, Film, Laptop, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
@@ -753,7 +753,20 @@ export default function DashboardPage() {
                       Carga en Google Chrome
                     </h4>
                     <p className="text-xs text-brand-text-secondary leading-relaxed">
-                      Abre una pestaña en Chrome y ve a <code className="text-brand-cyan bg-black/40 px-1 py-0.5 rounded text-[11px]">chrome://extensions</code> (o Menú ⋮ &gt; Extensiones &gt; Administrar extensiones).
+                      Abre una pestaña en Chrome y ve a{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText('chrome://extensions');
+                          toast.success('¡Enlace copiado! Pégalo en la barra de direcciones (Ctrl + V)', { icon: '📋' });
+                        }}
+                        title="Haz clic para copiar 'chrome://extensions' al portapapeles"
+                        className="inline-flex items-center gap-1 text-brand-cyan bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 px-1.5 py-0.5 rounded text-[11px] font-mono cursor-pointer transition-all hover:scale-105"
+                      >
+                        <span>chrome://extensions</span>
+                        <Copy size={11} className="text-brand-cyan" />
+                      </button>{' '}
+                      (o Menú ⋮ &gt; Extensiones &gt; Administrar extensiones).
                     </p>
                     <ul className="text-xs text-brand-text-secondary space-y-1.5 mt-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
                       <li>• Activa el switch <b>"Modo de desarrollador"</b> (arriba a la derecha).</li>
@@ -873,7 +886,20 @@ export default function DashboardPage() {
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="font-bold text-white mb-1">¿Cómo actualizo la extensión si hay mejoras?</div>
                   <div className="text-brand-text-secondary leading-relaxed">
-                    Solo descargas el nuevo ZIP, reemplazas los archivos en tu carpeta y en <code className="text-brand-cyan">chrome://extensions</code> haces clic en el botón de recargar 🔄.
+                    Solo descargas el nuevo ZIP, reemplazas los archivos en tu carpeta y en{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText('chrome://extensions');
+                        toast.success('¡Enlace copiado! Pégalo en la barra de direcciones (Ctrl + V)', { icon: '📋' });
+                      }}
+                      title="Haz clic para copiar 'chrome://extensions'"
+                      className="inline-flex items-center gap-1 text-brand-cyan bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 px-1.5 py-0.5 rounded text-[11px] font-mono cursor-pointer transition-all hover:scale-105"
+                    >
+                      <span>chrome://extensions</span>
+                      <Copy size={11} className="text-brand-cyan" />
+                    </button>{' '}
+                    haces clic en el botón de recargar 🔄.
                   </div>
                 </div>
               </div>

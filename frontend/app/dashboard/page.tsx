@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getToken, clearToken } from '@/lib/auth';
-import { Settings, Lock, Play, CheckCircle2, Flame, Award, Loader2, Sparkles, BookOpen, Layers, Check, ChevronRight, Mic, Activity, LogOut, Radio } from 'lucide-react';
+import { Settings, Lock, Play, CheckCircle2, Flame, Award, Loader2, Sparkles, BookOpen, Layers, Check, ChevronRight, Mic, Activity, LogOut, Radio, Tv, Download, ExternalLink, Film, Laptop } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
@@ -280,7 +280,7 @@ export default function DashboardPage() {
     loadDashboard();
   }, []);
 
-  const [dashboardTab, setDashboardTab] = useState<'curriculum' | 'phonetics' | 'live'>('curriculum');
+  const [dashboardTab, setDashboardTab] = useState<'curriculum' | 'phonetics' | 'live' | 'netflix'>('curriculum');
 
   const handleLaunchMission = (targetSublevel?: string, targetClassIdx?: number) => {
     const sublevel = targetSublevel || userStats.current_sublevel;
@@ -387,7 +387,7 @@ export default function DashboardPage() {
         </header>
 
         {/* 🗂️ Tab Switcher — Arriba debajo del toolbar */}
-        <div className="flex items-stretch gap-2 mb-6">
+        <div className="flex items-stretch gap-2 mb-6 flex-wrap sm:flex-nowrap">
           {/* Tab 1: Mi Clase */}
           <button
             onClick={() => setDashboardTab('curriculum')}
@@ -428,6 +428,22 @@ export default function DashboardPage() {
             {dashboardTab !== 'live' && (
               <span className="hidden sm:inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
             )}
+          </button>
+
+          {/* Tab 4: Netflix AI Companion */}
+          <button
+            onClick={() => setDashboardTab('netflix')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+              dashboardTab === 'netflix'
+                ? 'bg-gradient-to-r from-red-600 to-rose-600 border border-red-400 text-white shadow-lg shadow-red-600/30'
+                : 'glass border border-red-500/30 text-red-300 hover:text-white hover:bg-red-950/30'
+            }`}
+          >
+            <Tv size={15} className={dashboardTab === 'netflix' ? 'text-white flex-shrink-0' : 'text-red-400 flex-shrink-0'} />
+            <span className="truncate">Netflix AI</span>
+            <span className="hidden md:inline-flex text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-red-500/40 text-red-100 border border-red-400/50">
+              NUEVO
+            </span>
           </button>
         </div>
 
@@ -627,6 +643,243 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+
+        {/* 🎬 Tab 4: Netflix AI Companion Hub */}
+        {dashboardTab === 'netflix' && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* Hero Card */}
+            <div className="p-6 sm:p-8 rounded-3xl glass border border-red-500/40 bg-gradient-to-b from-red-950/40 via-brand-surface/80 to-brand-card/90 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 blur-[100px] rounded-full pointer-events-none" />
+              
+              <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8 relative z-10">
+                {/* Robot Avatar Showcase */}
+                <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-black/60 border-2 border-red-500/40 flex items-center justify-center relative shadow-[0_0_25px_rgba(239,68,68,0.25)] overflow-visible">
+                    <TutorAvatar size="md" emotion="happy" />
+                  </div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-red-300 bg-red-500/20 px-2.5 py-0.5 rounded-full border border-red-500/30">
+                    AI Companion
+                  </span>
+                </div>
+
+                {/* Hero Info */}
+                <div className="flex-1 text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-2 mb-2 flex-wrap">
+                    <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-red-600/30 text-red-200 border border-red-500/50 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                      Extensión Oficial para Google Chrome
+                    </span>
+                    <span className="text-[10px] text-brand-text-muted">Exclusivo para Estudiantes de Guionbajo</span>
+                  </div>
+
+                  <h2 className="text-2xl sm:text-3xl font-outfit font-black text-white mb-2 tracking-tight">
+                    Aprende Inglés en Netflix con tu Tutor Personal de IA
+                  </h2>
+
+                  <p className="text-sm text-brand-text-secondary leading-relaxed max-w-2xl mb-6">
+                    Convierte tus series y películas favoritas en una experiencia inmersiva de aprendizaje. Guionbajo lee los subtítulos en tiempo real, genera una <b>Clase Previa con 10 a 15 expresiones y tiempos verbales</b> antes del capítulo (con explicaciones por voz del avatar e ilustraciones de MiniMax), y te responde en vivo cuando presionas <b>[Q]</b>.
+                  </p>
+
+                  {/* Primary CTA Buttons */}
+                  <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3">
+                    <a
+                      href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/netflix/download-extension`}
+                      download="guionbajo-netflix-companion.zip"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-sm font-extrabold shadow-lg shadow-red-600/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                      <Download size={18} />
+                      <span>Descargar Extensión (.ZIP)</span>
+                    </a>
+
+                    <a
+                      href="https://www.netflix.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl glass border border-white/20 hover:bg-white/10 text-white text-sm font-semibold transition-all active:scale-[0.98]"
+                    >
+                      <Tv size={16} className="text-red-400" />
+                      <span>Abrir Netflix en Chrome</span>
+                      <ExternalLink size={14} className="opacity-70" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 📋 Guía Visual Paso a Paso (3 Pasos) */}
+            <div className="p-6 sm:p-8 rounded-3xl glass border border-brand-border/60 bg-brand-surface/40 shadow-xl space-y-6">
+              <div className="border-b border-brand-border/40 pb-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-brand-cyan mb-1">
+                  Guía Rápida de Instalación (Menos de 1 minuto)
+                </div>
+                <h3 className="text-xl font-outfit font-bold text-white">
+                  ¿Cómo instalar y usar Guionbajo en tu Netflix?
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Paso 1 */}
+                <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex flex-col justify-between space-y-4 relative group hover:border-red-500/40 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="w-8 h-8 rounded-xl bg-red-600/20 text-red-400 font-extrabold flex items-center justify-center border border-red-500/40 text-sm">
+                      1
+                    </span>
+                    <Download size={18} className="text-brand-text-muted group-hover:text-red-400 transition-colors" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white mb-1.5">
+                      Descarga y Descomprime
+                    </h4>
+                    <p className="text-xs text-brand-text-secondary leading-relaxed">
+                      Haz clic en el botón de arriba para descargar <code className="text-brand-cyan bg-black/40 px-1 py-0.5 rounded text-[11px]">guionbajo-netflix-companion.zip</code>. Haz clic derecho sobre el archivo descargado y selecciona <b>"Extraer todo..."</b> en una carpeta accesible (ej: Documentos o Escritorio).
+                    </p>
+                  </div>
+                  <div className="text-[11px] text-brand-text-muted flex items-center gap-1.5 pt-2 border-t border-white/5">
+                    <span>📦</span>
+                    <span>Listo en 10 segundos</span>
+                  </div>
+                </div>
+
+                {/* Paso 2 */}
+                <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex flex-col justify-between space-y-4 relative group hover:border-red-500/40 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="w-8 h-8 rounded-xl bg-red-600/20 text-red-400 font-extrabold flex items-center justify-center border border-red-500/40 text-sm">
+                      2
+                    </span>
+                    <Laptop size={18} className="text-brand-text-muted group-hover:text-red-400 transition-colors" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white mb-1.5">
+                      Carga en Google Chrome
+                    </h4>
+                    <p className="text-xs text-brand-text-secondary leading-relaxed">
+                      Abre una pestaña en Chrome y ve a <code className="text-brand-cyan bg-black/40 px-1 py-0.5 rounded text-[11px]">chrome://extensions</code> (o Menú ⋮ &gt; Extensiones &gt; Administrar extensiones).
+                    </p>
+                    <ul className="text-xs text-brand-text-secondary space-y-1.5 mt-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                      <li>• Activa el switch <b>"Modo de desarrollador"</b> (arriba a la derecha).</li>
+                      <li>• Haz clic en <b>"Cargar descomprimida"</b> (arriba a la izquierda).</li>
+                      <li>• Selecciona la carpeta que acabas de descomprimir.</li>
+                    </ul>
+                  </div>
+                  <div className="text-[11px] text-brand-text-muted flex items-center gap-1.5 pt-2 border-t border-white/5">
+                    <span>⚡</span>
+                    <span>No requiere Web Store ni configuración</span>
+                  </div>
+                </div>
+
+                {/* Paso 3 */}
+                <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex flex-col justify-between space-y-4 relative group hover:border-red-500/40 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="w-8 h-8 rounded-xl bg-red-600/20 text-red-400 font-extrabold flex items-center justify-center border border-red-500/40 text-sm">
+                      3
+                    </span>
+                    <Tv size={18} className="text-brand-text-muted group-hover:text-red-400 transition-colors" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white mb-1.5">
+                      Abre Netflix y Aprende
+                    </h4>
+                    <p className="text-xs text-brand-text-secondary leading-relaxed">
+                      Entra a <b className="text-white">netflix.com</b> y reproduce cualquier título en inglés. Verás el botón flotante de Guionbajo abajo a la derecha o presiona la tecla <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[11px] text-white font-mono">[Q]</kbd>.
+                    </p>
+                    <div className="text-xs text-brand-text-secondary mt-2 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                      Inicia sesión con tu misma cuenta y contraseña de Guionbajo y elige:
+                      <div className="mt-1 text-emerald-400 font-bold">• Modo Clase Previa (Recomendado)</div>
+                      <div className="text-brand-cyan font-bold">• Modo Aprendizaje Libre</div>
+                    </div>
+                  </div>
+                  <div className="text-[11px] text-brand-text-muted flex items-center gap-1.5 pt-2 border-t border-white/5">
+                    <span>🎬</span>
+                    <span>¡Listo para tu sesión de inglés!</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ✨ Características Principales (Lo que incluye) */}
+            <div className="p-6 sm:p-8 rounded-3xl glass border border-brand-border/60 bg-brand-surface/40 shadow-xl space-y-6">
+              <div className="border-b border-brand-border/40 pb-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-brand-cyan mb-1">
+                  Experiencia Pedagógica
+                </div>
+                <h3 className="text-xl font-outfit font-bold text-white">
+                  Todo lo que Guionbajo hace por ti en Netflix
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  {
+                    icon: '🎓',
+                    title: 'Clase Previa con 10-15 Expresiones',
+                    desc: 'Antes de ver el episodio, aprende los Phrasal Verbs, Modismos y Vocabulario clave con situaciones simuladas e ilustraciones únicas generadas por MiniMax.',
+                  },
+                  {
+                    icon: '🗣️',
+                    title: 'Avatar Habla en Cada Slide',
+                    desc: 'Guionbajo articula sus expresiones y ondas de audio mientras te habla. Además puedes hacer clic sobre cualquier palabra para escuchar su pronunciación nativa.',
+                  },
+                  {
+                    icon: '⏳',
+                    title: 'Gramática y Tiempos Verbales',
+                    desc: 'Aprende por qué los personajes dijeron lo que dijeron con explicaciones reales sobre intención comunicativa y pon a prueba tu entendimiento con un quiz.',
+                  },
+                  {
+                    icon: '⚡',
+                    title: 'Pausa y Pregunta en Vivo [Q]',
+                    desc: 'Si estás viendo la serie y no entiendes un diálogo, presiona la tecla [Q] y Guionbajo pausará el video para explicarte la escena en español al instante.',
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/20 transition-all flex flex-col justify-between">
+                    <div>
+                      <span className="text-2xl block mb-2">{item.icon}</span>
+                      <h4 className="text-xs font-bold text-white mb-1.5">{item.title}</h4>
+                      <p className="text-[11px] text-brand-text-secondary leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ❓ Preguntas Frecuentes / Dudas de Estudiantes */}
+            <div className="p-6 sm:p-8 rounded-3xl glass border border-brand-border/60 bg-brand-surface/40 shadow-xl space-y-4">
+              <h3 className="text-lg font-outfit font-bold text-white mb-2 flex items-center gap-2">
+                <span>💡</span>
+                <span>Preguntas Frecuentes de la Extensión</span>
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <div className="font-bold text-white mb-1">¿Necesito pagar adicional por la extensión?</div>
+                  <div className="text-brand-text-secondary leading-relaxed">
+                    No, la extensión de Netflix está incluida de forma 100% gratuita para todos los estudiantes registrados en Guionbajo.
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <div className="font-bold text-white mb-1">¿Mis clases en Netflix se guardan en mi progreso?</div>
+                  <div className="text-brand-text-secondary leading-relaxed">
+                    Sí, cada vez que completas una clase previa en Netflix, se registra automáticamente en tu historial de lecciones en la plataforma.
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <div className="font-bold text-white mb-1">¿Funciona en cualquier serie o película?</div>
+                  <div className="text-brand-text-secondary leading-relaxed">
+                    Sí, funciona en cualquier título de Netflix que tenga audio o subtítulos en inglés.
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <div className="font-bold text-white mb-1">¿Cómo actualizo la extensión si hay mejoras?</div>
+                  <div className="text-brand-text-secondary leading-relaxed">
+                    Solo descargas el nuevo ZIP, reemplazas los archivos en tu carpeta y en <code className="text-brand-cyan">chrome://extensions</code> haces clic en el botón de recargar 🔄.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

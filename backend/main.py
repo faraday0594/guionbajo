@@ -30,6 +30,7 @@ from routers import (
     quest_router,
     speech_router,
     live_chat_router,
+    netflix_companion_router,
 )
 
 def sync_table_columns(sync_conn):
@@ -157,7 +158,7 @@ app.add_middleware(
         "https://guionbajo.vercel.app",
         "https://guionbajo-git-main-faraday0594s-projects.vercel.app",
     ],
-    allow_origin_regex=r"https://.*",
+    allow_origin_regex=r"https?://.*|chrome-extension://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -200,6 +201,7 @@ app.include_router(reading_router)
 app.include_router(quest_router)
 app.include_router(speech_router)
 app.include_router(live_chat_router)
+app.include_router(netflix_companion_router)
 
 if __name__ == "__main__":
     import uvicorn

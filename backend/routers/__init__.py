@@ -11,6 +11,7 @@ from .reading import router as reading_router
 from .quest import router as quest_router
 from .speech import router as speech_router
 from .live_chat import router as live_chat_router
+from .netflix_companion import router as netflix_companion_router
 
 __all__ = [
     "auth_router",
@@ -26,4 +27,5 @@ __all__ = [
     "quest_router",
     "speech_router",
     "live_chat_router",
+    "netflix_companion_router",
 ]

@@ -120,15 +120,29 @@ async def send_email_async(
     attachments: list = None
 ) -> bool:
     """
-    Envía correo usando Resend como proveedor primario.
-    Si Resend no está disponible o falla, recurre a SMTP como respaldo.
+    Envía correo usando Resend y Gmail SMTP como respaldo automático inteligente.
+    Si el destinatario es diferente a NOTIFICATION_EMAIL y el remitente de Resend es el de prueba (onboarding@resend.dev),
+    se utiliza directamente Gmail SMTP para evitar el error 403 Forbidden y garantizar entrega al 100%.
     """
+    clean_to = to_email.lower().strip()
+    is_notification_owner = (clean_to == settings.NOTIFICATION_EMAIL.lower().strip())
+    is_resend_test_domain = "onboarding@resend.dev" in (settings.RESEND_FROM_EMAIL or "")
+
+    # Si Resend está en dominio de prueba y el destinatario es un alumno diferente, usar directamente Gmail SMTP
+    if settings.SMTP_USER and settings.SMTP_PASSWORD and not is_notification_owner and is_resend_test_domain:
+        logger.info(f"[EmailService] Enviando correo a {to_email} vía Gmail SMTP...")
+        sent = await asyncio.to_thread(_send_email_sync, to_email, subject, html_body, text_body)
+        if sent:
+            return True
+
+    # Intentar con Resend
     if settings.RESEND_API_KEY:
         sent = await _send_via_resend(to_email, subject, html_body, text_body, attachments=attachments)
         if sent:
             return True
         logger.info("[EmailService] Resend no completó el envío; intentando vía SMTP...")
 
+    # Fallback final a SMTP
     return await asyncio.to_thread(_send_email_sync, to_email, subject, html_body, text_body)
 
 

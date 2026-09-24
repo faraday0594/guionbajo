@@ -18,8 +18,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: true, text });
       })
       .catch((err) => {
-        console.warn("[Guionbajo AI Background] Error fetching subtitle file:", err);
-        sendResponse({ success: false, error: err.toString() });
+        sendResponse({ success: false, error: err ? err.toString() : "Fetch error" });
       });
     return true; // Keep message channel open for async response
   }
@@ -46,14 +45,20 @@ chrome.webRequest.onCompleted.addListener(
         url.includes(".xml"));
 
     if (isSubtitleCandidate) {
-      chrome.tabs
-        .sendMessage(details.tabId, {
+      chrome.tabs.sendMessage(
+        details.tabId,
+        {
           action: "NETFLIX_SUBTITLE_TRACK_DETECTED",
           url: details.url,
-        })
-        .catch(() => {
-          // Tab may not be ready or closed
-        });
+        },
+        () => {
+          // Explicitly checking chrome.runtime.lastError prevents Chrome from logging
+          // "Could not establish connection. Receiving end does not exist." in extension errors
+          if (chrome.runtime.lastError) {
+            // Tab closed or content script not ready; safely ignored
+          }
+        }
+      );
     }
   },
   {

@@ -60,43 +60,21 @@
   const capturedSubtitleUrls = new Set();
   let isExtractingSubtitles = false;
 
-  async function extractFullSubtitlesFromUrl(url) {
-    if (!url || capturedSubtitleUrls.has(url) || isExtractingSubtitles) return;
+  function updateFullScriptBadge(count) {
+    const badge = document.getElementById("gb-header-script-tag");
+    if (badge) {
+      badge.innerText = `📜 Guion Completo (${count})`;
+      badge.style.display = "inline-flex";
+    }
+  }
 
-    const u = url.toLowerCase();
-    const isTarget =
-      u.includes("nflxvideo.net") &&
-      (u.includes("?o=") ||
-        u.includes("timedtext") ||
-        u.includes("format=imsc1") ||
-        u.includes("format=webvtt") ||
-        u.includes("simplesdh") ||
-        u.includes("dfxp") ||
-        u.includes("range/"));
+  function parseSubtitleText(text) {
+    if (!text || typeof text !== "string") return;
+    const lines = [];
 
-    if (!isTarget) return;
-
-    capturedSubtitleUrls.add(url);
-    isExtractingSubtitles = true;
-
-    try {
-      console.log("[Guionbajo AI] 🎬 Detectada pista completa de subtítulos en red:", url.substring(0, 100) + "...");
-      const resp = await fetch(url, { credentials: "include" });
-      if (!resp.ok) {
-        isExtractingSubtitles = false;
-        return;
-      }
-
-      const text = await resp.text();
-      if (!text) {
-        isExtractingSubtitles = false;
-        return;
-      }
-
-      const lines = [];
-
-      // 1. Format: TTML / IMSC1 / DFXP (XML based)
-      if (text.includes("<tt") || text.includes("<p ") || text.includes("<body")) {
+    // 1. Format: TTML / IMSC1 / DFXP (XML based)
+    if (text.includes("<tt") || text.includes("<p ") || text.includes("<body")) {
+      try {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(text, "text/xml");
         const pTags = Array.from(xmlDoc.getElementsByTagName("p"));
@@ -106,96 +84,188 @@
             lines.push(cleanLine);
           }
         });
-      }
-      // 2. Format: WebVTT
-      else if (text.startsWith("WEBVTT") || text.includes("-->")) {
-        const rawLines = text.split(/\r?\n/);
-        rawLines.forEach((l) => {
-          const trimmed = l.trim();
-          if (
-            trimmed &&
-            !trimmed.startsWith("WEBVTT") &&
-            !trimmed.startsWith("NOTE") &&
-            !trimmed.includes("-->") &&
-            !/^\d+$/.test(trimmed)
-          ) {
-            const cleanLine = trimmed.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-            if (cleanLine && cleanLine.length > 1 && !lines.includes(cleanLine)) {
-              lines.push(cleanLine);
-            }
+      } catch (_) {}
+    }
+    // 2. Format: WebVTT
+    else if (text.startsWith("WEBVTT") || text.includes("-->")) {
+      const rawLines = text.split(/\r?\n/);
+      rawLines.forEach((l) => {
+        const trimmed = l.trim();
+        if (
+          trimmed &&
+          !trimmed.startsWith("WEBVTT") &&
+          !trimmed.startsWith("NOTE") &&
+          !trimmed.includes("-->") &&
+          !/^\d+$/.test(trimmed)
+        ) {
+          const cleanLine = trimmed.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+          if (cleanLine && cleanLine.length > 1 && !lines.includes(cleanLine)) {
+            lines.push(cleanLine);
+          }
+        }
+      });
+    }
+    // 3. Format: Netflix JSON (simplesdh)
+    else if (text.trim().startsWith("{")) {
+      try {
+        const json = JSON.parse(text);
+        const events = json.events || json.cues || [];
+        events.forEach((ev) => {
+          if (ev.lines) {
+            ev.lines.forEach((ln) => {
+              const cleanLine = (ln.text || "").replace(/\s+/g, " ").trim();
+              if (cleanLine && cleanLine.length > 1 && !lines.includes(cleanLine)) {
+                lines.push(cleanLine);
+              }
+            });
           }
         });
-      }
-      // 3. Format: Netflix JSON (simplesdh)
-      else if (text.trim().startsWith("{")) {
-        try {
-          const json = JSON.parse(text);
-          const events = json.events || json.cues || [];
-          events.forEach((ev) => {
-            if (ev.lines) {
-              ev.lines.forEach((ln) => {
-                const cleanLine = (ln.text || "").replace(/\s+/g, " ").trim();
-                if (cleanLine && cleanLine.length > 1 && !lines.includes(cleanLine)) {
-                  lines.push(cleanLine);
-                }
-              });
-            }
-          });
-        } catch (_) {}
-      }
+      } catch (_) {}
+    }
 
-      if (lines.length > 25) {
-        fullEpisodeTranscript = lines;
-        console.log(`%c[Guionbajo AI]%c 🏆 ¡Guion completo del capítulo extraído con éxito! (${lines.length} líneas de diálogo)`, "color:#10b981;font-weight:bold;", "color:#fff;");
-        updateFullScriptBadge(lines.length);
+    if (lines.length >= 15) {
+      fullEpisodeTranscript = lines;
+      console.log(
+        `%c[Guionbajo AI]%c 🏆 ¡Guion completo del capítulo extraído con éxito! (${lines.length} líneas de diálogo)`,
+        "color:#10b981;font-weight:bold;",
+        "color:#fff;"
+      );
+      updateFullScriptBadge(lines.length);
+    }
+  }
+
+  async function fetchAndParseSubtitleUrl(url) {
+    if (!url || capturedSubtitleUrls.has(url)) return;
+    capturedSubtitleUrls.add(url);
+
+    // Prefer fetching via background service worker (100% bypasses webpage CORS restrictions)
+    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+      chrome.runtime.sendMessage({ action: "FETCH_SUBTITLE_FILE", url }, (res) => {
+        if (!chrome.runtime.lastError && res && res.success && res.text) {
+          parseSubtitleText(res.text);
+          return;
+        }
+        // Fallback: direct fetch with credentials omitted
+        fallbackDirectFetch(url);
+      });
+    } else {
+      fallbackDirectFetch(url);
+    }
+  }
+
+  async function fallbackDirectFetch(url) {
+    try {
+      const resp = await fetch(url, { credentials: "omit", mode: "cors" });
+      if (resp.ok) {
+        const text = await resp.text();
+        parseSubtitleText(text);
       }
     } catch (e) {
-      console.warn("[Guionbajo AI] Aviso al procesar archivo de subtítulos:", e);
-    } finally {
-      isExtractingSubtitles = false;
+      console.debug("[Guionbajo AI] Subtitle fetch notice:", e);
     }
   }
 
-  function updateFullScriptBadge(count) {
-    const badge = document.getElementById("gb-header-script-tag");
-    if (badge) {
-      badge.innerText = `📜 Guion Completo (${count})`;
-      badge.style.display = "inline-flex";
+  // 1. Process tracks array from Netflix Cadmium Player API or manifest
+  function processManifestTracks(tracks) {
+    if (!tracks || !Array.isArray(tracks) || tracks.length === 0) return;
+    if (fullEpisodeTranscript && fullEpisodeTranscript.length > 50) return; // already populated
+
+    // Prioritize English track (non-forced narrative, regular or SDH)
+    let chosenTrack =
+      tracks.find(
+        (t) =>
+          (t.language === "en" || t.language?.startsWith("en")) &&
+          !t.isForcedNarrative &&
+          !t.isNoneTrack &&
+          t.ttDownloadables
+      ) ||
+      tracks.find(
+        (t) =>
+          (t.language === "en" || t.language?.startsWith("en")) &&
+          !t.isNoneTrack &&
+          t.ttDownloadables
+      ) ||
+      tracks.find((t) => !t.isNoneTrack && t.ttDownloadables);
+
+    if (!chosenTrack || !chosenTrack.ttDownloadables) return;
+
+    const preferredFormats = [
+      "webvtt-lssdh-ios8",
+      "webvtt",
+      "dfxp-ls-sdh",
+      "simplesdh",
+      "imsc1.1",
+    ];
+
+    let downloadUrl = null;
+    for (const fmt of preferredFormats) {
+      const downloadable = chosenTrack.ttDownloadables[fmt];
+      if (downloadable) {
+        if (downloadable.downloadUrls) {
+          const urls = Object.values(downloadable.downloadUrls);
+          if (urls.length > 0 && urls[0]) {
+            downloadUrl = urls[0];
+            break;
+          }
+        } else if (downloadable.urls && downloadable.urls.length > 0) {
+          downloadUrl = downloadable.urls[0].url || downloadable.urls[0];
+          break;
+        }
+      }
+    }
+
+    if (!downloadUrl) {
+      // Fallback: search all formats in ttDownloadables
+      for (const fmt of Object.keys(chosenTrack.ttDownloadables)) {
+        const d = chosenTrack.ttDownloadables[fmt];
+        if (d && d.downloadUrls) {
+          const urls = Object.values(d.downloadUrls);
+          if (urls.length > 0 && urls[0]) {
+            downloadUrl = urls[0];
+            break;
+          }
+        }
+      }
+    }
+
+    if (downloadUrl) {
+      console.log(
+        `[Guionbajo AI] 🎬 Pista de subtítulos oficial localizada (${chosenTrack.language}):`,
+        downloadUrl.substring(0, 100) + "..."
+      );
+      fetchAndParseSubtitleUrl(downloadUrl);
     }
   }
 
-  // A. Listen to Background Worker Interceptions
+  // 2. Listen to inpage.js broadcast messages (from world: MAIN)
+  window.addEventListener("message", (e) => {
+    if (e.source !== window || !e.data) return;
+    if (
+      e.data.source === "guionbajo_inpage" &&
+      e.data.type === "NETFLIX_SUBTITLES_MANIFEST" &&
+      e.data.result
+    ) {
+      processManifestTracks(e.data.result.timedtexttracks);
+    }
+  });
+
+  // 3. Request subtitle tracks from inpage player hook
+  function requestInpageSubtitles() {
+    window.postMessage({ source: "guionbajo_content", action: "REQUEST_SUBTITLES" }, "*");
+  }
+
+  // Initial request after page setup
+  setTimeout(requestInpageSubtitles, 1200);
+  setTimeout(requestInpageSubtitles, 3500);
+
+  // 4. Background service worker message listener
   if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg && msg.action === "NETFLIX_SUBTITLE_TRACK_DETECTED" && msg.url) {
-        extractFullSubtitlesFromUrl(msg.url);
+        fetchAndParseSubtitleUrl(msg.url);
       }
     });
   }
-
-  // B. Native PerformanceObserver monitoring in the page
-  try {
-    const perfObs = new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
-        if (entry.name) {
-          extractFullSubtitlesFromUrl(entry.name);
-        }
-      });
-    });
-    perfObs.observe({ entryTypes: ["resource"] });
-  } catch (_) {}
-
-  // C. Initial scan of already-loaded resources
-  setTimeout(() => {
-    try {
-      const res = performance.getEntriesByType("resource");
-      res.forEach((r) => {
-        if (r.name) {
-          extractFullSubtitlesFromUrl(r.name);
-        }
-      });
-    } catch (_) {}
-  }, 1000);
 
   // 1. Locate Netflix HTML5 video element
   function getNetflixVideo() {
@@ -1117,6 +1187,10 @@
       video.pause();
     }
 
+    if (!fullEpisodeTranscript || fullEpisodeTranscript.length < 25) {
+      requestInpageSubtitles();
+    }
+
     const subText = readCurrentSubtitle() || currentSubtitle || "Esperando diálogo en escena...";
     const modal = ensureModal();
     const settings = await getSettings();
@@ -1408,9 +1482,22 @@
 
       renderMasterclass(cachedMasterclass);
     } catch (err) {
+      const isConnectionRefused =
+        err.message?.includes("Failed to fetch") ||
+        err.message?.includes("NetworkError") ||
+        err.message?.includes("connection refused");
       resultsContainer.innerHTML = `
-        <div style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:14px; border-radius:12px; font-size:13px; color:#fca5a5; margin-top:14px;">
-          ⚠️ ${escapeHtml(err.message || "Error generando clase previa.")}
+        <div style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:16px; border-radius:14px; font-size:13px; color:#fca5a5; margin-top:14px; line-height:1.5;">
+          <div style="font-weight:700; font-size:14px; margin-bottom:6px; color:#f87171;">⚠️ ${isConnectionRefused ? "No se pudo conectar con el servidor de Guionbajo" : "Error generando la Clase Maestra"}</div>
+          ${
+            isConnectionRefused
+              ? `El backend de Guionbajo no está respondiendo en <b>${escapeHtml(settings.apiUrl)}</b>.<br><br>
+                 💡 <b>Para iniciar el servidor:</b><br>
+                 1. Abre una consola de PowerShell o CMD.<br>
+                 2. Ejecuta: <code style="background:#1e1e2e; padding:3px 6px; border-radius:4px; color:#38bdf8; font-family:monospace;">cd "d:\\tutor ai\\backend" ; uvicorn main:app --reload --port 8000</code><br>
+                 3. Vuelve a hacer clic en <b>Generar Clase Maestra</b>.`
+              : escapeHtml(err.message || "Error generando clase previa.")
+          }
         </div>
       `;
     }

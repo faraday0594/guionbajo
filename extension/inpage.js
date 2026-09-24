@@ -1,0 +1,113 @@
+/**
+ * Guionbajo AI — In-Page Hook (Runs in world: "MAIN")
+ * Directly accesses window.netflix Player API and intercepts manifest timedtexttracks
+ * to capture the 100% complete subtitle track of the video immediately when opened.
+ */
+(function () {
+  if (window.__guionbajoInpageLoaded) return;
+  window.__guionbajoInpageLoaded = true;
+
+  const MANIFEST_PATTERN = /manifest|licensedManifest/i;
+
+  function broadcastTracks(timedTextTracks, movieId = null) {
+    if (!timedTextTracks || !Array.isArray(timedTextTracks) || timedTextTracks.length === 0) return;
+
+    window.postMessage(
+      {
+        source: "guionbajo_inpage",
+        type: "NETFLIX_SUBTITLES_MANIFEST",
+        result: {
+          timedtexttracks: timedTextTracks,
+          movieId: movieId,
+        },
+      },
+      "*"
+    );
+  }
+
+  // 1. Hook JSON.parse to intercept incoming Netflix manifests in real-time
+  const origParse = JSON.parse;
+  JSON.parse = function () {
+    const data = origParse.apply(this, arguments);
+    try {
+      if (
+        data &&
+        data.result &&
+        data.result.timedtexttracks &&
+        Array.isArray(data.result.timedtexttracks)
+      ) {
+        broadcastTracks(data.result.timedtexttracks, data.result.movieId);
+      }
+    } catch (_) {}
+    return data;
+  };
+
+  // 2. Direct Player API hook: inspects window.netflix Cadmium Player
+  function queryPlayerApi() {
+    try {
+      const netflixObj = window.netflix;
+      if (!netflixObj) return false;
+
+      // Cadmium Player v2 API Path
+      const playerApp = netflixObj.appContext?.state?.playerApp;
+      const videoPlayer =
+        playerApp?.getAPI?.()?.videoPlayer ||
+        netflixObj.player?.getAPI?.()?.videoPlayer ||
+        netflixObj.cadmium?.objects?.videoPlayer;
+
+      if (!videoPlayer) return false;
+
+      const sessionIds = videoPlayer.getAllPlayerSessionIds ? videoPlayer.getAllPlayerSessionIds() : [];
+      for (const sid of sessionIds) {
+        const player = videoPlayer.getVideoPlayerBySessionId(sid);
+        if (player) {
+          const movieId = player.getMovieId ? player.getMovieId() : null;
+
+          // Method A: getTimedTextTrackList
+          if (typeof player.getTimedTextTrackList === "function") {
+            const list = player.getTimedTextTrackList();
+            if (list && list.length > 0) {
+              broadcastTracks(list, movieId);
+              return true;
+            }
+          }
+
+          // Method B: getTextTrackList
+          if (typeof player.getTextTrackList === "function") {
+            const list = player.getTextTrackList();
+            if (list && list.length > 0) {
+              broadcastTracks(list, movieId);
+              return true;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Player might still be booting up
+    }
+    return false;
+  }
+
+  // 3. Listen for requests from content.js
+  window.addEventListener("message", (e) => {
+    if (e.source !== window || !e.data) return;
+    if (e.data.source === "guionbajo_content" && e.data.action === "REQUEST_SUBTITLES") {
+      queryPlayerApi();
+    }
+  });
+
+  // 4. Polling check during initial player load (first 12 seconds)
+  let attempts = 0;
+  const pollInterval = setInterval(() => {
+    attempts++;
+    const found = queryPlayerApi();
+    if (found || attempts > 24) {
+      clearInterval(pollInterval);
+    }
+  }, 500);
+
+  // 5. Check on route changes (Netflix SPA navigation between episodes)
+  window.addEventListener("popstate", () => {
+    setTimeout(queryPlayerApi, 1000);
+  });
+})();

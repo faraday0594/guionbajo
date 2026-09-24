@@ -4,15 +4,20 @@
   "version": "1.0.0",
   "description": "Aprende inglés viendo series y películas en Netflix con el AI Tutor de Guionbajo. Pausa inteligente, explicaciones contextuales y audio en tiempo real.",
   "permissions": [
-    "storage"
+    "storage",
+    "webRequest"
   ],
   "host_permissions": [
     "*://*.netflix.com/*",
+    "*://*.nflxvideo.net/*",
     "http://localhost:8000/*",
     "http://127.0.0.1:8000/*",
     "https://*.vercel.app/*",
     "https://*.onrender.com/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [

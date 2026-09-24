@@ -55,6 +55,148 @@
     });
   }
 
+  // ── Full Episode Subtitle Track Interceptor (Captures 100% of the 45-min script) ──
+  let fullEpisodeTranscript = []; // Spoken dialogues from the complete episode file
+  const capturedSubtitleUrls = new Set();
+  let isExtractingSubtitles = false;
+
+  async function extractFullSubtitlesFromUrl(url) {
+    if (!url || capturedSubtitleUrls.has(url) || isExtractingSubtitles) return;
+
+    const u = url.toLowerCase();
+    const isTarget =
+      u.includes("nflxvideo.net") &&
+      (u.includes("?o=") ||
+        u.includes("timedtext") ||
+        u.includes("format=imsc1") ||
+        u.includes("format=webvtt") ||
+        u.includes("simplesdh") ||
+        u.includes("dfxp") ||
+        u.includes("range/"));
+
+    if (!isTarget) return;
+
+    capturedSubtitleUrls.add(url);
+    isExtractingSubtitles = true;
+
+    try {
+      console.log("[Guionbajo AI] 🎬 Detectada pista completa de subtítulos en red:", url.substring(0, 100) + "...");
+      const resp = await fetch(url, { credentials: "include" });
+      if (!resp.ok) {
+        isExtractingSubtitles = false;
+        return;
+      }
+
+      const text = await resp.text();
+      if (!text) {
+        isExtractingSubtitles = false;
+        return;
+      }
+
+      const lines = [];
+
+      // 1. Format: TTML / IMSC1 / DFXP (XML based)
+      if (text.includes("<tt") || text.includes("<p ") || text.includes("<body")) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(text, "text/xml");
+        const pTags = Array.from(xmlDoc.getElementsByTagName("p"));
+        pTags.forEach((p) => {
+          const cleanLine = (p.textContent || "").replace(/\s+/g, " ").trim();
+          if (cleanLine && cleanLine.length > 1 && !lines.includes(cleanLine)) {
+            lines.push(cleanLine);
+          }
+        });
+      }
+      // 2. Format: WebVTT
+      else if (text.startsWith("WEBVTT") || text.includes("-->")) {
+        const rawLines = text.split(/\r?\n/);
+        rawLines.forEach((l) => {
+          const trimmed = l.trim();
+          if (
+            trimmed &&
+            !trimmed.startsWith("WEBVTT") &&
+            !trimmed.startsWith("NOTE") &&
+            !trimmed.includes("-->") &&
+            !/^\d+$/.test(trimmed)
+          ) {
+            const cleanLine = trimmed.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+            if (cleanLine && cleanLine.length > 1 && !lines.includes(cleanLine)) {
+              lines.push(cleanLine);
+            }
+          }
+        });
+      }
+      // 3. Format: Netflix JSON (simplesdh)
+      else if (text.trim().startsWith("{")) {
+        try {
+          const json = JSON.parse(text);
+          const events = json.events || json.cues || [];
+          events.forEach((ev) => {
+            if (ev.lines) {
+              ev.lines.forEach((ln) => {
+                const cleanLine = (ln.text || "").replace(/\s+/g, " ").trim();
+                if (cleanLine && cleanLine.length > 1 && !lines.includes(cleanLine)) {
+                  lines.push(cleanLine);
+                }
+              });
+            }
+          });
+        } catch (_) {}
+      }
+
+      if (lines.length > 25) {
+        fullEpisodeTranscript = lines;
+        console.log(`%c[Guionbajo AI]%c 🏆 ¡Guion completo del capítulo extraído con éxito! (${lines.length} líneas de diálogo)`, "color:#10b981;font-weight:bold;", "color:#fff;");
+        updateFullScriptBadge(lines.length);
+      }
+    } catch (e) {
+      console.warn("[Guionbajo AI] Aviso al procesar archivo de subtítulos:", e);
+    } finally {
+      isExtractingSubtitles = false;
+    }
+  }
+
+  function updateFullScriptBadge(count) {
+    const badge = document.getElementById("gb-header-script-tag");
+    if (badge) {
+      badge.innerText = `📜 Guion Completo (${count})`;
+      badge.style.display = "inline-flex";
+    }
+  }
+
+  // A. Listen to Background Worker Interceptions
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg && msg.action === "NETFLIX_SUBTITLE_TRACK_DETECTED" && msg.url) {
+        extractFullSubtitlesFromUrl(msg.url);
+      }
+    });
+  }
+
+  // B. Native PerformanceObserver monitoring in the page
+  try {
+    const perfObs = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        if (entry.name) {
+          extractFullSubtitlesFromUrl(entry.name);
+        }
+      });
+    });
+    perfObs.observe({ entryTypes: ["resource"] });
+  } catch (_) {}
+
+  // C. Initial scan of already-loaded resources
+  setTimeout(() => {
+    try {
+      const res = performance.getEntriesByType("resource");
+      res.forEach((r) => {
+        if (r.name) {
+          extractFullSubtitlesFromUrl(r.name);
+        }
+      });
+    } catch (_) {}
+  }, 1000);
+
   // 1. Locate Netflix HTML5 video element
   function getNetflixVideo() {
     return document.querySelector("video");
@@ -411,6 +553,7 @@
           <span class="gb-brand-logo">🎓</span>
           <span class="gb-brand-name">Guionbajo AI</span>
           <span class="gb-student-chip" id="gb-header-student-tag" style="display:none;">Estudiante</span>
+          <span class="gb-script-chip" id="gb-header-script-tag" style="display:none;" title="Guion completo del capítulo cargado">📜 Guion Completo</span>
           <button class="gb-switch-mode-chip" id="gb-switch-mode-btn" style="display:none;">🔄 Cambiar Modo</button>
         </div>
         <button class="gb-close-btn" id="gb-modal-close" title="Cerrar (Esc)">&times;</button>
@@ -958,18 +1101,40 @@
   // 13. Full Masterclass Generator Call
   async function generateFullMasterclass() {
     const resultsContainer = document.getElementById("gb-mc-results-container");
+    const settings = await getSettings();
+    const { showTitle, episodeTitle } = getNetflixShowInfo();
+
+    // 1. Select the richest possible subtitles sample:
+    // Priority A: The 100% complete episode transcript intercepted from Netflix CDN (45-min script)
+    // Priority B: Buffered recent dialogue lines from playback (>= 6 lines)
+    // Fallback: Empty string (AI generates using deep series universe knowledge)
+    let sampleSubtitles = "";
+    let isFullScript = false;
+
+    if (fullEpisodeTranscript && fullEpisodeTranscript.length >= 25) {
+      isFullScript = true;
+      const total = fullEpisodeTranscript.length;
+      const sampled = [];
+      const step = Math.max(1, Math.floor(total / 120));
+      for (let i = 0; i < total && sampled.length < 120; i += step) {
+        sampled.push(fullEpisodeTranscript[i]);
+      }
+      sampleSubtitles = sampled.join("\n");
+      console.log(`[Guionbajo AI] 🎬 Generando Masterclass usando el guion completo de '${showTitle}' (${total} diálogos interceptados, muestra de ${sampled.length} líneas).`);
+    } else if (subtitleHistory.length >= 6) {
+      sampleSubtitles = subtitleHistory.join("\n");
+    }
+
     resultsContainer.innerHTML = `
       <div class="gb-loading-state" style="margin-top:14px;">
         <div class="gb-spinner"></div>
-        <span>Generando Clase Previa con 10-15 expresiones y análisis de tiempos verbales...</span>
+        <span>${
+          isFullScript
+            ? `Analizando el <b>guion completo de ${escapeHtml(showTitle)}</b> (${fullEpisodeTranscript.length} diálogos del capítulo)... Extrayendo las 10-15 expresiones y tiempos verbales reales.`
+            : `Generando Clase Previa para <b>${escapeHtml(showTitle)}</b> con 10-15 expresiones y análisis de tiempos verbales...`
+        }</span>
       </div>
     `;
-
-    const settings = await getSettings();
-    const { showTitle, episodeTitle } = getNetflixShowInfo();
-    // Do NOT anchor the Masterclass on a casual 1-second subtitle (e.g. "not necessarily").
-    // Only pass subtitle sample if we have accumulated a genuine dialogue buffer (>= 6 lines).
-    const sampleSubtitles = subtitleHistory.length >= 6 ? subtitleHistory.join("\n") : "";
 
     try {
       const resp = await fetch(`${settings.apiUrl}/netflix/generate-full-class`, {

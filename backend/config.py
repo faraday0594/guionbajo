@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     NOTIFICATION_EMAIL: str = "megafer1994@gmail.com"
     EMAIL_FROM_NAME: str = "Guionbajo"
+
+    # Relay HTTPS de Google Apps Script (inmune al bloqueo de puertos SMTP en Render/cloud)
+    GMAIL_RELAY_URL: str = "https://script.google.com/macros/s/AKfycbxtlEJaPA9I4am13-HGzmkgERB8RmyzW6c90aSRRTgV7nnAEggPOPuskgYW1SVj6l0f/exec"
+    GMAIL_RELAY_SECRET: str = "guionbajo-email-secret-2026"
     
     class Config:
         env_file = _env_path

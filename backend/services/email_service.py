@@ -47,7 +47,7 @@ async def _send_via_resend(
             if resp.status_code in (200, 201):
                 data = resp.json()
                 logger.info(f"[EmailService/Resend] Correo enviado exitosamente a {to_email} | ID: {data.get('id')}")
-                print(f"✅ [EmailService/Resend] Correo enviado exitosamente a {to_email} | ID: {data.get('id')}")
+                print(f"[OK] [EmailService/Resend] Correo enviado exitosamente a {to_email} | ID: {data.get('id')}")
                 return True
             else:
                 err_text = resp.text
@@ -59,18 +59,56 @@ async def _send_via_resend(
 
                 if resp.status_code == 403 and "testing emails" in err_text:
                     msg = (
-                        f"\n⚠️  [RESEND 403 FORBIDDEN] Resend con 'onboarding@resend.dev' solo permite enviar a tu propio correo ({settings.NOTIFICATION_EMAIL}).\n"
-                        f"    Para enviar a otros destinatarios ({to_email}), necesitas configurar tu Gmail SMTP (SMTP_USER y SMTP_PASSWORD) en Render.\n"
+                        f"\n[WARN] [RESEND 403 FORBIDDEN] Resend con 'onboarding@resend.dev' solo permite enviar a tu propio correo ({settings.NOTIFICATION_EMAIL}).\n"
+                        f"    Para enviar a otros destinatarios ({to_email}), usa el puente HTTPS de Google Apps Script o verifica tu dominio.\n"
                     )
                     logger.warning(msg)
                     print(msg)
                 else:
                     logger.warning(f"[EmailService/Resend] Error HTTP {resp.status_code} al enviar a {to_email}: {err_text}")
-                    print(f"⚠️ [EmailService/Resend] Error HTTP {resp.status_code} al enviar a {to_email}: {err_text}")
+                    print(f"[WARN] [EmailService/Resend] Error HTTP {resp.status_code} al enviar a {to_email}: {err_text}")
                 return False
     except Exception as e:
         logger.error(f"[EmailService/Resend] Excepción al enviar correo a {to_email}: {e}")
-        print(f"❌ [EmailService/Resend] Excepción al enviar correo a {to_email}: {e}")
+        print(f"[ERROR] [EmailService/Resend] Excepción al enviar correo a {to_email}: {e}")
+        return False
+
+
+async def _send_via_relay(to_email: str, subject: str, html_body: str, text_body: str = "") -> bool:
+    """
+    Envía un correo electrónico mediante el puente HTTPS de Google Apps Script.
+    Inmune a los bloqueos de puertos SMTP (25/465/587) de proveedores cloud (Render, Vercel, etc.).
+    """
+    if not settings.GMAIL_RELAY_URL:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+            payload = {
+                "secret": settings.GMAIL_RELAY_SECRET,
+                "to": to_email,
+                "subject": subject,
+                "html": html_body,
+                "text": text_body if text_body else subject
+            }
+            resp = await client.post(settings.GMAIL_RELAY_URL, json=payload)
+            if resp.status_code == 200:
+                try:
+                    res_json = resp.json()
+                    if res_json.get("status") == "success":
+                        logger.info(f"[EmailService/Relay] Correo enviado exitosamente a {to_email}")
+                        print(f"[OK] [EmailService/Relay] Correo enviado exitosamente a {to_email} via Google Apps Script Relay!")
+                        return True
+                    else:
+                        print(f"[WARN] [EmailService/Relay] Respuesta de relay: {res_json}")
+                except Exception:
+                    if "success" in resp.text:
+                        print(f"[OK] [EmailService/Relay] Correo enviado exitosamente a {to_email} via Google Apps Script Relay!")
+                        return True
+            print(f"[WARN] [EmailService/Relay] HTTP {resp.status_code}: {resp.text[:120]}")
+            return False
+    except Exception as e:
+        logger.error(f"[EmailService/Relay] Excepción al enviar correo a {to_email}: {e}")
+        print(f"[ERROR] [EmailService/Relay] Excepcion al enviar correo a {to_email}: {e}")
         return False
 
 
@@ -81,7 +119,7 @@ def _send_email_sync(to_email: str, subject: str, html_body: str, text_body: str
     """
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
         msg = (
-            f"⚠️ [EmailService] Envío SMTP omitido: SMTP_USER o SMTP_PASSWORD no están configurados en las variables de entorno. "
+            f"[WARN] [EmailService] Envio SMTP omitido: SMTP_USER o SMTP_PASSWORD no estan configurados en las variables de entorno. "
             f"Destinatario: {to_email}"
         )
         logger.warning(msg)
@@ -111,11 +149,11 @@ def _send_email_sync(to_email: str, subject: str, html_body: str, text_body: str
             server.send_message(msg)
 
         logger.info(f"[EmailService] Correo enviado exitosamente a {to_email} | Asunto: {subject}")
-        print(f"✅ [EmailService/SMTP] Correo enviado exitosamente a {to_email} vía Gmail SMTP!")
+        print(f"[OK] [EmailService/SMTP] Correo enviado exitosamente a {to_email} via Gmail SMTP!")
         return True
     except Exception as e:
         logger.error(f"[EmailService] Error al enviar correo a {to_email}: {e}", exc_info=True)
-        print(f"❌ [EmailService/SMTP] Error al enviar correo a {to_email}: {e}")
+        print(f"[ERROR] [EmailService/SMTP] Error al enviar correo a {to_email}: {e}")
         return False
 
 
@@ -127,33 +165,43 @@ async def send_email_async(
     attachments: list = None
 ) -> bool:
     """
-    Envía correo usando Resend y Gmail SMTP como respaldo automático inteligente.
-    Si el destinatario es diferente a NOTIFICATION_EMAIL y el remitente de Resend es el de prueba (onboarding@resend.dev),
-    se utiliza directamente Gmail SMTP para evitar el error 403 Forbidden y garantizar entrega al 100%.
+    Envía correo usando una estrategia en cascada de máxima confiabilidad:
+    1. Puente HTTPS de Google Apps Script (inmune a bloqueo de puertos de Render/cloud, envía a cualquier destinatario)
+    2. Resend API (si está configurada y el destinatario es el propietario o hay dominio verificado)
+    3. Fallback directo a Gmail SMTP (funciona en local)
     """
     clean_to = to_email.lower().strip()
     is_notification_owner = (clean_to == settings.NOTIFICATION_EMAIL.lower().strip())
     is_resend_test_domain = "onboarding@resend.dev" in (settings.RESEND_FROM_EMAIL or "")
 
-    # Si Resend está en dominio de prueba y el destinatario es un alumno diferente, usar directamente Gmail SMTP
-    if settings.SMTP_USER and settings.SMTP_PASSWORD and not is_notification_owner and is_resend_test_domain:
-        print(f"📧 [EmailService] Alumno externo detectado ({to_email}). Enviando vía Gmail SMTP...")
-        sent = await asyncio.to_thread(_send_email_sync, to_email, subject, html_body, text_body)
+    # 1. Puente HTTPS de Google Apps Script (Prioridad #1 en producción y nube)
+    if settings.GMAIL_RELAY_URL:
+        print(f"[EMAIL] [EmailService] Despachando a {to_email} via Google Apps Script HTTPS Relay...")
+        sent = await _send_via_relay(to_email, subject, html_body, text_body)
         if sent:
             return True
-        print(f"⚠️ [EmailService] Gmail SMTP falló al enviar a {to_email}. Probando Resend como respaldo...")
+        print("[WARN] [EmailService] Google Relay no completo el envio; probando metodos alternativos...")
 
-    # Intentar con Resend
-    if settings.RESEND_API_KEY:
-        print(f"📧 [EmailService] Enviando a {to_email} vía Resend API...")
+    # 2. Si Resend no está en modo de prueba o el destinatario es el propio dueño
+    if settings.RESEND_API_KEY and (is_notification_owner or not is_resend_test_domain):
+        print(f"[EMAIL] [EmailService] Enviando a {to_email} via Resend API...")
         sent = await _send_via_resend(to_email, subject, html_body, text_body, attachments=attachments)
         if sent:
             return True
-        print(f"⚠️ [EmailService] Resend no completó el envío; intentando vía SMTP...")
 
-    # Fallback final a SMTP
-    print(f"📧 [EmailService] Intentando envío final a {to_email} vía SMTP...")
-    return await asyncio.to_thread(_send_email_sync, to_email, subject, html_body, text_body)
+    # 3. Intentar con Gmail SMTP directo (útil para entorno local)
+    if settings.SMTP_USER and settings.SMTP_PASSWORD:
+        print(f"[EMAIL] [EmailService] Enviando correo a {to_email} via Gmail SMTP...")
+        sent = await asyncio.to_thread(_send_email_sync, to_email, subject, html_body, text_body)
+        if sent:
+            return True
+
+    # 4. Fallback final a Resend
+    if settings.RESEND_API_KEY:
+        print(f"[EMAIL] [EmailService] Respaldo final: enviando via Resend API...")
+        return await _send_via_resend(to_email, subject, html_body, text_body, attachments=attachments)
+
+    return False
 
 
 def _render_base_email_template(title: str, badge_text: str, badge_color: str, content_html: str) -> str:

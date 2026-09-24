@@ -4,7 +4,7 @@
  * 2. Monitors network requests for Netflix timed text / subtitle files
  */
 
-// 1. Cross-origin subtitle fetcher for content.js
+// 1. Cross-origin subtitle fetcher & API proxy for content.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request && request.action === "FETCH_SUBTITLE_FILE" && request.url) {
     fetch(request.url)
@@ -19,6 +19,36 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })
       .catch((err) => {
         sendResponse({ success: false, error: err ? err.toString() : "Fetch error" });
+      });
+    return true; // Keep message channel open for async response
+  }
+
+  // Generic API proxy: bypasses Chrome Private Network Access (PNA) and webpage CORS
+  if (request && request.action === "API_PROXY" && request.url) {
+    const opts = request.options || {};
+    fetch(request.url, opts)
+      .then(async (res) => {
+        const contentType = res.headers.get("content-type") || "";
+        let data;
+        if (contentType.includes("application/json")) {
+          data = await res.json().catch(() => null);
+        } else {
+          data = await res.text().catch(() => "");
+        }
+        sendResponse({
+          ok: res.ok,
+          status: res.status,
+          statusText: res.statusText,
+          data: data,
+        });
+      })
+      .catch((err) => {
+        sendResponse({
+          ok: false,
+          status: 0,
+          statusText: "Network Error",
+          error: err ? err.toString() : "Unknown network error",
+        });
       });
     return true; // Keep message channel open for async response
   }

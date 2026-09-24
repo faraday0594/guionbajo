@@ -55,6 +55,47 @@
     });
   }
 
+  // Safe API Fetcher: Routes via background.js to bypass webpage CORS and Chrome Private Network Access (PNA)
+  async function safeApiFetch(url, options = {}) {
+    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+      return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          {
+            action: "API_PROXY",
+            url: url,
+            options: options,
+          },
+          (response) => {
+            if (chrome.runtime.lastError || !response) {
+              fetch(url, options).then(resolve).catch(reject);
+              return;
+            }
+            if (!response.ok) {
+              const errMsg =
+                response.data?.detail ||
+                response.error ||
+                response.statusText ||
+                `HTTP ${response.status}`;
+              const err = new Error(errMsg);
+              err.status = response.status;
+              reject(err);
+              return;
+            }
+            resolve({
+              ok: true,
+              status: response.status,
+              statusText: response.statusText,
+              json: async () => response.data,
+              text: async () =>
+                typeof response.data === "string" ? response.data : JSON.stringify(response.data),
+            });
+          }
+        );
+      });
+    }
+    return fetch(url, options);
+  }
+
   // Inject inpage.js into DOM to ensure it runs in the MAIN world across all Chrome versions
   try {
     if (!document.getElementById("gb-inpage-script")) {
@@ -1145,7 +1186,7 @@
     errBox.style.display = "none";
 
     try {
-      const resp = await fetch(`${settings.apiUrl}/auth/login`, {
+      const resp = await safeApiFetch(`${settings.apiUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -1162,7 +1203,7 @@
       let userName = "Estudiante";
       let studentLevel = "B1";
       try {
-        const meResp = await fetch(`${settings.apiUrl}/auth/me`, {
+        const meResp = await safeApiFetch(`${settings.apiUrl}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (meResp.ok) {
@@ -1281,7 +1322,7 @@
     }
 
     try {
-      const resp = await fetch(`${settings.apiUrl}/netflix/ask-scene`, {
+      const resp = await safeApiFetch(`${settings.apiUrl}/netflix/ask-scene`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1465,7 +1506,7 @@
     `;
 
     try {
-      const resp = await fetch(`${settings.apiUrl}/netflix/generate-full-class`, {
+      const resp = await safeApiFetch(`${settings.apiUrl}/netflix/generate-full-class`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1549,7 +1590,7 @@
     }
 
     try {
-      const resp = await fetch(`${settings.apiUrl}/image/generate`, {
+      const resp = await safeApiFetch(`${settings.apiUrl}/image/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1583,7 +1624,7 @@
     if (AUDIO_CACHE[cacheKey]) return AUDIO_CACHE[cacheKey];
 
     try {
-      const resp = await fetch(`${settings.apiUrl}/netflix/synthesize-speech`, {
+      const resp = await safeApiFetch(`${settings.apiUrl}/netflix/synthesize-speech`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

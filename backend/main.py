@@ -165,6 +165,23 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_private_network_access_header(request: Request, call_next):
+    # Support Chrome Private Network Access (PNA) from https://www.netflix.com to localhost
+    if request.method == "OPTIONS" and request.headers.get("access-control-request-private-network"):
+        origin = request.headers.get("origin", "*")
+        resp = JSONResponse(status_code=200, content={"status": "ok"})
+        resp.headers["Access-Control-Allow-Private-Network"] = "true"
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Access-Control-Allow-Methods"] = "*"
+        resp.headers["Access-Control-Allow-Headers"] = "*"
+        resp.headers["Access-Control-Allow-Credentials"] = "true"
+        return resp
+    response = await call_next(request)
+    if request.headers.get("access-control-request-private-network"):
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
+
 @app.get("/")
 @app.get("/health")
 async def health_check():

@@ -49,7 +49,22 @@ async def _send_via_resend(
                 logger.info(f"[EmailService/Resend] Correo enviado exitosamente a {to_email} | ID: {data.get('id')}")
                 return True
             else:
-                logger.warning(f"[EmailService/Resend] Error HTTP {resp.status_code}: {resp.text}")
+                err_text = resp.text
+                try:
+                    err_json = resp.json()
+                    err_text = err_json.get("message", err_text)
+                except Exception:
+                    pass
+
+                if resp.status_code == 403 and "testing emails" in err_text:
+                    logger.warning(
+                        f"\n⚠️  [RESEND 403 FORBIDDEN] Resend con 'onboarding@resend.dev' solo permite enviar a tu propio correo ({settings.NOTIFICATION_EMAIL}).\n"
+                        f"    Para enviar a otros destinatarios ({to_email}), puedes:\n"
+                        f"    1) Configurar tu Gmail (SMTP_USER y SMTP_PASSWORD de 16 letras) en backend/.env (¡funciona con cualquier correo y es gratis!).\n"
+                        f"    2) O verificar un dominio web propio en https://resend.com/domains.\n"
+                    )
+                else:
+                    logger.warning(f"[EmailService/Resend] Error HTTP {resp.status_code} al enviar a {to_email}: {err_text}")
                 return False
     except Exception as e:
         logger.error(f"[EmailService/Resend] Excepción al enviar correo a {to_email}: {e}")

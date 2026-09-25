@@ -1178,6 +1178,11 @@
       showModeSelection();
     });
 
+    // Student Tag in header -> Click to logout / change account
+    document.getElementById("gb-header-student-tag").addEventListener("click", () => {
+      handleAuthError("Has cerrado sesión. Ingresa tus credenciales para volver a entrar.");
+    });
+
     // Mode Selection Buttons
     document.getElementById("gb-btn-choose-free").addEventListener("click", () => {
       selectMode("free");
@@ -1299,6 +1304,30 @@
     }
   }
 
+  // 7b. Auth Error Handler (Clears stale/invalid session and prompts student login)
+  async function handleAuthError(customMessage) {
+    console.warn("[Guionbajo AI] Invalid or expired credentials. Redirecting to login view.");
+    await new Promise((resolve) => {
+      chrome.storage.local.remove(["authToken", "userName"], resolve);
+    });
+    hideAllViews();
+    const authLocked = document.getElementById("gb-view-auth-locked");
+    if (authLocked) authLocked.style.display = "block";
+    const tabsNav = document.getElementById("gb-tabs-nav");
+    if (tabsNav) tabsNav.style.display = "none";
+    const switchBtn = document.getElementById("gb-switch-mode-btn");
+    if (switchBtn) switchBtn.style.display = "none";
+    const studentTag = document.getElementById("gb-header-student-tag");
+    if (studentTag) studentTag.style.display = "none";
+    const errBox = document.getElementById("gb-inline-login-err");
+    if (errBox) {
+      errBox.innerText =
+        customMessage ||
+        "Tu sesión anterior expiró o cambió de servidor. Por favor inicia sesión con tu cuenta de Guionbajo.";
+      errBox.style.display = "block";
+    }
+  }
+
   // 8. Inline Login Handler
   async function handleInlineLogin() {
     const emailInput = document.getElementById("gb-inline-email");
@@ -1386,6 +1415,10 @@
 
     // Check student authentication
     const studentTag = document.getElementById("gb-header-student-tag");
+    const emailInput = document.getElementById("gb-inline-email");
+    if (emailInput && !emailInput.value && settings.userEmail) {
+      emailInput.value = settings.userEmail;
+    }
 
     if (!settings.authToken) {
       hideAllViews();
@@ -1396,6 +1429,16 @@
     } else {
       studentTag.innerText = settings.userName || "Estudiante";
       studentTag.style.display = "inline-block";
+      studentTag.title = "Haz clic para cerrar sesión";
+
+      // Verify token validity in background against current server
+      safeApiFetch(`${settings.apiUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${settings.authToken}` },
+      }).catch((err) => {
+        if (err.status === 401 || err.message?.includes("credentials") || err.message?.includes("validate credentials")) {
+          handleAuthError("Tu sesión anterior expiró o pertenecía al servidor local. Por favor inicia sesión con tu cuenta de Guionbajo.");
+        }
+      });
 
       if (!currentMode) {
         // First time opening: show mode selection
@@ -1481,6 +1524,14 @@
       const data = await resp.json();
       renderSceneResult(data, settings);
     } catch (err) {
+      if (
+        err.status === 401 ||
+        err.message?.includes("credentials") ||
+        err.message?.includes("validate credentials")
+      ) {
+        handleAuthError("Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
+        return;
+      }
       console.error("[Guionbajo AI] Error en consulta:", err);
       container.innerHTML = `
         <div style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:14px; border-radius:12px; font-size:13px; color:#fca5a5;">
@@ -1676,6 +1727,16 @@
 
       renderMasterclass(cachedMasterclass);
     } catch (err) {
+      if (
+        err.status === 401 ||
+        err.message?.includes("credentials") ||
+        err.message?.includes("validate credentials") ||
+        err.message?.includes("Unauthorized")
+      ) {
+        handleAuthError("Tu sesión anterior expiró o pertenecía a otro servidor. Por favor inicia sesión con tu cuenta de Guionbajo para continuar.");
+        return;
+      }
+
       const isConnectionRefused =
         err.message?.includes("Failed to fetch") ||
         err.message?.includes("NetworkError") ||

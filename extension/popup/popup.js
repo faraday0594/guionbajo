@@ -38,6 +38,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (items.authToken) {
         showAuthenticated(items);
+
+        // Verify token with cloud backend in background
+        fetch(`${url}/auth/me`, {
+          headers: { Authorization: `Bearer ${items.authToken}` },
+        })
+          .then((res) => {
+            if (res.status === 401) {
+              chrome.storage.local.remove(["authToken", "userName", "userEmail"]);
+              showLogin();
+              showError("Tu sesión expiró o pertenecía a otro servidor. Inicia sesión nuevamente.");
+            }
+          })
+          .catch(() => {});
       } else {
         showLogin();
       }

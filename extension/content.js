@@ -20,6 +20,10 @@
   let isModalOpen = false;
   let currentMode = null; // null | 'free' | 'masterclass'
   let cachedMasterclass = null;
+  let isMasterclassInProgress = false;
+  let isMasterclassCompleted = false;
+  let lastWatchId = null;
+  const hookedVideos = new WeakSet();
 
   // Retrieve student settings and credentials from chrome.storage
   async function getSettings() {
@@ -583,6 +587,112 @@
     `;
   }
 
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // ── Netflix URL Watch ID Extractor ──
+  function getNetflixWatchId() {
+    const m = window.location.pathname.match(/\/watch\/(\d+)/);
+    return m ? m[1] : null;
+  }
+
+  // ── Video Playback Control & Mandatory Class Interceptor ──
+  function hookVideoPlaybackControl() {
+    const videos = document.querySelectorAll("video");
+    videos.forEach((video) => {
+      if (hookedVideos.has(video)) return;
+      hookedVideos.add(video);
+
+      const interceptPlayback = (e) => {
+        if (isMasterclassInProgress && !isMasterclassCompleted) {
+          video.pause();
+          showClassIncompleteAlert();
+        }
+      };
+
+      video.addEventListener("play", interceptPlayback, true);
+      video.addEventListener("playing", interceptPlayback, true);
+    });
+  }
+
+  // ── Class Incomplete Alert Overlay (Pedagogical Lock) ──
+  function showClassIncompleteAlert() {
+    // If the companion modal is already open and showing masterclass, don't overlay
+    if (isModalOpen) {
+      const mcView = document.getElementById("gb-view-masterclass");
+      if (mcView && mcView.style.display !== "none") {
+        return;
+      }
+    }
+
+    if (activeAudio) {
+      activeAudio.pause();
+    }
+
+    let alertEl = document.getElementById("gb-class-incomplete-alert");
+    if (!alertEl) {
+      alertEl = document.createElement("div");
+      alertEl.id = "gb-class-incomplete-alert";
+      document.body.appendChild(alertEl);
+    }
+
+    const { showTitle } = getNetflixShowInfo();
+
+    alertEl.innerHTML = `
+      <div class="gb-alert-card">
+        <button class="gb-alert-close-btn" id="gb-alert-close-x" title="Cerrar">✕</button>
+        <div class="gb-alert-badge">
+          <span class="gb-alert-badge-dot"></span>
+          <span>Clase Previa en Curso</span>
+        </div>
+        <div class="gb-alert-avatar-box">
+          ${buildGuionbajoAvatarHtml("gb-alert-robot-avatar")}
+        </div>
+        <h2 class="gb-alert-title">¡Alto ahí! 🛑 Termina tu clase primero</h2>
+        <p class="gb-alert-desc">
+          Has iniciado la <b>Clase Previa</b> de <b>${escapeHtml(showTitle)}</b> pero aún no has completado el vocabulario ni el quiz.<br><br>
+          No deberías ver el video sin antes terminar la clase y el quiz; de lo contrario te perderás la mitad de las expresiones reales de este episodio.
+        </p>
+        <div class="gb-alert-actions">
+          <button class="gb-alert-btn-primary" id="gb-alert-btn-resume-class">
+            <span>🚀</span> Continuar y Terminar mi Clase y Quiz
+          </button>
+          <button class="gb-alert-btn-secondary" id="gb-alert-btn-switch-free">
+            Cambiar a Modo Aprendizaje Libre (sin clase obligatoria)
+          </button>
+        </div>
+      </div>
+    `;
+
+    alertEl.style.display = "flex";
+
+    // Bind Resume Class Button
+    document.getElementById("gb-alert-btn-resume-class").addEventListener("click", () => {
+      alertEl.style.display = "none";
+      const video = getNetflixVideo();
+      if (video) video.pause();
+      triggerCompanion();
+      switchActiveTab("masterclass");
+    });
+
+    // Close button (X) keeps video paused
+    document.getElementById("gb-alert-close-x").addEventListener("click", () => {
+      alertEl.style.display = "none";
+      const video = getNetflixVideo();
+      if (video) video.pause();
+    });
+
+    // Switch to Free Mode Button
+    document.getElementById("gb-alert-btn-switch-free").addEventListener("click", () => {
+      isMasterclassInProgress = false;
+      isMasterclassCompleted = false;
+      alertEl.style.display = "none";
+      selectMode("free");
+    });
+  }
+
   // ── Web Audio API Real-time Speech Analysis Engine (Port of audioAnalyzer.ts from learning path) ──
   let webAudioCtx = null;
   let webAudioAnalyser = null;
@@ -1045,6 +1155,13 @@
     // Bind event listeners
     document.getElementById("gb-modal-close").addEventListener("click", closeModal);
     document.getElementById("gb-resume-btn").addEventListener("click", () => {
+      if (isMasterclassInProgress && !isMasterclassCompleted) {
+        closeModal();
+        const video = getNetflixVideo();
+        if (video) video.pause();
+        showClassIncompleteAlert();
+        return;
+      }
       closeModal();
       const video = getNetflixVideo();
       if (video) video.play();
@@ -1130,11 +1247,16 @@
     document.getElementById("gb-switch-mode-btn").style.display = "inline-block";
 
     if (mode === "free") {
+      isMasterclassInProgress = false;
+      const alertEl = document.getElementById("gb-class-incomplete-alert");
+      if (alertEl) alertEl.style.display = "none";
       // Free Mode: close modal and let student watch immediately
       closeModal();
       const video = getNetflixVideo();
       if (video) video.play();
     } else if (mode === "masterclass") {
+      isMasterclassInProgress = true;
+      isMasterclassCompleted = false;
       // Masterclass Mode: pause video, generate class and present it immediately
       const video = getNetflixVideo();
       if (video && !video.paused) video.pause();
@@ -1162,9 +1284,10 @@
       sceneBtn.classList.remove("active");
       mcBtn.classList.add("active");
       document.getElementById("gb-view-masterclass").style.display = "block";
+      const resultsContainer = document.getElementById("gb-mc-results-container");
       if (!cachedMasterclass) {
         generateFullMasterclass();
-      } else {
+      } else if (!resultsContainer || !resultsContainer.hasChildNodes() || resultsContainer.innerHTML.trim() === "") {
         renderMasterclass(cachedMasterclass);
       }
     }
@@ -1275,7 +1398,7 @@
         document.getElementById("gb-tabs-nav").style.display = "flex";
         document.getElementById("gb-switch-mode-btn").style.display = "inline-block";
 
-        if (currentMode === "masterclass" && cachedMasterclass) {
+        if (currentMode === "masterclass") {
           switchActiveTab("masterclass");
         } else {
           switchActiveTab("scene");
@@ -1466,6 +1589,8 @@
 
   // 13. Full Masterclass Generator Call
   async function generateFullMasterclass() {
+    isMasterclassInProgress = true;
+    isMasterclassCompleted = false;
     const resultsContainer = document.getElementById("gb-mc-results-container");
     const settings = await getSettings();
     const { showTitle, episodeTitle } = getNetflixShowInfo();
@@ -2259,6 +2384,11 @@
 
     // C. Render Completion Screen (Auto-Rewind)
     function showCompletionScreen() {
+      isMasterclassCompleted = true;
+      isMasterclassInProgress = false;
+      const alertEl = document.getElementById("gb-class-incomplete-alert");
+      if (alertEl) alertEl.style.display = "none";
+
       resultsContainer.innerHTML = `
         <div class="gb-slide-tracker">
           <div class="gb-slide-steps-row">
@@ -2301,11 +2431,6 @@
     showVocabSlide(0);
   }
 
-  function escapeHtml(str) {
-    if (!str) return "";
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
-
   // 15. Global Keyboard Shortcuts Listener
   document.addEventListener("keydown", (e) => {
     const activeEl = document.activeElement;
@@ -2323,16 +2448,59 @@
       triggerCompanion();
     }
 
-    // Key 'Escape' closes companion
-    if (e.key === "Escape" && isModalOpen) {
-      closeModal();
+    // Intercept spacebar to prevent Netflix playback if masterclass is incomplete
+    if (e.code === "Space" && isMasterclassInProgress && !isMasterclassCompleted && !isModalOpen) {
+      e.preventDefault();
+      e.stopPropagation();
+      const video = getNetflixVideo();
+      if (video) video.pause();
+      showClassIncompleteAlert();
+      return;
+    }
+
+    // Key 'Escape' closes alert or companion
+    if (e.key === "Escape") {
+      const alertEl = document.getElementById("gb-class-incomplete-alert");
+      if (alertEl && alertEl.style.display === "flex") {
+        alertEl.style.display = "none";
+        const video = getNetflixVideo();
+        if (video) video.pause();
+        return;
+      }
+      if (isModalOpen) {
+        closeModal();
+      }
     }
   });
 
-  // Periodically check if Netflix player is mounted to inject the launcher
+  // Periodically check if Netflix player is mounted, hook video & track episode changes
   setInterval(() => {
-    if (getNetflixVideo() && !document.getElementById("gb-netflix-launcher")) {
-      injectLauncher();
+    const video = getNetflixVideo();
+    if (video) {
+      if (!document.getElementById("gb-netflix-launcher")) {
+        injectLauncher();
+      }
+      hookVideoPlaybackControl();
+
+      // Guard playback: if masterclass is in progress and not finished, pause and alert
+      if (isMasterclassInProgress && !isMasterclassCompleted && !video.paused) {
+        video.pause();
+        showClassIncompleteAlert();
+      }
     }
-  }, 1500);
+
+    // Detect Netflix SPA episode / video changes
+    const currentWatchId = getNetflixWatchId();
+    if (currentWatchId && lastWatchId && currentWatchId !== lastWatchId) {
+      lastWatchId = currentWatchId;
+      isMasterclassInProgress = false;
+      isMasterclassCompleted = false;
+      cachedMasterclass = null;
+      fullEpisodeTranscript = [];
+      const alertEl = document.getElementById("gb-class-incomplete-alert");
+      if (alertEl) alertEl.style.display = "none";
+    } else if (currentWatchId && !lastWatchId) {
+      lastWatchId = currentWatchId;
+    }
+  }, 600);
 })();

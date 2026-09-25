@@ -7,6 +7,13 @@
   if (window.__guionbajoInpageLoaded) return;
   window.__guionbajoInpageLoaded = true;
 
+  let cachedSubtitlesMeta = {
+    showTitle: "",
+    episodeTitle: "",
+    totalLines: 0,
+    sampleLines: [],
+  };
+
   function broadcastTracks(timedTextTracks, movieId = null) {
     if (!timedTextTracks || !Array.isArray(timedTextTracks) || timedTextTracks.length === 0) return;
 
@@ -88,15 +95,50 @@
     return false;
   }
 
-  // 3. Listen for requests from content.js
+  // 3. Listen for requests and metadata sync from content.js
   window.addEventListener("message", (e) => {
     if (e.source !== window || !e.data) return;
-    if (e.data.source === "guionbajo_content" && e.data.action === "REQUEST_SUBTITLES") {
-      queryPlayerApi();
+    if (e.data.source === "guionbajo_content") {
+      if (e.data.action === "REQUEST_SUBTITLES") {
+        queryPlayerApi();
+      } else if (e.data.action === "SYNC_SUBTITLES_INFO") {
+        cachedSubtitlesMeta = {
+          showTitle: e.data.showTitle,
+          episodeTitle: e.data.episodeTitle,
+          totalLines: e.data.totalLines,
+          sampleLines: e.data.sampleLines || [],
+        };
+      }
     }
   });
 
-  // 4. Polling check during initial player load (first 15 seconds)
+  // 4. Expose Global Subtitle Inspector directly in DevTools console (top window)
+  window.__gb_ver_subtitulos = function () {
+    console.log(
+      "%c[Guionbajo AI] 🎬 INSPECTOR DE SUBTÍTULOS EN TIEMPO REAL",
+      "color:#38bdf8; font-size:14px; font-weight:bold; padding:4px 0;"
+    );
+    console.log(`📺 Serie / Película: %c${cachedSubtitlesMeta.showTitle || document.title}`, "font-weight:bold; color:#f59e0b;");
+    console.log(`📊 Diálogos capturados en memoria: %c${cachedSubtitlesMeta.totalLines} líneas`, "font-weight:bold; color:#10b981;");
+
+    if (cachedSubtitlesMeta.sampleLines && cachedSubtitlesMeta.sampleLines.length > 0) {
+      console.log("%c▼ Muestra de los primeros diálogos capturados del archivo oficial:", "color:#10b981; font-weight:bold;");
+      console.table(
+        cachedSubtitlesMeta.sampleLines.slice(0, 25).map((l, i) => ({ Línea: i + 1, Diálogo: l }))
+      );
+    } else {
+      console.warn(
+        "[Guionbajo AI] ⚠️ Aún no se han capturado diálogos. Asegúrate de reproducir el video con subtítulos en inglés durante 2 segundos."
+      );
+      queryPlayerApi();
+    }
+
+    // Instruct content.js to display visual modal
+    window.postMessage({ source: "guionbajo_inpage", action: "OPEN_SUBTITLE_INSPECTOR" }, "*");
+    return cachedSubtitlesMeta;
+  };
+
+  // 5. Polling check during initial player load (first 15 seconds)
   let attempts = 0;
   const pollInterval = setInterval(() => {
     attempts++;
@@ -106,12 +148,26 @@
     }
   }, 500);
 
-  // 5. Check on route changes (Netflix SPA navigation between episodes)
+  // 6. Check on route changes (Netflix SPA navigation between episodes)
   window.addEventListener("popstate", () => {
     setTimeout(queryPlayerApi, 1000);
   });
 
-  // 6. Check when HTML5 video element is found or starts playing
+  const origPushState = history.pushState;
+  history.pushState = function () {
+    const res = origPushState.apply(this, arguments);
+    setTimeout(queryPlayerApi, 800);
+    return res;
+  };
+
+  const origReplaceState = history.replaceState;
+  history.replaceState = function () {
+    const res = origReplaceState.apply(this, arguments);
+    setTimeout(queryPlayerApi, 800);
+    return res;
+  };
+
+  // 7. Check when HTML5 video element is found or starts playing
   setInterval(() => {
     const video = document.querySelector("video");
     if (video && !video.__gb_hooked) {

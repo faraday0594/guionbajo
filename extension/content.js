@@ -23,6 +23,7 @@
   let isMasterclassInProgress = false;
   let isMasterclassCompleted = false;
   let lastWatchId = null;
+  let currentMovieId = null;
   const hookedVideos = new WeakSet();
 
   // Retrieve student settings and credentials from chrome.storage
@@ -122,12 +123,98 @@
   const capturedSubtitleUrls = new Set();
   let isExtractingSubtitles = false;
 
-  function updateFullScriptBadge() {
+  function updateFullScriptBadge(count = null) {
     const badge = document.getElementById("gb-header-script-tag");
     if (badge) {
-      badge.innerText = `🎬 Diálogos Sincronizados`;
-      badge.style.display = "inline-flex";
+      const num = count || fullEpisodeTranscript.length;
+      if (num > 0) {
+        badge.innerText = `🎬 ${num} Diálogos`;
+        badge.style.display = "inline-flex";
+        badge.title = "Haz clic para inspeccionar los diálogos reales capturados de este capítulo";
+      } else {
+        badge.style.display = "none";
+      }
     }
+  }
+
+  function showSubtitleInspectorModal() {
+    let inspectorEl = document.getElementById("gb-subtitle-inspector-modal");
+    if (!inspectorEl) {
+      inspectorEl = document.createElement("div");
+      inspectorEl.id = "gb-subtitle-inspector-modal";
+      document.body.appendChild(inspectorEl);
+    }
+
+    const info = getNetflixShowInfo();
+    const liveSub = readCurrentSubtitle() || currentSubtitle || "(Ninguno en este segundo)";
+    const totalLines = fullEpisodeTranscript.length;
+
+    let sampleHtml = "";
+    if (totalLines > 0) {
+      sampleHtml = fullEpisodeTranscript
+        .slice(0, 50)
+        .map(
+          (line, idx) =>
+            `<div class="gb-inspector-line"><span class="gb-inspector-num">${idx + 1}</span> <span>${escapeHtml(line)}</span></div>`
+        )
+        .join("");
+    } else {
+      sampleHtml = `<div style="color:#94a3b8; padding:20px; text-align:center;">
+        Aún no se ha descargado el archivo de subtítulos completo.<br><br>
+        💡 <b>Cómo activarlo:</b> Reproduce 2 segundos del video con los subtítulos en inglés activados para que Netflix descargue la pista oficial.
+      </div>`;
+    }
+
+    inspectorEl.innerHTML = `
+      <div class="gb-alert-card" style="max-width:580px; text-align:left;">
+        <button class="gb-alert-close-btn" id="gb-inspector-close-x" title="Cerrar">✕</button>
+        <div class="gb-alert-badge" style="align-self:flex-start; margin-bottom:10px;">
+          <span class="gb-alert-badge-dot" style="background:#38bdf8; box-shadow:0 0 8px #38bdf8;"></span>
+          <span style="color:#38bdf8;">Inspector de Subtítulos Oficiales</span>
+        </div>
+        <h3 style="color:#fff; font-size:18px; margin:0 0 8px; font-weight:800;">
+          📺 ${escapeHtml(info.showTitle)} <span style="font-weight:400; font-size:13px; color:#94a3b8;">(${escapeHtml(info.episodeTitle)})</span>
+        </h3>
+        <div style="font-size:12px; color:#cbd5e1; margin-bottom:14px; line-height:1.5;">
+          <b>Estado:</b> <span style="color:${totalLines > 0 ? "#10b981" : "#f59e0b"}; font-weight:700;">${totalLines > 0 ? `✅ ${totalLines} líneas sincronizadas del capítulo` : "⏳ Esperando carga de pista"}</span>
+          <br>
+          <b>Subtítulo actual en pantalla:</b> <i style="color:#38bdf8;">"${escapeHtml(liveSub)}"</i>
+        </div>
+        <div style="font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; margin-bottom:6px;">
+          Muestra de diálogos capturados del archivo de Netflix:
+        </div>
+        <div class="gb-inspector-scroll-box" style="max-height:220px; overflow-y:auto; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:10px; font-size:12px; line-height:1.5; color:#e2e8f0; width:100%; box-sizing:border-box;">
+          ${sampleHtml}
+        </div>
+        <button class="gb-alert-btn-primary" id="gb-inspector-close-btn" style="margin-top:16px; background:linear-gradient(135deg,#38bdf8,#0284c7); color:#0f172a;">
+          Entendido, cerrar inspector
+        </button>
+      </div>
+    `;
+
+    inspectorEl.style.display = "flex";
+
+    document.getElementById("gb-inspector-close-x").addEventListener("click", () => {
+      inspectorEl.style.display = "none";
+    });
+    document.getElementById("gb-inspector-close-btn").addEventListener("click", () => {
+      inspectorEl.style.display = "none";
+    });
+  }
+
+  function syncSubtitlesInfoToInpage() {
+    const info = getNetflixShowInfo();
+    window.postMessage(
+      {
+        source: "guionbajo_content",
+        action: "SYNC_SUBTITLES_INFO",
+        showTitle: info.showTitle,
+        episodeTitle: info.episodeTitle,
+        totalLines: fullEpisodeTranscript.length,
+        sampleLines: fullEpisodeTranscript.slice(0, 50),
+      },
+      "*"
+    );
   }
 
   function parseSubtitleText(text) {
@@ -139,7 +226,13 @@
       try {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(text, "text/xml");
-        const pTags = Array.from(xmlDoc.getElementsByTagName("p"));
+        let pTags = Array.from(xmlDoc.getElementsByTagName("p"));
+        if (pTags.length === 0) {
+          pTags = Array.from(xmlDoc.getElementsByTagNameNS("*", "p"));
+        }
+        if (pTags.length === 0) {
+          pTags = Array.from(xmlDoc.querySelectorAll("p, span"));
+        }
         pTags.forEach((p) => {
           const cleanLine = (p.textContent || "").replace(/\s+/g, " ").trim();
           if (cleanLine && cleanLine.length > 1 && !lines.includes(cleanLine)) {
@@ -147,6 +240,18 @@
           }
         });
       } catch (_) {}
+
+      // Fallback regex if DOMParser missed lines due to XML namespace or encoding
+      if (lines.length === 0) {
+        const pRegex = /<(?:tt:)?p[^>]*>([\s\S]*?)<\/(?:tt:)?p>/gi;
+        let match;
+        while ((match = pRegex.exec(text)) !== null) {
+          const raw = match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          if (raw && raw.length > 1 && !lines.includes(raw)) {
+            lines.push(raw);
+          }
+        }
+      }
     }
     // 2. Format: WebVTT
     else if (text.startsWith("WEBVTT") || text.includes("-->")) {
@@ -193,6 +298,7 @@
         "color:#fff;"
       );
       updateFullScriptBadge(lines.length);
+      syncSubtitlesInfoToInpage();
     }
   }
 
@@ -276,9 +382,29 @@
   }
 
   // 1. Process tracks array from Netflix Cadmium Player API or manifest
-  function processManifestTracks(tracks) {
+  function processManifestTracks(tracks, movieId = null) {
     if (!tracks || !Array.isArray(tracks) || tracks.length === 0) return;
-    if (fullEpisodeTranscript && fullEpisodeTranscript.length > 50) return; // already populated
+
+    const currentUrlWatchId = getNetflixWatchId();
+    const effectiveMovieId = movieId || currentUrlWatchId;
+
+    if (effectiveMovieId && currentMovieId && effectiveMovieId !== currentMovieId) {
+      console.log(`[Guionbajo AI] Cambio de video detectado (${currentMovieId} -> ${effectiveMovieId}). Reiniciando transcripción.`);
+      fullEpisodeTranscript = [];
+      capturedSubtitleUrls.clear();
+      cachedMasterclass = null;
+      subtitleHistory = [];
+      currentSubtitle = "";
+      currentMovieId = effectiveMovieId;
+      updateFullScriptBadge(0);
+    } else if (effectiveMovieId && !currentMovieId) {
+      currentMovieId = effectiveMovieId;
+    }
+
+    // Only skip if already populated FOR THIS EXACT MOVIE
+    if (fullEpisodeTranscript && fullEpisodeTranscript.length > 50 && currentMovieId === effectiveMovieId) {
+      return;
+    }
 
     // Prioritize English track (non-forced narrative, regular or SDH)
     let chosenTrack =
@@ -315,7 +441,10 @@
       e.data.type === "NETFLIX_SUBTITLES_MANIFEST" &&
       e.data.result
     ) {
-      processManifestTracks(e.data.result.timedtexttracks);
+      processManifestTracks(e.data.result.timedtexttracks, e.data.result.movieId);
+    }
+    if (e.data.source === "guionbajo_inpage" && e.data.action === "OPEN_SUBTITLE_INSPECTOR") {
+      showSubtitleInspectorModal();
     }
   });
 
@@ -427,6 +556,7 @@
     // 1. Try Netflix Player DOM metadata
     const titleContainer =
       document.querySelector('[data-uia="video-title"]') ||
+      document.querySelector('[data-uia="player-title-link"]') ||
       document.querySelector(".video-title");
 
     if (titleContainer) {
@@ -434,12 +564,22 @@
         titleContainer.querySelector("h4") ||
         titleContainer.querySelector(".ellipsize-text") ||
         titleContainer.firstElementChild;
-      const span = titleContainer.querySelector("span");
+      const span = titleContainer.querySelector("span") || titleContainer.querySelector("p");
       if (h4) showTitle = (h4.innerText || h4.textContent || "").trim();
-      if (span) episodeTitle = (span.innerText || span.textContent || "").trim();
+      if (span && span !== h4) episodeTitle = (span.innerText || span.textContent || "").trim();
     }
 
-    // 2. Fallback to document.title
+    // 2. Try Open Graph / Twitter meta tags
+    if (!showTitle) {
+      const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute("content");
+      const twitterTitle = document.querySelector('meta[name="twitter:title"]')?.getAttribute("content");
+      const meta = (ogTitle || twitterTitle || "").trim();
+      if (meta) {
+        showTitle = meta.replace(/\s*[-|]\s*Netflix.*$/i, "").trim();
+      }
+    }
+
+    // 3. Fallback to document.title
     if (!showTitle) {
       let rawTitle = document.title || "";
       rawTitle = rawTitle.replace(/^(Watch|Ver)\s+/i, "");
@@ -1183,6 +1323,15 @@
       handleAuthError("Has cerrado sesión. Ingresa tus credenciales para volver a entrar.");
     });
 
+    // Script Dialogues Badge in header -> Click to open Subtitle Inspector
+    const scriptTag = document.getElementById("gb-header-script-tag");
+    if (scriptTag) {
+      scriptTag.style.cursor = "pointer";
+      scriptTag.addEventListener("click", () => {
+        showSubtitleInspectorModal();
+      });
+    }
+
     // Mode Selection Buttons
     document.getElementById("gb-btn-choose-free").addEventListener("click", () => {
       selectMode("free");
@@ -1678,6 +1827,47 @@
       sampleSubtitles = joined.trim();
     } else if (subtitleHistory.length >= 6) {
       sampleSubtitles = subtitleHistory.join("\n");
+    }
+
+    // Subtitle Guard: Verify that real subtitles have been captured before contacting backend
+    if (!sampleSubtitles || sampleSubtitles.length < 60) {
+      requestInpageSubtitles();
+
+      resultsContainer.innerHTML = `
+        <div style="background:linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95)); border:1px solid rgba(56,189,248,0.3); border-radius:18px; padding:24px 20px; text-align:center; margin-top:16px; box-shadow:0 10px 30px rgba(0,0,0,0.4);">
+          <div style="font-size:36px; margin-bottom:10px; animation:gb-pulse 1.8s infinite;">🎬</div>
+          <div style="font-size:16px; font-weight:800; color:#fff; margin-bottom:6px;">
+            Sincronizando el Guion de ${escapeHtml(showTitle)}
+          </div>
+          <p style="font-size:13px; color:#cbd5e1; line-height:1.6; max-width:420px; margin:0 auto 16px;">
+            Para que Guionbajo extraiga únicamente los <b>Phrasal Verbs y tiempos verbales reales de este capítulo</b>, necesitamos capturar la pista de subtítulos oficiales de Netflix.
+          </p>
+          <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px 14px; text-align:left; font-size:12px; color:#94a3b8; margin-bottom:18px; line-height:1.6;">
+            💡 <b>Paso rápido para sincronizar:</b><br>
+            1. Asegúrate de tener los <b>subtítulos en inglés activados</b> en Netflix.<br>
+            2. Dale <b>Play al video durante 2 segundos</b> (Netflix descargará el archivo oficial de subtítulos).<br>
+            3. Haz clic en el botón de abajo.
+          </div>
+          <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button class="gb-alert-btn-primary" id="gb-mc-btn-retry-sync" style="background:linear-gradient(135deg,#38bdf8,#0284c7); color:#0f172a; max-width:240px; font-weight:800;">
+              ⚡ Comprobar y Crear Clase
+            </button>
+            <button class="gb-alert-btn-secondary" id="gb-mc-btn-open-inspector" style="color:#38bdf8; font-size:12.5px; text-decoration:none; border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:8px 14px;">
+              🔍 Inspeccionar Diálogos
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("gb-mc-btn-retry-sync")?.addEventListener("click", () => {
+        generateFullMasterclass();
+      });
+      document.getElementById("gb-mc-btn-open-inspector")?.addEventListener("click", () => {
+        showSubtitleInspectorModal();
+      });
+
+      isMasterclassInProgress = false;
+      return;
     }
 
     resultsContainer.innerHTML = `
@@ -2556,15 +2746,52 @@
     // Detect Netflix SPA episode / video changes
     const currentWatchId = getNetflixWatchId();
     if (currentWatchId && lastWatchId && currentWatchId !== lastWatchId) {
+      console.log(`[Guionbajo AI] Cambio de episodio detectado (${lastWatchId} -> ${currentWatchId}). Reiniciando subtítulos.`);
       lastWatchId = currentWatchId;
+      currentMovieId = currentWatchId;
       isMasterclassInProgress = false;
       isMasterclassCompleted = false;
       cachedMasterclass = null;
       fullEpisodeTranscript = [];
+      capturedSubtitleUrls.clear();
+      updateFullScriptBadge(0);
+      syncSubtitlesInfoToInpage();
       const alertEl = document.getElementById("gb-class-incomplete-alert");
       if (alertEl) alertEl.style.display = "none";
+      setTimeout(requestInpageSubtitles, 800);
     } else if (currentWatchId && !lastWatchId) {
       lastWatchId = currentWatchId;
+      currentMovieId = currentWatchId;
     }
   }, 600);
+
+  // Expose Subtitle Inspector in Content Script scope
+  window.__gb_ver_subtitulos = function () {
+    const info = getNetflixShowInfo();
+    console.log(
+      "%c[Guionbajo AI] 🎬 INSPECTOR DE SUBTÍTULOS EN TIEMPO REAL",
+      "color:#38bdf8; font-size:14px; font-weight:bold; padding:4px 0;"
+    );
+    console.log(`📺 Serie / Película: %c${info.showTitle}`, "font-weight:bold; color:#f59e0b;");
+    console.log(`🎞️ Capítulo: %c${info.episodeTitle}`, "font-weight:bold; color:#cbd5e1;");
+    console.log(`📊 Diálogos capturados en memoria: %c${fullEpisodeTranscript.length} líneas`, "font-weight:bold; color:#10b981;");
+    console.log(
+      `💬 Subtítulo en pantalla en este instante: "%c${readCurrentSubtitle() || currentSubtitle || "(Ninguno)"}%c"`,
+      "color:#38bdf8; font-style:italic;",
+      "color:#cbd5e1;"
+    );
+    if (fullEpisodeTranscript.length > 0) {
+      console.log("%c▼ Muestra de los primeros 25 diálogos del capítulo:", "color:#10b981; font-weight:bold;");
+      console.table(fullEpisodeTranscript.slice(0, 25).map((line, idx) => ({ Línea: idx + 1, Diálogo: line })));
+    } else {
+      console.warn("[Guionbajo AI] ⚠️ Aún no se han capturado diálogos. Asegúrate de reproducir 2 segundos el video con subtítulos en inglés.");
+    }
+    showSubtitleInspectorModal();
+    return {
+      show: info.showTitle,
+      episode: info.episodeTitle,
+      dialogosCapturados: fullEpisodeTranscript.length,
+      primerosDialogos: fullEpisodeTranscript.slice(0, 50),
+    };
+  };
 })();

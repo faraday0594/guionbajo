@@ -1,11 +1,20 @@
 /**
  * Guionbajo AI — In-Page Hook (Runs in world: "MAIN")
- * Directly accesses window.netflix Player API and intercepts manifest timedtexttracks
- * to capture the 100% complete subtitle track of the video immediately when opened.
+ * Directly accesses window.netflix Player API, hooks manifest network serialization (JSON.stringify),
+ * response parsing (JSON.parse / fetch / XHR), and intercepts timedtexttracks / textTracks
+ * to capture the 100% complete subtitle track of the entire episode upfront immediately when opened.
  */
 (function () {
   if (window.__guionbajoInpageLoaded) return;
   window.__guionbajoInpageLoaded = true;
+
+  const ALL_SUBTITLE_PROFILES = [
+    "webvtt-lssdh-ios8",
+    "dfxp-ls-sdh",
+    "simplesdh",
+    "imsc1.1"
+  ];
+  const MANIFEST_URL_REGEX = /manifest|licensedManifest/i;
 
   let cachedSubtitlesMeta = {
     showTitle: "",
@@ -30,32 +39,115 @@
     );
   }
 
-  // 1. Hook JSON.parse to intercept incoming Netflix manifests in real-time
+  // 1. Hook JSON.stringify: Injects full subtitle profiles (WebVTT, DFXP) into outgoing Netflix manifest requests.
+  // This instructs Netflix servers to return the full downloadable subtitle URLs in ttDownloadables.
+  const origStringify = JSON.stringify;
+  JSON.stringify = function (data) {
+    if (data && typeof data === "object") {
+      try {
+        const isManifestRequest =
+          (typeof data.url === "string" && MANIFEST_URL_REGEX.test(data.url)) ||
+          (data.params && typeof data.params === "object") ||
+          (data.profiles && Array.isArray(data.profiles));
+
+        if (isManifestRequest) {
+          const injectProfiles = (obj) => {
+            if (!obj || typeof obj !== "object") return;
+            if (Array.isArray(obj.profiles)) {
+              for (const p of ALL_SUBTITLE_PROFILES) {
+                if (!obj.profiles.includes(p)) {
+                  obj.profiles.unshift(p);
+                }
+              }
+            }
+            for (const k of Object.keys(obj)) {
+              if (obj[k] && typeof obj[k] === "object") {
+                injectProfiles(obj[k]);
+              }
+            }
+          };
+          injectProfiles(data);
+        }
+      } catch (_) {}
+    }
+    return origStringify.apply(this, arguments);
+  };
+
+  // 2. Hook JSON.parse: Intercepts incoming manifest JSON responses from Netflix
   const origParse = JSON.parse;
   JSON.parse = function () {
     const data = origParse.apply(this, arguments);
     try {
       if (data && typeof data === "object") {
+        const res = data.result || data;
         const tracks =
-          data.result?.timedtexttracks ||
-          data.result?.timedTextTracks ||
-          data.timedtexttracks ||
-          data.timedTextTracks;
+          res.timedtexttracks ||
+          res.textTracks ||
+          res.timedTextTracks;
         if (tracks && Array.isArray(tracks) && tracks.length > 0) {
-          broadcastTracks(tracks, data.result?.movieId || data.movieId);
+          broadcastTracks(tracks, res.movieId || data.movieId);
         }
       }
     } catch (_) {}
     return data;
   };
 
-  // 2. Direct Player API hook: inspects window.netflix Cadmium Player
+  // 3. Hook window.fetch: Intercepts streaming manifest responses in case Response.json() is used
+  const origFetch = window.fetch;
+  window.fetch = async function (...args) {
+    const response = await origFetch.apply(this, args);
+    try {
+      const url = typeof args[0] === "string" ? args[0] : (args[0]?.url || "");
+      if (MANIFEST_URL_REGEX.test(url)) {
+        const cloned = response.clone();
+        cloned.json().then((data) => {
+          if (data && typeof data === "object") {
+            const res = data.result || data;
+            const tracks =
+              res.timedtexttracks ||
+              res.textTracks ||
+              res.timedTextTracks;
+            if (tracks && Array.isArray(tracks) && tracks.length > 0) {
+              broadcastTracks(tracks, res.movieId || data.movieId);
+            }
+          }
+        }).catch(() => {});
+      }
+    } catch (_) {}
+    return response;
+  };
+
+  // 4. Hook XMLHttpRequest: Intercepts XHR manifest loads
+  const origXhrOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (...args) {
+    const url = args[1] || "";
+    if (typeof url === "string" && MANIFEST_URL_REGEX.test(url)) {
+      this.addEventListener("load", function () {
+        try {
+          let text = this.response;
+          if (typeof text === "string") {
+            const data = origParse(text);
+            const res = data.result || data;
+            const tracks =
+              res.timedtexttracks ||
+              res.textTracks ||
+              res.timedTextTracks;
+            if (tracks && Array.isArray(tracks) && tracks.length > 0) {
+              broadcastTracks(tracks, res.movieId || data.movieId);
+            }
+          }
+        } catch (_) {}
+      });
+    }
+    return origXhrOpen.apply(this, args);
+  };
+
+  // 5. Direct Player API hook: inspects window.netflix Cadmium Player
   function queryPlayerApi() {
     try {
       const netflixObj = window.netflix;
       if (!netflixObj) return false;
 
-      // Cadmium Player v2 API Path
       const playerApp = netflixObj.appContext?.state?.playerApp;
       const videoPlayer =
         playerApp?.getAPI?.()?.videoPlayer ||
@@ -95,7 +187,7 @@
     return false;
   }
 
-  // 3. Listen for requests and metadata sync from content.js
+  // 6. Listen for requests and metadata sync from content.js
   window.addEventListener("message", (e) => {
     if (e.source !== window || !e.data) return;
     if (e.data.source === "guionbajo_content") {
@@ -112,7 +204,7 @@
     }
   });
 
-  // 4. Expose Global Subtitle Inspector directly in DevTools console (top window)
+  // 7. Expose Global Subtitle Inspector directly in DevTools console (top window)
   window.__gb_ver_subtitulos = function () {
     console.log(
       "%c[Guionbajo AI] 🎬 INSPECTOR DE SUBTÍTULOS EN TIEMPO REAL",
@@ -128,7 +220,7 @@
       );
     } else {
       console.warn(
-        "[Guionbajo AI] ⚠️ Aún no se han capturado diálogos. Asegúrate de reproducir el video con subtítulos en inglés durante 2 segundos."
+        "[Guionbajo AI] ⚠️ Aún no se han capturado diálogos completos. Si ya tenías el video abierto, recarga la pestaña con F5 para que Netflix descargue el archivo oficial de subtítulos."
       );
       queryPlayerApi();
     }
@@ -138,7 +230,7 @@
     return cachedSubtitlesMeta;
   };
 
-  // 5. Polling check during initial player load (first 15 seconds)
+  // 8. Polling check during initial player load (first 15 seconds)
   let attempts = 0;
   const pollInterval = setInterval(() => {
     attempts++;
@@ -148,7 +240,7 @@
     }
   }, 500);
 
-  // 6. Check on route changes (Netflix SPA navigation between episodes)
+  // 9. Check on route changes (Netflix SPA navigation between episodes)
   window.addEventListener("popstate", () => {
     setTimeout(queryPlayerApi, 1000);
   });
@@ -167,7 +259,7 @@
     return res;
   };
 
-  // 7. Check when HTML5 video element is found or starts playing
+  // 10. Check when HTML5 video element is found or starts playing
   setInterval(() => {
     const video = document.querySelector("video");
     if (video && !video.__gb_hooked) {

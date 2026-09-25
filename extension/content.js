@@ -160,8 +160,8 @@
         .join("");
     } else {
       sampleHtml = `<div style="color:#94a3b8; padding:20px; text-align:center;">
-        Aún no se ha descargado el archivo de subtítulos completo.<br><br>
-        💡 <b>Cómo activarlo:</b> Reproduce 2 segundos del video con los subtítulos en inglés activados para que Netflix descargue la pista oficial.
+        Aún no se ha capturado el archivo de subtítulos completo de este capítulo.<br><br>
+        💡 <b>Cómo capturarlo de inmediato:</b> Como Netflix entrega el archivo oficial al inicializar el reproductor, recarga la pestaña de Netflix con <b>F5</b>. La extensión capturará el 100% de los diálogos de todo el capítulo.
       </div>`;
     }
 
@@ -1837,20 +1837,18 @@
         <div style="background:linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95)); border:1px solid rgba(56,189,248,0.3); border-radius:18px; padding:24px 20px; text-align:center; margin-top:16px; box-shadow:0 10px 30px rgba(0,0,0,0.4);">
           <div style="font-size:36px; margin-bottom:10px; animation:gb-pulse 1.8s infinite;">🎬</div>
           <div style="font-size:16px; font-weight:800; color:#fff; margin-bottom:6px;">
-            Sincronizando el Guion de ${escapeHtml(showTitle)}
+            Sincronizando el Guion Completo de ${escapeHtml(showTitle)}
           </div>
-          <p style="font-size:13px; color:#cbd5e1; line-height:1.6; max-width:420px; margin:0 auto 16px;">
-            Para que Guionbajo extraiga únicamente los <b>Phrasal Verbs y tiempos verbales reales de este capítulo</b>, necesitamos capturar la pista de subtítulos oficiales de Netflix.
+          <p style="font-size:13px; color:#cbd5e1; line-height:1.6; max-width:440px; margin:0 auto 16px;">
+            Para que la clase cubra los <b>Phrasal Verbs y tiempos verbales de todo el capítulo</b> (y no solo los minutos que lleves reproducidos), la extensión necesita capturar el archivo oficial de subtítulos de Netflix.
           </p>
           <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px 14px; text-align:left; font-size:12px; color:#94a3b8; margin-bottom:18px; line-height:1.6;">
-            💡 <b>Paso rápido para sincronizar:</b><br>
-            1. Asegúrate de tener los <b>subtítulos en inglés activados</b> en Netflix.<br>
-            2. Dale <b>Play al video durante 2 segundos</b> (Netflix descargará el archivo oficial de subtítulos).<br>
-            3. Haz clic en el botón de abajo.
+            💡 <b>Paso único para capturar todo el guion:</b><br>
+            Como Netflix entrega el archivo oficial de subtítulos al iniciar el reproductor, <b>recarga la página de Netflix (F5)</b> o haz clic en el botón de abajo. La extensión capturará automáticamente todos los diálogos de inicio a fin.
           </div>
           <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-            <button class="gb-alert-btn-primary" id="gb-mc-btn-retry-sync" style="background:linear-gradient(135deg,#38bdf8,#0284c7); color:#0f172a; max-width:240px; font-weight:800;">
-              ⚡ Comprobar y Crear Clase
+            <button class="gb-alert-btn-primary" id="gb-mc-btn-reload-page" style="background:linear-gradient(135deg,#38bdf8,#0284c7); color:#0f172a; max-width:270px; font-weight:800;">
+              🔄 Recargar Netflix y Capturar Guion
             </button>
             <button class="gb-alert-btn-secondary" id="gb-mc-btn-open-inspector" style="color:#38bdf8; font-size:12.5px; text-decoration:none; border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:8px 14px;">
               🔍 Inspeccionar Diálogos
@@ -1859,8 +1857,8 @@
         </div>
       `;
 
-      document.getElementById("gb-mc-btn-retry-sync")?.addEventListener("click", () => {
-        generateFullMasterclass();
+      document.getElementById("gb-mc-btn-reload-page")?.addEventListener("click", () => {
+        window.location.reload();
       });
       document.getElementById("gb-mc-btn-open-inspector")?.addEventListener("click", () => {
         showSubtitleInspectorModal();

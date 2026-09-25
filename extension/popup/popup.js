@@ -25,7 +25,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   chrome.storage.local.get(
     ["apiUrl", "authToken", "userName", "userEmail", "studentLevel", "voiceId", "autoPlayVoice"],
     (items) => {
-      const url = items.apiUrl || "http://localhost:8000";
+      let url = items.apiUrl || "https://perrohijueputa.onrender.com";
+      if (!url || url.includes("localhost") || url.includes("127.0.0.1")) {
+        url = "https://perrohijueputa.onrender.com";
+        chrome.storage.local.set({ apiUrl: url });
+      }
       apiUrlInput.value = url;
       loginApiUrl.value = url;
 

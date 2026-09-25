@@ -13,7 +13,7 @@
 (function () {
   console.log("%c[Guionbajo AI]%c Netflix Companion v2.5 activo 🎬", "color:#10b981;font-weight:bold", "color:#fff");
 
-  const DEFAULT_API_URL = "http://localhost:8000";
+  const DEFAULT_API_URL = "https://perrohijueputa.onrender.com";
   let activeAudio = null;
   let subtitleHistory = [];
   let currentSubtitle = "";
@@ -32,8 +32,14 @@
         chrome.storage.local.get(
           ["apiUrl", "studentLevel", "voiceId", "autoPlayVoice", "authToken", "userName", "userEmail", "preferredMode"],
           (items) => {
+            let apiUrl = (items.apiUrl || DEFAULT_API_URL).trim().replace(/\/$/, "");
+            // Automatically upgrade legacy localhost or 127.0.0.1 settings to production cloud backend
+            if (!apiUrl || apiUrl.includes("localhost") || apiUrl.includes("127.0.0.1")) {
+              apiUrl = DEFAULT_API_URL;
+              chrome.storage.local.set({ apiUrl: DEFAULT_API_URL });
+            }
             resolve({
-              apiUrl: (items.apiUrl || DEFAULT_API_URL).replace(/\/$/, ""),
+              apiUrl: apiUrl,
               studentLevel: items.studentLevel || "B1",
               voiceId: items.voiceId || "es-US-AlonsoNeural",
               autoPlayVoice: items.autoPlayVoice !== false,
@@ -1679,11 +1685,8 @@
           <div style="font-weight:700; font-size:14px; margin-bottom:6px; color:#f87171;">⚠️ ${isConnectionRefused ? "No se pudo conectar con el servidor de Guionbajo" : "Error generando la Clase Maestra"}</div>
           ${
             isConnectionRefused
-              ? `El backend de Guionbajo no está respondiendo en <b>${escapeHtml(settings.apiUrl)}</b>.<br><br>
-                 💡 <b>Para iniciar el servidor:</b><br>
-                 1. Abre una consola de PowerShell o CMD.<br>
-                 2. Ejecuta: <code style="background:#1e1e2e; padding:3px 6px; border-radius:4px; color:#38bdf8; font-family:monospace;">cd "d:\\tutor ai\\backend" ; uvicorn main:app --reload --port 8000</code><br>
-                 3. Vuelve a hacer clic en <b>Generar Clase Maestra</b>.`
+              ? `No se pudo establecer conexión con el servidor de Guionbajo (<b>${escapeHtml(settings.apiUrl)}</b>).<br><br>
+                 💡 <i>Por favor verifica tu conexión a internet o intenta de nuevo en unos segundos.</i>`
               : escapeHtml(err.message || "Error generando clase previa.")
           }
         </div>

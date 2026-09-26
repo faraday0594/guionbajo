@@ -63,14 +63,53 @@ class ChunkAudioRequest(BaseModel):
     speed: Optional[float] = 1.0
 
 
+def clean_portuguese_leaks(text: str) -> str:
+    """
+    Prevents and cleans any accidental Portuguese leaks from multilingual LLM output.
+    Replaces Portuguese connectives and verbs with natural Spanish equivalents.
+    """
+    if not text:
+        return ""
+    replacements = [
+        (r'\b[Oo]u seja\b', 'es decir'),
+        (r'\b[Ee]nt[ãa]o\b', 'entonces'),
+        (r'\b[Ff]ala-me sobre isso\b', '¡cuéntame sobre eso!'),
+        (r'\b[Ff]ale-me sobre isso\b', '¡cuéntame sobre eso!'),
+        (r'\b[Ff]ala-me\b', 'cuéntame'),
+        (r'\b[Ff]ale-me\b', 'cuéntame'),
+        (r'\bsobre isso\b', 'sobre eso'),
+        (r'\b[Pp]erfeito\b(?!\s+[A-Za-z]+ing)', 'perfecto'),
+        (r'\b[Vv]oc[êe]\b', 'tú'),
+        (r'\b[Vv]oc[êe]s\b', 'ustedes'),
+        (r'\b[Cc]om certeza\b', 'por supuesto'),
+        (r'\b[Pp]ois [ée]\b', 'así es'),
+        (r'\b[Mm]uito bom\b', 'muy bien'),
+        (r'\b[Tt]udo bem\b', 'todo bien'),
+        (r'\b[Oo]brigad[oa]\b', 'gracias'),
+        (r'\b[Nn][ãa]o\b', 'no'),
+        (r'\b[Tt]amb[ée]m\b', 'también'),
+    ]
+    cleaned = text
+    for pattern, repl in replacements:
+        cleaned = re.sub(pattern, repl, cleaned)
+    return cleaned
+
+
 GUIONBAJO_LIVE_SYSTEM_PROMPT = """Eres Guionbajo, el tutor personal de inglés con inteligencia artificial más carismático, empático y dinámico del mundo.
 Estás hablando EN VIVO por voz con {student_name} (nivel CEFR actual: {student_level}).
 
 REGLA ABSOLUTA DE IDIOMAS (ESTRICTO - CERO TOLERANCIA):
-1. ÚNICAMENTE TIENES PERMITIDO HABLAR EN ESPAÑOL Y EN INGLÉS.
-2. ESTÁ TOTAL Y ABSOLUTAMENTE PROHIBIDO RESPONDER O GENERAR CARACTERES EN CHINO (汉字), NI NINGÚN OTRO IDIOMA QUE NO SEA ESPAÑOL O INGLÉS.
-3. BAJO NINGUNA CIRCUNSTANCIA generes palabras o caracteres en chino, ni en tus respuestas habladas, ni en correcciones, ni en pensamientos. Toda tu comunicación DEBE ser 100% en español y/o inglés.
-4. Si por alguna razón técnica o ambigüedad dudas de qué responder, responde en español simple o inglés básico. NUNCA en chino.
+1. TUS ÚNICOS DOS IDIOMAS PERMITIDOS SON EXCLUSIVAMENTE ESPAÑOL (de España / Latinoamérica) E INGLÉS.
+2. PROHIBICIÓN TOTAL Y ABSOLUTA DE PORTUGUÉS:
+   - ESTÁ TERMINANTEMENTE PROHIBIDO hablar, responder o usar frases o palabras en portugués bajo ninguna circunstancia.
+   - NUNCA uses conectores, modismos o expresiones portuguesas como: "ou seja", "então", "fala-me", "fale-me", "perfeito", "você", "obrigado", "legal", "com certeza", "pois é", "tudo bem", "isso", "gente", etc.
+   - En su lugar, usa SIEMPRE español neutro: "es decir", "entonces", "cuéntame", "perfecto", "tú", "gracias", "genial", "por supuesto", "así es", "cuéntame sobre eso", etc.
+3. SI EL ESTUDIANTE DICE PALABRAS COMPARTIDAS ENTRE ESPAÑOL Y PORTUGUÉS (ej: "bordo", "falo", "tambien", "gosto", etc.):
+   - INTERPRÉTALAS SIEMPRE 100% COMO ESPAÑOL.
+   - Ejemplo: si el estudiante dice "yo también bordo", significa el verbo español 'bordar' (to embroider). Respóndele en español: "¡Entendido! Es decir, 'I also embroider', ¡perfecto! Entonces, what do you usually embroider? ¡Cuéntame sobre eso!". NUNCA respondas en portugués.
+   - El estudiante es un hispanohablante aprendiendo inglés, NO habla portugués.
+4. ESTÁ TOTAL Y ABSOLUTAMENTE PROHIBIDO RESPONDER O GENERAR CARACTERES EN CHINO (汉字), FRANCÉS, ITALIANO O CUALQUIER OTRO IDIOMA QUE NO SEA ESPAÑOL O INGLÉS.
+5. Toda tu voz hablada, correcciones y respuestas DEBEN ser 100% en ESPAÑOL NEUTRO e INGLÉS natural.
 
 DIRECTRICES DE CONVERSACIÓN EN VIVO (ÁGIL Y CONCISA):
 1. RITMO DE VOZ Y RESPUESTAS MEDIO CORTAS (CRUCIAL PARA BAJA LATENCIA):
@@ -251,7 +290,10 @@ async def live_respond_stream(
     formatted_messages = [{"role": "system", "content": system_prompt}]
     for m in req.messages[-30:]:  # Keep up to 30 messages for full session memory
         if m.role in ("user", "assistant"):
-            formatted_messages.append({"role": m.role, "content": m.content})
+            c = m.content or ""
+            if m.role == "assistant":
+                c = clean_portuguese_leaks(c)
+            formatted_messages.append({"role": m.role, "content": c})
 
     # Check for mini-class / explanation intent
     last_user_content = ""
@@ -384,6 +426,7 @@ async def live_respond_stream(
                 s = s[:tag_match.start()]
             s = s.replace("**", "")  # Strip markdown bold asterisks from speech
             s = re.sub(r'[\u4e00-\u9fff]', '', s)
+            s = clean_portuguese_leaks(s)
             return s.strip()
 
         # Helper to extract structured JSON payloads from tags with nested braces
@@ -547,7 +590,7 @@ async def synthesize_clause_chunk(
     Caches identical phrases in-memory for 0ms replay.
     Gracefully handles empty/punctuation phrases by returning a valid silent frame.
     """
-    clean_text = req.text.strip()
+    clean_text = clean_portuguese_leaks(req.text.strip())
     if not clean_text or not any(c.isalnum() for c in clean_text):
         return Response(
             content=SILENT_MP3_FRAME,

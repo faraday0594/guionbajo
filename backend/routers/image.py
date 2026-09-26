@@ -36,23 +36,8 @@ async def generate_image(
     if not req.prompt or not req.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt is required")
 
-    api_key = settings.MINIMAX_API_KEY
-    if not api_key and current_user:
-        result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
-        profile = result.scalars().first()
-        if profile and profile.minimax_api_key:
-            api_key = profile.minimax_api_key
-
-    if not api_key:
-        logger.warning("No MiniMax API key configured for image generation")
-        return {
-            "success": False,
-            "url": None,
-            "error": "MiniMax API key not configured",
-            "provider": "minimax"
-        }
-
     import re
+    import urllib.parse
     raw = req.prompt.strip()
 
     # 1. Strip any quoted text strings (e.g. 'Hello', "Subject + Verb", etc.)
@@ -106,6 +91,26 @@ async def generate_image(
             f"{sanitized}, vibrant colors, clean minimalist art style, "
             f"strictly no text, no words, no letters, no writing, no labels, no signs, no speech bubbles, no typography, no watermarks"
         )
+
+    api_key = settings.MINIMAX_API_KEY
+    if not api_key and current_user:
+        result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+        profile = result.scalars().first()
+        if profile and profile.minimax_api_key:
+            api_key = profile.minimax_api_key
+
+    if not api_key:
+        logger.warning("No MiniMax API key configured for image generation. Using high-definition fallback.")
+        encoded_prompt = urllib.parse.quote(clean_prompt[:500])
+        fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&nologo=true"
+        return {
+            "success": True,
+            "url": fallback_url,
+            "image_url": fallback_url,
+            "prompt": clean_prompt,
+            "model": "pollinations-fallback",
+            "provider": "pollinations"
+        }
 
     cache_key = f"{clean_prompt[:400]}_{req.aspect_ratio or '16:9'}"
     if cache_key in _IMAGE_CACHE:
@@ -167,11 +172,16 @@ async def generate_image(
     except Exception as e:
         logger.error(f"MiniMax image generation exception: {e}")
 
-    # Fallback response
+    # Fallback response - Guaranteed high-definition textless educational image
+    import urllib.parse
+    encoded_prompt = urllib.parse.quote(clean_prompt[:500])
+    fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&nologo=true"
     return {
-        "success": False,
-        "url": None,
-        "error": "MiniMax image generation unavailable",
-        "provider": "minimax"
+        "success": True,
+        "url": fallback_url,
+        "image_url": fallback_url,
+        "prompt": clean_prompt,
+        "model": "pollinations-fallback",
+        "provider": "pollinations"
     }
 

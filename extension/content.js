@@ -1961,19 +1961,107 @@
       const resData = await resp.json();
       cachedMasterclass = resData.masterclass;
 
-      // REQUISITO: La clase no debe empezar hasta que la foto del primer slide esté lista
-      const firstVocab = cachedMasterclass?.vocabulary_list?.[0];
-      if (firstVocab && !IMAGE_CACHE[firstVocab.term]) {
+      // REQUISITO ESTRICTO: La clase NO puede empezar sin haber creado TODAS las imágenes de vocabulario.
+      const vocabList = cachedMasterclass?.vocabulary_list || [];
+      if (vocabList.length > 0) {
         resultsContainer.innerHTML = `
-          <div class="gb-loading-state" style="margin-top:14px;">
-            <div class="gb-spinner"></div>
-            <span>Preparando ilustración para "<b>${escapeHtml(firstVocab.term)}</b>"...</span>
+          <div style="text-align:center; padding:24px 16px; animation:gb-fade-slide 0.3s ease;">
+            <div style="font-size:38px; margin-bottom:10px; animation:gb-pulse 1.4s infinite;">🎨</div>
+            <div style="font-size:17px; font-weight:800; color:#fff; margin-bottom:4px;">
+              Creando Ilustraciones con IA
+            </div>
+            <div style="font-size:12.5px; color:#94a3b8; margin-bottom:16px;" id="gb-img-gen-status-text">
+              Generando ilustraciones conceptuales para cada expresión...
+            </div>
+            
+            <div class="gb-slide-progress-bar" style="height:9px; background:rgba(255,255,255,0.08); border-radius:99px; margin-bottom:12px; overflow:hidden;">
+              <div id="gb-img-gen-progress-fill" style="width: 0%; height:100%; background:linear-gradient(90deg, #38bdf8, #818cf8); transition:width 0.3s ease; border-radius:99px;"></div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:16px;">
+              <span id="gb-img-gen-counter">0 de ${vocabList.length} ilustraciones listas</span>
+              <span id="gb-img-gen-percent" style="color:#38bdf8;">0%</span>
+            </div>
+
+            <!-- Mini Galería de imágenes creadas en tiempo real -->
+            <div id="gb-img-gen-preview-gallery" style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; max-height:130px; overflow-y:auto; padding:6px; background:rgba(0,0,0,0.25); border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+            </div>
           </div>
         `;
-        const firstImgUrl = await fetchMiniMaxImage(firstVocab.term, firstVocab.image_prompt, settings);
-        if (firstImgUrl) {
-          firstVocab.image_url = firstImgUrl;
+
+        setFooterState({
+          text: `<span>⏳ Creando Fotos (${vocabList.length})...</span>`,
+          hint: "La clase comenzará cuando todas las fotos estén listas",
+          disabled: true,
+          isResume: false,
+          isMasterclass: true,
+        });
+
+        // Parallel worker pool (concurrency = 3) to generate all images swiftly
+        const CONCURRENCY = 3;
+        let completedCount = 0;
+        let nextIndex = 0;
+
+        async function imageWorker() {
+          while (nextIndex < vocabList.length) {
+            const idx = nextIndex++;
+            const item = vocabList[idx];
+            if (!item) continue;
+
+            const statusEl = document.getElementById("gb-img-gen-status-text");
+            if (statusEl) {
+              statusEl.innerHTML = `Ilustrando: <b>${escapeHtml(item.term)}</b>...`;
+            }
+
+            let imgUrl = IMAGE_CACHE[item.term] || item.image_url;
+            if (!imgUrl) {
+              imgUrl = await fetchMiniMaxImage(item.term, item.image_prompt, settings);
+            }
+            if (imgUrl) {
+              item.image_url = imgUrl;
+              IMAGE_CACHE[item.term] = imgUrl;
+            }
+
+            completedCount++;
+            const pct = Math.round((completedCount / vocabList.length) * 100);
+
+            // Update UI progress
+            const fillEl = document.getElementById("gb-img-gen-progress-fill");
+            const counterEl = document.getElementById("gb-img-gen-counter");
+            const percentEl = document.getElementById("gb-img-gen-percent");
+            const galleryEl = document.getElementById("gb-img-gen-preview-gallery");
+
+            if (fillEl) fillEl.style.width = `${pct}%`;
+            if (counterEl) counterEl.innerText = `${completedCount} de ${vocabList.length} ilustraciones listas`;
+            if (percentEl) percentEl.innerText = `${pct}%`;
+
+            if (galleryEl && imgUrl) {
+              const thumb = document.createElement("div");
+              thumb.style.width = "46px";
+              thumb.style.height = "46px";
+              thumb.style.borderRadius = "8px";
+              thumb.style.overflow = "hidden";
+              thumb.style.border = "1.5px solid #38bdf8";
+              thumb.style.boxShadow = "0 2px 8px rgba(0,0,0,0.4)";
+              thumb.style.flexShrink = "0";
+              thumb.style.animation = "gb-fade-slide 0.3s ease";
+              thumb.innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover;" title="${escapeHtml(item.term)}">`;
+              galleryEl.appendChild(thumb);
+              galleryEl.scrollTop = galleryEl.scrollHeight;
+            }
+          }
         }
+
+        const workers = [];
+        for (let i = 0; i < Math.min(CONCURRENCY, vocabList.length); i++) {
+          workers.push(imageWorker());
+        }
+        await Promise.all(workers);
+
+        // All images are 100% finished!
+        const statusEl = document.getElementById("gb-img-gen-status-text");
+        if (statusEl) statusEl.innerHTML = `🎉 <b style="color:#10b981;">¡Todas las ilustraciones listas! Iniciando clase...</b>`;
+        await new Promise((r) => setTimeout(r, 400));
       }
 
       renderMasterclass(cachedMasterclass);
@@ -2060,7 +2148,11 @@
     } catch (e) {
       console.warn("[Guionbajo AI] MiniMax image generation notice:", e);
     }
-    return null;
+
+    // Guaranteed high-definition textless educational fallback image so no card is ever missing a photo
+    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(effectivePrompt.slice(0, 300))}?width=1280&height=720&nologo=true`;
+    IMAGE_CACHE[term] = fallbackUrl;
+    return fallbackUrl;
   }
 
   // In-memory cache for slide voice speech (key -> base64)
@@ -2183,27 +2275,6 @@
 
     let currentVocabSlide = 0;
     let currentGrammarSlide = 0;
-
-    // REQUISITO: Las demás imágenes de las demás slides deben irse creando en segundo plano
-    let isPrefetchingImages = false;
-    async function prefetchImagesQueue() {
-      if (isPrefetchingImages) return;
-      isPrefetchingImages = true;
-      const s = await getSettings();
-      for (let i = 1; i < vocabItems.length; i++) {
-        const v = vocabItems[i];
-        if (!v || IMAGE_CACHE[v.term]) continue;
-        try {
-          await fetchMiniMaxImage(v.term, v.image_prompt, s);
-        } catch (e) {
-          console.warn(`[Guionbajo AI] Background image prefetch for ${v.term}:`, e);
-        }
-        await new Promise((r) => setTimeout(r, 600));
-      }
-      isPrefetchingImages = false;
-    }
-
-    prefetchImagesQueue();
 
     // A. Render Vocabulary Slide
     async function showVocabSlide(idx) {
@@ -2457,27 +2528,17 @@
         fetchSlideAudio(nextSpeech, nextItem.term, settings);
       }
 
-      // Trigger MiniMax Image Fetch
+      // Render Concept Image (guaranteed pre-generated before class started)
       const imgBox = document.getElementById("gb-slide-img-box");
+      const imgUrl = IMAGE_CACHE[currentTerm] || item.image_url;
 
-      if (IMAGE_CACHE[currentTerm]) {
-        imgBox.innerHTML = `<img src="${IMAGE_CACHE[currentTerm]}" class="gb-slide-image" alt="${escapeHtml(currentTerm)}">`;
+      if (imgUrl) {
+        imgBox.innerHTML = `<img src="${imgUrl}" class="gb-slide-image" alt="${escapeHtml(currentTerm)}">`;
       } else {
-        fetchMiniMaxImage(currentTerm, item.image_prompt, settings).then((imgUrl) => {
-          if (imgUrl) {
-            const activeBox = document.getElementById("gb-slide-img-box");
-            if (activeBox && activeBox.getAttribute("data-term") === currentTerm) {
-              activeBox.innerHTML = `<img src="${imgUrl}" class="gb-slide-image" alt="${escapeHtml(currentTerm)}">`;
-            }
-          } else {
-            const activeBox = document.getElementById("gb-slide-img-box");
-            if (activeBox && activeBox.getAttribute("data-term") === currentTerm) {
-              activeBox.innerHTML = `
-                <div style="font-size:12px; color:#64748b; text-align:center; padding:16px;">
-                  🎨 <i>Ilustración conceptual para "${escapeHtml(currentTerm)}"</i>
-                </div>
-              `;
-            }
+        fetchMiniMaxImage(currentTerm, item.image_prompt, settings).then((url) => {
+          const activeBox = document.getElementById("gb-slide-img-box");
+          if (activeBox && activeBox.getAttribute("data-term") === currentTerm && url) {
+            activeBox.innerHTML = `<img src="${url}" class="gb-slide-image" alt="${escapeHtml(currentTerm)}">`;
           }
         });
       }

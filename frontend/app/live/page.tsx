@@ -84,7 +84,7 @@ export default function LiveChatPage() {
     {
       id: 'welcome-msg',
       role: 'assistant',
-      content: '¡Hola! Estoy listo para conversar contigo en modo Manos Libres. Habla cuando quieras en inglés o español.',
+      content: '¡Hola! Estoy listo para conversar contigo por voz. Habla cuando quieras en inglés o español.',
       timestamp: new Date(1700000000000),
     },
   ]);

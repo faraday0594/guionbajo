@@ -581,64 +581,54 @@ export default function DashboardPage() {
           )}
 
           {dashboardTab === 'live' && (
-            <div>
-              {/* 🎙️ Voz en Vivo — Tab Content */}
-              <div className="mb-8 p-6 sm:p-8 rounded-3xl glass border border-brand-cyan/40 bg-gradient-to-br from-brand-accent/15 via-brand-surface/40 to-emerald-500/10 shadow-xl">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                  {/* Icon */}
-                  <div className="relative flex-shrink-0">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-brand-accent to-brand-cyan flex items-center justify-center shadow-lg shadow-brand-cyan/30 text-white">
-                      <Radio className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse text-white" />
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-2 border-brand-dark flex items-center justify-center">
-                      <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-                    </div>
-                  </div>
+            <div className="py-2 sm:py-6 animate-fadeIn">
+              <div className="max-w-2xl mx-auto p-8 sm:p-12 rounded-3xl glass border border-brand-cyan/30 bg-gradient-to-b from-brand-accent/10 via-brand-surface/60 to-brand-card/80 shadow-2xl relative overflow-hidden text-center flex flex-col items-center">
+                {/* Background glow aura */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-brand-cyan/15 blur-[100px] rounded-full pointer-events-none" />
 
-                  {/* Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        Voz en Vivo HD • Modo Manos Libres
-                      </span>
-                      <span className="text-[10px] text-brand-text-muted">100% Por Voz (Sin Chat) • Inglés y Español</span>
-                    </div>
-                    <h2 className="text-xl sm:text-2xl font-outfit font-bold text-white mb-2">
-                      Conversación en Vivo con Guionbajo
-                    </h2>
-                    <p className="text-sm text-brand-text-secondary max-w-2xl leading-relaxed">
-                      Practica hablando de viva voz en tiempo real con respuestas ágiles, subtítulos automáticos y streaming de audio continuo. Sin teclado, sin chat de texto — solo una llamada natural y fluida con tu tutor.
-                    </p>
-                  </div>
+                {/* Guionbajo Avatar */}
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-black/50 border border-brand-cyan/30 flex items-center justify-center mb-6 shadow-xl shadow-brand-cyan/20 relative z-10">
+                  <TutorAvatar size="md" emotion="happy" />
                 </div>
 
-                {/* Features grid */}
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { icon: '⚡', label: 'Audio Pipelined en Streaming', desc: 'Escuchas la primera parte mientras se procesa la siguiente' },
-                    { icon: '🗣️', label: 'Bilingüe Estricto', desc: '100% enfocado en inglés y español' },
-                    { icon: '🎙️', label: 'Detección Rápida de Voz', desc: 'Micrófono inteligente sin demoras' },
-                  ].map((f) => (
-                    <div key={f.label} className="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-start gap-3">
-                      <span className="text-xl flex-shrink-0">{f.icon}</span>
-                      <div>
-                        <div className="text-xs font-bold text-white mb-0.5">{f.label}</div>
-                        <div className="text-[11px] text-brand-text-muted">{f.desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {/* Main Friendly Greeting: Talk to me! */}
+                <h2 className="text-3xl sm:text-4xl font-outfit font-black text-white mb-3 tracking-tight relative z-10 flex items-center gap-3 justify-center">
+                  <span>Talk to me!</span>
+                  <span className="text-2xl sm:text-3xl animate-bounce">🎙️</span>
+                </h2>
 
-                <div className="mt-6">
-                  <Link
-                    href="/live"
-                    className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-brand-accent to-brand-cyan hover:from-brand-accent-hover hover:to-cyan-400 text-white text-sm font-bold shadow-xl shadow-brand-accent/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                  >
-                    <Mic size={18} />
-                    <span>Iniciar Conversación por Voz</span>
-                    <ChevronRight size={16} />
-                  </Link>
+                <p className="text-sm sm:text-base text-brand-text-secondary max-w-md mb-8 relative z-10 leading-relaxed">
+                  Presiona el micrófono y practica tu inglés hablando de viva voz en tiempo real con Guionbajo. Sin teclado ni chat de texto.
+                </p>
+
+                {/* Big Glowing Microphone Button */}
+                <Link
+                  href="/live"
+                  className="group relative z-10 inline-flex items-center gap-3.5 px-8 sm:px-10 py-4 sm:py-5 rounded-full bg-gradient-to-r from-brand-accent via-indigo-500 to-brand-cyan hover:from-brand-accent-hover hover:to-cyan-400 text-white font-extrabold text-base sm:text-lg shadow-2xl shadow-brand-cyan/40 hover:scale-105 active:scale-95 transition-all duration-200"
+                >
+                  <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-pulse" />
+                  </span>
+                  <span>Empezar a Hablar</span>
+                  <ChevronRight className="w-5 h-5 opacity-70 group-hover:translate-x-1 transition-transform" />
+                </Link>
+
+                {/* Conversation Starters */}
+                <div className="mt-8 pt-6 border-t border-white/10 w-full max-w-lg relative z-10">
+                  <div className="text-xs text-brand-text-muted mb-3 font-semibold">
+                    O prueba iniciar diciendo:
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {['"Hello! How was your day?"', '"Let\'s practice phrasal verbs"', '"Tell me a story in English"'].map((phrase) => (
+                      <Link
+                        key={phrase}
+                        href="/live"
+                        className="text-xs px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-brand-text-secondary hover:text-white transition-colors"
+                      >
+                        {phrase}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

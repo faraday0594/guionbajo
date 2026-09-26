@@ -767,6 +767,32 @@
   transform: translateY(-1px);
 }
 
+/* Masterclass persistent footer next button */
+.gb-resume-btn.gb-footer-next-btn {
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.2px;
+}
+
+.gb-resume-btn.gb-footer-next-btn:hover {
+  background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+  box-shadow: 0 6px 18px rgba(56, 189, 248, 0.5);
+  transform: translateY(-1px);
+}
+
+.gb-resume-btn.gb-footer-next-btn:active {
+  transform: translateY(0);
+}
+
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MODE SELECTION SCREEN (MODO LIBRE VS MODO CLASE PREVIA)
    ═══════════════════════════════════════════════════════════════════════════ */

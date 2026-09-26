@@ -24,7 +24,32 @@
   let isMasterclassCompleted = false;
   let lastWatchId = null;
   let currentMovieId = null;
+  let activeFooterAction = null;
+  let lastMasterclassFooterConfig = null;
   const hookedVideos = new WeakSet();
+
+  // Dynamic modal footer controller (switches button between "Reanudar Serie" and "Entendido, Siguiente")
+  function setFooterState({ text, hint, disabled, isResume, onClick, isMasterclass }) {
+    const btn = document.getElementById("gb-resume-btn");
+    const hintEl = document.getElementById("gb-footer-hint");
+    if (!btn) return;
+
+    if (text !== undefined) btn.innerHTML = text;
+    if (hint !== undefined && hintEl) hintEl.innerHTML = hint;
+    btn.disabled = !!disabled;
+
+    if (isResume) {
+      btn.className = "gb-resume-btn";
+    } else {
+      btn.className = "gb-resume-btn gb-footer-next-btn";
+    }
+
+    activeFooterAction = onClick || null;
+
+    if (!isResume || isMasterclass) {
+      lastMasterclassFooterConfig = { text, hint, disabled, isResume, onClick, isMasterclass: true };
+    }
+  }
 
   // Retrieve student settings and credentials from chrome.storage
   async function getSettings() {
@@ -1301,6 +1326,10 @@
     // Bind event listeners
     document.getElementById("gb-modal-close").addEventListener("click", closeModal);
     document.getElementById("gb-resume-btn").addEventListener("click", () => {
+      if (activeFooterAction) {
+        activeFooterAction();
+        return;
+      }
       if (isMasterclassInProgress && !isMasterclassCompleted) {
         closeModal();
         const video = getNetflixVideo();
@@ -1400,6 +1429,12 @@
     document.getElementById("gb-view-mode-selection").style.display = "block";
     document.getElementById("gb-tabs-nav").style.display = "none";
     document.getElementById("gb-switch-mode-btn").style.display = "none";
+    setFooterState({
+      text: "▶ Reanudar Serie",
+      hint: "Selecciona un modo de aprendizaje arriba",
+      isResume: true,
+      onClick: null,
+    });
   }
 
   function selectMode(mode) {
@@ -1410,6 +1445,12 @@
       isMasterclassInProgress = false;
       const alertEl = document.getElementById("gb-class-incomplete-alert");
       if (alertEl) alertEl.style.display = "none";
+      setFooterState({
+        text: "▶ Reanudar Serie",
+        hint: "Presiona [Espacio] o [Esc] para reanudar",
+        isResume: true,
+        onClick: null,
+      });
       // Free Mode: close modal and let student watch immediately
       closeModal();
       const video = getNetflixVideo();
@@ -1440,6 +1481,12 @@
       sceneBtn.classList.add("active");
       mcBtn.classList.remove("active");
       document.getElementById("gb-view-scene").style.display = "block";
+      setFooterState({
+        text: "▶ Reanudar Serie",
+        hint: "Presiona [Espacio] o [Esc] para reanudar",
+        isResume: true,
+        onClick: null,
+      });
     } else {
       sceneBtn.classList.remove("active");
       mcBtn.classList.add("active");
@@ -1449,6 +1496,8 @@
         generateFullMasterclass();
       } else if (!resultsContainer || !resultsContainer.hasChildNodes() || resultsContainer.innerHTML.trim() === "") {
         renderMasterclass(cachedMasterclass);
+      } else if (lastMasterclassFooterConfig) {
+        setFooterState(lastMasterclassFooterConfig);
       }
     }
   }
@@ -1797,6 +1846,14 @@
   async function generateFullMasterclass() {
     isMasterclassInProgress = true;
     isMasterclassCompleted = false;
+    setFooterState({
+      text: `<span>⏳ Generando Clase...</span>`,
+      hint: "Preparando vocabulario e ilustraciones con IA",
+      disabled: true,
+      isResume: false,
+      onClick: null,
+      isMasterclass: true,
+    });
     const resultsContainer = document.getElementById("gb-mc-results-container");
     const settings = await getSettings();
     const { showTitle, episodeTitle } = getNetflixShowInfo();
@@ -1865,6 +1922,12 @@
       });
 
       isMasterclassInProgress = false;
+      setFooterState({
+        text: "▶ Reanudar Serie",
+        hint: "Presiona [Espacio] o [Esc] para reanudar",
+        isResume: true,
+        onClick: null,
+      });
       return;
     }
 
@@ -1929,6 +1992,13 @@
         err.message?.includes("Failed to fetch") ||
         err.message?.includes("NetworkError") ||
         err.message?.includes("connection refused");
+      isMasterclassInProgress = false;
+      setFooterState({
+        text: "▶ Reanudar Serie",
+        hint: "Presiona [Espacio] o [Esc] para reanudar",
+        isResume: true,
+        onClick: null,
+      });
       resultsContainer.innerHTML = `
         <div style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:16px; border-radius:14px; font-size:13px; color:#fca5a5; margin-top:14px; line-height:1.5;">
           <div style="font-weight:700; font-size:14px; margin-bottom:6px; color:#f87171;">⚠️ ${isConnectionRefused ? "No se pudo conectar con el servidor de Guionbajo" : "Error generando la Clase Maestra"}</div>
@@ -2274,6 +2344,20 @@
         </div>
       `;
 
+      setFooterState({
+        text: `<span>Entendido, Siguiente</span> <span style="font-size:14px;">➔</span>`,
+        hint: `📖 Expresión <b>${idx + 1} de ${vocabItems.length}</b>`,
+        isResume: false,
+        isMasterclass: true,
+        onClick: () => {
+          const container = document.getElementById("gb-mc-results-container");
+          if (container) container.scrollTop = 0;
+          const body = document.getElementById("gb-modal-body");
+          if (body) body.scrollTop = 0;
+          showVocabSlide(idx + 1);
+        },
+      });
+
       // Pronunciation click handler
       const termBtn = document.getElementById("gb-btn-pronounce-term");
       if (termBtn) {
@@ -2400,10 +2484,18 @@
 
       // Bind nav buttons
       document.getElementById("gb-btn-prev-slide").addEventListener("click", () => {
+        const container = document.getElementById("gb-mc-results-container");
+        if (container) container.scrollTop = 0;
+        const body = document.getElementById("gb-modal-body");
+        if (body) body.scrollTop = 0;
         if (idx > 0) showVocabSlide(idx - 1);
       });
 
       document.getElementById("gb-btn-next-slide").addEventListener("click", () => {
+        const container = document.getElementById("gb-mc-results-container");
+        if (container) container.scrollTop = 0;
+        const body = document.getElementById("gb-modal-body");
+        if (body) body.scrollTop = 0;
         showVocabSlide(idx + 1);
       });
     }
@@ -2516,6 +2608,21 @@
         </div>
       `;
 
+      const isLastGrammar = idx === grammarItems.length - 1;
+      setFooterState({
+        text: `<span>${isLastGrammar ? "Completar Clase" : "Siguiente Estructura"}</span> <span style="font-size:14px;">➔</span>`,
+        hint: `⏳ Tiempo verbal <b>${idx + 1} de ${grammarItems.length}</b>`,
+        isResume: false,
+        isMasterclass: true,
+        onClick: () => {
+          const container = document.getElementById("gb-mc-results-container");
+          if (container) container.scrollTop = 0;
+          const body = document.getElementById("gb-modal-body");
+          if (body) body.scrollTop = 0;
+          showGrammarSlide(idx + 1);
+        },
+      });
+
       // Audio setup for grammar slide
       const gAudioBtn = document.getElementById("gb-grammar-audio-btn");
       const gAudioIcon = document.getElementById("gb-grammar-audio-icon");
@@ -2627,9 +2734,17 @@
 
       // Nav handlers
       document.getElementById("gb-btn-prev-grammar").addEventListener("click", () => {
+        const container = document.getElementById("gb-mc-results-container");
+        if (container) container.scrollTop = 0;
+        const body = document.getElementById("gb-modal-body");
+        if (body) body.scrollTop = 0;
         showGrammarSlide(idx - 1);
       });
       document.getElementById("gb-btn-next-grammar").addEventListener("click", () => {
+        const container = document.getElementById("gb-mc-results-container");
+        if (container) container.scrollTop = 0;
+        const body = document.getElementById("gb-modal-body");
+        if (body) body.scrollTop = 0;
         showGrammarSlide(idx + 1);
       });
     }
@@ -2640,6 +2755,21 @@
       isMasterclassInProgress = false;
       const alertEl = document.getElementById("gb-class-incomplete-alert");
       if (alertEl) alertEl.style.display = "none";
+
+      setFooterState({
+        text: `<span>🎬 Iniciar Película desde 00:00</span>`,
+        hint: `🎉 ¡Clase completada al 100%!`,
+        isResume: true,
+        isMasterclass: true,
+        onClick: () => {
+          const video = getNetflixVideo();
+          if (video) {
+            video.currentTime = 0; // Rebobina a 00:00
+            video.play();          // Inicia video
+          }
+          closeModal();
+        },
+      });
 
       resultsContainer.innerHTML = `
         <div class="gb-slide-tracker">
@@ -2700,7 +2830,26 @@
       triggerCompanion();
     }
 
-    // Intercept spacebar to prevent Netflix playback if masterclass is incomplete
+    // Intercept spacebar to advance masterclass slide if modal is open during active class
+    if (e.code === "Space" && isModalOpen && isMasterclassInProgress && !isMasterclassCompleted) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeFooterAction) {
+        activeFooterAction();
+      }
+      return;
+    }
+
+    // Intercept spacebar in free mode or completed modal to resume playback
+    if (e.code === "Space" && isModalOpen && !isMasterclassInProgress) {
+      e.preventDefault();
+      e.stopPropagation();
+      const resumeBtn = document.getElementById("gb-resume-btn");
+      if (resumeBtn) resumeBtn.click();
+      return;
+    }
+
+    // Intercept spacebar to prevent Netflix playback if masterclass is incomplete and modal closed
     if (e.code === "Space" && isMasterclassInProgress && !isMasterclassCompleted && !isModalOpen) {
       e.preventDefault();
       e.stopPropagation();

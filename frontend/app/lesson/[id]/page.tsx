@@ -4266,6 +4266,7 @@ export default function LessonPage() {
   const lineRevealTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioFinishedNaturallyRef = useRef(false);
   const mainRecognitionRef = useRef<any>(null);
+  const mainSilenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const itemRecognitionRef = useRef<any>(null);
   const itemSilenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exerciseSilenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4294,6 +4295,10 @@ export default function LessonPage() {
     }
     if (mainRecognitionRef.current) {
       try { mainRecognitionRef.current.stop(); } catch (_) {}
+    }
+    if (mainSilenceTimerRef.current) {
+      clearTimeout(mainSilenceTimerRef.current);
+      mainSilenceTimerRef.current = null;
     }
     if (itemRecognitionRef.current) {
       try { itemRecognitionRef.current.stop(); } catch (_) {}
@@ -5159,12 +5164,16 @@ export default function LessonPage() {
       return;
     }
 
+    if (mainSilenceTimerRef.current) {
+      clearTimeout(mainSilenceTimerRef.current);
+      mainSilenceTimerRef.current = null;
+    }
     if (mainRecognitionRef.current) {
       try { mainRecognitionRef.current.stop(); } catch (_) {}
     }
 
     const rec = new SpeechRecognition();
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = true;
     rec.lang = 'en-US';
     mainRecognitionRef.current = rec;
@@ -5173,16 +5182,30 @@ export default function LessonPage() {
     let finalTranscript = '';
 
     rec.onresult = (event: any) => {
-      let t = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        t += event.results[i][0].transcript;
+      let fullTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript + ' ';
       }
-      const normalized = normalizeNumberWords(t);
-      finalTranscript = normalized;
-      setTextInput(normalized);
+      const normalized = normalizeNumberWords(fullTranscript.trim());
+      if (normalized) {
+        finalTranscript = normalized;
+        setTextInput(normalized);
+
+        // ⏱️ 2.5 seconds silence detection: give students time to pause without cutting them off
+        if (mainSilenceTimerRef.current) {
+          clearTimeout(mainSilenceTimerRef.current);
+        }
+        mainSilenceTimerRef.current = setTimeout(() => {
+          try { rec.stop(); } catch (_) {}
+        }, 2500);
+      }
     };
 
     rec.onend = () => {
+      if (mainSilenceTimerRef.current) {
+        clearTimeout(mainSilenceTimerRef.current);
+        mainSilenceTimerRef.current = null;
+      }
       setIsRecording(false);
       if (finalTranscript.trim()) {
         const clean = normalizeNumberWords(finalTranscript.trim());
@@ -5191,6 +5214,11 @@ export default function LessonPage() {
     };
 
     rec.onerror = (e: any) => {
+      if (mainSilenceTimerRef.current) {
+        clearTimeout(mainSilenceTimerRef.current);
+        mainSilenceTimerRef.current = null;
+      }
+      if (e?.error === 'aborted' || e?.error === 'no-speech') return;
       console.warn('Main voice recording error:', e);
       setIsRecording(false);
     };
@@ -5199,6 +5227,10 @@ export default function LessonPage() {
   };
 
   const stopVoiceRecording = () => {
+    if (mainSilenceTimerRef.current) {
+      clearTimeout(mainSilenceTimerRef.current);
+      mainSilenceTimerRef.current = null;
+    }
     if (mainRecognitionRef.current) {
       try { mainRecognitionRef.current.stop(); } catch (_) {}
     }
@@ -5247,22 +5279,22 @@ export default function LessonPage() {
     let finalTranscript = '';
 
     rec.onresult = (event: any) => {
-      let t = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        t += event.results[i][0].transcript;
+      let fullTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript + ' ';
       }
-      const normalized = normalizeNumberWords(t);
-      if (normalized.trim()) {
+      const normalized = normalizeNumberWords(fullTranscript.trim());
+      if (normalized) {
         finalTranscript = normalized;
         setItemLiveTranscript(normalized);
 
-        // ⏱️ 1.5 seconds silence detection: give students time to pause without cutting them off
+        // ⏱️ 2.5 seconds silence detection: give students time to pause without cutting them off
         if (itemSilenceTimerRef.current) {
           clearTimeout(itemSilenceTimerRef.current);
         }
         itemSilenceTimerRef.current = setTimeout(() => {
           try { rec.stop(); } catch (_) {}
-        }, 1500);
+        }, 2500);
       }
     };
 
@@ -5286,6 +5318,7 @@ export default function LessonPage() {
         clearTimeout(itemSilenceTimerRef.current);
         itemSilenceTimerRef.current = null;
       }
+      if (e?.error === 'aborted' || e?.error === 'no-speech') return;
       console.warn('Item recognition error:', e);
       try { sfx.playMicStop(); } catch (_) {}
       setItemRecordingKey(null);
@@ -5411,22 +5444,22 @@ export default function LessonPage() {
     let finalTranscript = '';
 
     rec.onresult = (event: any) => {
-      let t = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        t += event.results[i][0].transcript;
+      let fullTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript + ' ';
       }
-      const normalized = normalizeNumberWords(t);
-      if (normalized.trim()) {
+      const normalized = normalizeNumberWords(fullTranscript.trim());
+      if (normalized) {
         finalTranscript = normalized;
         setItemLiveTranscript(normalized);
 
-        // ⏱️ 1.5 seconds silence detection: give students time to pause without cutting them off
+        // ⏱️ 2.5 seconds silence detection: give students time to pause without cutting them off
         if (exerciseSilenceTimerRef.current) {
           clearTimeout(exerciseSilenceTimerRef.current);
         }
         exerciseSilenceTimerRef.current = setTimeout(() => {
           try { rec.stop(); } catch (_) {}
-        }, 1500);
+        }, 2500);
       }
     };
 
@@ -5451,6 +5484,7 @@ export default function LessonPage() {
         clearTimeout(exerciseSilenceTimerRef.current);
         exerciseSilenceTimerRef.current = null;
       }
+      if (e?.error === 'aborted' || e?.error === 'no-speech') return;
       console.warn('Exercise recognition error:', e);
       try { sfx.playMicStop(); } catch (_) {}
       setItemRecordingKey(null);

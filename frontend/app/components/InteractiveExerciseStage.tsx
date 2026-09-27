@@ -259,16 +259,11 @@ export default function InteractiveExerciseStage({
       rec.maxAlternatives = 1;
 
       rec.onresult = (event: any) => {
-        let interim = '';
-        let final = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            final += event.results[i][0].transcript;
-          } else {
-            interim += event.results[i][0].transcript;
-          }
+        let fullTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript + ' ';
         }
-        const currentSpoken = (final || interim).trim();
+        const currentSpoken = fullTranscript.trim();
         if (currentSpoken) {
           latestSpokenRef.current = currentSpoken;
           setLiveTranscript(currentSpoken);

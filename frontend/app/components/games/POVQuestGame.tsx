@@ -365,17 +365,11 @@ export default function POVQuestGame({
     setEvalResult(null);
 
     rec.onresult = (event: any) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          final += t;
-        } else {
-          interim += t;
-        }
+      let fullTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript + ' ';
       }
-      const spoken = (final || interim).trim();
+      const spoken = fullTranscript.trim();
       if (spoken) {
         latestSpeechRef.current = spoken;
         setLiveTranscript(spoken);

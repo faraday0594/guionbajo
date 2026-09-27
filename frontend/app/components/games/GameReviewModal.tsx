@@ -86,19 +86,22 @@ export default function GameReviewModal({
     rec.continuous = false;
     rec.interimResults = true;
 
+    let finalTranscript = '';
+
     rec.onresult = (e: any) => {
       let t = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        t += e.results[i][0].transcript;
+      for (let i = 0; i < e.results.length; i++) {
+        t += e.results[i][0].transcript + ' ';
       }
-      setUserTranscript(t);
+      finalTranscript = t.trim();
+      setUserTranscript(finalTranscript);
     };
 
     rec.onend = () => {
       setSpokenTestIndex(null);
       // Clean and compare
       const cleanTarget = targetPhrase.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-      const cleanUser = userTranscript.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+      const cleanUser = finalTranscript.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
       const isMatch = cleanUser.length > 0 && (cleanTarget.includes(cleanUser) || cleanUser.includes(cleanTarget));
       
       setRecognitionSuccess((prev) => ({

@@ -363,8 +363,11 @@ Evaluate the student's answer against the Question asked, any provided options, 
 CRITICAL FOR PRONUNCIATION / SPOKEN REPETITION:
 - If the task is a spoken repetition or pronunciation practice (e.g. 'Repeat this sentence: ...' or 'Is Spoken/Pronunciation Repetition Task: YES'), the student's input is a Speech-to-Text transcript from their voice.
 - For speech transcripts, capitalization (uppercase/lowercase), punctuation (periods, commas, question marks, quotation marks) MUST BE COMPLETELY IGNORED.
-- Focus ONLY on word matches. If the student pronounced the correct words, set grammar_score = 100, overall_score = 90-100, and is_correct = true.
-- NEVER criticize capitalization, punctuation, missing periods, or commas in the feedback. Do not say "no es necesario capitalizar o poner un punto". Act as if punctuation and case are completely normalized.
+- The student is repeating a model sentence, NOT composing original grammar. Therefore, DO NOT penalize grammar (set grammar_score = 90-100 and relevance_score = 95-100).
+- NEVER criticize capitalization, punctuation, missing periods, or commas in the feedback.
+- ACOUSTIC STT SENSITIVITY & FAIRNESS: Browser Speech-to-Text engines frequently mishear fast liaisons, consonant clusters, or non-native accents (e.g. 'wakes up' misheard as 'stop' or 'wait up'). If the student pronounced >= 75% of the sentence words correctly:
+  * Set is_correct = true and overall_score >= 80.
+  * In the feedback, NEVER lecture the student on the dictionary meaning of a misheard word (NEVER say "dijiste stop y stop significa parar y cambia el significado"). Acknowledge that the microphone may have misheard that word, praise the words articulated well, and provide a clear articulation tip for the target word!
 
 Return valid JSON:
 {
@@ -5015,8 +5018,24 @@ class TutorAgent:
             "pronunci" in question_lower or 
             "pronunciation" in question_lower or
             "repetir" in question_lower or
-            "repite" in question_lower
+            "repite" in question_lower or
+            "pronuncia" in question_lower or
+            "lee en voz alta" in question_lower or
+            "say this" in question_lower or
+            "reto oral" in question_lower
         )
+
+        def _clean_tokens(s: str) -> list:
+            return [re.sub(r"[^\w']", "", w.lower()) for w in s.split() if re.sub(r"[^\w']", "", w.lower())]
+
+        student_tokens = _clean_tokens(text_clean)
+        expected_tokens = _clean_tokens(expected_normalized)
+
+        word_accuracy = 100.0
+        word_match_count = len(expected_tokens)
+        if expected_tokens:
+            word_match_count = sum(1 for et in expected_tokens if et in student_tokens)
+            word_accuracy = (word_match_count / len(expected_tokens)) * 100.0
 
         expected_ref = expected_normalized if expected_normalized else "Evaluar según el contexto de la oración y opciones dadas"
         user_prompt = (
@@ -5024,28 +5043,46 @@ class TutorAgent:
             f"Question Asked: {question}\n"
             f"Expected Answer (Reference): {expected_ref}\n"
             f"Student Answer Given (Speech Transcript): '{text_clean}' (Raw input: '{raw_text}')\n"
-            f"Is Spoken/Pronunciation Repetition Task: {'YES' if is_pronunciation_task else 'NO'}\n\n"
+            f"Is Spoken/Pronunciation Repetition Task: {'YES' if is_pronunciation_task else 'NO'}\n"
+            f"Word Match Ratio: {word_accuracy:.1f}% ({word_match_count} of {len(expected_tokens)} words matched)\n\n"
             f"INSTRUCTIONS:\n"
             f"1. Evaluate if '{text_clean}' is a correct and appropriate answer for the question asked.\n"
             f"2. CRITICAL - SPEECH RECOGNITION DIGIT NORMALIZATION: Browser Speech-to-Text converts spoken numbers into digits (e.g. 'ten' -> '10', 'two' -> '2', 'three' -> '3'). If the target is 'ten' and the transcript was '10' or 'ten', it is 100% CORRECT! NEVER say 'escribiste el número en vez de la palabra'. Give 95-100% score for correct spoken words that transcribed as numbers.\n"
             f"3. CRITICAL - MULTIPLE CHOICE / OPTIONS: If the question contains options (e.g., [option1 / option2] or 'Opciones: ...'), check if the student chose the grammatically and contextually correct option. If the student selected the right choice (e.g. 'shows up' for 'He always ________ late when we have a call. [shows up / hangs up]'), mark is_correct = true and overall_score = 90-100.\n"
-            f"4. If the student chose an incorrect option or answered something wrong/incomplete, mark is_correct = false and overall_score < 50, explaining clearly in the feedback why their choice doesn't fit and what option was correct.\n"
+            f"4. If the student chose an incorrect option or answered something wrong/incomplete in written tasks, mark is_correct = false and overall_score < 50, explaining clearly in the feedback why their choice doesn't fit and what option was correct.\n"
             f"5. Provide feedback in {'SPANISH' if is_a_level else 'ENGLISH'} explaining grammar, meaning, and nuances clearly.\n"
-            f"6. If 'Is Spoken/Pronunciation Repetition Task' is YES, ignore punctuation and capitalization completely."
+            f"6. CRITICAL FOR PRONUNCIATION / SPOKEN REPETITION:\n"
+            f"   - Ignore punctuation and capitalization completely.\n"
+            f"   - If Word Match Ratio >= 75%: mark is_correct = true, overall_score >= 80, grammar_score = 90-100 (the student repeated a model sentence, do NOT penalize grammar).\n"
+            f"   - If browser speech recognition misheard a single word (e.g. 'wakes up' misheard as 'stop'): NEVER lecture the student on the dictionary meaning of the misheard word (NEVER say 'la palabra stop significa parar y cambia el significado'). Treat it as an acoustic microphone artifact, praise all the words they articulated correctly, and give a supportive tip on how to pronounce the target word!"
         )
 
         try:
             raw = await self._chat(EVALUATION_SYSTEM_PROMPT, user_prompt, thinking="adaptive")
             result = clean_json_response(raw)
 
+            is_corr = bool(result.get("is_correct", False))
+            overall = result.get("overall_score", 80 if is_corr else 40)
+            pronun = result.get("pronunciation_score", 80 if is_corr else 40)
+            grammar = result.get("grammar_score", 85 if is_corr else 35)
+            relevance = result.get("relevance_score", 90 if is_corr else 30)
+
+            # Auto-salvage high-overlap speech repetition attempts from LLM over-strictness
+            if is_pronunciation_task and word_accuracy >= 75.0:
+                is_corr = True
+                overall = max(overall, int(min(95, word_accuracy * 0.95 + 5)))
+                pronun = max(pronun, int(min(95, word_accuracy * 0.92)))
+                grammar = max(grammar, 90)
+                relevance = max(relevance, 95)
+
             return {
                 "intent": result.get("intent", "ANSWER"),
                 "transcript": raw_text,
-                "pronunciation_score": result.get("pronunciation_score", 80 if result.get("is_correct") else 40),
-                "grammar_score": result.get("grammar_score", 85 if result.get("is_correct") else 35),
-                "relevance_score": result.get("relevance_score", 90 if result.get("is_correct") else 30),
-                "overall_score": result.get("overall_score", 80 if result.get("is_correct") else 30),
-                "is_correct": bool(result.get("is_correct", False)),
+                "pronunciation_score": pronun,
+                "grammar_score": grammar,
+                "relevance_score": relevance,
+                "overall_score": overall,
+                "is_correct": is_corr,
                 "feedback": result.get("feedback", "Inténtalo de nuevo."),
                 "corrected_answer": result.get("corrected_answer", expected_answer),
                 "next_prompt": result.get("next_prompt", "Continuemos."),

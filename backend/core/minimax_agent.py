@@ -216,6 +216,14 @@ CRITICAL CINEMATIC INTERACTIVE LESSON RULES:
      * Chunk 4 (si hay ejercicios/práctica): MUST have `reveal_target: "exercise"`, dando la consigna de práctica para activar los desafíos interactivos.
    - `tutor_says` should be the complete combined text of all chunks for fallback compatibility.
 
+   7.1. PHONETIC SCRIPTING GUIDELINE FOR TUTOR SPEECH (`tutor_says` AND `voice_chunks`):
+   - CRITICAL DIFFERENCE BETWEEN BOARD AND VOICE:
+     * `board_content` is visual text for the eyes: write standard rules like `+ -ing`, `verbos terminados en -sh, -ch`, `/ʃ/ vs /tʃ/`.
+     * `tutor_says` and `voice_chunks` is an acoustic script for a text-to-speech voice engine:
+       1. SUFFIXES & SPELLING: When referring to suffixes or letter endings in Spanish speech, DO NOT write `-ing`, `ING`, `-ed`, `-es`, `-s` directly (which TTS engines pronounce as weird mumbles). Explicitly spell them out: write `"la terminación i, ene, ge"` (or `"i, n, g"`), `"la terminación e, de"`, `"añadimos e, ese"`.
+       2. DIGRAPHS & CONSONANT ENDINGS: DO NOT write isolated consonants like `sh`, `ch`, `th` in Spanish tutor speech (which causes neural TTS engines to glitch, hiss, or freeze). In speech, write: `"verbos que terminan en las letras ese hache o ce hache"` (o `"s-h o c-h"`), or anchor the sound: `"el sonido shh (como en wash)"` and `"el sonido che (como en watch)"`.
+       3. IPA SYMBOLS: In spoken chunks, spell out or describe the sound naturally (e.g. `"el sonido shh como en sheep"` instead of raw naked `/ʃ/`).
+
 8. CONDITIONAL DIDACTIC SVG DIAGRAM (`diagram_svg`):
    - Include clean SVG schemas (`diagram_svg`) for temporal timelines (Present vs Past, Adverbs of Frequency), spatial relations, or syntactic trees.
 

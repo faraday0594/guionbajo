@@ -331,7 +331,7 @@ async def _fallback_edge_tts(text: str, voice_id: str = "es-MX-DaliaNeural", spe
                     data += chunk["data"]
             return data
 
-        return await asyncio.wait_for(_stream(), timeout=2.0)
+        return await asyncio.wait_for(_stream(), timeout=12.0)
     except Exception as e:
         logger.warning(f"Edge TTS synthesis error or timeout ({voice_id}): {e}")
         return b""

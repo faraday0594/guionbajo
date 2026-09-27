@@ -936,7 +936,7 @@ export function cleanTextForTTS(text: string): string {
   // Remove emojis
   clean = clean.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF\u2600-\u27BF]/g, '');
 
-  // 3. Clean IPA phonetic transcriptions in slashes (e.g. /s/ -> ese, /z/ -> z sonora, /fəʊnz/ -> strip)
+  // 3. Clean IPA phonetic transcriptions in slashes (e.g. /s/ -> ese, /ʃ/ -> shh, /fəʊnz/ -> strip)
   clean = clean.replace(/\/([^\/]+)\//g, (_, raw) => {
     const p1 = raw.trim().replace(/['ˈ\.:ː\s]/g, '');
     if (p1 === 's' || p1 === 'S') return ' ese ';
@@ -944,10 +944,37 @@ export function cleanTextForTTS(text: string): string {
     if (p1 === 'ɪz' || p1 === 'iz' || p1 === 'Iz') return ' iz ';
     if (p1 === 'iː' || p1 === 'i:' || p1 === 'ii') return ' i larga ';
     if (p1 === 'ɪ' || p1 === 'I') return ' i corta ';
-    if (p1 === 'ð' || p1 === 'th') return ' sonido th ';
+    if (p1 === 'ð' || p1 === 'th') return ' sonido th sonora ';
+    if (p1 === 'θ') return ' sonido th sorda ';
+    if (p1 === 'ʃ') return ' sonido shh ';
+    if (p1 === 'tʃ') return ' sonido che ';
+    if (p1 === 'dʒ') return ' sonido dj ';
+    if (p1 === 'ŋ') return ' sonido ng ';
     // Strip whole-word phonetic spellings (like /fəʊnz/, /penz/, /bæɡz/, /bʊks/) completely:
     return ' ';
   });
+
+  // 3.5 Grammar endings & consonant digraphs in Spanish speech
+  clean = clean.replace(/\b(?:la\s+)?terminaci[oó]n\s+(?:-)?ing\b/gi, 'la terminación i, ene, ge');
+  clean = clean.replace(/\b(?:el\s+)?sufijo\s+(?:-)?ing\b/gi, 'el sufijo i, ene, ge');
+  clean = clean.replace(/\b(agregamos|añadimos|agregar|añadir)\s+(?:-)?ing\b/gi, '$1 i, ene, ge');
+  clean = clean.replace(/\bterminaci[oó]n\s+(?:-)?ed\b/gi, 'terminación e, de');
+  clean = clean.replace(/\bterminaci[oó]n\s+(?:-)?es\b/gi, 'terminación e, ese');
+  clean = clean.replace(/\bterminaci[oó]n\s+(?:-)?s\b/gi, 'terminación ese');
+  clean = clean.replace(/\bING\b/g, 'i, ene, ge');
+  clean = clean.replace(/(?:\s|^)-(?:ing|ING)\b/gi, ' i, ene, ge');
+  clean = clean.replace(/(?:\s|^)-(?:ed|ED)\b/gi, ' e, de');
+  clean = clean.replace(/(?:\s|^)-(?:es|ES)\b/gi, ' e, ese');
+  clean = clean.replace(/\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?sh\s+o\s+(?:-)?ch\b/gi, 'terminados en las letras ese hache o ce hache');
+  clean = clean.replace(/\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?ch\s+o\s+(?:-)?sh\b/gi, 'terminados en las letras ce hache o ese hache');
+  clean = clean.replace(/\btermina(?:n)?\s+en\s+(?:las\s+letras\s+)?(?:-)?sh\b/gi, 'terminan en las letras ese hache');
+  clean = clean.replace(/\btermina(?:n)?\s+en\s+(?:las\s+letras\s+)?(?:-)?ch\b/gi, 'terminan en las letras ce hache');
+  clean = clean.replace(/\b(?:-)?sh\s+o\s+(?:-)?ch\b/gi, 'ese hache o ce hache');
+  clean = clean.replace(/\b(?:-)?ch\s+o\s+(?:-)?sh\b/gi, 'ce hache o ese hache');
+  clean = clean.replace(/\b(?:el\s+)?sonido\s+(?:-)?sh\b/gi, 'el sonido shh');
+  clean = clean.replace(/\b(?:el\s+)?sonido\s+(?:-)?ch\b/gi, 'el sonido che');
+  clean = clean.replace(/(?:\s|^)-(?:sh|s-h)\b/gi, ' ese hache');
+  clean = clean.replace(/(?:\s|^)-(?:ch|c-h)\b/gi, ' ce hache');
 
   // Replace slashes in alternatives like I/You or s/es -> I o You, s o es
   clean = clean.replace(/([A-Za-z0-9]+)\s*\/\s*([A-Za-z0-9]+)/g, '$1 o $2');

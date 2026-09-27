@@ -12,7 +12,7 @@ INTERJECTION_REPLACEMENTS = [
     (r'\b(?:Aha|Ajá)\b\.{0,3}', '¡Ajá! '),
     (r'\b(?:Wow|Guau)\b\.{0,3}', '¡Guau! '),
     (r'\b(?:Oops|Ups)\b\.{0,3}', '¡Ups! '),
-    (r'\b(?:Shh+|Chist)\b\.{0,3}', 'Silencio... '),
+    (r'\b(?:Chist)\b\.{0,3}', 'Silencio... '),
 ]
 
 # Currency & common abbreviations normalization for Spanish TTS
@@ -87,6 +87,71 @@ ENGLISH_TTS_PHONETIC_MAP = {
     r'\bThere are\b': 'Der ar',
     r'\bTo Be\b': 'Tu Bii',
     r'\bto be\b': 'tu bii',
+}
+
+# Grammar suffixes, endings, and spelling rules normalization for Spanish tutor speech
+GRAMMAR_SPELLING_REPLACEMENTS = [
+    # 1. Grammar suffixes & spelling
+    (r'\b(?:la\s+)?terminaci[oó]n\s+(?:-)?ing\b', 'la terminación i, ene, ge', re.IGNORECASE),
+    (r'\b(?:el\s+)?sufijo\s+(?:-)?ing\b', 'el sufijo i, ene, ge', re.IGNORECASE),
+    (r'\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+(?:-)?ing\b', r'\1 i, ene, ge', re.IGNORECASE),
+    (r'\bterminaci[oó]n\s+(?:-)?ed\b', 'terminación e, de', re.IGNORECASE),
+    (r'\bterminaci[oó]n\s+(?:-)?es\b', 'terminación e, ese', re.IGNORECASE),
+    (r'\bterminaci[oó]n\s+(?:-)?s\b', 'terminación ese', re.IGNORECASE),
+    (r'\bterminaci[oó]n\s+(?:-)?ies\b', 'terminación i, e, ese', re.IGNORECASE),
+    (r'\b(agregamos|a[ñn]adimos)\s+(?:-)?es\b', r'\1 e, ese', re.IGNORECASE),
+    (r'\b(agregamos|a[ñn]adimos)\s+(?:-)?ed\b', r'\1 e, de', re.IGNORECASE),
+    (r'\b(agregamos|a[ñn]adimos)\s+(?:-)?s\b', r'\1 ese', re.IGNORECASE),
+    (r'\b(agregamos|a[ñn]adimos)\s+(?:-)?ies\b', r'\1 i, e, ese', re.IGNORECASE),
+
+    # 2. Standalone suffixes with hyphen or uppercase ING in grammar contexts
+    (r'\bING\b', 'i, ene, ge', 0),
+    (r'(?:\s|^)-(?:ing|ING)\b', ' i, ene, ge', re.IGNORECASE),
+    (r'(?:\s|^)-(?:ed|ED)\b', ' e, de', re.IGNORECASE),
+    (r'(?:\s|^)-(?:es|ES)\b', ' e, ese', re.IGNORECASE),
+    (r'(?:\s|^)-(?:ies|IES)\b', ' i, e, ese', re.IGNORECASE),
+
+    # 3. Consonants and digraphs in Spanish grammar rules (prevents acoustic engine lockups)
+    (r'\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?sh\s+o\s+(?:-)?ch\b', 'terminados en las letras ese hache o ce hache', re.IGNORECASE),
+    (r'\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?ch\s+o\s+(?:-)?sh\b', 'terminados en las letras ce hache o ese hache', re.IGNORECASE),
+    (r'\btermina(?:n)?\s+en\s+(?:las\s+letras\s+)?(?:-)?sh\b', 'terminan en las letras ese hache', re.IGNORECASE),
+    (r'\btermina(?:n)?\s+en\s+(?:las\s+letras\s+)?(?:-)?ch\b', 'terminan en las letras ce hache', re.IGNORECASE),
+    (r'\b(?:-)?sh\s+o\s+(?:-)?ch\b', 'ese hache o ce hache', re.IGNORECASE),
+    (r'\b(?:-)?ch\s+o\s+(?:-)?sh\b', 'ce hache o ese hache', re.IGNORECASE),
+    (r'\b(?:el\s+)?sonido\s+(?:-)?sh\b', 'el sonido shh', re.IGNORECASE),
+    (r'\b(?:el\s+)?sonido\s+(?:-)?ch\b', 'el sonido che', re.IGNORECASE),
+    (r'\b(?:el\s+)?sonido\s+(?:-)?th\b', 'el sonido th', re.IGNORECASE),
+    (r'\b(la\s+combinaci[oó]n|las\s+letras)\s+(?:-)?sh\b', r'\1 ese hache', re.IGNORECASE),
+    (r'\b(la\s+combinaci[oó]n|las\s+letras)\s+(?:-)?ch\b', r'\1 ce hache', re.IGNORECASE),
+    (r'(?:\s|^)-(?:sh|s-h)\b', ' ese hache', re.IGNORECASE),
+    (r'(?:\s|^)-(?:ch|c-h)\b', ' ce hache', re.IGNORECASE),
+    (r'\bsonido\s+sonido\b', 'sonido', re.IGNORECASE),
+    (r'\bel\s+sonido\s+el\s+sonido\b', 'el sonido', re.IGNORECASE),
+]
+
+IPA_GLYPH_MAP = {
+    'ʃ': 'sonido sh',
+    'tʃ': 'sonido ch',
+    'dʒ': 'dj',
+    'ŋ': 'ng',
+    'θ': 'th sorda',
+    'ð': 'th sonora',
+    's': 'ese',
+    'z': 'z sonora',
+    'ɪz': 'iz',
+    'iz': 'iz',
+    'iː': 'i larga',
+    'i:': 'i larga',
+    'ii': 'i larga',
+    'ɪ': 'i corta',
+    'æ': 'a corta',
+    'ʌ': 'a corta',
+    'ə': 'schwa',
+    'ʊ': 'u corta',
+    'uː': 'u larga',
+    'ɔː': 'o larga',
+    'ɑː': 'a larga',
+    'ɜː': 'er',
 }
 
 
@@ -208,22 +273,15 @@ def normalize_tts_text(text: str, is_spanish_tutor: bool = True) -> str:
     processed = re.sub(r'[\U00010000-\U0010ffff]', '', processed)
     processed = re.sub(r'[\u2600-\u27BF\uE000-\uF8FF]', '', processed)
 
-    # 3. Clean IPA phonetic transcriptions in slashes (e.g. /s/ -> ese, /z/ -> z sonora, /fəʊnz/ -> strip)
+    # 3. Clean IPA phonetic transcriptions in slashes (e.g. /s/ -> ese, /ʃ/ -> shh, /fəʊnz/ -> strip)
     def clean_ipa(m):
         raw = m.group(1).strip()
         clean = raw.replace('ˈ', '').replace('.', '').replace('ː', '').replace(' ', '')
-        if clean in ['s', 'S']:
-            return " ese "
-        if clean in ['z', 'Z']:
-            return " z sonora "
-        if clean in ['ɪz', 'iz', 'Iz']:
-            return " iz "
-        if clean in ['iː', 'i:', 'ii']:
-            return " i larga "
-        if clean in ['ɪ', 'I']:
-            return " i corta "
-        if clean in ['ð', 'th']:
-            return " sonido th "
+        if clean in IPA_GLYPH_MAP:
+            return f" {IPA_GLYPH_MAP[clean]} "
+        for glyph, spoken in IPA_GLYPH_MAP.items():
+            if glyph in clean:
+                return f" {spoken} "
         # Whole-word phonetic spellings (like /fəʊnz/, /penz/, /bæɡz/) must be stripped
         # so neural TTS voices never articulate raw phonetic glyphs or spelling noise
         return " "
@@ -252,6 +310,11 @@ def normalize_tts_text(text: str, is_spanish_tutor: bool = True) -> str:
     # 10. Abbreviations & currencies
     for pattern, replacement in ABBREVIATION_REPLACEMENTS:
         processed = re.sub(pattern, replacement, processed, flags=re.IGNORECASE)
+
+    # 10.5 Grammar suffixes, endings, and consonant digraphs spelling (e.g. -ing -> i, ene, ge, sh/ch -> ese hache / ce hache)
+    if is_spanish_tutor:
+        for pattern, replacement, flags in GRAMMAR_SPELLING_REPLACEMENTS:
+            processed = re.sub(pattern, replacement, processed, flags=flags)
 
     # 11. Phonetic adjustments for Spanish tutor speaking English target keywords
     if is_spanish_tutor:

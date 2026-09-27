@@ -131,6 +131,75 @@ def is_valid_english_phrase(text: str) -> bool:
         return False
     return not is_spanish_phrase(cleaned)
 
+def clean_phonetic_transcriptions_for_subtitles(text: str) -> str:
+    """
+    Cleans acoustic/phonetic transcriptions of isolated letters/digraphs/suffixes
+    so they display normally as real letters in subtitles and transcripts.
+    Example:
+      "terminados en las letras ese hache o ce hache" -> "terminados en las letras -sh o -ch"
+      "la terminación i, ene, ge" -> "la terminación -ing"
+      "agregamos e, ese" -> "agregamos -es"
+    """
+    if not text:
+        return ""
+    s = text
+    # 1. Digraphs & consonant endings
+    s = re.sub(r'\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?ese\s+hache\s+o\s+(?:-)?ce\s+hache\b', 'terminados en las letras -sh o -ch', s, flags=re.IGNORECASE)
+    s = re.sub(r'\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?ce\s+hache\s+o\s+(?:-)?ese\s+hache\b', 'terminados en las letras -ch o -sh', s, flags=re.IGNORECASE)
+    s = re.sub(r'\btermina(?:n)?\s+en\s+(?:las\s+letras\s+)?(?:-)?ese\s+hache\b', 'terminan en las letras -sh', s, flags=re.IGNORECASE)
+    s = re.sub(r'\btermina(?:n)?\s+en\s+(?:las\s+letras\s+)?(?:-)?ce\s+hache\b', 'terminan en las letras -ch', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:las\s+letras\s+)?(?:-)?ese\s+hache\s+o\s+(?:-)?ce\s+hache\b', '-sh o -ch', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:las\s+letras\s+)?(?:-)?ce\s+hache\s+o\s+(?:-)?ese\s+hache\b', '-ch o -sh', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:las\s+letras\s+|la\s+combinaci[oó]n\s+)?(?:-)?ese\s+hache\b', '-sh', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:las\s+letras\s+|la\s+combinaci[oó]n\s+)?(?:-)?ce\s+hache\b', '-ch', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:las\s+letras\s+|la\s+combinaci[oó]n\s+)?(?:-)?te\s+hache\b', '-th', s, flags=re.IGNORECASE)
+
+    # 2. Grammar suffixes & endings (3-letter sequences first)
+    s = re.sub(r'\b(?:la\s+)?terminaci[oó]n\s+(?:i,\s*e,\s*ese|i\s+e\s+ese)\b', 'la terminación -ies', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:el\s+)?sufijo\s+(?:i,\s*e,\s*ese|i\s+e\s+ese)\b', 'el sufijo -ies', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+(?:i,\s*e,\s*ese|i\s+e\s+ese)\b', r'\1 -ies', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:i,\s*e,\s*ese|i\s+e\s+ese)\b', '-ies', s, flags=re.IGNORECASE)
+
+    s = re.sub(r'\b(?:la\s+)?terminaci[oó]n\s+(?:i,\s*ene,\s*ge|i\s+ene\s+ge|i,\s*n,\s*g)\b', 'la terminación -ing', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:el\s+)?sufijo\s+(?:i,\s*ene,\s*ge|i\s+ene\s+ge|i,\s*n,\s*g)\b', 'el sufijo -ing', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+(?:i,\s*ene,\s*ge|i\s+ene\s+ge|i,\s*n,\s*g)\b', r'\1 -ing', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:i,\s*ene,\s*ge|i\s+ene\s+ge)\b', '-ing', s, flags=re.IGNORECASE)
+
+    s = re.sub(r'\b(?:la\s+)?terminaci[oó]n\s+(?:e,\s*de|e\s+de|e,\s*d)\b', 'la terminación -ed', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:el\s+)?sufijo\s+(?:e,\s*de|e\s+de|e,\s*d)\b', 'el sufijo -ed', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+(?:e,\s*de|e\s+de|e,\s*d)\b', r'\1 -ed', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:e,\s*de|e\s+de)\b', '-ed', s, flags=re.IGNORECASE)
+
+    s = re.sub(r'\b(?:la\s+)?terminaci[oó]n\s+(?:e,\s*ese|e\s+ese|e,\s*s)\b', 'la terminación -es', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:el\s+)?sufijo\s+(?:e,\s*ese|e\s+ese|e,\s*s)\b', 'el sufijo -es', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+(?:e,\s*ese|e\s+ese|e,\s*s)\b', r'\1 -es', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:e,\s*ese|e\s+ese)\b', '-es', s, flags=re.IGNORECASE)
+
+    s = re.sub(r'\b(?:la\s+)?terminaci[oó]n\s+ese\b', 'la terminación -s', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:el\s+)?sufijo\s+ese\b', 'el sufijo -s', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+ese\b', r'\1 -s', s, flags=re.IGNORECASE)
+
+    # 3. Isolated letter references
+    s = re.sub(r'\b(la\s+letra|las\s+letras)\s+ese\b', r'\1 s', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(la\s+letra|las\s+letras)\s+te\b', r'\1 t', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(la\s+letra|las\s+letras)\s+de\b', r'\1 d', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(la\s+letra|las\s+letras)\s+pe\b', r'\1 p', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(la\s+letra|las\s+letras)\s+be\b', r'\1 b', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(la\s+letra|las\s+letras)\s+ge\b', r'\1 g', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(la\s+letra|las\s+letras)\s+ka\b', r'\1 k', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(la\s+letra|las\s+letras)\s+zeta\b', r'\1 z', s, flags=re.IGNORECASE)
+
+    # 4. Spoken phonetic anchors in subtitles
+    s = re.sub(r'\b(?:el\s+)?sonido\s+shh\b', 'el sonido sh', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:el\s+)?sonido\s+che\b', 'el sonido ch', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:el\s+)?sonido\s+th\s+sorda\b', 'el sonido th', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:el\s+)?sonido\s+th\s+sonora\b', 'el sonido th', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b(?:el\s+)?sonido\s+z\s+sonora\b', 'el sonido z', s, flags=re.IGNORECASE)
+    s = re.sub(r'\bz\s+sonora\b', 'z', s, flags=re.IGNORECASE)
+
+    return s
+
+
 SYSTEM_PROMPT_TEMPLATE = """You are Guionbajo, a world-class master English language professor certified in CEFR and communicative pedagogy.
 You are designing an interactive cinematic micro-lesson for a student at level {current_sublevel} whose native language is {native_language}.
 
@@ -216,13 +285,12 @@ CRITICAL CINEMATIC INTERACTIVE LESSON RULES:
      * Chunk 4 (si hay ejercicios/práctica): MUST have `reveal_target: "exercise"`, dando la consigna de práctica para activar los desafíos interactivos.
    - `tutor_says` should be the complete combined text of all chunks for fallback compatibility.
 
-   7.1. PHONETIC SCRIPTING GUIDELINE FOR TUTOR SPEECH (`tutor_says` AND `voice_chunks`):
-   - CRITICAL DIFFERENCE BETWEEN BOARD AND VOICE:
-     * `board_content` is visual text for the eyes: write standard rules like `+ -ing`, `verbos terminados en -sh, -ch`, `/ʃ/ vs /tʃ/`.
-     * `tutor_says` and `voice_chunks` is an acoustic script for a text-to-speech voice engine:
-       1. SUFFIXES & SPELLING: When referring to suffixes or letter endings in Spanish speech, DO NOT write `-ing`, `ING`, `-ed`, `-es`, `-s` directly (which TTS engines pronounce as weird mumbles). Explicitly spell them out: write `"la terminación i, ene, ge"` (or `"i, n, g"`), `"la terminación e, de"`, `"añadimos e, ese"`.
-       2. DIGRAPHS & CONSONANT ENDINGS: DO NOT write isolated consonants like `sh`, `ch`, `th` in Spanish tutor speech (which causes neural TTS engines to glitch, hiss, or freeze). In speech, write: `"verbos que terminan en las letras ese hache o ce hache"` (o `"s-h o c-h"`), or anchor the sound: `"el sonido shh (como en wash)"` and `"el sonido che (como en watch)"`.
-       3. IPA SYMBOLS: In spoken chunks, spell out or describe the sound naturally (e.g. `"el sonido shh como en sheep"` instead of raw naked `/ʃ/`).
+   7.1. SCRIPTING GUIDELINE FOR TUTOR SPEECH (`tutor_says` AND `voice_chunks`):
+   - CRITICAL: `tutor_says` and `voice_chunks` are both spoken by the voice engine AND displayed directly in the student's dynamic subtitles!
+   - WRITE REAL LETTERS AND SUFFIXES NORMALLY (STRICT ZERO ACOUSTIC SPELLING):
+     1. SUFFIXES & ENDINGS: Write the actual letters normally: e.g. `"la terminación -ing"`, `"el sufijo -ed"`, `"la terminación -es"`, `"agregamos -s"`, `"la terminación -ies"`. ESTÁ TOTALMENTE PROHIBIDO deletrear acústicamente letras o sufijos como `"i, ene, ge"`, `"e, de"`, `"e, ese"` o `"ese"` en `tutor_says`.
+     2. DIGRAPHS & CONSONANT ENDINGS: Write the actual letters: e.g. `"verbos que terminan en -sh o -ch"` (o `"sh o ch"`), `"la combinación -th"`. NUNCA escribas `"letras ese hache o ce hache"`.
+     3. PHONETIC SOUNDS: Escribe los fonemas o sonidos de forma limpia: `"el sonido /s/"`, `"el sonido /z/"`, `"el sonido /ɪz/"`, `"el sonido sh"`. El motor de síntesis de voz normaliza el audio automáticamente, por lo que tu texto DEBE mantenerse 100% limpio y legible para los subtítulos del estudiante.
 
 8. CONDITIONAL DIDACTIC SVG DIAGRAM (`diagram_svg`):
    - Include clean SVG schemas (`diagram_svg`) for temporal timelines (Present vs Past, Adverbs of Frequency), spatial relations, or syntactic trees.
@@ -3184,6 +3252,8 @@ class TutorAgent:
         # Re-number all phases consecutively and refresh chunks
         for i, p in enumerate(clean_phases):
             p["phase_number"] = i + 1
+            if p.get("tutor_says"):
+                p["tutor_says"] = clean_phonetic_transcriptions_for_subtitles(str(p["tutor_says"]))
             p["grammar_structure"] = self._normalize_grammar_structure(p, topic, sublevel)
             p["diagram_svg"] = self._resolve_didactic_diagram_svg(p, topic)
             p["voice_chunks"] = self._build_phase_voice_chunks(p, topic, sublevel)
@@ -4260,7 +4330,7 @@ class TutorAgent:
                         "chunk_id": c.get("chunk_id") or f"chunk-{idx+1}",
                         "chunk_index": idx + 1,
                         "title": c.get("title") or (f"1. Introducción y Situación" if idx == 0 else f"{idx+1}. Explicación"),
-                        "tutor_says": str(c.get("tutor_says")).strip(),
+                        "tutor_says": clean_phonetic_transcriptions_for_subtitles(str(c.get("tutor_says")).strip()),
                         "reveal_target": c.get("reveal_target") or ("image" if idx == 0 else "board_concepts"),
                         "highlight_target": c.get("highlight_target") or c.get("reveal_target") or ("illustration" if idx == 0 else "concepts")
                     })
@@ -4271,7 +4341,7 @@ class TutorAgent:
                 return cleaned
 
         # 2. Otherwise, synthesize intelligent voice_chunks from tutor_says and phase structure
-        full_speech = str(p.get("tutor_says") or "").strip()
+        full_speech = clean_phonetic_transcriptions_for_subtitles(str(p.get("tutor_says") or "").strip())
         if not full_speech:
             full_speech = f"En esta fase exploraremos {topic or 'este concepto'} en detalle."
 

@@ -24,6 +24,7 @@ from config import settings
 from auth.dependencies import get_current_user_optional
 from models.user import User
 from core.tts_service import synthesize_speech
+from core.minimax_agent import clean_phonetic_transcriptions_for_subtitles
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/live", tags=["live_chat"])
@@ -427,6 +428,7 @@ async def live_respond_stream(
             s = s.replace("**", "")  # Strip markdown bold asterisks from speech
             s = re.sub(r'[\u4e00-\u9fff]', '', s)
             s = clean_portuguese_leaks(s)
+            s = clean_phonetic_transcriptions_for_subtitles(s)
             return s.strip()
 
         # Helper to extract structured JSON payloads from tags with nested braces

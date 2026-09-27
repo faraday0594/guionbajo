@@ -9,7 +9,7 @@ import MicButton from '@/app/components/TutorPanel/MicButton';
 import ScoreDisplay from '@/app/components/TutorPanel/ScoreDisplay';
 import GrammarStructureCard from '@/app/components/GrammarStructureCard';
 import ExplanationBoard from '@/app/components/ExplanationBoard';
-import DynamicSubtitles from '@/app/components/DynamicSubtitles';
+import DynamicSubtitles, { cleanTextForSubtitles } from '@/app/components/DynamicSubtitles';
 import MicroPhoneticCard from '@/app/components/MicroPhoneticCard';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
 import LiveStoryboardController, { StoryboardStep } from '@/app/components/LiveStoryboardController';
@@ -1791,7 +1791,7 @@ export function getPhaseVoiceChunks(phase: any, topic: string): VoiceChunk[] {
         chunk_id: 'chunk-1',
         chunk_index: 1,
         title: 'Situación en Contexto',
-        tutor_says: fullHookSpeech.trim(),
+        tutor_says: cleanTextForSubtitles(fullHookSpeech.trim()),
         reveal_target: 'image',
         highlight_target: 'illustration',
       }
@@ -1803,7 +1803,7 @@ export function getPhaseVoiceChunks(phase: any, topic: string): VoiceChunk[] {
       chunk_id: c.chunk_id || `chunk-${idx + 1}`,
       chunk_index: idx + 1,
       title: c.title || (idx === 0 ? '1. Introducción y Situación' : `${idx + 1}. Explicación`),
-      tutor_says: typeof c.tutor_says === 'string' ? c.tutor_says.trim() : String(c.tutor_says || '').trim(),
+      tutor_says: cleanTextForSubtitles(typeof c.tutor_says === 'string' ? c.tutor_says.trim() : String(c.tutor_says || '').trim()),
       reveal_target: c.reveal_target || (idx === 0 ? 'image' : 'board_concepts'),
       highlight_target: c.highlight_target || (idx === 0 ? 'illustration' : 'concepts'),
     }));
@@ -1817,6 +1817,7 @@ export function getPhaseVoiceChunks(phase: any, topic: string): VoiceChunk[] {
   if (!tutorSpeech.trim()) {
     tutorSpeech = `En esta fase exploraremos ${topic || 'este concepto'} en detalle.`;
   }
+  tutorSpeech = cleanTextForSubtitles(tutorSpeech);
 
   const rawSentences = tutorSpeech.split(/(?<=[.?!])\s+/).map((s: string) => s.trim()).filter(Boolean);
   const hasExercises = Boolean(

@@ -74,6 +74,84 @@ const SUBTITLE_STYLES: Record<SubtitleStyle, StyleConfig> = {
 
 const STYLE_KEYS: SubtitleStyle[] = ['pop', 'chalk', 'cyber', 'rounded', 'editorial'];
 
+/**
+ * Normaliza y limpia el texto para visualización en subtítulos dinámicos:
+ * - Elimina transcripciones acústicas o deletreo fonético de letras aisladas
+ *   (ej. "ese hache o ce hache" -> "-sh o -ch", "i, ene, ge" -> "-ing", "e, de" -> "-ed")
+ * - Muestra las letras o terminaciones reales que el estudiante debe pronunciar o leer.
+ * - Limpia formato markdown, emojis y artefactos de pronunciación entre paréntesis.
+ */
+export function cleanTextForSubtitles(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+  let clean = text;
+
+  // 1. Remove markdown symbols & emojis
+  clean = clean
+    .replace(/[*_#~`]/g, '')
+    .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF\u2600-\u27BF]/g, '')
+    .replace(/[\n\r]+/g, ' ');
+
+  // 2. Remove parenthesized pronunciation mockups e.g. ("ther-iz"), ("ther-ar"), ("kænt")
+  clean = clean.replace(/\(\s*["']?[a-zA-Z0-9\-]+["']?\s*\)/g, '');
+
+  // 3. Spelled-out consonant digraphs & endings -> actual letters
+  clean = clean.replace(/\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?ese\s+hache\s+o\s+(?:-)?ce\s+hache\b/gi, 'terminados en las letras -sh o -ch');
+  clean = clean.replace(/\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?ce\s+hache\s+o\s+(?:-)?ese\s+hache\b/gi, 'terminados en las letras -ch o -sh');
+  clean = clean.replace(/\btermina(?:n)?\s+en\s+(?:las\s+letras\s+)?(?:-)?ese\s+hache\b/gi, 'terminan en las letras -sh');
+  clean = clean.replace(/\btermina(?:n)?\s+en\s+(?:las\s+letras\s+)?(?:-)?ce\s+hache\b/gi, 'terminan en las letras -ch');
+  clean = clean.replace(/\b(?:las\s+letras\s+)?(?:-)?ese\s+hache\s+o\s+(?:-)?ce\s+hache\b/gi, '-sh o -ch');
+  clean = clean.replace(/\b(?:las\s+letras\s+)?(?:-)?ce\s+hache\s+o\s+(?:-)?ese\s+hache\b/gi, '-ch o -sh');
+  clean = clean.replace(/\b(?:las\s+letras\s+|la\s+combinaci[oó]n\s+)?(?:-)?ese\s+hache\b/gi, '-sh');
+  clean = clean.replace(/\b(?:las\s+letras\s+|la\s+combinaci[oó]n\s+)?(?:-)?ce\s+hache\b/gi, '-ch');
+  clean = clean.replace(/\b(?:las\s+letras\s+|la\s+combinaci[oó]n\s+)?(?:-)?te\s+hache\b/gi, '-th');
+
+  // 4. Grammar suffixes & endings spelled out -> actual letters (3-letter sequences first)
+  clean = clean.replace(/\b(?:la\s+)?terminaci[oó]n\s+(?:i,\s*e,\s*ese|i\s+e\s+ese)\b/gi, 'la terminación -ies');
+  clean = clean.replace(/\b(?:el\s+)?sufijo\s+(?:i,\s*e,\s*ese|i\s+e\s+ese)\b/gi, 'el sufijo -ies');
+  clean = clean.replace(/\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+(?:i,\s*e,\s*ese|i\s+e\s+ese)\b/gi, '$1 -ies');
+  clean = clean.replace(/\b(?:i,\s*e,\s*ese|i\s+e\s+ese)\b/gi, '-ies');
+
+  clean = clean.replace(/\b(?:la\s+)?terminaci[oó]n\s+(?:i,\s*ene,\s*ge|i\s+ene\s+ge|i,\s*n,\s*g)\b/gi, 'la terminación -ing');
+  clean = clean.replace(/\b(?:el\s+)?sufijo\s+(?:i,\s*ene,\s*ge|i\s+ene\s+ge|i,\s*n,\s*g)\b/gi, 'el sufijo -ing');
+  clean = clean.replace(/\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+(?:i,\s*ene,\s*ge|i\s+ene\s+ge|i,\s*n,\s*g)\b/gi, '$1 -ing');
+  clean = clean.replace(/\b(?:i,\s*ene,\s*ge|i\s+ene\s+ge)\b/gi, '-ing');
+
+  clean = clean.replace(/\b(?:la\s+)?terminaci[oó]n\s+(?:e,\s*de|e\s+de|e,\s*d)\b/gi, 'la terminación -ed');
+  clean = clean.replace(/\b(?:el\s+)?sufijo\s+(?:e,\s*de|e\s+de|e,\s*d)\b/gi, 'el sufijo -ed');
+  clean = clean.replace(/\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+(?:e,\s*de|e\s+de|e,\s*d)\b/gi, '$1 -ed');
+  clean = clean.replace(/\b(?:e,\s*de|e\s+de)\b/gi, '-ed');
+
+  clean = clean.replace(/\b(?:la\s+)?terminaci[oó]n\s+(?:e,\s*ese|e\s+ese|e,\s*s)\b/gi, 'la terminación -es');
+  clean = clean.replace(/\b(?:el\s+)?sufijo\s+(?:e,\s*ese|e\s+ese|e,\s*s)\b/gi, 'el sufijo -es');
+  clean = clean.replace(/\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+(?:e,\s*ese|e\s+ese|e,\s*s)\b/gi, '$1 -es');
+  clean = clean.replace(/\b(?:e,\s*ese|e\s+ese)\b/gi, '-es');
+
+  clean = clean.replace(/\b(?:la\s+)?terminaci[oó]n\s+ese\b/gi, 'la terminación -s');
+  clean = clean.replace(/\b(?:el\s+)?sufijo\s+ese\b/gi, 'el sufijo -s');
+  clean = clean.replace(/\b(agregamos|a[ñn]adimos|agregar|a[ñn]adir)\s+ese\b/gi, '$1 -s');
+
+  // 5. Letter names -> actual letters
+  clean = clean.replace(/\b(la\s+letra|las\s+letras)\s+ese\b/gi, '$1 s');
+  clean = clean.replace(/\b(la\s+letra|las\s+letras)\s+te\b/gi, '$1 t');
+  clean = clean.replace(/\b(la\s+letra|las\s+letras)\s+de\b/gi, '$1 d');
+  clean = clean.replace(/\b(la\s+letra|las\s+letras)\s+pe\b/gi, '$1 p');
+  clean = clean.replace(/\b(la\s+letra|las\s+letras)\s+be\b/gi, '$1 b');
+  clean = clean.replace(/\b(la\s+letra|las\s+letras)\s+ge\b/gi, '$1 g');
+  clean = clean.replace(/\b(la\s+letra|las\s+letras)\s+ka\b/gi, '$1 k');
+  clean = clean.replace(/\b(la\s+letra|las\s+letras)\s+zeta\b/gi, '$1 z');
+
+  // 6. Spoken acoustic anchor cleanups in subtitles
+  clean = clean.replace(/\b(?:el\s+)?sonido\s+shh\b/gi, 'el sonido sh');
+  clean = clean.replace(/\b(?:el\s+)?sonido\s+che\b/gi, 'el sonido ch');
+  clean = clean.replace(/\b(?:el\s+)?sonido\s+th\s+sorda\b/gi, 'el sonido th');
+  clean = clean.replace(/\b(?:el\s+)?sonido\s+th\s+sonora\b/gi, 'el sonido th');
+  clean = clean.replace(/\b(?:el\s+)?sonido\s+z\s+sonora\b/gi, 'el sonido z');
+  clean = clean.replace(/\bz\s+sonora\b/gi, 'z');
+
+  // 7. Clean excessive whitespace
+  return clean.replace(/\s+/g, ' ').trim();
+}
+
 export default function DynamicSubtitles({
   text,
   audioProgress,
@@ -103,14 +181,9 @@ export default function DynamicSubtitles({
     } catch (_) {}
   };
 
-  // Clean raw text
+  // Clean raw text for visual subtitle display (natural letters, no spelled-out acoustic transcriptions)
   const cleanText = useMemo(() => {
-    if (!text) return '';
-    return text
-      .replace(/[*_#~`]/g, '') // remove markdown symbols
-      .replace(/[\n\r]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    return cleanTextForSubtitles(text);
   }, [text]);
 
   const words = useMemo(() => {

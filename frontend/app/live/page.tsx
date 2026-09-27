@@ -23,6 +23,7 @@ import {
 import { toast } from 'react-hot-toast';
 
 import TutorAvatar, { TutorState } from '@/app/components/TutorPanel/TutorAvatar';
+import { cleanTextForSubtitles } from '@/app/components/DynamicSubtitles';
 import { getCurrentUpgradeStage, UpgradeStage } from '@/lib/guionbajoUpgrades';
 import { api, LiveAudioStreamQueue, getSavedPreferredVoice, MiniClassData, playEnglishAudio } from '@/lib/api';
 import { getToken } from '@/lib/auth';
@@ -1132,7 +1133,7 @@ export default function LiveChatPage() {
               <span>Guionbajo en Tiempo Real</span>
             </div>
             <p className="text-base sm:text-lg text-white font-medium leading-relaxed min-h-[52px] flex items-center justify-center px-2">
-              {currentTutorSubtitle}
+              {cleanTextForSubtitles(currentTutorSubtitle)}
             </p>
 
             {lastUserUtterance && (

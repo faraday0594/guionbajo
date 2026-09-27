@@ -960,11 +960,18 @@ export function cleanTextForTTS(text: string): string {
   clean = clean.replace(/\b(agregamos|añadimos|agregar|añadir)\s+(?:-)?ing\b/gi, '$1 i, ene, ge');
   clean = clean.replace(/\bterminaci[oó]n\s+(?:-)?ed\b/gi, 'terminación e, de');
   clean = clean.replace(/\bterminaci[oó]n\s+(?:-)?es\b/gi, 'terminación e, ese');
+  clean = clean.replace(/\bterminaci[oó]n\s+(?:-)?ies\b/gi, 'terminación i, e, ese');
   clean = clean.replace(/\bterminaci[oó]n\s+(?:-)?s\b/gi, 'terminación ese');
+  clean = clean.replace(/\b(agregamos|añadimos|agregar|añadir)\s+(?:-)?es\b/gi, '$1 e, ese');
+  clean = clean.replace(/\b(agregamos|añadimos|agregar|añadir)\s+(?:-)?ed\b/gi, '$1 e, de');
+  clean = clean.replace(/\b(agregamos|añadimos|agregar|añadir)\s+(?:-)?ies\b/gi, '$1 i, e, ese');
+  clean = clean.replace(/\b(agregamos|añadimos|agregar|añadir)\s+(?:-)?s\b/gi, '$1 ese');
   clean = clean.replace(/\bING\b/g, 'i, ene, ge');
   clean = clean.replace(/(?:\s|^)-(?:ing|ING)\b/gi, ' i, ene, ge');
   clean = clean.replace(/(?:\s|^)-(?:ed|ED)\b/gi, ' e, de');
   clean = clean.replace(/(?:\s|^)-(?:es|ES)\b/gi, ' e, ese');
+  clean = clean.replace(/(?:\s|^)-(?:ies|IES)\b/gi, ' i, e, ese');
+  clean = clean.replace(/(?:\s|^)-(?:s|S)\b/gi, ' ese');
   clean = clean.replace(/\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?sh\s+o\s+(?:-)?ch\b/gi, 'terminados en las letras ese hache o ce hache');
   clean = clean.replace(/\bterminad[oa]s?\s+en\s+(?:las\s+letras\s+)?(?:-)?ch\s+o\s+(?:-)?sh\b/gi, 'terminados en las letras ce hache o ese hache');
   clean = clean.replace(/\btermina(?:n)?\s+en\s+(?:las\s+letras\s+)?(?:-)?sh\b/gi, 'terminan en las letras ese hache');
@@ -973,8 +980,13 @@ export function cleanTextForTTS(text: string): string {
   clean = clean.replace(/\b(?:-)?ch\s+o\s+(?:-)?sh\b/gi, 'ce hache o ese hache');
   clean = clean.replace(/\b(?:el\s+)?sonido\s+(?:-)?sh\b/gi, 'el sonido shh');
   clean = clean.replace(/\b(?:el\s+)?sonido\s+(?:-)?ch\b/gi, 'el sonido che');
+  clean = clean.replace(/\b(?:el\s+)?sonido\s+(?:-)?th\b/gi, 'el sonido th');
+  clean = clean.replace(/\b(la\s+combinaci[oó]n|las\s+letras)\s+(?:-)?sh\b/gi, '$1 ese hache');
+  clean = clean.replace(/\b(la\s+combinaci[oó]n|las\s+letras)\s+(?:-)?ch\b/gi, '$1 ce hache');
+  clean = clean.replace(/\b(la\s+combinaci[oó]n|las\s+letras)\s+(?:-)?th\b/gi, '$1 te hache');
   clean = clean.replace(/(?:\s|^)-(?:sh|s-h)\b/gi, ' ese hache');
   clean = clean.replace(/(?:\s|^)-(?:ch|c-h)\b/gi, ' ce hache');
+  clean = clean.replace(/(?:\s|^)-(?:th)\b/gi, ' te hache');
 
   // Replace slashes in alternatives like I/You or s/es -> I o You, s o es
   clean = clean.replace(/([A-Za-z0-9]+)\s*\/\s*([A-Za-z0-9]+)/g, '$1 o $2');

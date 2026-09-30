@@ -820,7 +820,17 @@ export default function LiveChatPage() {
         }`}
       />
 
-      {/* Continuous Hands-Free Status Banner */}
+      {/* Greeting when session is not yet active */}
+      {!isSessionActive && !isCompact && (
+        <div className="text-center z-10 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-outfit font-black text-white flex items-center justify-center gap-2.5 tracking-tight">
+            <span>Talk to me!</span>
+            <span className="text-xl sm:text-2xl animate-bounce">🎙️</span>
+          </h2>
+        </div>
+      )}
+
+      {/* Live Status Banner */}
       <div className="flex items-center gap-2 mb-2 z-10">
         <div
           className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all ${
@@ -847,14 +857,14 @@ export default function LiveChatPage() {
           />
           <span>
             {!isSessionActive
-              ? 'Sesión en pausa'
+              ? 'Listo para escucharte'
               : tutorState === 'speaking'
               ? 'Guionbajo está hablando (puedes interrumpirlo)'
               : isSpeechDetected
               ? '🎙️ ¡Detectando tu voz...!'
               : tutorState === 'thinking'
               ? 'Guionbajo está pensando...'
-              : '🟢 Micrófono abierto — Habla con naturalidad'}
+              : '🟢 Micrófono activo — Habla con naturalidad'}
           </span>
         </div>
       </div>
@@ -903,40 +913,41 @@ export default function LiveChatPage() {
       )}
       {silenceProgress > 0 && (
         <span className="text-[10px] text-brand-cyan mt-1 z-10 font-mono-custom animate-pulse">
-          Pausa detectada (1.5s): enviando...
+          Pausa detectada: respondiendo...
         </span>
       )}
 
-      {/* Master Hands-Free Session Button */}
-      <div className={`${isCompact ? 'mt-3' : 'mt-5'} flex flex-col items-center gap-1.5 z-10`}>
-        <button
-          onClick={isSessionActive ? stopHandsFreeSession : startHandsFreeSession}
-          className={`flex items-center gap-2.5 ${
-            isCompact ? 'px-5 py-2.5 text-xs' : 'px-6 py-3 text-xs sm:text-sm'
-          } rounded-2xl font-bold shadow-xl transition-all transform active:scale-95 ${
-            isSessionActive
-              ? 'bg-brand-surface border border-red-500/40 text-red-400 hover:bg-red-500/20'
-              : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/30 hover:scale-[1.02]'
-          }`}
-        >
-          {isSessionActive ? (
-            <>
-              <Pause size={16} />
-              <span>Pausar Manos Libres</span>
-            </>
-          ) : (
-            <>
-              <Play size={16} fill="currentColor" />
-              <span>Iniciar Conversación Manos Libres</span>
-            </>
-          )}
-        </button>
+      {/* Master Action Button */}
+      <div className={`${isCompact ? 'mt-3' : 'mt-5'} flex flex-col items-center gap-2 z-10`}>
+        {isSessionActive ? (
+          <button
+            onClick={stopHandsFreeSession}
+            className={`flex items-center gap-2.5 ${
+              isCompact ? 'px-5 py-2.5 text-xs' : 'px-6 py-3 text-xs sm:text-sm'
+            } rounded-2xl font-bold shadow-xl transition-all transform active:scale-95 bg-brand-surface border border-red-500/40 text-red-400 hover:bg-red-500/20`}
+          >
+            <Pause size={16} />
+            <span>Pausar Micrófono</span>
+          </button>
+        ) : (
+          <button
+            onClick={startHandsFreeSession}
+            className={`group relative flex items-center gap-3 ${
+              isCompact ? 'px-6 py-2.5 text-xs' : 'px-8 sm:px-10 py-3.5 sm:py-4 text-sm sm:text-base'
+            } rounded-full font-extrabold shadow-2xl transition-all transform active:scale-95 bg-gradient-to-r from-brand-accent via-indigo-500 to-brand-cyan hover:from-brand-accent-hover hover:to-cyan-400 text-white shadow-brand-cyan/40 hover:scale-105`}
+          >
+            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-pulse" />
+            </span>
+            <span>Empezar a Hablar</span>
+          </button>
+        )}
 
         {!isCompact && (
-          <p className="text-[11px] text-brand-text-secondary text-center max-w-md">
+          <p className="text-[11px] sm:text-xs text-brand-text-secondary text-center max-w-md">
             {isSessionActive
-              ? 'El micrófono permanece abierto. Guionbajo procesa cuando haces una pausa breve y se pausa si lo interrumpes.'
-              : 'Haz clic para abrir el micrófono continuo. No necesitarás presionar ningún botón más.'}
+              ? 'El micrófono permanece abierto. Guionbajo te responde cuando haces una pausa y se silencia si lo interrumpes.'
+              : 'Presiona el micrófono y practica tu inglés hablando de viva voz con Guionbajo. Sin teclado ni chat de texto.'}
           </p>
         )}
       </div>
@@ -965,7 +976,7 @@ export default function LiveChatPage() {
               }`}
             />
             <span className="font-outfit font-bold text-sm sm:text-base">
-              Guionbajo Manos Libres
+              Guionbajo en Vivo
             </span>
             <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-brand-accent/20 border border-brand-accent/40 text-brand-cyan">
               {userLevel}

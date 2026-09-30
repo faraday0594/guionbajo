@@ -280,7 +280,7 @@ export default function DashboardPage() {
     loadDashboard();
   }, []);
 
-  const [dashboardTab, setDashboardTab] = useState<'curriculum' | 'phonetics' | 'live' | 'netflix'>('curriculum');
+  const [dashboardTab, setDashboardTab] = useState<'curriculum' | 'phonetics' | 'netflix'>('curriculum');
 
   const handleLaunchMission = (targetSublevel?: string, targetClassIdx?: number) => {
     const sublevel = targetSublevel || userStats.current_sublevel;
@@ -415,20 +415,14 @@ export default function DashboardPage() {
           </button>
 
           {/* Tab 3: Voz en Vivo */}
-          <button
-            onClick={() => setDashboardTab('live')}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
-              dashboardTab === 'live'
-                ? 'bg-gradient-to-r from-brand-accent to-brand-cyan border border-brand-cyan/60 text-white shadow-lg shadow-brand-cyan/20'
-                : 'glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface'
-            }`}
+          <Link
+            href="/live"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all glass border border-brand-border text-brand-text-secondary hover:text-white hover:bg-brand-surface hover:border-brand-cyan/60 group"
           >
-            <Radio size={15} className={dashboardTab === 'live' ? 'text-white animate-pulse flex-shrink-0' : 'flex-shrink-0'} />
+            <Radio size={15} className="flex-shrink-0 text-brand-cyan group-hover:animate-pulse" />
             <span className="truncate">Voz en Vivo</span>
-            {dashboardTab !== 'live' && (
-              <span className="hidden sm:inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-            )}
-          </button>
+            <span className="hidden sm:inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+          </Link>
 
           {/* Tab 4: Netflix AI Companion */}
           <button
@@ -580,59 +574,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {dashboardTab === 'live' && (
-            <div className="py-2 sm:py-6 animate-fadeIn">
-              <div className="max-w-2xl mx-auto p-8 sm:p-12 rounded-3xl glass border border-brand-cyan/30 bg-gradient-to-b from-brand-accent/10 via-brand-surface/60 to-brand-card/80 shadow-2xl relative overflow-hidden text-center flex flex-col items-center">
-                {/* Background glow aura */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-brand-cyan/15 blur-[100px] rounded-full pointer-events-none" />
-
-                {/* Guionbajo Avatar */}
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-black/50 border border-brand-cyan/30 flex items-center justify-center mb-6 shadow-xl shadow-brand-cyan/20 relative z-10">
-                  <TutorAvatar size="md" emotion="happy" />
-                </div>
-
-                {/* Main Friendly Greeting: Talk to me! */}
-                <h2 className="text-3xl sm:text-4xl font-outfit font-black text-white mb-3 tracking-tight relative z-10 flex items-center gap-3 justify-center">
-                  <span>Talk to me!</span>
-                  <span className="text-2xl sm:text-3xl animate-bounce">🎙️</span>
-                </h2>
-
-                <p className="text-sm sm:text-base text-brand-text-secondary max-w-md mb-8 relative z-10 leading-relaxed">
-                  Presiona el micrófono y practica tu inglés hablando de viva voz en tiempo real con Guionbajo. Sin teclado ni chat de texto.
-                </p>
-
-                {/* Big Glowing Microphone Button */}
-                <Link
-                  href="/live"
-                  className="group relative z-10 inline-flex items-center gap-3.5 px-8 sm:px-10 py-4 sm:py-5 rounded-full bg-gradient-to-r from-brand-accent via-indigo-500 to-brand-cyan hover:from-brand-accent-hover hover:to-cyan-400 text-white font-extrabold text-base sm:text-lg shadow-2xl shadow-brand-cyan/40 hover:scale-105 active:scale-95 transition-all duration-200"
-                >
-                  <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-pulse" />
-                  </span>
-                  <span>Empezar a Hablar</span>
-                  <ChevronRight className="w-5 h-5 opacity-70 group-hover:translate-x-1 transition-transform" />
-                </Link>
-
-                {/* Conversation Starters */}
-                <div className="mt-8 pt-6 border-t border-white/10 w-full max-w-lg relative z-10">
-                  <div className="text-xs text-brand-text-muted mb-3 font-semibold">
-                    O prueba iniciar diciendo:
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    {['"Hello! How was your day?"', '"Let\'s practice phrasal verbs"', '"Tell me a story in English"'].map((phrase) => (
-                      <Link
-                        key={phrase}
-                        href="/live"
-                        className="text-xs px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-brand-text-secondary hover:text-white transition-colors"
-                      >
-                        {phrase}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
         {/* 🎬 Tab 4: Netflix AI Companion Hub */}
         {dashboardTab === 'netflix' && (

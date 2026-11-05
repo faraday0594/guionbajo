@@ -13,7 +13,7 @@
 (function () {
   console.log("%c[Guionbajo AI]%c Netflix Companion v2.5 activo 🎬", "color:#10b981;font-weight:bold", "color:#fff");
 
-  const DEFAULT_API_URL = "https://perrohijueputa.onrender.com";
+  const DEFAULT_API_URL = "https://guionbajo-2.onrender.com";
   let activeAudio = null;
   let subtitleHistory = [];
   let currentSubtitle = "";
@@ -59,8 +59,8 @@
           ["apiUrl", "studentLevel", "voiceId", "autoPlayVoice", "authToken", "userName", "userEmail", "preferredMode"],
           (items) => {
             let apiUrl = (items.apiUrl || DEFAULT_API_URL).trim().replace(/\/$/, "");
-            // Automatically upgrade legacy localhost or 127.0.0.1 settings to production cloud backend
-            if (!apiUrl || apiUrl.includes("localhost") || apiUrl.includes("127.0.0.1")) {
+            // Automatically upgrade legacy localhost, 127.0.0.1 or stale URLs to new production cloud backend
+            if (!apiUrl || apiUrl.includes("localhost") || apiUrl.includes("127.0.0.1") || apiUrl.includes("perrohijueputa")) {
               apiUrl = DEFAULT_API_URL;
               chrome.storage.local.set({ apiUrl: DEFAULT_API_URL });
             }

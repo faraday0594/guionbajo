@@ -25,9 +25,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   chrome.storage.local.get(
     ["apiUrl", "authToken", "userName", "userEmail", "studentLevel", "voiceId", "autoPlayVoice"],
     (items) => {
-      let url = items.apiUrl || "https://perrohijueputa.onrender.com";
-      if (!url || url.includes("localhost") || url.includes("127.0.0.1")) {
-        url = "https://perrohijueputa.onrender.com";
+      let url = items.apiUrl || "https://guionbajo-2.onrender.com";
+      if (!url || url.includes("localhost") || url.includes("127.0.0.1") || url.includes("perrohijueputa")) {
+        url = "https://guionbajo-2.onrender.com";
         chrome.storage.local.set({ apiUrl: url });
       }
       apiUrlInput.value = url;

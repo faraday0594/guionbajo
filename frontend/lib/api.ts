@@ -1,7 +1,11 @@
 import { getToken } from './auth';
 import { attachAudioElementToAnalyzer, detachAudioElement } from './audioAnalyzer';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? 'https://guionbajo-2.onrender.com'
+    : 'http://localhost:8000');
 
 async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 1): Promise<any> {
   const token = getToken();

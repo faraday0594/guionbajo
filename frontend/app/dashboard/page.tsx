@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, API_BASE } from '@/lib/api';
 import { getToken, clearToken } from '@/lib/auth';
 import { Settings, Lock, Play, CheckCircle2, Flame, Award, Loader2, Sparkles, BookOpen, Layers, Check, ChevronRight, Mic, Activity, LogOut, Radio, Tv, Download, ExternalLink, Film, Laptop, Copy } from 'lucide-react';
 import Link from 'next/link';
@@ -608,7 +608,7 @@ export default function DashboardPage() {
                   {/* Primary CTA Buttons */}
                   <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3">
                     <a
-                      href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/netflix/download-extension`}
+                      href={`${API_BASE}/netflix/download-extension`}
                       download="guionbajo-netflix-companion.zip"
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs sm:text-sm font-extrabold shadow-lg shadow-red-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
                     >

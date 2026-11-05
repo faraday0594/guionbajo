@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, Sparkles, X, Layers, Award, Mic, Info, Play, Loader2 } from 'lucide-react';
-import { api, playEnglishAudio, preloadEnglishAudio, setSavedPreferredVoice } from '@/lib/api';
+import { api, playEnglishAudio, preloadEnglishAudio, setSavedPreferredVoice, API_BASE } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 import PhoneticLabSession from './PhoneticLabSession';
@@ -242,7 +242,7 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('guionbajo_token') : null;
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/tts/phoneme?symbol=${encodeURIComponent(cleanSymbol)}`,
+        `${API_BASE}/tts/phoneme?symbol=${encodeURIComponent(cleanSymbol)}`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }

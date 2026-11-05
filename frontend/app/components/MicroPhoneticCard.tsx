@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Volume2, Sparkles, Layers, Mic, CheckCircle2, XCircle, RefreshCw, Square, Loader2 } from 'lucide-react';
-import { api, playEnglishAudio, preloadEnglishAudio } from '@/lib/api';
+import { api, playEnglishAudio, preloadEnglishAudio, API_BASE } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sfx } from '@/lib/soundEffects';
@@ -204,7 +204,7 @@ export default function MicroPhoneticCard({ phoneticData, onCompletePractice, is
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('guionbajo_token') : null;
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/tts/phoneme?symbol=${encodeURIComponent(cleanSym)}`,
+        `${API_BASE}/tts/phoneme?symbol=${encodeURIComponent(cleanSym)}`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }

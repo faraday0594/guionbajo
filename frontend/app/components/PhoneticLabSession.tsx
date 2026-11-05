@@ -6,7 +6,7 @@ import {
   Volume2, X, ChevronDown, ChevronRight, ArrowRight, Sparkles, 
   Pause, Award, CheckCircle2, User
 } from 'lucide-react';
-import { api, playEnglishAudio, preloadEnglishAudio, getSavedPreferredVoice, setSavedPreferredVoice, getBestBrowserVoice, stopTutorVoice as stopGlobalTutorVoice } from '@/lib/api';
+import { api, playEnglishAudio, preloadEnglishAudio, getSavedPreferredVoice, setSavedPreferredVoice, getBestBrowserVoice, stopTutorVoice as stopGlobalTutorVoice, API_BASE } from '@/lib/api';
 import { getPhonemeSvgParam } from './phonemeSvgPresets';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -975,7 +975,7 @@ export default function PhoneticLabSession({ phoneme, onClose }: PhoneticLabSess
       } catch (_) {}
     }
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/tts/phoneme?symbol=${encodeURIComponent(ipa)}`);
+      const res = await fetch(`${API_BASE}/tts/phoneme?symbol=${encodeURIComponent(ipa)}`);
       if (res.ok) {
         const blob = await res.blob();
         const audio = new Audio(URL.createObjectURL(blob));

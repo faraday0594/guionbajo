@@ -1,8 +1,11 @@
 import { getToken } from './auth';
 import { attachAudioElementToAnalyzer, detachAudioElement } from './audioAnalyzer';
 
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
+  (configuredApiUrl && !configuredApiUrl.includes('perrohijueputa.onrender.com')
+    ? configuredApiUrl
+    : null) ||
   (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
     ? 'https://guionbajo-2.onrender.com'
     : 'http://localhost:8000');
@@ -44,9 +47,18 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 1
   }
 
   if (response.status === 401) {
+    if (url.includes('/auth/login')) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.detail ||
+          'Correo o contraseña incorrectos. Verifica tus datos o usa ¿Olvidaste tu contraseña?.'
+      );
+    }
     if (typeof window !== 'undefined') {
       localStorage.removeItem('guionbajo_token');
-      window.location.href = '/login';
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     throw new Error('Sesión expirada. Por favor inicia sesión.');
   }

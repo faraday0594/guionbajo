@@ -28,7 +28,7 @@ export default function LoginPage() {
   const doLogin = async (creds: { email: string; password: string }, isDemo = false) => {
     setError('');
     try {
-      const res = await api.login(creds);
+      const res = await api.login({ email: creds.email.trim().toLowerCase(), password: creds.password.trim() });
       if (res.access_token) {
         setToken(res.access_token);
         toast.success(isDemo ? '¡Entraste como usuario demo! 🚀' : '¡Bienvenido de vuelta! 👋');

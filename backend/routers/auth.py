@@ -43,14 +43,15 @@ async def register(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(select(User).where(User.email == user.email))
+    clean_email = user.email.strip().lower()
+    result = await db.execute(select(User).where(func.lower(func.trim(User.email)) == clean_email))
     if result.scalars().first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Este correo electrónico ya está registrado.")
         
     new_user = User(
-        email=user.email,
-        password_hash=get_password_hash(user.password),
-        name=user.name,
+        email=clean_email,
+        password_hash=get_password_hash(user.password.strip()),
+        name=(user.name or "").strip(),
         native_language=user.native_language
     )
     db.add(new_user)
@@ -88,11 +89,12 @@ async def login(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(select(User).where(User.email == user_data.email))
+    clean_email = user_data.email.strip().lower()
+    result = await db.execute(select(User).where(func.lower(func.trim(User.email)) == clean_email))
     user = result.scalars().first()
 
     # Si es megafer1994@gmail.com con su clave 123456, asegurar acceso y sincronizar B2.1
-    if user_data.email == "megafer1994@gmail.com" and user_data.password == "123456":
+    if clean_email == "megafer1994@gmail.com" and user_data.password.strip() == "123456":
         if not user:
             user = User(
                 id=str(uuid.uuid4()),
@@ -138,11 +140,17 @@ async def login(
                 )
                 db.add(prof)
             await db.commit()
-    
-    if not user or not verify_password(user_data.password, user.password_hash):
+
+    raw_pwd = user_data.password
+    stripped_pwd = user_data.password.strip()
+    pwd_valid = bool(user and (
+        verify_password(raw_pwd, user.password_hash) or
+        (stripped_pwd != raw_pwd and verify_password(stripped_pwd, user.password_hash))
+    ))
+    if not user or not pwd_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Correo o contraseña incorrectos. Verifica tus datos o usa '¿Olvidaste tu contraseña?'.",
             headers={"WWW-Authenticate": "Bearer"},
         )
         

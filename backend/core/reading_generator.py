@@ -9,6 +9,7 @@ import re
 import difflib
 import logging
 import json
+import asyncio
 from typing import Dict, List, Optional, Any
 from config import settings
 from core.ipa_dictionary import annotate_sentence_words, get_word_ipa, clean_token
@@ -282,7 +283,7 @@ class ReadingGenerator:
                 self.client = AsyncOpenAI(
                     api_key=self.api_key,
                     base_url=settings.MINIMAX_BASE_URL,
-                    timeout=60.0,
+                    timeout=22.0,
                 )
             except Exception as e:
                 logger.warning(f"Failed to initialize AsyncOpenAI in ReadingGenerator: {e}")
@@ -318,7 +319,8 @@ class ReadingGenerator:
         )
 
         try:
-            response = await self.client.chat.completions.create(
+            response = await asyncio.wait_for(
+                self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": READING_SYSTEM_PROMPT.format(topic=topic, sublevel=sublevel)},
@@ -326,6 +328,8 @@ class ReadingGenerator:
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.7,
+            ),
+                timeout=20.0
             )
             raw = response.choices[0].message.content or "{}"
             clean = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL)

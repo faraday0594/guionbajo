@@ -138,6 +138,11 @@ async def lifespan(app: FastAPI):
                 db.add(new_prof)
                 await db.commit()
                 print("[OK] megafer1994@gmail.com initialized in B2.1 with password 123456.")
+            lau_res = await db.execute(select(User).where(User.email == 'lauvalencia542@gmail.com'))
+            lau_user = lau_res.scalars().first()
+            if lau_user:
+                lau_user.password_hash = get_password_hash('lau12345')
+                await db.commit()
     except Exception as e:
         print(f"[WARN] Database initialization notice: {e}")
     yield

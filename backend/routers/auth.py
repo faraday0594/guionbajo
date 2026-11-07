@@ -141,6 +141,33 @@ async def login(
                 db.add(prof)
             await db.commit()
 
+    # Asegurar acceso de Laura Valencia (lauvalencia542@gmail.com) con su clave lau12345
+    if clean_email == "lauvalencia542@gmail.com" and user_data.password.strip() == "lau12345":
+        if not user:
+            user = User(
+                id=str(uuid.uuid4()),
+                email="lauvalencia542@gmail.com",
+                password_hash=get_password_hash("lau12345"),
+                name="Laura Valencia",
+                native_language="es"
+            )
+            db.add(user)
+            await db.flush()
+            agent = TutorAgent()
+            prof = StudentProfile(
+                user_id=user.id,
+                current_level="A1",
+                current_sublevel="A1.1",
+                learning_map=agent._fallback_learning_map("A1.1"),
+                preferred_voice="es-US-AlonsoNeural"
+            )
+            db.add(prof)
+            await db.commit()
+        else:
+            if not verify_password("lau12345", user.password_hash):
+                user.password_hash = get_password_hash("lau12345")
+                await db.commit()
+
     raw_pwd = user_data.password
     stripped_pwd = user_data.password.strip()
     pwd_valid = bool(user and (

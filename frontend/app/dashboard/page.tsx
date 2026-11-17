@@ -12,6 +12,14 @@ import PhoneticBoard from '@/app/components/PhoneticBoard';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 import JourneyVisualStage from '@/app/components/dashboard/JourneyVisualStage';
 import AdminAccessNotifications from '@/app/components/AdminAccessNotifications';
+import PremiumLimitModal from '@/app/components/PremiumLimitModal';
+import {
+  getLocalDailyQuota,
+  syncDailyQuotaFromServer,
+  canStartOrContinueClass,
+  setStoredUserEmail,
+  DailyQuotaState,
+} from '@/lib/dailyQuota';
 
 interface Module {
   id?: string;
@@ -220,6 +228,8 @@ export default function DashboardPage() {
   const [currentClassIndex, setCurrentClassIndex] = useState(1);
   const [activeCheckpoint, setActiveCheckpoint] = useState<any>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const [dailyQuota, setDailyQuota] = useState<DailyQuotaState>(() => getLocalDailyQuota());
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -237,7 +247,11 @@ export default function DashboardPage() {
         if (me) {
           setUserStats(prev => ({ ...prev, name: me.name || prev.name }));
           setIsAdminUser((me.email || '').trim().toLowerCase() === 'megafer1994@gmail.com');
+          if (me.email) setStoredUserEmail(me.email);
         }
+
+        const syncedQuota = syncDailyQuotaFromServer(stats?.daily_quota, me?.email);
+        setDailyQuota(syncedQuota);
 
         const userSublevel = stats?.current_sublevel || 'A1.1';
         const userStage = userSublevel.split('.')[0] || 'A1';
@@ -288,6 +302,13 @@ export default function DashboardPage() {
   const handleLaunchMission = (targetSublevel?: string, targetClassIdx?: number) => {
     const sublevel = targetSublevel || userStats.current_sublevel;
     const classIdx = targetClassIdx || currentClassIndex;
+
+    const check = canStartOrContinueClass(sublevel, Number(classIdx) || 1);
+    setDailyQuota(check.quota);
+    if (!check.allowed) {
+      setShowPremiumModal(true);
+      return;
+    }
 
     const pensum = CEFR_PENSUM[sublevel] || CEFR_PENSUM['A1.1'];
     const activeMod = pensum.modules[classIdx - 1] || pensum.modules[0];
@@ -364,6 +385,35 @@ export default function DashboardPage() {
                 <div className="text-xs font-bold text-brand-cyan">{userStats.total_xp} XP</div>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!dailyQuota.is_unlimited && dailyQuota.daily_remaining === 0) {
+                  setShowPremiumModal(true);
+                }
+              }}
+              className={`flex items-center gap-2 px-3 py-2 glass rounded-2xl border transition-all ${
+                dailyQuota.is_unlimited
+                  ? 'border-emerald-400/40 text-emerald-300'
+                  : dailyQuota.daily_remaining > 0
+                  ? 'border-emerald-400/40 text-emerald-300'
+                  : 'border-amber-400/50 bg-amber-500/10 text-amber-300 cursor-pointer hover:bg-amber-500/20'
+              }`}
+              title={
+                dailyQuota.is_unlimited
+                  ? 'Cuenta principal: clases diarias ilimitadas'
+                  : `Tienes ${dailyQuota.daily_remaining} de 2 clases gratis disponibles hoy`
+              }
+            >
+              <BookOpen className="w-4 h-4 flex-shrink-0" />
+              <div className="text-left">
+                <div className="text-[10px] text-brand-text-muted">Clases Hoy</div>
+                <div className="text-xs font-bold">
+                  {dailyQuota.is_unlimited ? '∞ Ilimitadas' : `${dailyQuota.daily_remaining} / 2 disp.`}
+                </div>
+              </div>
+            </button>
 
             <Link
               href="/guionbajo-lab"
@@ -771,6 +821,10 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+      <PremiumLimitModal
+        open={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+      />
     </div>
   );
 }

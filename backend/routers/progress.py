@@ -5,6 +5,7 @@ from auth.dependencies import get_current_user
 from database import get_db
 from models.user import User, StudentProfile
 from models.lesson import LessonHistory
+from routers.lesson import get_and_update_daily_quota
 
 router = APIRouter(prefix="/progress", tags=["progress"])
 
@@ -50,6 +51,8 @@ async def get_progress_stats(current_user: User = Depends(get_current_user), db:
             user_sublevel = "B2.1"
             await db.commit()
 
+    daily_quota = get_and_update_daily_quota(current_user, profile)
+
     return {
         "total_xp": profile.total_xp,
         "streak_days": profile.streak_days,
@@ -57,6 +60,7 @@ async def get_progress_stats(current_user: User = Depends(get_current_user), db:
         "current_sublevel": user_sublevel,
         "current_class_index": current_class_idx,
         "active_checkpoint": active_cp,
+        "daily_quota": daily_quota,
     }
 
 @router.post("/level")

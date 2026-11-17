@@ -57,6 +57,16 @@ import GameArena from '@/app/components/games/GameArena';
 import ReadingPracticeArena from '@/app/components/reading/ReadingPracticeArena';
 import CelebrationModal from '@/app/components/games/CelebrationModal';
 import HardwareUpgradeModal from '@/app/components/games/HardwareUpgradeModal';
+import PremiumLimitModal from '@/app/components/PremiumLimitModal';
+import {
+  getLocalDailyQuota,
+  syncDailyQuotaFromServer,
+  canStartOrContinueClass,
+  recordClassStartedLocal,
+  recordClassCompletedLocal,
+  setStoredUserEmail,
+  DailyQuotaState,
+} from '@/lib/dailyQuota';
 import { getTopicQuizExercises, DO_DOES_QUESTIONS_NEGATIVES_BANK, PRESENT_CONTINUOUS_BANK } from '@/lib/curriculumQuizBanks';
 import { getCurrentUpgradeStage, checkUpgradeTrigger, UPGRADE_DEFINITIONS, type UpgradeStage } from '@/lib/guionbajoUpgrades';
 
@@ -3588,6 +3598,8 @@ export default function LessonPage() {
   // ─── Export Material State & Downloader ────────────────────────────────────
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [isGuionbajoDeployed, setIsGuionbajoDeployed] = useState<boolean>(true);
+  const [dailyQuota, setDailyQuota] = useState<DailyQuotaState>(() => getLocalDailyQuota());
+  const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
   const [exportingFormat, setExportingFormat] = useState<'pptx' | 'docx' | 'pdf' | null>(null);
 
   const handleExportLesson = async (format: 'pptx' | 'docx' | 'pdf') => {
@@ -3734,6 +3746,7 @@ export default function LessonPage() {
           classIndex: classIndexParam || 1,
           timestamp: Date.now(),
         }));
+        setDailyQuota(recordClassCompletedLocal(sublevelParam || 'A1.1', Number(classIndexParam) || 1));
       } catch (_) {}
       try {
         await api.saveLessonCheckpoint({
@@ -4395,6 +4408,29 @@ export default function LessonPage() {
       setLoadingLesson(true);
       setLoadingStage('Diseñando guion didáctico y plan pedagógico...');
 
+      // Sync daily quota and check if student is allowed to start/continue this class
+      try {
+        const [meRes, statsRes] = await Promise.all([
+          api.getMe().catch(() => null),
+          api.getStats().catch(() => null),
+        ]);
+        if (meRes?.email) {
+          setStoredUserEmail(meRes.email);
+        }
+        const synced = syncDailyQuotaFromServer(statsRes?.daily_quota, meRes?.email);
+        setDailyQuota(synced);
+      } catch (_) {}
+
+      const quotaCheck = canStartOrContinueClass(sublevelParam || 'A1.1', Number(classIndexParam) || 1);
+      setDailyQuota(quotaCheck.quota);
+      if (!quotaCheck.allowed) {
+        setShowPremiumModal(true);
+        setLoadingLesson(false);
+        return;
+      }
+      // Register this class as started today so the student can complete it all the way through Games
+      setDailyQuota(recordClassStartedLocal(sublevelParam || 'A1.1', Number(classIndexParam) || 1));
+
       api.getSettings().then((settings) => {
         if (settings?.preferred_voice) {
           setSavedPreferredVoice(settings.preferred_voice);
@@ -4479,6 +4515,10 @@ export default function LessonPage() {
             const genRes: any = await Promise.race([genPromise, timeoutPromise]);
             if (isCancelledRef.current) return;
 
+            if (genRes?.daily_quota) {
+              setDailyQuota(syncDailyQuotaFromServer(genRes.daily_quota));
+            }
+
             if (genRes && genRes.script && Array.isArray(genRes.script.phases) && genRes.script.phases.length > 0) {
               data = {
                 id: genRes.lesson_id || lessonId,
@@ -4496,6 +4536,12 @@ export default function LessonPage() {
             }
           } catch (genErr: any) {
             if (isCancelledRef.current) return;
+            const errMsg = String(genErr?.message || '');
+            if (errMsg.includes('DAILY_LIMIT_REACHED') || errMsg.includes('límite de 2 clases')) {
+              setShowPremiumModal(true);
+              setLoadingLesson(false);
+              return;
+            }
             console.warn('generateAdaptiveLesson fallback activated:', genErr);
           }
         }
@@ -6092,6 +6138,22 @@ export default function LessonPage() {
             <span className="text-[10px] font-bold text-brand-cyan bg-brand-cyan/10 px-2 py-1 rounded-xl border border-brand-cyan/30">
               {currentPhaseIdx + 1}/{lesson?.phases?.length || 1}
             </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (!dailyQuota.is_unlimited && dailyQuota.daily_remaining === 0) {
+                  setShowPremiumModal(true);
+                }
+              }}
+              className={`text-[10px] font-bold px-2 py-1 rounded-xl border ${
+                dailyQuota.is_unlimited || dailyQuota.daily_remaining > 0
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+                  : 'bg-amber-500/20 text-amber-300 border-amber-400/40'
+              }`}
+              title="Clases disponibles para hoy"
+            >
+              {dailyQuota.is_unlimited ? '∞' : `${dailyQuota.daily_remaining}/2 hoy`}
+            </button>
           </div>
         </div>
 
@@ -6285,6 +6347,34 @@ export default function LessonPage() {
                 </span>
               </div>
             </div>
+
+            {/* Daily Classes Remaining Badge in Toolbar */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!dailyQuota.is_unlimited && dailyQuota.daily_remaining === 0) {
+                  setShowPremiumModal(true);
+                }
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                dailyQuota.is_unlimited
+                  ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+                  : dailyQuota.daily_remaining > 0
+                  ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+                  : 'bg-amber-950/50 border-amber-400/50 text-amber-300 hover:bg-amber-900/50 cursor-pointer'
+              }`}
+              title={
+                dailyQuota.is_unlimited
+                  ? 'Cuenta principal: clases diarias ilimitadas'
+                  : `Clases disponibles para hoy: ${dailyQuota.daily_remaining} de 2`
+              }
+            >
+              <span>
+                {dailyQuota.is_unlimited
+                  ? '∞ Clases Hoy'
+                  : `Clases hoy: ${dailyQuota.daily_remaining}/2`}
+              </span>
+            </button>
 
             {/* Phase Badge */}
             <span className="text-xs font-bold text-brand-cyan bg-brand-cyan/10 px-2.5 py-1 rounded-xl border border-brand-cyan/30">
@@ -7402,6 +7492,12 @@ export default function LessonPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <PremiumLimitModal
+        open={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        onBackToDashboard={() => router.push('/dashboard')}
+      />
     </div>
   );
 }

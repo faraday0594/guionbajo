@@ -23,12 +23,86 @@ import asyncio
 import tempfile
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 from core.minimax_agent import TutorAgent, LEVEL_SEQUENCE
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/lesson", tags=["lesson"])
+
+DAILY_FREE_CLASS_LIMIT = 2
+
+
+def get_and_update_daily_quota(
+    user: User,
+    profile: Optional[StudentProfile],
+    register_class_key: Optional[str] = None,
+    mark_completed_key: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Controla el límite diario de 2 clases gratis por día para todos los estudiantes
+    excepto la cuenta principal megafer1994@gmail.com.
+    Permite continuar una clase ya iniciada hoy hasta completar la sección de juegos.
+    """
+    today_str = (datetime.now(timezone.utc) - timedelta(hours=5)).strftime("%Y-%m-%d")
+    is_unlimited = (user.email or "").strip().lower() == "megafer1994@gmail.com"
+
+    k_map = dict((profile.knowledge_map if profile else None) or {})
+    daily = dict(k_map.get("daily_quota") or {})
+    if daily.get("date") != today_str:
+        daily = {"date": today_str, "started_keys": [], "completed_keys": []}
+
+    started_keys: List[str] = list(daily.get("started_keys") or [])
+    completed_keys: List[str] = list(daily.get("completed_keys") or [])
+
+    if register_class_key:
+        if register_class_key not in started_keys:
+            if not is_unlimited and len(started_keys) >= DAILY_FREE_CLASS_LIMIT:
+                raise HTTPException(
+                    status_code=429,
+                    detail="DAILY_LIMIT_REACHED: Completaste el límite de 2 clases gratis por día. ¡Pregunta por el Plan Premium para disfrutar de clases ilimitadas!",
+                )
+            started_keys.append(register_class_key)
+
+    if mark_completed_key:
+        if mark_completed_key not in started_keys:
+            started_keys.append(mark_completed_key)
+        if mark_completed_key not in completed_keys:
+            completed_keys.append(mark_completed_key)
+
+    daily = {
+        "date": today_str,
+        "started_keys": started_keys,
+        "completed_keys": completed_keys,
+    }
+    if profile is not None:
+        k_map["daily_quota"] = daily
+        profile.knowledge_map = k_map
+
+    used_count = len(started_keys)
+    remaining_count = 999 if is_unlimited else max(0, DAILY_FREE_CLASS_LIMIT - used_count)
+    return {
+        "daily_limit": None if is_unlimited else DAILY_FREE_CLASS_LIMIT,
+        "daily_used": used_count,
+        "daily_remaining": remaining_count,
+        "daily_started_keys": started_keys,
+        "daily_completed_keys": completed_keys,
+        "is_unlimited": is_unlimited,
+        "date": today_str,
+    }
+
+
+@router.get("/daily-quota")
+async def get_daily_quota_endpoint(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(StudentProfile).where(StudentProfile.user_id == current_user.id))
+    profile = result.scalars().first()
+    quota = get_and_update_daily_quota(current_user, profile)
+    if profile:
+        await db.commit()
+    return quota
 
 
 class AdaptiveLessonGenerateRequest(BaseModel):
@@ -69,6 +143,12 @@ async def generate_adaptive_lesson(
 
     sublevel = req.sublevel or (profile.current_sublevel if profile else "A1.1")
     class_idx = req.class_index or 1
+    class_key = f"{sublevel}:{class_idx}"
+
+    # Verificar y registrar cupo diario (2 clases gratis/día salvo megafer1994@gmail.com)
+    daily_quota = get_and_update_daily_quota(current_user, profile, register_class_key=class_key)
+    if profile:
+        await db.commit()
 
     engine = AdaptiveEngine(student_profile={
         "knowledge_map": (profile.knowledge_map if profile else {}) or {},
@@ -123,7 +203,8 @@ async def generate_adaptive_lesson(
     return {
         "lesson_id": lesson_id,
         "script": script,
-        "adaptive_plan": adaptive_plan
+        "adaptive_plan": adaptive_plan,
+        "daily_quota": daily_quota,
     }
 
 
@@ -138,6 +219,10 @@ async def generate_lesson(
 
     sublevel = req.sublevel or (profile.current_sublevel if profile else "A1.1")
     topic = req.topic or "Greetings and Introductions"
+    class_key = f"{sublevel}:{topic.strip().lower()[:40]}"
+    daily_quota = get_and_update_daily_quota(current_user, profile, register_class_key=class_key)
+    if profile:
+        await db.commit()
 
     agent = TutorAgent(api_key=profile.minimax_api_key if profile else None)
     prof_dict = {
@@ -169,7 +254,7 @@ async def generate_lesson(
         logger.error(f"Error saving lesson to database: {e}")
         lesson_id = f"gen-{sublevel}-{abs(hash(topic)) % 100000}"
 
-    return {"lesson_id": lesson_id, "script": script}
+    return {"lesson_id": lesson_id, "script": script, "daily_quota": daily_quota}
 
 
 @router.get("/current")
@@ -230,6 +315,17 @@ async def save_lesson_checkpoint(
 
     k_map = dict(profile.knowledge_map or {})
     current_class_idx = req.class_index or 1
+    lesson_sub_for_key = req.sublevel or profile.current_sublevel or "A1.1"
+    class_key = f"{lesson_sub_for_key}:{current_class_idx}"
+    is_passing_completion = bool(req.is_completed and req.overall_score >= 80)
+
+    daily_quota = get_and_update_daily_quota(
+        current_user,
+        profile,
+        register_class_key=class_key,
+        mark_completed_key=class_key if is_passing_completion else None,
+    )
+    k_map = dict(profile.knowledge_map or {})
 
     # Strict CEFR completion logic: only pass if overall_score >= 80
     if req.is_completed and req.overall_score >= 80:
@@ -303,6 +399,7 @@ async def save_lesson_checkpoint(
             "overall_score": req.overall_score,
             "next_class_index": next_class_idx,
             "next_sublevel": next_sublevel,
+            "daily_quota": daily_quota,
             "message": "¡Felicitaciones! Has aprobado la clase con un puntaje de 80 o más."
         }
 
@@ -328,6 +425,7 @@ async def save_lesson_checkpoint(
         "overall_score": req.overall_score,
         "current_class_index": current_class_idx,
         "current_sublevel": profile.current_sublevel or req.sublevel,
+        "daily_quota": daily_quota,
         "message": "Punto de guardado actualizado." if not req.is_completed else "Puntaje insuficiente (< 80%). Debes repetir actividades para aprobar la clase."
     }
 

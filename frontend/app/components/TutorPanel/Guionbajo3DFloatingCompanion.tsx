@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TutorAvatar, { TutorState, TutorEmotion } from './TutorAvatar';
 import type { UpgradeStage } from '@/lib/guionbajoUpgrades';
-import { ArrowLeftRight, Minimize2, Sparkles, Send } from 'lucide-react';
+import { ArrowLeftRight, CornerRightUp, Send } from 'lucide-react';
 
 interface Guionbajo3DFloatingCompanionProps {
   state: TutorState;
@@ -14,6 +14,8 @@ interface Guionbajo3DFloatingCompanionProps {
   audioElement?: HTMLAudioElement | null;
   upgradeStage?: UpgradeStage;
   phaseKey?: string | number;
+  deployed: boolean;
+  onDockChange: (deployed: boolean) => void;
 }
 
 export default function Guionbajo3DFloatingCompanion({
@@ -24,154 +26,182 @@ export default function Guionbajo3DFloatingCompanion({
   audioElement,
   upgradeStage = 0,
   phaseKey = 0,
+  deployed,
+  onDockChange,
 }: Guionbajo3DFloatingCompanionProps) {
   const [side, setSide] = useState<'right' | 'left'>('right');
-  const [minimized, setMinimized] = useState(false);
   const [flightKey, setFlightKey] = useState(0);
-  const [isFlyingIn, setIsFlyingIn] = useState(true);
+  const [isLaunching, setIsLaunching] = useState(true);
+  const [currentYaw, setCurrentYaw] = useState(0);
+  const [dockOffset, setDockOffset] = useState<{ x: number; y: number }>({ x: -120, y: -320 });
+  const anchorRef = useRef<HTMLDivElement>(null);
 
-  // Trigger fly-in when the lesson mounts or when phase changes
-  useEffect(() => {
-    setIsFlyingIn(true);
-    const t = setTimeout(() => setIsFlyingIn(false), 1800);
-    return () => clearTimeout(t);
-  }, [phaseKey, flightKey]);
-
-  const triggerFlyAgain = () => {
-    setFlightKey((k) => k + 1);
-  };
-
-  // When parked on the right side, Guionbajo looks left (inward toward the board)
-  // When parked on the left side, Guionbajo looks right (inward toward the board)
+  const targetYaw = side === 'right' ? -28 : 28;
   const lookDirection = side === 'right' ? 'left' : 'right';
 
-  if (minimized) {
-    return (
-      <div
-        className={`fixed bottom-20 ${
-          side === 'right' ? 'right-4' : 'left-4'
-        } z-40 pointer-events-auto`}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            setMinimized(false);
-            triggerFlyAgain();
-          }}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-slate-950/90 border border-brand-cyan/50 text-brand-cyan text-xs font-bold shadow-2xl hover:bg-slate-900 transition-all"
-          title="Desplegar a Guionbajo 3D volando"
-        >
-          <Sparkles size={14} className="animate-spin" />
-          <span>Guionbajo 3D</span>
-        </button>
-      </div>
-    );
+  // Calculate exact delta from #guionbajo-toolbar-dock to resting 3D position
+  const computeDockDelta = () => {
+    if (typeof window === 'undefined') return;
+    const dockEl = document.getElementById('guionbajo-toolbar-dock');
+    const anchorEl = anchorRef.current;
+    if (dockEl && anchorEl) {
+      const dockRect = dockEl.getBoundingClientRect();
+      const anchorRect = anchorEl.getBoundingClientRect();
+      const dockCenterX = dockRect.left + dockRect.width / 2;
+      const dockCenterY = dockRect.top + dockRect.height / 2;
+      const anchorCenterX = anchorRect.left + anchorRect.width / 2;
+      const anchorCenterY = anchorRect.top + anchorRect.height / 2;
+      setDockOffset({
+        x: dockCenterX - anchorCenterX,
+        y: dockCenterY - anchorCenterY,
+      });
+    }
+  };
+
+  // Trigger launch animation from toolbar dock when deployed or when phase changes
+  useEffect(() => {
+    if (!deployed) return;
+    computeDockDelta();
+    setIsLaunching(true);
+    // Start flat (0 deg) in the toolbar, then morph to 3D angle (-28 / +28 deg) as it descends
+    setCurrentYaw(0);
+    const tYaw = setTimeout(() => setCurrentYaw(targetYaw), 260);
+    const tDone = setTimeout(() => setIsLaunching(false), 1450);
+    return () => {
+      clearTimeout(tYaw);
+      clearTimeout(tDone);
+    };
+  }, [deployed, phaseKey, flightKey, side, targetYaw]);
+
+  if (!deployed) {
+    return null;
   }
 
   return (
     <div
-      className={`fixed top-1/2 -translate-y-1/2 ${
-        side === 'right' ? 'right-2 sm:right-5' : 'left-2 sm:left-5'
-      } z-40 pointer-events-none select-none flex flex-col items-center`}
+      ref={anchorRef}
+      className={`hidden lg:flex fixed top-[54%] -translate-y-1/2 ${
+        side === 'right' ? 'right-5 xl:right-8' : 'left-5 xl:left-8'
+      } z-40 pointer-events-none select-none flex-col items-center`}
       style={{ perspective: '1100px' }}
     >
       <AnimatePresence mode="wait">
         <motion.div
           key={`${side}-${flightKey}`}
           initial={{
-            x: side === 'right' ? -280 : 280,
-            y: -180,
-            scale: 0.45,
-            rotateZ: side === 'right' ? 22 : -22,
-            opacity: 0,
-          }}
-          animate={{
-            x: 0,
-            y: [0, -10, 0],
-            scale: 1,
-            rotateZ: isFlyingIn ? (side === 'right' ? -8 : 8) : 0,
+            x: dockOffset.x,
+            y: dockOffset.y,
+            scale: 0.48,
+            rotateZ: 0,
             opacity: 1,
           }}
+          animate={{
+            x: [dockOffset.x, dockOffset.x * 0.35, 0],
+            y: [dockOffset.y, dockOffset.y * 0.25, 0],
+            scale: [0.48, 0.82, 1],
+            rotateZ: [0, side === 'right' ? -12 : 12, 0],
+            opacity: 1,
+          }}
+          exit={{
+            x: dockOffset.x,
+            y: dockOffset.y,
+            scale: 0.48,
+            rotateZ: 0,
+            opacity: 0.6,
+            transition: { duration: 0.65, ease: 'easeInOut' },
+          }}
           transition={{
-            x: { type: 'spring', stiffness: 70, damping: 14, duration: 1.4 },
-            y: {
-              duration: 3.4,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            },
-            scale: { type: 'spring', stiffness: 80, damping: 15 },
-            rotateZ: { duration: 0.8, ease: 'easeOut' },
-            opacity: { duration: 0.35 },
+            duration: 1.35,
+            times: [0, 0.55, 1],
+            ease: [0.22, 1, 0.36, 1],
           }}
           className="relative flex flex-col items-center"
         >
-          {/* Halo de propulsión durante el vuelo de entrada */}
-          {isFlyingIn && (
-            <motion.div
-              initial={{ opacity: 0.9, scale: 1.3 }}
-              animate={{ opacity: 0, scale: 2 }}
-              transition={{ duration: 1.2 }}
-              className="absolute inset-0 rounded-full bg-brand-cyan/25 blur-2xl pointer-events-none"
-            />
-          )}
+          {/* Floating bobbing wrapper once settled */}
+          <motion.div
+            animate={
+              isLaunching
+                ? { y: 0 }
+                : {
+                    y: [0, -9, 0],
+                  }
+            }
+            transition={{
+              duration: 3.2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+            className="relative flex flex-col items-center"
+          >
+            {/* Estela de plasma al despegar de la toolbar */}
+            {isLaunching && (
+              <motion.div
+                initial={{ opacity: 0.95, scale: 0.7 }}
+                animate={{ opacity: 0, scale: 1.9 }}
+                transition={{ duration: 1.1 }}
+                className="absolute -inset-4 rounded-full bg-brand-cyan/30 blur-2xl pointer-events-none"
+              />
+            )}
 
-          {/* Avatar 3D Volumétrico mirando hacia dentro de la pizarra */}
-          <div className="drop-shadow-[0_20px_35px_rgba(0,212,255,0.28)]">
-            <TutorAvatar
-              state={state}
-              text={text}
-              audioProgress={audioProgress}
-              emotion={emotion}
-              size="md"
-              headOnly={false}
-              audioElement={audioElement}
-              upgradeStage={upgradeStage}
-              mode3D={true}
-              lookDirection={lookDirection}
-              pointAtBoard={state === 'speaking' || isFlyingIn}
-            />
-          </div>
+            {/* Avatar 3D Volumétrico mirando hacia dentro de la pizarra */}
+            <div className="drop-shadow-[0_22px_36px_rgba(0,212,255,0.3)]">
+              <TutorAvatar
+                state={state}
+                text={text}
+                audioProgress={audioProgress}
+                emotion={emotion}
+                size="md"
+                headOnly={false}
+                audioElement={audioElement}
+                upgradeStage={upgradeStage}
+                mode3D={true}
+                lookDirection={lookDirection}
+                yawAngle={currentYaw}
+                pointAtBoard={state === 'speaking' || isLaunching}
+              />
+            </div>
 
-          {/* Etiqueta flotante de estado + controles compactos */}
-          <div className="mt-5 pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/85 border border-brand-cyan/40 backdrop-blur-md shadow-xl">
-            <span className="w-2 h-2 rounded-full bg-brand-cyan animate-ping" />
-            <span className="text-[10px] font-mono font-bold text-white tracking-wide">
-              {isFlyingIn
-                ? 'Volando...'
-                : state === 'speaking'
-                ? 'Explicando'
-                : state === 'listening'
-                ? 'Escuchando'
-                : '3D Activo'}
-            </span>
+            {/* Controles compactos debajo del robot 3D */}
+            <div className="mt-5 pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/90 border border-brand-cyan/40 backdrop-blur-md shadow-xl">
+              <span className="w-2 h-2 rounded-full bg-brand-cyan animate-ping" />
+              <span className="text-[10px] font-mono font-bold text-white tracking-wide">
+                {isLaunching
+                  ? 'Despegando...'
+                  : state === 'speaking'
+                  ? 'Explicando'
+                  : state === 'listening'
+                  ? 'Escuchando'
+                  : '3D en Vuelo'}
+              </span>
 
-            <button
-              type="button"
-              onClick={() => setSide((s) => (s === 'right' ? 'left' : 'right'))}
-              className="p-1 rounded-full hover:bg-white/15 text-slate-300 hover:text-brand-cyan transition-colors"
-              title="Cambiar de lado de la pizarra"
-            >
-              <ArrowLeftRight size={11} />
-            </button>
+              <button
+                type="button"
+                onClick={() => setSide((s) => (s === 'right' ? 'left' : 'right'))}
+                className="p-1 rounded-full hover:bg-white/15 text-slate-300 hover:text-brand-cyan transition-colors cursor-pointer"
+                title="Cambiar de lado de la pizarra"
+              >
+                <ArrowLeftRight size={11} />
+              </button>
 
-            <button
-              type="button"
-              onClick={triggerFlyAgain}
-              className="p-1 rounded-full hover:bg-white/15 text-slate-300 hover:text-brand-cyan transition-colors"
-              title="Repetir vuelo de entrada"
-            >
-              <Send size={11} />
-            </button>
+              <button
+                type="button"
+                onClick={() => setFlightKey((k) => k + 1)}
+                className="p-1 rounded-full hover:bg-white/15 text-slate-300 hover:text-brand-cyan transition-colors cursor-pointer"
+                title="Repetir despegue desde la barra superior"
+              >
+                <Send size={11} />
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setMinimized(true)}
-              className="p-1 rounded-full hover:bg-white/15 text-slate-300 hover:text-rose-300 transition-colors"
-              title="Minimizar Guionbajo 3D"
-            >
-              <Minimize2 size={11} />
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => onDockChange(false)}
+                className="p-1 rounded-full hover:bg-white/15 text-slate-300 hover:text-amber-300 transition-colors cursor-pointer"
+                title="Regresar a su hueco en la barra superior"
+              >
+                <CornerRightUp size={11} />
+              </button>
+            </div>
+          </motion.div>
         </motion.div>
       </AnimatePresence>
     </div>

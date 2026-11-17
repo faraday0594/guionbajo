@@ -3584,6 +3584,7 @@ export default function LessonPage() {
 
   // ─── Export Material State & Downloader ────────────────────────────────────
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [isGuionbajoDeployed, setIsGuionbajoDeployed] = useState<boolean>(true);
   const [exportingFormat, setExportingFormat] = useState<'pptx' | 'docx' | 'pdf' | null>(null);
 
   const handleExportLesson = async (format: 'pptx' | 'docx' | 'pdf') => {
@@ -6195,18 +6196,45 @@ export default function LessonPage() {
               <span>Descargar Clase</span>
             </button>
 
-            {/* Guionbajo Tutor State */}
-            <div className="hidden lg:flex items-center gap-3 px-3.5 py-1 rounded-2xl bg-brand-surface/90 border border-brand-border/80 text-xs shadow-inner h-[76px] overflow-visible flex-shrink-0">
-              <div className="w-16 h-[72px] flex items-center justify-center relative flex-shrink-0 overflow-visible">
-                <TutorAvatar
-                  state={tutorState}
-                  text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
-                  audioProgress={audioProgress}
-                  size="toolbar"
-                  headOnly={false}
-                  audioElement={currentAudioRef.current}
-                  upgradeStage={avatarUpgradeStage}
-                />
+            {/* Guionbajo Tutor State & Hangar Dock */}
+            <div
+              onClick={() => setIsGuionbajoDeployed((v) => !v)}
+              title={
+                isGuionbajoDeployed
+                  ? 'Hueco del Hangar: haz clic para que Guionbajo regrese aquí'
+                  : 'Haz clic para desplegar a Guionbajo 3D volando hacia la pizarra'
+              }
+              className="hidden lg:flex items-center gap-3 px-3.5 py-1 rounded-2xl bg-brand-surface/90 border border-brand-border/80 hover:border-brand-cyan/50 text-xs shadow-inner h-[76px] overflow-visible flex-shrink-0 cursor-pointer transition-colors group"
+            >
+              <div
+                id="guionbajo-toolbar-dock"
+                className="w-16 h-[72px] flex items-center justify-center relative flex-shrink-0 overflow-visible"
+              >
+                {isGuionbajoDeployed ? (
+                  /* Hueco mecánico vacío dejado por Guionbajo al despegar */
+                  <div className="relative w-12 h-14 rounded-xl bg-[#04070e] border border-dashed border-brand-cyan/35 shadow-[inset_0_4px_12px_rgba(0,0,0,0.95)] flex flex-col items-center justify-center overflow-hidden">
+                    {/* Silueta hundida de cabeza y torso */}
+                    <div className="w-7 h-5 rounded-md bg-slate-900/80 border border-slate-800/90 shadow-inner mb-0.5" />
+                    <div className="w-6 h-4 rounded-sm bg-slate-900/80 border border-slate-800/90 shadow-inner" />
+                    {/* Anillo de propulsión residual en la base del hueco */}
+                    <div className="absolute bottom-1 w-8 h-1.5 rounded-full bg-brand-cyan/30 blur-[2px] animate-pulse" />
+                    {/* Pinzas de anclaje en las esquinas */}
+                    <span className="absolute top-1 left-1 w-1.5 h-1.5 border-t border-l border-brand-cyan/50" />
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 border-t border-r border-brand-cyan/50" />
+                    <span className="absolute bottom-1 left-1 w-1.5 h-1.5 border-b border-l border-brand-cyan/50" />
+                    <span className="absolute bottom-1 right-1 w-1.5 h-1.5 border-b border-r border-brand-cyan/50" />
+                  </div>
+                ) : (
+                  <TutorAvatar
+                    state={tutorState}
+                    text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
+                    audioProgress={audioProgress}
+                    size="toolbar"
+                    headOnly={false}
+                    audioElement={currentAudioRef.current}
+                    upgradeStage={avatarUpgradeStage}
+                  />
+                )}
               </div>
               <div className="flex flex-col justify-center pr-1.5">
                 <span className="text-white font-bold text-xs tracking-wide">Guionbajo</span>
@@ -6218,7 +6246,9 @@ export default function LessonPage() {
                     ? 'Pensando...'
                     : tutorState === 'listening'
                     ? 'Escuchando...'
-                    : 'Listo'}
+                    : isGuionbajoDeployed
+                    ? 'En vuelo 3D'
+                    : 'En Hangar'}
                 </span>
               </div>
             </div>
@@ -6231,7 +6261,7 @@ export default function LessonPage() {
         </div>
       </header>
 
-      {/* Guionbajo 3D Volador superpuesto a un lado de la pizarra mirando hacia dentro */}
+      {/* Guionbajo 3D Volador (solo escritorio lg+) que despega desde su hueco en la toolbar */}
       <Guionbajo3DFloatingCompanion
         state={tutorState}
         text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
@@ -6239,6 +6269,8 @@ export default function LessonPage() {
         audioElement={currentAudioRef.current}
         upgradeStage={avatarUpgradeStage}
         phaseKey={currentPhaseIdx}
+        deployed={isGuionbajoDeployed}
+        onDockChange={setIsGuionbajoDeployed}
       />
 
       {/* Main Content Area */}

@@ -12,6 +12,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     name = Column(String, nullable=False)
     native_language = Column(String, default="es")
+    access_status = Column(String, default="approved")
     created_at = Column(DateTime, default=datetime.utcnow)
     
     profile = relationship("StudentProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")

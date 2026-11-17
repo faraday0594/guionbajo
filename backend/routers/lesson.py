@@ -829,3 +829,184 @@ async def export_lesson(
         headers={"Content-Disposition": f'attachment; filename="{out_filename}"'}
     )
 
+
+_WORD_TRANSLATION_CACHE: Dict[str, str] = {}
+
+_QUICK_EN_ES: Dict[str, str] = {
+    "the": "el / la / los / las",
+    "a": "un / una",
+    "an": "un / una",
+    "and": "y",
+    "or": "o",
+    "but": "pero",
+    "is": "es / está",
+    "are": "son / están",
+    "am": "soy / estoy",
+    "was": "fue / estaba",
+    "were": "fueron / estaban",
+    "be": "ser / estar",
+    "been": "sido / estado",
+    "being": "siendo",
+    "by": "por",
+    "of": "de",
+    "in": "en",
+    "on": "en / sobre",
+    "at": "en / a las",
+    "to": "a / para",
+    "for": "para / por",
+    "with": "con",
+    "from": "de / desde",
+    "across": "a través de / en todo",
+    "entire": "entero / completo",
+    "world": "mundo",
+    "english": "inglés",
+    "spoken": "hablado",
+    "speak": "hablar",
+    "speaks": "habla",
+    "millions": "millones",
+    "people": "personas / gente",
+    "person": "persona",
+    "i": "yo",
+    "you": "tú / usted",
+    "he": "él",
+    "she": "ella",
+    "it": "eso / ello",
+    "we": "nosotros",
+    "they": "ellos / ellas",
+    "my": "mi",
+    "your": "tu / su",
+    "his": "su (de él)",
+    "her": "su (de ella)",
+    "our": "nuestro",
+    "their": "su (de ellos)",
+    "this": "esto / este",
+    "that": "eso / ese / que",
+    "these": "estos",
+    "those": "esos",
+    "have": "tener / haber",
+    "has": "tiene / ha",
+    "had": "tuvo / había",
+    "do": "hacer",
+    "does": "hace",
+    "did": "hizo",
+    "will": "auxiliar futuro",
+    "would": "haría (condicional)",
+    "can": "poder",
+    "could": "podría / pudo",
+    "should": "debería",
+    "must": "deber",
+    "not": "no",
+    "very": "muy",
+    "more": "más",
+    "most": "la mayoría / más",
+    "all": "todo / todos",
+    "every": "cada",
+    "many": "muchos",
+    "much": "mucho",
+    "some": "algunos / algo",
+    "any": "cualquier / alguno",
+    "no": "no / ningún",
+    "yes": "sí",
+    "if": "si",
+    "when": "cuando",
+    "where": "donde",
+    "why": "por qué",
+    "how": "cómo",
+    "what": "qué",
+    "who": "quién",
+    "which": "cuál / que",
+    "there": "allí / hay",
+    "here": "aquí",
+    "now": "ahora",
+    "always": "siempre",
+    "never": "nunca",
+    "often": "a menudo",
+    "sometimes": "a veces",
+    "today": "hoy",
+    "tomorrow": "mañana",
+    "yesterday": "ayer",
+    "good": "bueno",
+    "bad": "malo",
+    "new": "nuevo",
+    "old": "viejo / antiguo",
+    "big": "grande",
+    "small": "pequeño",
+    "time": "tiempo / hora",
+    "day": "día",
+    "year": "año",
+    "work": "trabajo / trabajar",
+    "make": "hacer / fabricar",
+    "made": "hecho / fabricado",
+    "written": "escrito",
+    "built": "construido",
+    "used": "usado / utilizado",
+    "called": "llamado",
+    "known": "conocido",
+    "found": "encontrado",
+    "given": "dado",
+    "taken": "tomado",
+    "seen": "visto",
+    "done": "hecho",
+}
+
+
+class TranslateWordRequest(BaseModel):
+    word: str
+    sentence: Optional[str] = ""
+
+
+@router.post("/translate-word")
+async def translate_word_endpoint(req: TranslateWordRequest):
+    """
+    Traduce rápidamente una palabra en inglés al español considerando el contexto de la oración.
+    """
+    from config import settings
+    from openai import AsyncOpenAI
+
+    clean_word = re.sub(r"^[^a-zA-Z']+|[^a-zA-Z']+$", "", (req.word or "").strip())
+    if not clean_word:
+        return {"word": req.word, "translation": ""}
+
+    lower_w = clean_word.lower()
+    sentence = (req.sentence or "").strip()
+    cache_key = f"{lower_w}||{sentence[:120].lower()}"
+
+    if cache_key in _WORD_TRANSLATION_CACHE:
+        return {"word": clean_word, "translation": _WORD_TRANSLATION_CACHE[cache_key]}
+
+    # 1. Diccionario rápido instantáneo si no hay contexto complejo o como base
+    if lower_w in _QUICK_EN_ES and not sentence:
+        return {"word": clean_word, "translation": _QUICK_EN_ES[lower_w]}
+
+    # 2. Usar Groq (ultra rápido) o MiniMax si hay API key configurada
+    api_key = settings.GROQ_API_KEY or settings.MINIMAX_API_KEY
+    base_url = settings.GROQ_BASE_URL if settings.GROQ_API_KEY else settings.MINIMAX_BASE_URL
+    model = "llama-3.1-8b-instant" if settings.GROQ_API_KEY else settings.MINIMAX_LLM_MODEL
+
+    if api_key:
+        try:
+            client = AsyncOpenAI(api_key=api_key, base_url=base_url, timeout=6.0)
+            prompt = (
+                f'Traduce al español la palabra inglesa "{clean_word}"'
+                + (f' dentro de la oración: "{sentence}"' if sentence else "")
+                + ". Responde ÚNICAMENTE con la traducción corta en español (1 a 4 palabras), sin comillas ni explicaciones."
+            )
+            resp = await client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "Eres un diccionario bilingüe inglés-español conciso."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.1,
+                max_tokens=20,
+            )
+            translation = (resp.choices[0].message.content or "").strip().strip('"\'.,')
+            if translation:
+                _WORD_TRANSLATION_CACHE[cache_key] = translation
+                return {"word": clean_word, "translation": translation}
+        except Exception as e:
+            logger.warning(f"Word translation LLM fallback for '{clean_word}': {e}")
+
+    fallback = _QUICK_EN_ES.get(lower_w, "")
+    return {"word": clean_word, "translation": fallback}
+

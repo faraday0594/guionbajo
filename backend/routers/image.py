@@ -39,6 +39,8 @@ async def generate_image(
     import re
     import urllib.parse
     raw = req.prompt.strip()
+    # Strip any CJK/Chinese/Japanese/Korean characters from incoming prompts
+    raw = re.sub(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]+', ' ', raw)
 
     # 1. Strip any quoted text strings (e.g. 'Hello', "Subject + Verb", etc.)
     sanitized = re.sub(r'["\'“‘`][^"\'”’`]*["\'”’`]', ' ', raw)
@@ -54,16 +56,16 @@ async def generate_image(
     sanitized = re.sub(r'\b(?:flashcards?|cue cards?)\b', 'colorful study cards', sanitized, flags=re.IGNORECASE)
     sanitized = re.sub(r'\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation)\b', 'concept visual', sanitized, flags=re.IGNORECASE)
     sanitized = re.sub(r'\b(?:displaying|saying|reading|showing the words?|labeled with|with the phrase|with the letters?|with text)\b', 'illustrating', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography)\b', 'scene visual', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography|speech|dialogue|conversation|talking|speaking|chatting|saying|telling|bubble|bubbles)\b', 'friendly visual scene', sanitized, flags=re.IGNORECASE)
 
     # 4. Remove leftover quotes and brackets
     sanitized = re.sub(r'[/\\|\[\](){}+=→<>_~*#^"“”‘’`]', ' ', sanitized)
-    # Remove existing redundant negative text tags to avoid chaotic repetitions
-    sanitized = re.sub(r'\b(?:strictly\s+)?no\s+(?:text|letters|words|writing|labels|captions|typography|watermarks|alphabets)\b,?', ' ', sanitized, flags=re.IGNORECASE)
+    # Remove existing negative text tags (mentioning "text", "bubbles", "chinese" triggers diffusion models to draw them!)
+    sanitized = re.sub(r'\b(?:strictly\s+)?no\s+(?:text|letters|words|writing|labels|captions|typography|watermarks|alphabets|signs|speech\s+bubbles|chinese(?:\s+characters)?|hanzi|kanji|cjk(?:\s+text)?|asian\s+script)\b,?', ' ', sanitized, flags=re.IGNORECASE)
     sanitized = re.sub(r'\s{2,}', ' ', sanitized).strip(' ,')
 
     # Detect if prompt is for conversational POV / Visual Novel or companion scene
-    is_pov = any(k in sanitized.lower() for k in ("first-person", "pov", "classmate", "companion", "barista", "officer", "interviewer", "talking to", "sitting across", "visual novel", "emma", "lucas"))
+    is_pov = any(k in sanitized.lower() for k in ("first-person", "pov", "classmate", "companion", "barista", "officer", "interviewer", "sitting across", "visual novel", "emma", "lucas"))
     
     if is_pov:
         # Determine companion gender for solo character tag
@@ -74,22 +76,20 @@ async def generate_image(
         sanitized = re.sub(r"player's (own )?hands (and arms )?(visible in (the )?bottom foreground )?(holding|resting|reaching|gesturing)?", "wooden table edge in foreground", sanitized, flags=re.IGNORECASE)
         sanitized = re.sub(r'realistic photography|photorealistic|photorealism|realistic photo|photo|realism|hyperrealistic', '2D anime game CG art', sanitized, flags=re.IGNORECASE)
         
-        # Construct strong Anime Visual Novel prompt with upfront style tokens and strict negative guidance
+        # Construct clean Anime Visual Novel prompt WITHOUT negative trigger tokens
         clean_prompt = (
-            f"Masterpiece 2D Japanese anime visual novel game CG, completely textless, zero text, "
+            f"Masterpiece 2D Japanese anime visual novel game CG, "
             f"Makoto Shinkai vibrant aesthetic, Kyoto Animation style, {char_tag}, "
             f"facing camera directly with friendly eye contact, centered waist-up portrait, "
             f"{sanitized}, bright cheerful daylight, colorful anime digital illustration, "
-            f"strictly 2D anime drawing, flat vibrant coloring, clean anime line art, "
-            f"single person only, no second person, no couple, no romance, no holding hands, no kissing, "
-            f"no photorealism, not a photo, no 3D render, no live action, strictly no text, no words, no letters, no signs, no speech bubbles, no typography"
+            f"clean empty wall background, purely visual silent scene, flat vibrant coloring, clean anime line art"
         )
     else:
-        # Standard educational concept prompt - STRICT TEXTLESS
+        # Standard educational concept prompt - PURE POSITIVE VISUAL DESCRIPTION
         clean_prompt = (
-            f"Clean flat 2D vector educational illustration, zero text, completely textless scene, no words anywhere, "
+            f"Clean flat 2D vector educational illustration, "
             f"{sanitized}, vibrant colors, clean minimalist art style, "
-            f"strictly no text, no words, no letters, no writing, no labels, no signs, no speech bubbles, no typography, no watermarks"
+            f"clean empty background, purely visual silent scene, uncluttered composition"
         )
 
     api_key = settings.MINIMAX_API_KEY
@@ -132,45 +132,51 @@ async def generate_image(
         "Content-Type": "application/json"
     }
 
-    payload = {
-        "model": "image-01",
-        "prompt": clean_prompt[:1200],
-        "aspect_ratio": req.aspect_ratio or "16:9",
-        "response_format": "url",
-        "prompt_optimizer": False
-    }
+    candidate_models = []
+    for m in (settings.MINIMAX_IMAGE_MODEL, "image-01"):
+        if m and m not in candidate_models:
+            candidate_models.append(m)
 
-    try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(url, headers=headers, json=payload)
-            response_json = response.json()
+    for model_name in candidate_models:
+        payload = {
+            "model": model_name,
+            "prompt": clean_prompt[:1200],
+            "aspect_ratio": req.aspect_ratio or "16:9",
+            "response_format": "url",
+            "prompt_optimizer": False
+        }
 
-            if response.status_code == 200 and "data" in response_json:
-                data = response_json["data"]
-                raw_image_url = None
-                if isinstance(data, dict):
-                    if "image_urls" in data and len(data["image_urls"]) > 0:
-                        raw_image_url = data["image_urls"][0]
-                    elif "images" in data and len(data["images"]) > 0 and isinstance(data["images"][0], dict):
-                        raw_image_url = data["images"][0].get("url")
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(url, headers=headers, json=payload)
+                response_json = response.json()
 
-                if raw_image_url:
-                    # Ensure HTTPS to avoid Mixed Content errors on Vercel
-                    image_url = raw_image_url.replace("http://", "https://")
-                    _IMAGE_CACHE[cache_key] = image_url
-                    logger.info(f"Successfully generated MiniMax image-01: {image_url[:60]}...")
-                    return {
-                        "success": True,
-                        "url": image_url,
-                        "image_url": image_url,
-                        "prompt": clean_prompt,
-                        "model": "image-01",
-                        "provider": "minimax"
-                    }
-            
-            logger.warning(f"MiniMax image-01 API returned status {response.status_code}: {response_json}")
-    except Exception as e:
-        logger.error(f"MiniMax image generation exception: {e}")
+                if response.status_code == 200 and "data" in response_json:
+                    data = response_json["data"]
+                    raw_image_url = None
+                    if isinstance(data, dict):
+                        if "image_urls" in data and len(data["image_urls"]) > 0:
+                            raw_image_url = data["image_urls"][0]
+                        elif "images" in data and len(data["images"]) > 0 and isinstance(data["images"][0], dict):
+                            raw_image_url = data["images"][0].get("url")
+
+                    if raw_image_url:
+                        # Ensure HTTPS to avoid Mixed Content errors on Vercel
+                        image_url = raw_image_url.replace("http://", "https://")
+                        _IMAGE_CACHE[cache_key] = image_url
+                        logger.info(f"Successfully generated MiniMax {model_name}: {image_url[:60]}...")
+                        return {
+                            "success": True,
+                            "url": image_url,
+                            "image_url": image_url,
+                            "prompt": clean_prompt,
+                            "model": model_name,
+                            "provider": "minimax"
+                        }
+
+                logger.warning(f"MiniMax {model_name} API returned status {response.status_code}: {response_json}")
+        except Exception as e:
+            logger.error(f"MiniMax {model_name} image generation exception: {e}")
 
     # Fallback response - Guaranteed high-definition textless educational image
     import urllib.parse

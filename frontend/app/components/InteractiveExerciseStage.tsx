@@ -23,6 +23,7 @@ import { playEnglishAudio, api } from '@/lib/api';
 import { sfx } from '@/lib/soundEffects';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import TranslatableText from './TranslatableText';
 
 export interface ExerciseItemData {
   id: string;
@@ -559,7 +560,7 @@ export default function InteractiveExerciseStage({
             <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-2 shadow-inner">
               <span className="text-[11px] text-zinc-400 uppercase font-semibold block">Oración a completar:</span>
               <p className="text-base sm:text-lg font-bold font-outfit text-white leading-relaxed">
-                {currentEx.sentence}
+                <TranslatableText text={currentEx.sentence} />
               </p>
               {currentEx.spanish_translation && (
                 <p className="text-xs text-zinc-400 italic pt-1 border-t border-white/5">

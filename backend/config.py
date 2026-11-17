@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     MINIMAX_API_KEY: str = ""
     MINIMAX_BASE_URL: str = "https://api.minimax.io/v1"
     MINIMAX_LLM_MODEL: str = "MiniMax-M3"
+    MINIMAX_IMAGE_MODEL: str = "image-01"
     MINIMAX_TTS_MODEL: str = "speech-02-hd"
     MINIMAX_TTS_ENDPOINT: str = "https://api.minimax.io/v1/t2a_v2"
     DATABASE_URL: str = "sqlite+aiosqlite:///./guionbajo.db"

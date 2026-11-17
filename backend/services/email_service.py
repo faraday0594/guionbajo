@@ -321,17 +321,20 @@ async def notify_new_registration(
     user_name: str,
     user_email: str,
     native_language: str = "es",
-    user_id: str = ""
+    user_id: str = "",
+    dashboard_url: str = ""
 ) -> bool:
     """
-    Notifica al administrador cuando un nuevo usuario se registra.
+    Notifica al administrador (megafer1994@gmail.com) cuando un nuevo usuario solicita acceso.
     """
     now_str = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S UTC")
-    subject = f"🎉 [Tutor AI] Nuevo usuario registrado: {user_name} ({user_email})"
+    subject = f"🔔 [Guionbajo] Nuevo usuario solicita acceso: {user_name} ({user_email})"
+    panel_url = (dashboard_url or settings.FRONTEND_URL).rstrip("/") + "/dashboard"
     
     content_html = f"""
         <p style="color: #d4d4d8; font-size: 15px; margin: 0 0 16px 0;">
-            Un nuevo estudiante acaba de crear una cuenta en la plataforma:
+            Un nuevo usuario se ha registrado y <strong>solicita acceso</strong> a la plataforma.
+            Ingresa con tu cuenta principal (<strong>{settings.NOTIFICATION_EMAIL}</strong>) para revisar la notificación y darle acceso:
         </p>
         <div class="card">
             <div class="item">
@@ -347,30 +350,88 @@ async def notify_new_registration(
                 <span class="value">{native_language.upper()}</span>
             </div>
             <div class="item">
+                <span class="label">⏳ Estado:</span>
+                <span class="value" style="color: #fbbf24; font-weight: 700;">Pendiente de aprobación</span>
+            </div>
+            <div class="item">
                 <span class="label">🕒 Fecha y Hora:</span>
                 <span class="value">{now_str}</span>
             </div>
             {f'<div class="item"><span class="label">🆔 ID Usuario:</span><span class="value" style="font-family: monospace; font-size: 12px; color: #a1a1aa;">{user_id}</span></div>' if user_id else ''}
         </div>
+        <div style="text-align: center; margin: 24px 0 8px 0;">
+            <a href="{panel_url}" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #00d4ff 100%); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 10px;">
+                Revisar y Dar Acceso
+            </a>
+        </div>
     """
 
     text_body = (
-        f"Nuevo usuario registrado en Tutor AI:\n\n"
+        f"Nuevo usuario solicita acceso en Guionbajo:\n\n"
         f"- Nombre: {user_name}\n"
         f"- Email: {user_email}\n"
         f"- Idioma: {native_language}\n"
-        f"- Fecha: {now_str}\n"
+        f"- Estado: Pendiente de aprobación\n"
+        f"- Fecha: {now_str}\n\n"
+        f"Ingresa con tu cuenta {settings.NOTIFICATION_EMAIL} en {panel_url} para aprobar o rechazar su acceso.\n"
     )
 
     html_email = _render_base_email_template(
-        title="Nuevo Usuario Registrado",
-        badge_text="Nuevo Registro",
-        badge_color="#10b981",
+        title="Nueva Solicitud de Acceso",
+        badge_text="Pendiente de Aprobación",
+        badge_color="#f59e0b",
         content_html=content_html
     )
 
     return await send_email_async(
         to_email=settings.NOTIFICATION_EMAIL,
+        subject=subject,
+        html_body=html_email,
+        text_body=text_body
+    )
+
+
+async def send_access_approved_email(
+    to_email: str,
+    user_name: str = "",
+    login_url: str = ""
+) -> bool:
+    """
+    Notifica al usuario que su solicitud de acceso ha sido aprobada por el administrador.
+    """
+    display_name = user_name or "Estudiante"
+    target_url = (login_url or settings.FRONTEND_URL).rstrip("/") + "/login"
+    subject = "✅ ¡Tu acceso a Guionbajo ha sido aprobado!"
+
+    content_html = f"""
+        <p style="color: #f4f4f5; font-size: 16px; margin: 0 0 14px 0;">
+            ¡Hola <strong>{display_name}</strong>! 🎉
+        </p>
+        <p style="color: #d4d4d8; font-size: 14px; line-height: 1.6; margin: 0 0 22px 0;">
+            Tu solicitud de registro en <strong>Guionbajo</strong> ha sido aprobada. Ya puedes iniciar sesión con tu correo y contraseña para comenzar tu aprendizaje de inglés con IA.
+        </p>
+        <div style="text-align: center; margin: 28px 0;">
+            <a href="{target_url}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #00d4ff 100%); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 15px; padding: 13px 32px; border-radius: 12px;">
+                Iniciar Sesión en Guionbajo
+            </a>
+        </div>
+    """
+
+    text_body = (
+        f"¡Hola {display_name}!\n\n"
+        f"Tu solicitud de registro en Guionbajo ha sido aprobada.\n"
+        f"Ya puedes iniciar sesión en: {target_url}\n"
+    )
+
+    html_email = _render_base_email_template(
+        title="¡Acceso Aprobado!",
+        badge_text="Cuenta Activa",
+        badge_color="#10b981",
+        content_html=content_html
+    )
+
+    return await send_email_async(
+        to_email=to_email,
         subject=subject,
         html_body=html_email,
         text_body=text_body

@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     email: str
     name: str
     native_language: str
+    access_status: Optional[str] = "approved"
     
     class Config:
         from_attributes = True

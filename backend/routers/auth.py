@@ -9,7 +9,7 @@ from auth.jwt import (
     create_password_reset_token,
     verify_password_reset_token,
 )
-from auth.dependencies import get_current_user
+from auth.dependencies import get_current_user, get_admin_user
 from database import get_db
 from models.user import User, StudentProfile
 from schemas.auth import (
@@ -27,6 +27,7 @@ from services.email_service import (
     notify_user_login,
     send_registered_users_report,
     send_password_reset_email,
+    send_access_approved_email,
 )
 import logging
 from urllib.parse import urlparse
@@ -37,9 +38,22 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
+def _extract_base_url(request: Request) -> str:
+    """Detecta el origen del frontend dinámicamente (Vercel o localhost)."""
+    origin = request.headers.get("origin") or request.headers.get("referer")
+    if origin:
+        base_url = origin.split("?")[0].rstrip("/")
+        parsed = urlparse(base_url)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+    return settings.FRONTEND_URL.rstrip("/")
+
+
 @router.post("/register", response_model=UserResponse)
 async def register(
     user: UserCreate,
+    request: Request,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
@@ -48,11 +62,15 @@ async def register(
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Este correo electrónico ya está registrado.")
         
+    # La cuenta principal siempre queda aprobada; los nuevos registros quedan pendientes
+    initial_status = "approved" if clean_email == "megafer1994@gmail.com" else "pending"
+
     new_user = User(
         email=clean_email,
         password_hash=get_password_hash(user.password.strip()),
         name=(user.name or "").strip(),
-        native_language=user.native_language
+        native_language=user.native_language,
+        access_status=initial_status,
     )
     db.add(new_user)
     await db.flush()
@@ -77,7 +95,8 @@ async def register(
         user_name=new_user.name or "Usuario",
         user_email=new_user.email,
         native_language=new_user.native_language or "es",
-        user_id=str(new_user.id)
+        user_id=str(new_user.id),
+        dashboard_url=_extract_base_url(request),
     )
 
     return new_user
@@ -180,6 +199,19 @@ async def login(
             detail="Correo o contraseña incorrectos. Verifica tus datos o usa '¿Olvidaste tu contraseña?'.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    if clean_email != "megafer1994@gmail.com":
+        user_status = getattr(user, "access_status", "approved") or "approved"
+        if user_status == "pending":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu solicitud de registro está pendiente de aprobación por el administrador. Te avisaremos cuando tengas acceso.",
+            )
+        if user_status == "rejected":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu solicitud de acceso fue rechazada o revocada. Contacta al administrador.",
+            )
         
     access_token = create_access_token(data={"sub": user.id})
 
@@ -231,16 +263,7 @@ async def forgot_password(
         current_password_hash=user.password_hash or ""
     )
 
-    # Detectar el origen dinámicamente (Vercel o localhost)
-    origin = request.headers.get("origin") or request.headers.get("referer")
-    if origin:
-        base_url = origin.split("?")[0].rstrip("/")
-        parsed = urlparse(base_url)
-        if parsed.scheme and parsed.netloc:
-            base_url = f"{parsed.scheme}://{parsed.netloc}"
-    else:
-        base_url = settings.FRONTEND_URL.rstrip("/")
-
+    base_url = _extract_base_url(request)
     reset_url = f"{base_url}/reset-password?token={token}"
 
     logger.info(f"🔑 [PASSWORD RESET] Solicitud para {user.email} -> Enlace: {reset_url}")
@@ -353,5 +376,115 @@ async def get_and_send_users_report(
         "email_sent": email_sent,
         "recipient": settings.NOTIFICATION_EMAIL,
         "users": users_data,
+    }
+
+
+@router.get("/admin/access-requests")
+async def list_access_requests(
+    admin_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Lista todas las solicitudes de acceso y usuarios (solo accesible por megafer1994@gmail.com).
+    """
+    result = await db.execute(select(User).order_by(User.created_at.desc()))
+    users = result.scalars().all()
+
+    items = []
+    pending_count = 0
+    for u in users:
+        if (u.email or "").strip().lower() == "megafer1994@gmail.com":
+            continue
+        user_status = getattr(u, "access_status", "approved") or "approved"
+        if user_status == "pending":
+            pending_count += 1
+        items.append({
+            "id": u.id,
+            "name": u.name or "Sin nombre",
+            "email": u.email,
+            "native_language": u.native_language or "es",
+            "access_status": user_status,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+        })
+
+    # Ordenar primero los pendientes
+    status_order = {"pending": 0, "rejected": 1, "approved": 2}
+    items.sort(key=lambda x: status_order.get(x["access_status"], 3))
+
+    return {
+        "pending_count": pending_count,
+        "users": items,
+    }
+
+
+@router.post("/admin/access-requests/{user_id}/approve")
+async def approve_user_access(
+    user_id: str,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    admin_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Aprueba el acceso de un usuario registrado (solo megafer1994@gmail.com).
+    """
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalars().first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    target.access_status = "approved"
+    await db.commit()
+    await db.refresh(target)
+
+    background_tasks.add_task(
+        send_access_approved_email,
+        to_email=target.email,
+        user_name=target.name or "",
+        login_url=_extract_base_url(request),
+    )
+
+    return {
+        "status": "success",
+        "message": f"Acceso aprobado para {target.email}.",
+        "user": {
+            "id": target.id,
+            "name": target.name,
+            "email": target.email,
+            "access_status": target.access_status,
+        },
+    }
+
+
+@router.post("/admin/access-requests/{user_id}/reject")
+async def reject_user_access(
+    user_id: str,
+    admin_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Rechaza o revoca el acceso de un usuario (solo megafer1994@gmail.com).
+    """
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalars().first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    if (target.email or "").strip().lower() == "megafer1994@gmail.com":
+        raise HTTPException(status_code=400, detail="No puedes rechazar la cuenta principal.")
+
+    target.access_status = "rejected"
+    await db.commit()
+    await db.refresh(target)
+
+    return {
+        "status": "success",
+        "message": f"Acceso rechazado para {target.email}.",
+        "user": {
+            "id": target.id,
+            "name": target.name,
+            "email": target.email,
+            "access_status": target.access_status,
+        },
     }
 

@@ -11,6 +11,7 @@ import { toast } from 'react-hot-toast';
 import PhoneticBoard from '@/app/components/PhoneticBoard';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 import JourneyVisualStage from '@/app/components/dashboard/JourneyVisualStage';
+import AdminAccessNotifications from '@/app/components/AdminAccessNotifications';
 
 interface Module {
   id?: string;
@@ -218,6 +219,7 @@ export default function DashboardPage() {
 
   const [currentClassIndex, setCurrentClassIndex] = useState(1);
   const [activeCheckpoint, setActiveCheckpoint] = useState<any>(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -234,6 +236,7 @@ export default function DashboardPage() {
 
         if (me) {
           setUserStats(prev => ({ ...prev, name: me.name || prev.name }));
+          setIsAdminUser((me.email || '').trim().toLowerCase() === 'megafer1994@gmail.com');
         }
 
         const userSublevel = stats?.current_sublevel || 'A1.1';
@@ -370,6 +373,8 @@ export default function DashboardPage() {
               <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" />
               <span className="hidden md:inline">Evolución Guionbajo</span>
             </Link>
+
+            {isAdminUser && <AdminAccessNotifications />}
 
             <Link href="/settings" className="p-2.5 glass rounded-2xl hover:bg-brand-surface border border-brand-border transition-colors" title="Configuración">
               <Settings className="w-4 h-4 text-brand-text-secondary hover:text-white" />

@@ -30,7 +30,25 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     user = result.scalars().first()
     if user is None:
         raise credentials_exception
+
+    if (user.email or "").strip().lower() != "megafer1994@gmail.com":
+        user_status = getattr(user, "access_status", "approved") or "approved"
+        if user_status != "approved":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu cuenta está pendiente de aprobación por el administrador.",
+            )
+
     return user
+
+
+async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    if (current_user.email or "").strip().lower() != "megafer1994@gmail.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso restringido exclusivamente al administrador principal.",
+        )
+    return current_user
 
 
 async def get_current_user_optional(

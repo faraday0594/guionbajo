@@ -119,6 +119,20 @@ export const api = {
 
   getMe: () => fetchWithAuth('/auth/me'),
 
+  translateWord: (word: string, sentence = '') =>
+    fetchWithAuth('/lesson/translate-word', {
+      method: 'POST',
+      body: JSON.stringify({ word, sentence }),
+    }),
+
+  getAccessRequests: () => fetchWithAuth('/auth/admin/access-requests'),
+
+  approveUserAccess: (userId: string) =>
+    fetchWithAuth(`/auth/admin/access-requests/${userId}/approve`, { method: 'POST' }),
+
+  rejectUserAccess: (userId: string) =>
+    fetchWithAuth(`/auth/admin/access-requests/${userId}/reject`, { method: 'POST' }),
+
   // ─── Diagnosis ───────────────────────────────────
   startDiagnosis: () =>
     fetchWithAuth('/diagnosis/start', { method: 'POST' }),

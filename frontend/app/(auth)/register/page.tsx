@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
-import { setToken } from '@/lib/auth';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Clock, CheckCircle2, ArrowLeft } from 'lucide-react';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 
 const LANGUAGES = [
@@ -29,6 +28,7 @@ export default function RegisterPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -46,21 +46,9 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      // 1. Registrar
       await api.register(formData);
-
-      // 2. Auto-login para obtener el token
-      const loginRes = await api.login({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (loginRes.access_token) {
-        setToken(loginRes.access_token);
-        toast.success(`¡Bienvenido, ${formData.name}! 🎉`);
-        // Nueva cuenta → ir al onboarding
-        router.push('/onboarding');
-      }
+      setSubmitted(true);
+      toast.success('Solicitud enviada. Pendiente de aprobación.');
     } catch (err: any) {
       toast.error(err.message || 'Error al registrarse. Intenta de nuevo.');
     } finally {
@@ -136,42 +124,72 @@ export default function RegisterPage() {
           <p className="text-brand-text-secondary text-sm">Únete y aprende inglés con IA</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
-          {field('Nombre completo', 'name', 'text', 'Tu nombre', 'name')}
-          {field('Email', 'email', 'email', 'tu@email.com', 'email')}
-          {field('Contraseña', 'password', 'password', 'Mínimo 6 caracteres', 'new-password')}
-
-          {/* Native language */}
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-2">
-              Idioma nativo
-            </label>
-            <select
-              value={formData.native_language}
-              onChange={e => setFormData({ ...formData, native_language: e.target.value })}
-              className="w-full bg-brand-surface border border-brand-border rounded-xl px-4 py-3 text-white
-                focus:outline-none focus:border-brand-accent transition-colors appearance-none cursor-pointer"
+        {submitted ? (
+          <div className="text-center space-y-5 py-2">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center">
+              <Clock className="w-8 h-8 text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white mb-2 flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                Solicitud de Acceso Enviada
+              </h2>
+              <p className="text-sm text-brand-text-secondary leading-relaxed">
+                Hemos enviado una notificación al administrador para aprobar tu cuenta{' '}
+                <span className="text-white font-semibold">{formData.email}</span>.
+              </p>
+              <p className="text-xs text-brand-text-muted mt-3">
+                Recibirás un correo cuando tu acceso sea activado. Una vez aprobado, podrás iniciar sesión normalmente.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/login')}
+              className="w-full bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold
+                py-3 rounded-xl transition-all flex items-center justify-center gap-2 glow-accent btn-lift"
             >
-              {LANGUAGES.map(l => (
-                <option key={l.value} value={l.value}>{l.label}</option>
-              ))}
-            </select>
+              <ArrowLeft size={18} />
+              Ir a Iniciar Sesión
+            </button>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
+            {field('Nombre completo', 'name', 'text', 'Tu nombre', 'name')}
+            {field('Email', 'email', 'email', 'tu@email.com', 'email')}
+            {field('Contraseña', 'password', 'password', 'Mínimo 6 caracteres', 'new-password')}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold
-              py-3 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed
-              flex items-center justify-center gap-2 glow-accent btn-lift mt-2"
-          >
-            {loading ? (
-              <><Loader2 size={18} className="animate-spin" /> Creando cuenta...</>
-            ) : (
-              'Crear Cuenta'
-            )}
-          </button>
-        </form>
+            {/* Native language */}
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-2">
+                Idioma nativo
+              </label>
+              <select
+                value={formData.native_language}
+                onChange={e => setFormData({ ...formData, native_language: e.target.value })}
+                className="w-full bg-brand-surface border border-brand-border rounded-xl px-4 py-3 text-white
+                  focus:outline-none focus:border-brand-accent transition-colors appearance-none cursor-pointer"
+              >
+                {LANGUAGES.map(l => (
+                  <option key={l.value} value={l.value}>{l.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold
+                py-3 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed
+                flex items-center justify-center gap-2 glow-accent btn-lift mt-2"
+            >
+              {loading ? (
+                <><Loader2 size={18} className="animate-spin" /> Enviando solicitud...</>
+              ) : (
+                'Solicitar Acceso'
+              )}
+            </button>
+          </form>
+        )}
 
         <p className="mt-6 text-center text-sm text-brand-text-secondary">
           ¿Ya tienes cuenta?{' '}

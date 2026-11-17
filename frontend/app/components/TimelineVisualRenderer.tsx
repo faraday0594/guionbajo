@@ -21,6 +21,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import ScoreDisplay from './TutorPanel/ScoreDisplay';
+import TranslatableText from './TranslatableText';
 import { isValidEnglishTargetPhrase, isUngrammaticalEnglishPhrase } from '@/app/lesson/[id]/page';
 
 export interface TimelineStepPayload {
@@ -697,11 +698,11 @@ export default function TimelineVisualRenderer({
                           >
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="px-3 py-1 rounded-lg bg-sky-500/20 text-sky-200 border border-sky-400/30 text-xs font-mono font-bold">
-                                &quot;{tr.from}&quot;
+                                &quot;<TranslatableText text={tr.from} />&quot;
                               </span>
                               <ArrowRight size={16} className="text-purple-300 animate-pulse flex-shrink-0" />
                               <span className="px-3 py-1 rounded-lg bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 text-xs font-mono font-bold shadow-md">
-                                &quot;{tr.to}&quot;
+                                &quot;<TranslatableText text={tr.to} />&quot;
                               </span>
                             </div>
 
@@ -874,7 +875,7 @@ export default function TimelineVisualRenderer({
                             <div className="flex items-center justify-between gap-3 flex-wrap">
                               <div className="space-y-1">
                                 <div className="text-sm sm:text-base font-bold font-mono text-white tracking-wide">
-                                  &quot;{p.english}&quot;
+                                  &quot;<TranslatableText text={p.english!} />&quot;
                                 </div>
                                 {p.spanish && (
                                   <div className="text-xs text-brand-text-secondary italic">
@@ -1052,7 +1053,7 @@ export default function TimelineVisualRenderer({
                                   >
                                     <div className="flex items-center justify-between gap-2">
                                       <div className="text-xs space-y-0.5">
-                                        <div className="font-bold text-white font-mono">&quot;{ad.english}&quot;</div>
+                                        <div className="font-bold text-white font-mono">&quot;<TranslatableText text={ad.english} />&quot;</div>
                                         {(ad.translation || ad.spanish) && (
                                           <div className="text-[10px] text-brand-text-secondary italic">
                                             {ad.translation || ad.spanish}
@@ -1287,11 +1288,11 @@ export default function TimelineVisualRenderer({
                             <div className="space-y-3">
                               <div className="p-3.5 rounded-xl bg-black/50 border border-white/15">
                                 <div className="text-sm sm:text-base font-bold font-mono text-white leading-relaxed">
-                                  {ex.sentence || ex.question || p.student_task}
+                                  <TranslatableText text={ex.sentence || ex.question || p.student_task || ''} />
                                 </div>
                                 {ex.spanish_translation && (
                                   <div className="text-xs text-brand-text-secondary italic mt-1">
-                                    💡 {ex.spanish_translation}
+                                    💡 <TranslatableText text={ex.spanish_translation} />
                                   </div>
                                 )}
                               </div>

@@ -5,7 +5,7 @@ from auth.dependencies import get_current_user
 from database import get_db
 from models.user import User, StudentProfile
 from models.lesson import LessonHistory
-from routers.lesson import get_and_update_daily_quota
+from routers.lesson import get_and_update_daily_quota, verify_and_sync_streak
 
 router = APIRouter(prefix="/progress", tags=["progress"])
 
@@ -46,16 +46,18 @@ async def get_progress_stats(current_user: User = Depends(get_current_user), db:
             profile.current_sublevel = "B2.1"
             if not profile.total_xp or profile.total_xp < 6800:
                 profile.total_xp = 6800
-            if not profile.streak_days or profile.streak_days < 28:
-                profile.streak_days = 28
             user_sublevel = "B2.1"
-            await db.commit()
 
+    # Verificar racha real según fecha de última participación (pierde la racha si pasó un día sin practicar)
+    prev_streak = profile.streak_days
+    current_streak = verify_and_sync_streak(profile)
     daily_quota = get_and_update_daily_quota(current_user, profile)
+    if prev_streak != current_streak:
+        await db.commit()
 
     return {
         "total_xp": profile.total_xp,
-        "streak_days": profile.streak_days,
+        "streak_days": current_streak,
         "current_level": profile.current_level,
         "current_sublevel": user_sublevel,
         "current_class_index": current_class_idx,

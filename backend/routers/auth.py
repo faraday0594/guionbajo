@@ -134,7 +134,7 @@ async def login(
                 current_level="B2",
                 current_sublevel="B2.1",
                 total_xp=6800,
-                streak_days=28,
+                streak_days=0,
                 knowledge_map={"current_class_index": 1, "active_checkpoint": None},
                 preferred_voice="es-US-AlonsoNeural"
             )
@@ -148,17 +148,15 @@ async def login(
             if prof:
                 prof.current_level = "B2"
                 prof.current_sublevel = "B2.1"
-                if not prof.total_xp or prof.total_xp < 6800:
+                if not profile_xp_ok := (prof.total_xp and prof.total_xp >= 6800):
                     prof.total_xp = 6800
-                if not prof.streak_days or prof.streak_days < 28:
-                    prof.streak_days = 28
             else:
                 prof = StudentProfile(
                     user_id=user.id,
                     current_level="B2",
                     current_sublevel="B2.1",
                     total_xp=6800,
-                    streak_days=28,
+                    streak_days=0,
                     knowledge_map={"current_class_index": 1, "active_checkpoint": None},
                     preferred_voice="es-US-AlonsoNeural"
                 )

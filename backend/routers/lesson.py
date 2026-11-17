@@ -33,6 +33,61 @@ router = APIRouter(prefix="/lesson", tags=["lesson"])
 DAILY_FREE_CLASS_LIMIT = 2
 
 
+def _get_colombia_today_and_yesterday() -> tuple[str, str]:
+    now_local = datetime.now(timezone.utc) - timedelta(hours=5)
+    today_date = now_local.date()
+    yesterday_date = today_date - timedelta(days=1)
+    return today_date.strftime("%Y-%m-%d"), yesterday_date.strftime("%Y-%m-%d")
+
+
+def verify_and_sync_streak(profile: Optional[StudentProfile]) -> int:
+    """
+    Verifica si el estudiante mantuvo su racha (practicó hoy o ayer).
+    Si pasó un día completo sin participar (última práctica anterior a ayer o inexistente),
+    la racha se pierde y vuelve a 0.
+    """
+    if profile is None:
+        return 0
+
+    today_str, yesterday_str = _get_colombia_today_and_yesterday()
+    k_map = dict(profile.knowledge_map or {})
+    last_practice = k_map.get("last_practice_date")
+
+    if last_practice not in (today_str, yesterday_str):
+        if (profile.streak_days or 0) != 0:
+            profile.streak_days = 0
+        return 0
+
+    return profile.streak_days or 0
+
+
+def record_daily_participation(profile: Optional[StudentProfile]) -> int:
+    """
+    Registra que el estudiante participó hoy en una clase.
+    - Si ya participó hoy: mantiene la racha actual (mínimo 1).
+    - Si su última participación fue ayer: incrementa streak_days en +1.
+    - Si no participaba desde antes de ayer (o nunca): inicia la racha en 1.
+    """
+    if profile is None:
+        return 0
+
+    today_str, yesterday_str = _get_colombia_today_and_yesterday()
+    k_map = dict(profile.knowledge_map or {})
+    last_practice = k_map.get("last_practice_date")
+
+    if last_practice == today_str:
+        if not profile.streak_days or profile.streak_days < 1:
+            profile.streak_days = 1
+    elif last_practice == yesterday_str:
+        profile.streak_days = (profile.streak_days or 0) + 1
+    else:
+        profile.streak_days = 1
+
+    k_map["last_practice_date"] = today_str
+    profile.knowledge_map = k_map
+    return profile.streak_days
+
+
 def get_and_update_daily_quota(
     user: User,
     profile: Optional[StudentProfile],
@@ -325,6 +380,8 @@ async def save_lesson_checkpoint(
         register_class_key=class_key,
         mark_completed_key=class_key if is_passing_completion else None,
     )
+    # Registrar participación diaria real para mantener/incrementar la racha
+    record_daily_participation(profile)
     k_map = dict(profile.knowledge_map or {})
 
     # Strict CEFR completion logic: only pass if overall_score >= 80

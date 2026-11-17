@@ -91,8 +91,6 @@ async def _init_database_task():
                         prof.current_sublevel = "B2.1"
                         if not prof.total_xp or prof.total_xp < 6800:
                             prof.total_xp = 6800
-                        if not prof.streak_days or prof.streak_days < 28:
-                            prof.streak_days = 28
                         k_map = dict(prof.knowledge_map or {})
                         k_map["current_class_index"] = 1
                         k_map["active_checkpoint"] = None
@@ -115,7 +113,7 @@ async def _init_database_task():
                         current_level="B2",
                         current_sublevel="B2.1",
                         total_xp=6800,
-                        streak_days=28,
+                        streak_days=0,
                         knowledge_map={"current_class_index": 1, "active_checkpoint": None},
                         preferred_voice="es-US-AlonsoNeural",
                     )

@@ -1239,5 +1239,165 @@
   transform: translateX(-50%) scale(0.7);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO 3D VOLUMÉTRICO (Vuelo en Clase mirando hacia la Pizarra)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.avatar3dScene {
+  perspective: 950px;
+  transform-style: preserve-3d;
+}
+
+.avatar3dRig {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.avatar3dScene .robotHead,
+.avatar3dScene .robotBody {
+  transform-style: preserve-3d;
+}
+
+/* Paredes laterales 3D de la cabeza (extrusión volumétrica real) */
+.headSide3dLeft,
+.headSide3dRight {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 34px;
+  background: linear-gradient(180deg, #334155 0%, #1e293b 55%, #0f172a 100%);
+  border: 1.5px solid #475569;
+  border-radius: 6px;
+  box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.18);
+  pointer-events: none;
+}
+
+.headSide3dLeft {
+  left: -17px;
+  transform: rotateY(-90deg);
+}
+
+.headSide3dRight {
+  right: -17px;
+  transform: rotateY(90deg);
+}
+
+.headTop3d {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: -15px;
+  height: 30px;
+  background: linear-gradient(90deg, #1e293b, #475569, #1e293b);
+  border: 1px solid #64748b;
+  border-radius: 6px;
+  transform: rotateX(90deg);
+  pointer-events: none;
+}
+
+/* Rejillas de ventilación neón en los costados 3D */
+.sideVentGrill {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.sideVentSlot {
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(0, 212, 255, 0.65);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.8);
+}
+
+/* Paredes laterales 3D del torso CRT */
+.bodySide3dLeft,
+.bodySide3dRight {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  width: 30px;
+  background: linear-gradient(180deg, #273549 0%, #0f172a 100%);
+  border: 1.5px solid #475569;
+  border-radius: 6px;
+  box-shadow: inset 0 0 8px rgba(0, 212, 255, 0.15);
+  pointer-events: none;
+}
+
+.bodySide3dLeft {
+  left: -15px;
+  transform: rotateY(-90deg);
+}
+
+.bodySide3dRight {
+  right: -15px;
+  transform: rotateY(90deg);
+}
+
+/* Profundidad Z para elementos frontales y dorsales en modo 3D */
+.avatar3dScene .robotEyes {
+  transform: translateZ(16px);
+}
+
+.avatar3dScene .mouthFrame {
+  transform: translateZ(18px);
+}
+
+.avatar3dScene .crtMonitor {
+  transform: translateZ(14px);
+}
+
+.avatar3dScene .bodyJetpack {
+  transform: translateX(-50%) translateZ(-18px);
+}
+
+.avatar3dScene .hoverThruster {
+  transform: translateZ(8px);
+}
+
+/* Brazo apuntando hacia la pizarra en modo 3D */
+.armPointingBoardLeft {
+  transform: translateZ(22px) rotateZ(58deg) rotateY(-18deg) !important;
+  transition: transform 0.35s ease;
+}
+
+.armPointingBoardRight {
+  transform: translateZ(22px) rotateZ(-58deg) rotateY(18deg) !important;
+  transition: transform 0.35s ease;
+}
+
+/* Estela de levitación holográfica bajo el propulsor 3D */
+.holoHoverRing {
+  position: absolute;
+  bottom: -26px;
+  left: 50%;
+  width: 68px;
+  height: 18px;
+  transform: translateX(-50%) rotateX(72deg);
+  border-radius: 50%;
+  border: 2px solid rgba(0, 212, 255, 0.65);
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.32) 0%, transparent 72%);
+  box-shadow: 0 0 18px rgba(0, 212, 255, 0.55);
+  animation: holoRingPulse 1.8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes holoRingPulse {
+  0%   { transform: translateX(-50%) rotateX(72deg) scale(0.85); opacity: 0.55; }
+  100% { transform: translateX(-50%) rotateX(72deg) scale(1.18); opacity: 0.95; }
+}
+
+
 
 

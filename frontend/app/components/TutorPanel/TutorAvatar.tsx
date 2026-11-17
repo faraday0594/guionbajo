@@ -29,6 +29,16 @@ export interface TutorAvatarProps {
   shortCircuit?: boolean;
   /** Nivel de evolución visual de Guionbajo (0 = base, 8 = maestro) */
   upgradeStage?: UpgradeStage;
+  /** Activa el chasis 3D volumétrico con rotación espacial */
+  mode3D?: boolean;
+  /** Hacia dónde mira Guionbajo en modo 3D ('left' = mira a la izquierda hacia la pizarra cuando flota a la derecha) */
+  lookDirection?: 'left' | 'right' | 'center';
+  /** Ángulo horizontal personalizado (grados) en modo 3D */
+  yawAngle?: number;
+  /** Ángulo vertical personalizado (grados) en modo 3D */
+  pitchAngle?: number;
+  /** Hace que el brazo interior señale hacia la pizarra */
+  pointAtBoard?: boolean;
 }
 
 interface EmotionSegment {
@@ -138,6 +148,11 @@ export default function TutorAvatar({
   panickedArms = false,
   shortCircuit = false,
   upgradeStage = 0,
+  mode3D = false,
+  lookDirection = 'left',
+  yawAngle,
+  pitchAngle,
+  pointAtBoard = false,
 }: TutorAvatarProps) {
   // El avatar está en modo speaking si el estado es speaking y el progreso no ha concluido
   const isSpeaking = state === 'speaking' && (audioProgress === undefined || audioProgress < 99);
@@ -305,8 +320,30 @@ export default function TutorAvatar({
       ? '#FFB627'
       : '#00D4FF');
 
+  const computedYaw =
+    yawAngle !== undefined
+      ? yawAngle
+      : !mode3D
+      ? 0
+      : lookDirection === 'left'
+      ? -28
+      : lookDirection === 'right'
+      ? 28
+      : 0;
+  const computedPitch = pitchAngle !== undefined ? pitchAngle : mode3D ? 5 : 0;
+
   return (
-    <div className={`${styles.avatarWrapper} ${sizeClass} ${className}`}>
+    <div className={`${styles.avatarWrapper} ${sizeClass} ${mode3D ? styles.avatar3dScene : ''} ${className}`}>
+      <div
+        className={mode3D ? styles.avatar3dRig : undefined}
+        style={
+          mode3D
+            ? {
+                transform: `rotateY(${computedYaw}deg) rotateX(${computedPitch}deg)`,
+              }
+            : undefined
+        }
+      >
       
       {/* ── Stage 8: Aura Divina (Detrás de todo el avatar) ── */}
       {upgradeStage >= 8 && <div className={styles.godAura} />}
@@ -343,6 +380,26 @@ export default function TutorAvatar({
           transform: isMouthArticulating ? `translateY(${speechAperture * -3}px)` : undefined,
         }}
       >
+        {/* Paredes laterales 3D volumétricas de la cabeza */}
+        {mode3D && (
+          <>
+            <div className={styles.headTop3d} />
+            <div className={styles.headSide3dLeft}>
+              <div className={styles.sideVentGrill}>
+                <div className={styles.sideVentSlot} />
+                <div className={styles.sideVentSlot} />
+                <div className={styles.sideVentSlot} />
+              </div>
+            </div>
+            <div className={styles.headSide3dRight}>
+              <div className={styles.sideVentGrill}>
+                <div className={styles.sideVentSlot} />
+                <div className={styles.sideVentSlot} />
+                <div className={styles.sideVentSlot} />
+              </div>
+            </div>
+          </>
+        )}
         {/* ── Stage 4: Placa Frontal Blindada de Oro ── */}
         {upgradeStage >= 4 && <div className={styles.goldenBrowArmor} />}
 
@@ -512,6 +569,13 @@ export default function TutorAvatar({
       {/* ── Torso / Pantalla CRT abombada ── */}
       {!headOnly && (
         <div className={`${styles.robotBody} ${upgradeStage >= 4 ? styles.goldTrimBody : ''}`}>
+          {/* Paredes laterales 3D volumétricas del torso */}
+          {mode3D && (
+            <>
+              <div className={styles.bodySide3dLeft} />
+              <div className={styles.bodySide3dRight} />
+            </>
+          )}
           
           {/* ── Stage 4: Blindaje Pesado de Oro Real (Hombreras + Peto) ── */}
           {upgradeStage >= 4 && (
@@ -569,6 +633,8 @@ export default function TutorAvatar({
             let animClass = '';
             if (panickedArms && !drowned) {
               animClass = isLeft ? styles.armPanicLeft : styles.armPanicRight;
+            } else if (mode3D && pointAtBoard && ((isLeft && lookDirection === 'left') || (!isLeft && lookDirection === 'right'))) {
+              animClass = isLeft ? styles.armPointingBoardLeft : styles.armPointingBoardRight;
             } else if (currentEmotion === 'happy' || currentEmotion === 'victory') {
               animClass = isLeft ? styles.armCelebrateLeft : styles.armCelebrateRight;
             } else if (isMouthArticulating) {
@@ -616,8 +682,11 @@ export default function TutorAvatar({
               />
             )}
           </div>
+
+          {mode3D && <div className={styles.holoHoverRing} />}
         </div>
       )}
+      </div>
     </div>
   );
 }

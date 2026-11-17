@@ -32,6 +32,8 @@ export default function GuionbajoLabPage() {
   const [selectedEmotion, setSelectedEmotion] = useState<TutorEmotion>('happy');
   const [selectedState, setSelectedState] = useState<TutorState>('idle');
   const [selectedSize, setSelectedSize] = useState<'sm' | 'md' | 'lg' | 'toolbar'>('lg');
+  const [mode3D, setMode3D] = useState<boolean>(true);
+  const [yawAngle, setYawAngle] = useState<number>(-28);
   
   // Modales interactivos de prueba
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -173,6 +175,10 @@ export default function GuionbajoLabPage() {
                   emotion={selectedEmotion}
                   state={selectedState}
                   upgradeStage={selectedStage}
+                  mode3D={mode3D}
+                  yawAngle={mode3D ? yawAngle : 0}
+                  lookDirection={yawAngle <= 0 ? 'left' : 'right'}
+                  pointAtBoard={mode3D}
                   text={selectedState === 'speaking' ? '¡Hello! I am Guionbajo, your AI English tutor.' : ''}
                 />
               </div>
@@ -215,6 +221,42 @@ export default function GuionbajoLabPage() {
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">
                   Controles de Simulación
                 </h3>
+              </div>
+
+              {/* Selector de Evolución (0 - 8) */}
+              <div className="p-3 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/30 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-brand-cyan">
+                    VISTA 3D VOLUMÉTRICA (EN CLASE)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMode3D((v) => !v)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      mode3D
+                        ? 'bg-brand-cyan text-slate-950 shadow-md'
+                        : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {mode3D ? '3D Activo' : '2D Frontal'}
+                  </button>
+                </div>
+                {mode3D && (
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-300 mb-1">
+                      <span>Ángulo hacia la pizarra:</span>
+                      <span className="text-brand-cyan font-bold">{yawAngle}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-55}
+                      max={55}
+                      value={yawAngle}
+                      onChange={(e) => setYawAngle(Number(e.target.value))}
+                      className="w-full accent-cyan-400 cursor-pointer"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Selector de Nivel de Upgrade (0 - 8) */}

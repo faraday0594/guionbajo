@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, playTTS, stopTutorVoice, playEnglishAudio, setSavedPreferredVoice, prefetchTTS, hasCachedTTS } from '@/lib/api';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
+import Guionbajo3DFloatingCompanion from '@/app/components/TutorPanel/Guionbajo3DFloatingCompanion';
 import MicButton from '@/app/components/TutorPanel/MicButton';
 import ScoreDisplay from '@/app/components/TutorPanel/ScoreDisplay';
 import GrammarStructureCard from '@/app/components/GrammarStructureCard';
@@ -6229,6 +6230,16 @@ export default function LessonPage() {
           </div>
         </div>
       </header>
+
+      {/* Guionbajo 3D Volador superpuesto a un lado de la pizarra mirando hacia dentro */}
+      <Guionbajo3DFloatingCompanion
+        state={tutorState}
+        text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
+        audioProgress={audioProgress}
+        audioElement={currentAudioRef.current}
+        upgradeStage={avatarUpgradeStage}
+        phaseKey={currentPhaseIdx}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-y-auto p-2.5 sm:p-5 md:p-6 max-w-7xl mx-auto w-full gap-4 sm:gap-5 relative z-10 custom-scrollbar">

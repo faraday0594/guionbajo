@@ -7,14 +7,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
 import { setToken } from '@/lib/auth';
-import { Eye, EyeOff, Loader2, Zap } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
-
-// Usuario demo para acceso rápido
-const DEMO_USER = {
-  email: 'demo@guionbajo.com',
-  password: 'demo1234',
-};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,16 +16,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const doLogin = async (creds: { email: string; password: string }, isDemo = false) => {
+  const doLogin = async (creds: { email: string; password: string }) => {
     setError('');
     try {
       const res = await api.login({ email: creds.email.trim().toLowerCase(), password: creds.password.trim() });
       if (res.access_token) {
         setToken(res.access_token);
-        toast.success(isDemo ? '¡Entraste como usuario demo! 🚀' : '¡Bienvenido de vuelta! 👋');
+        toast.success('¡Bienvenido de vuelta! 👋');
         router.push('/dashboard');
       }
     } catch (err: any) {
@@ -46,14 +39,6 @@ export default function LoginPage() {
     setLoading(true);
     await doLogin({ email, password });
     setLoading(false);
-  };
-
-  const handleDemo = async () => {
-    setDemoLoading(true);
-    setEmail(DEMO_USER.email);
-    setPassword(DEMO_USER.password);
-    await doLogin(DEMO_USER, true);
-    setDemoLoading(false);
   };
 
   return (
@@ -82,50 +67,6 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-outfit font-bold text-white mb-1">Iniciar Sesión</h1>
           <p className="text-brand-text-secondary text-sm">Continúa tu aprendizaje de inglés</p>
-        </div>
-
-        {/* Demo access box */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6 p-4 rounded-2xl border border-brand-gold/30 bg-brand-gold/5"
-        >
-          <div className="flex items-start gap-3">
-            <Zap size={18} className="text-brand-gold mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-brand-gold mb-1">Acceso Demo</p>
-              <p className="text-xs text-brand-text-secondary mb-3">
-                Prueba el sistema sin registrarte
-              </p>
-              <div className="text-xs text-brand-text-muted space-y-1 font-mono mb-3">
-                <div>📧 demo@guionbajo.com</div>
-                <div>🔑 demo1234</div>
-              </div>
-              <button
-                onClick={handleDemo}
-                disabled={demoLoading || loading}
-                className="w-full py-2 px-4 bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/40
-                  text-brand-gold text-sm font-semibold rounded-xl transition-all
-                  disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {demoLoading ? (
-                  <><Loader2 size={14} className="animate-spin" /> Ingresando...</>
-                ) : (
-                  <><Zap size={14} /> Entrar como Demo</>
-                )}
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-brand-border" />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="px-3 bg-brand-card text-xs text-brand-text-muted">o con tu cuenta</span>
-          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -177,7 +118,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading || demoLoading}
+            disabled={loading}
             className="w-full bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold
               py-3 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed
               flex items-center justify-center gap-2 glow-accent btn-lift"

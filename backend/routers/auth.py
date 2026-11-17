@@ -109,6 +109,11 @@ async def login(
     db: AsyncSession = Depends(get_db)
 ):
     clean_email = user_data.email.strip().lower()
+    if clean_email == "demo@guionbajo.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El acceso Demo ha sido deshabilitado. Por favor solicita tu cuenta e inicia sesión una vez aprobada.",
+        )
     result = await db.execute(select(User).where(func.lower(func.trim(User.email)) == clean_email))
     user = result.scalars().first()
 

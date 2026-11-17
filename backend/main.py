@@ -75,37 +75,6 @@ async def _init_database_task():
             print("[OK] Database tables initialized successfully.")
 
             async with AsyncSessionLocal() as db:
-                result = await db.execute(select(User).where(User.email == "demo@guionbajo.com"))
-                existing = result.scalars().first()
-                if not existing:
-                    demo_user = User(
-                        id=str(uuid.uuid4()),
-                        email="demo@guionbajo.com",
-                        password_hash=get_password_hash("demo1234"),
-                        name="Demo Student",
-                        native_language="es",
-                        access_status="approved",
-                    )
-                    db.add(demo_user)
-                    await db.flush()
-
-                    demo_profile = StudentProfile(
-                        user_id=demo_user.id,
-                        current_level="A1",
-                        current_sublevel="A1.2",
-                        total_xp=150,
-                        streak_days=3,
-                        weak_areas=["past_tense", "pronunciation"],
-                        learning_map=[],
-                        knowledge_map={},
-                        phonetics_mastery={},
-                        minimax_api_key=None,
-                        preferred_voice="es-US-AlonsoNeural",
-                    )
-                    db.add(demo_profile)
-                    await db.commit()
-                    print("[OK] Demo user (demo@guionbajo.com) created in database.")
-
                 fer_res = await db.execute(select(User).where(User.email == "megafer1994@gmail.com"))
                 fer_user = fer_res.scalars().first()
                 if fer_user:

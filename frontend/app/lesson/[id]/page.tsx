@@ -6223,20 +6223,30 @@ export default function LessonPage() {
 
             {/* Guionbajo Tutor State & Hangar Dock */}
             <div
-              onClick={() => setIsGuionbajoDeployed((v) => !v)}
+              onClick={() => {
+                if (viewMode === 'board') {
+                  setIsGuionbajoDeployed((v) => !v);
+                }
+              }}
               title={
-                isGuionbajoDeployed
+                viewMode === 'games'
+                  ? 'Hueco del Hangar: Guionbajo bajó al escenario del juego'
+                  : viewMode === 'reading'
+                  ? 'Guionbajo supervisando tu lectura desde el Hangar'
+                  : isGuionbajoDeployed
                   ? 'Hueco del Hangar: haz clic para que Guionbajo regrese aquí'
                   : 'Haz clic para desplegar a Guionbajo 3D volando hacia la pizarra'
               }
-              className="hidden lg:flex items-center gap-3 px-3.5 py-1 rounded-2xl bg-brand-surface/90 border border-brand-border/80 hover:border-brand-cyan/50 text-xs shadow-inner h-[76px] overflow-visible flex-shrink-0 cursor-pointer transition-colors group"
+              className={`hidden lg:flex items-center gap-3 px-3.5 py-1 rounded-2xl bg-brand-surface/90 border border-brand-border/80 text-xs shadow-inner h-[76px] overflow-visible flex-shrink-0 transition-colors group ${
+                viewMode === 'board' ? 'hover:border-brand-cyan/50 cursor-pointer' : ''
+              }`}
             >
               <div
                 id="guionbajo-toolbar-dock"
                 className="w-16 h-[72px] flex items-center justify-center relative flex-shrink-0 overflow-visible"
               >
-                {isGuionbajoDeployed ? (
-                  /* Hueco mecánico vacío dejado por Guionbajo al despegar */
+                {(viewMode === 'board' && isGuionbajoDeployed) || viewMode === 'games' ? (
+                  /* Hueco mecánico vacío dejado por Guionbajo al bajar a la pizarra o al estanque del juego */
                   <div className="relative w-12 h-14 rounded-xl bg-[#04070e] border border-dashed border-brand-cyan/35 shadow-[inset_0_4px_12px_rgba(0,0,0,0.95)] flex flex-col items-center justify-center overflow-hidden">
                     {/* Silueta hundida de cabeza y torso */}
                     <div className="w-7 h-5 rounded-md bg-slate-900/80 border border-slate-800/90 shadow-inner mb-0.5" />
@@ -6265,13 +6275,15 @@ export default function LessonPage() {
                 <span className="text-white font-bold text-xs tracking-wide">Guionbajo</span>
                 <span className="text-brand-cyan text-[11px] font-semibold flex items-center gap-1.5 whitespace-nowrap">
                   <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse inline-block" />
-                  {tutorState === 'speaking'
+                  {viewMode === 'games'
+                    ? 'En el Estanque'
+                    : tutorState === 'speaking'
                     ? 'Explicando...'
                     : tutorState === 'thinking'
                     ? 'Pensando...'
                     : tutorState === 'listening'
                     ? 'Escuchando...'
-                    : isGuionbajoDeployed
+                    : viewMode === 'board' && isGuionbajoDeployed
                     ? 'En vuelo 3D'
                     : 'En Hangar'}
                 </span>
@@ -6286,7 +6298,7 @@ export default function LessonPage() {
         </div>
       </header>
 
-      {/* Guionbajo 3D Volador (solo escritorio lg+) que despega desde su hueco en la toolbar */}
+      {/* Guionbajo 3D Volador: solo baja en la Pizarra/Quiz (viewMode === 'board'), NO en Lectura ni en Juegos */}
       <Guionbajo3DFloatingCompanion
         state={tutorState}
         text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
@@ -6294,7 +6306,7 @@ export default function LessonPage() {
         audioElement={currentAudioRef.current}
         upgradeStage={avatarUpgradeStage}
         phaseKey={currentPhaseIdx}
-        deployed={isGuionbajoDeployed}
+        deployed={viewMode === 'board' && isGuionbajoDeployed}
         onDockChange={setIsGuionbajoDeployed}
       />
 

@@ -148,7 +148,7 @@ async def login(
             if prof:
                 prof.current_level = "B2"
                 prof.current_sublevel = "B2.1"
-                if not profile_xp_ok := (prof.total_xp and prof.total_xp >= 6800):
+                if not prof.total_xp or prof.total_xp < 6800:
                     prof.total_xp = 6800
             else:
                 prof = StudentProfile(

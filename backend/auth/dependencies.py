@@ -36,7 +36,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         if user_status != "approved":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Tu cuenta está pendiente de aprobación por el administrador.",
+                detail="Tu acceso a la plataforma ha sido revocado o está pendiente de aprobación por el administrador.",
             )
 
     return user

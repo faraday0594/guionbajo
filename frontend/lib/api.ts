@@ -66,6 +66,21 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, retries = 1
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     const detail = errorData.detail;
+    if (
+      response.status === 403 &&
+      !url.includes('/auth/login') &&
+      !url.includes('/auth/admin') &&
+      typeof detail === 'string' &&
+      (detail.includes('aprobación') || detail.includes('revocad') || detail.includes('rechazad'))
+    ) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('guionbajo_token');
+        localStorage.removeItem('tutor_ai_token');
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      }
+    }
     if (Array.isArray(detail)) {
       throw new Error(detail.map((d: any) => d.msg).join(', '));
     }

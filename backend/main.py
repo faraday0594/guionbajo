@@ -124,7 +124,8 @@ async def _init_database_task():
                 lau_user = lau_res.scalars().first()
                 if lau_user:
                     lau_user.password_hash = get_password_hash('lau12345')
-                    lau_user.access_status = "approved"
+                    if not getattr(lau_user, "access_status", None):
+                        lau_user.access_status = "approved"
                     await db.commit()
 
         await asyncio.wait_for(_do_init(), timeout=25.0)

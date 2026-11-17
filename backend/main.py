@@ -48,6 +48,11 @@ def sync_table_columns(sync_conn):
     for table_name, table in Base.metadata.tables.items():
         if table_name not in existing_tables:
             continue
+        if sync_conn.dialect.name == "postgresql":
+            try:
+                sync_conn.execute(text(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY"))
+            except Exception as rls_ex:
+                print(f"[DB RLS WARN] Could not enable RLS on '{table_name}': {rls_ex}")
         existing_cols = {col["name"] for col in inspector.get_columns(table_name)}
         for column in table.columns:
             if column.name not in existing_cols:

@@ -6275,17 +6275,13 @@ export default function LessonPage() {
                 <span className="text-white font-bold text-xs tracking-wide">Guionbajo</span>
                 <span className="text-brand-cyan text-[11px] font-semibold flex items-center gap-1.5 whitespace-nowrap">
                   <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse inline-block" />
-                  {viewMode === 'games'
-                    ? 'En el Estanque'
-                    : tutorState === 'speaking'
+                  {tutorState === 'speaking'
                     ? 'Explicando...'
                     : tutorState === 'thinking'
                     ? 'Pensando...'
                     : tutorState === 'listening'
                     ? 'Escuchando...'
-                    : viewMode === 'board' && isGuionbajoDeployed
-                    ? 'En vuelo 3D'
-                    : 'En Hangar'}
+                    : 'Listo'}
                 </span>
               </div>
             </div>

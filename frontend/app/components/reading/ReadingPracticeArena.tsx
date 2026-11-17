@@ -92,43 +92,46 @@ interface ReadingPracticeArenaProps {
   onBackToLesson?: () => void;
 }
 
-// 🎨 Helper functions for image prompt sanitization & fallback
-function sanitizeImagePrompt(prompt: string, topic: string, slideIdx = 0): string {
+// 🎨 Helper functions for image prompt sanitization & fallback (pure positive visual framing — zero text triggers)
+function sanitizeImagePrompt(prompt: string, _topic: string, slideIdx = 0): string {
   let clean = prompt || '';
 
-  // 1. Remove any text enclosed in quotation marks or backticks
+  // 1. Remove any CJK characters and text enclosed in quotation marks or backticks
+  clean = clean.replace(/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]+/g, ' ');
   clean = clean.replace(/["'“”‘’`][^"'“”‘’`]*["'“”‘’`]/g, ' ');
 
   // 2. Remove IPA phonetic notations like /e/, /æ/, /iː/, /ʌ/, /ʃ/
   clean = clean.replace(/\/[A-Za-zʃʊʌæəɪɔɑɜθðʒŋːˈ\.\s]+\//g, ' ');
 
-  // 3. Replace text-bearing surfaces & triggers with clean visual equivalents
-  clean = clean.replace(/\b(?:blackboard|whiteboard|chalkboard|bulletin board)\b/gi, 'clean classroom wall');
-  clean = clean.replace(/\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|sign)\b/gi, 'decorative backdrop');
-  clean = clean.replace(/\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon)\b/gi, 'expressive conversational gesture');
-  clean = clean.replace(/\b(?:poster|banner|placard|flyer|pamphlet|brochure)\b/gi, 'decorative wall art');
-  clean = clean.replace(/\b(?:flashcards?|cue cards?)\b/gi, 'colorful study cards');
-  clean = clean.replace(/\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation)\b/gi, 'concept visual');
-  clean = clean.replace(/\b(?:displaying|saying|reading|showing the words?|labeled with|with the phrase|with the letters?|with text)\b/gi, 'illustrating');
+  // 3. Replace text-bearing surfaces, books, menus, screens & dialogue triggers with pure visual objects
+  clean = clean.replace(/\b(?:blackboard|whiteboard|chalkboard|bulletin board|departure flight boards?|flight boards?)\b/gi, 'sunny window');
+  clean = clean.replace(/\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|signs?)\b/gi, 'green trees');
+  clean = clean.replace(/\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon|bubbles?)\b/gi, 'warm lighting');
+  clean = clean.replace(/\b(?:poster|banner|placard|flyer|pamphlet|brochure|menus?|newspapers?|magazines?|exams?|certificates?|diplomas?|badges?|tickets?|blueprints?)\b/gi, 'ceramic cup');
+  clean = clean.replace(/\b(?:flashcards?|cue cards?|cards?|notebooks?|textbooks?|open books?|books?|notes?|pages?|papers?|sheets?|documents?|lists?)\b/gi, 'potted green plant');
+  clean = clean.replace(/\b(?:laptops?|computers?|monitors?|screens?|tablets?|smartphones?|phones?)\b/gi, 'wooden table');
+  clean = clean.replace(/\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation|english class|english lesson|online english|english)\b/gi, 'cozy atmosphere');
+  clean = clean.replace(/\b(?:displaying|saying|reading|writing|studying|taking notes|showing the words?|labeled with|with the phrase|with the letters?|with text|talking|speaking|chatting|discussing|asking|explaining)\b/gi, 'smiling warmly');
 
   // 4. Remove fighting cartoon or textual artifacts
-  clean = clean.replace(/\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography)\b/gi, 'educational scene');
+  clean = clean.replace(/\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography|words|labels|captions|watermarks|script)\b/gi, 'scene');
 
-  // 5. Remove leftover quotes, symbols, brackets
+  // 5. Remove leftover quotes, symbols, brackets, and negative "no text" trigger phrases
   clean = clean.replace(/[/\\|\[\](){}+=→<>_~*#^"“”‘’`]/g, ' ');
-  clean = clean.replace(/\b(?:strictly\s+)?no\s+(?:text|letters|words|writing|labels|captions|typography|watermarks|alphabets)\b/gi, ' ');
+  clean = clean.replace(/\b(?:strictly\s+|completely\s+|zero\s+)?(?:no\s+)?(?:textless|text|letters|words|writing|labels|captions|typography|watermarks|alphabets|signs|speech)\b/gi, ' ');
   clean = clean.replace(/\s{2,}/g, ' ').trim();
 
-  // If the prompt is too empty or short, build a rich didactic human scene
-  if (clean.length < 12) {
-    const cleanTopic = topic.replace(/\/[^\/]+\//g, '').replace(/Laboratorio Fonético/i, 'English conversation practice').trim();
-    clean = `student learning ${cleanTopic || 'English language'} in a cozy modern study room with books and laptop, warm atmospheric lighting, colorful aesthetic`;
+  // Pure visual fallback scenes if prompt is empty or short (never inject the grammar topic title!)
+  const fallbackScenes = [
+    'young person smiling warmly in a sunlit modern living room with green indoor plants and a ceramic coffee cup on a wooden table',
+    'two friendly people walking along a sunny green park pathway under tall trees with warm golden daylight',
+    'cheerful friends relaxing together at a cozy wooden table near a large window with potted plants and warm ambient light',
+  ];
+  if (clean.length < 15) {
+    clean = fallbackScenes[slideIdx % fallbackScenes.length];
   }
 
-  const prefix = 'Clean flat 2D vector educational illustration, zero text, completely textless scene, no words anywhere';
-  const suffix = 'clean minimalist art style, strictly no text, no words, no letters, no writing, no labels, no speech bubbles, no signs, no typography';
-
-  return `${prefix}, ${clean}, ${suffix}`;
+  return `Clean flat 2D vector illustration, ${clean}, vibrant warm colors, minimalist flat art style, clean empty background, pure visual scenery`;
 }
 
 function getFallbackImageUrl(prompt: string, topic: string, slideIdx = 0): string {
@@ -334,7 +337,7 @@ export default function ReadingPracticeArena({
 
           // Resolve first slide image
           const firstSlide = (res.story.slides && res.story.slides[0]) || null;
-          const firstPrompt = firstSlide?.image_prompt || (res.story.chunks?.[0]?.image_prompt) || `${topic}, 2D educational illustration`;
+          const firstPrompt = firstSlide?.image_prompt || (res.story.chunks?.[0]?.image_prompt) || '';
           await generateSlideImage(0, firstPrompt, topic);
 
           // Background preloading for remaining slides
@@ -342,7 +345,7 @@ export default function ReadingPracticeArena({
             const slidesList = res.story.slides || [];
             for (let idx = 1; idx < slidesList.length; idx++) {
               if (!isMounted) break;
-              const prompt = slidesList[idx].image_prompt || `${topic} scene ${idx + 1}, 2D illustration`;
+              const prompt = slidesList[idx].image_prompt || '';
               await generateSlideImage(idx, prompt, topic);
             }
           })();

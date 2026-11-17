@@ -1262,6 +1262,28 @@ export default function TimelineVisualRenderer({
                             }];
 
                         const ex = activeList[currentExerciseIdx] || activeList[0];
+                        const displayOptions: string[] = (() => {
+                          const rawOpts: string[] = ex?.options || [];
+                          if (rawOpts.length <= 1) return rawOpts;
+                          const seedText = String(ex?.sentence || ex?.question || currentExerciseIdx);
+                          let h = 2166136261;
+                          for (let i = 0; i < seedText.length; i++) {
+                            h ^= seedText.charCodeAt(i);
+                            h = Math.imul(h, 16777619);
+                          }
+                          const arr = [...rawOpts];
+                          for (let i = arr.length - 1; i > 0; i--) {
+                            h ^= i * 2654435761;
+                            const j = Math.abs(h) % (i + 1);
+                            [arr[i], arr[j]] = [arr[j], arr[i]];
+                          }
+                          // Ensure first option isn't systematically the original options[0]
+                          if (arr.length >= 2 && arr[0] === rawOpts[0]) {
+                            const swapIdx = 1 + (Math.abs(h + currentExerciseIdx) % (arr.length - 1));
+                            [arr[0], arr[swapIdx]] = [arr[swapIdx], arr[0]];
+                          }
+                          return arr;
+                        })();
 
                         return (
                           <div className="space-y-4">
@@ -1298,9 +1320,9 @@ export default function TimelineVisualRenderer({
                               </div>
 
                               {/* Options if available */}
-                              {ex.options && ex.options.length > 0 && onSelectOption && (
+                              {displayOptions && displayOptions.length > 0 && onSelectOption && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  {ex.options.map((opt: string, optIdx: number) => (
+                                  {displayOptions.map((opt: string, optIdx: number) => (
                                     <button
                                       key={optIdx}
                                       type="button"

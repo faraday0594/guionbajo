@@ -424,42 +424,45 @@ function normalizeNumberWords(text: string): string {
 }
 
 // ─── HELPER: Fallback & Preloading Utilities for Images ───────────────────────
-function sanitizeImagePrompt(prompt: string, topic: string, phaseIdx = 0): string {
+function sanitizeImagePrompt(prompt: string, _topic: string, phaseIdx = 0): string {
   let clean = prompt || '';
 
-  // 1. Remove any text enclosed in quotation marks or backticks
+  // 1. Remove any CJK characters and text enclosed in quotation marks or backticks
+  clean = clean.replace(/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]+/g, ' ');
   clean = clean.replace(/["'“”‘’`][^"'“”‘’`]*["'“”‘’`]/g, ' ');
 
   // 2. Remove IPA phonetic notations like /e/, /æ/, /iː/, /ʌ/, /ʃ/
   clean = clean.replace(/\/[A-Za-zʃʊʌæəɪɔɑɜθðʒŋːˈ\.\s]+\//g, ' ');
 
-  // 3. Replace text-bearing surfaces & triggers with clean visual equivalents
-  clean = clean.replace(/\b(?:blackboard|whiteboard|chalkboard|bulletin board)\b/gi, 'clean classroom wall');
-  clean = clean.replace(/\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|sign)\b/gi, 'decorative backdrop');
-  clean = clean.replace(/\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon)\b/gi, 'expressive conversational gesture');
-  clean = clean.replace(/\b(?:poster|banner|placard|flyer|pamphlet|brochure)\b/gi, 'decorative wall art');
-  clean = clean.replace(/\b(?:flashcards?|cue cards?)\b/gi, 'colorful study cards');
-  clean = clean.replace(/\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation)\b/gi, 'concept visual');
-  clean = clean.replace(/\b(?:displaying|saying|reading|showing the words?|labeled with|with the phrase|with the letters?|with text)\b/gi, 'illustrating');
+  // 3. Replace text-bearing surfaces, books, menus, screens & dialogue triggers with pure visual objects
+  clean = clean.replace(/\b(?:blackboard|whiteboard|chalkboard|bulletin board|departure flight boards?|flight boards?)\b/gi, 'sunny window');
+  clean = clean.replace(/\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|signs?)\b/gi, 'green trees');
+  clean = clean.replace(/\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon|bubbles?)\b/gi, 'warm lighting');
+  clean = clean.replace(/\b(?:poster|banner|placard|flyer|pamphlet|brochure|menus?|newspapers?|magazines?|exams?|certificates?|diplomas?|badges?|tickets?|blueprints?)\b/gi, 'ceramic cup');
+  clean = clean.replace(/\b(?:flashcards?|cue cards?|cards?|notebooks?|textbooks?|open books?|books?|notes?|pages?|papers?|sheets?|documents?|lists?)\b/gi, 'potted green plant');
+  clean = clean.replace(/\b(?:laptops?|computers?|monitors?|screens?|tablets?|smartphones?|phones?)\b/gi, 'wooden table');
+  clean = clean.replace(/\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation|english class|english lesson|online english|english)\b/gi, 'cozy atmosphere');
+  clean = clean.replace(/\b(?:displaying|saying|reading|writing|studying|taking notes|showing the words?|labeled with|with the phrase|with the letters?|with text|talking|speaking|chatting|discussing|asking|explaining)\b/gi, 'smiling warmly');
 
   // 4. Remove fighting cartoon or textual artifacts
-  clean = clean.replace(/\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography)\b/gi, 'educational scene');
+  clean = clean.replace(/\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography|words|labels|captions|watermarks|script)\b/gi, 'scene');
 
-  // 5. Remove leftover quotes, symbols, brackets
+  // 5. Remove leftover quotes, symbols, brackets, and negative "no text" trigger phrases
   clean = clean.replace(/[/\\|\[\](){}+=→<>_~*#^"“”‘’`]/g, ' ');
-  clean = clean.replace(/\b(?:strictly\s+)?no\s+(?:text|letters|words|writing|labels|captions|typography|watermarks|alphabets)\b/gi, ' ');
+  clean = clean.replace(/\b(?:strictly\s+|completely\s+|zero\s+)?(?:no\s+)?(?:textless|text|letters|words|writing|labels|captions|typography|watermarks|alphabets|signs|speech)\b/gi, ' ');
   clean = clean.replace(/\s{2,}/g, ' ').trim();
 
-  // If the prompt is too empty or short, build a rich didactic human scene
-  if (clean.length < 12) {
-    const cleanTopic = topic.replace(/\/[^\/]+\//g, '').replace(/Laboratorio Fonético/i, 'English conversation practice').trim();
-    clean = `student learning ${cleanTopic || 'English language'} in a cozy modern study room with books and laptop, warm atmospheric lighting, colorful aesthetic`;
+  // Pure visual fallback scenes if prompt is empty or short (never inject the grammar topic title!)
+  const fallbackScenes = [
+    'young person smiling warmly in a sunlit modern living room with green indoor plants and a ceramic coffee cup on a wooden table',
+    'two friendly people walking along a sunny green park pathway under tall trees with warm golden daylight',
+    'cheerful friends relaxing together at a cozy wooden table near a large window with potted plants and warm ambient light',
+  ];
+  if (clean.length < 15) {
+    clean = fallbackScenes[phaseIdx % fallbackScenes.length];
   }
 
-  const prefix = 'Clean flat 2D vector educational illustration, zero text, completely textless scene, no words anywhere';
-  const suffix = 'clean minimalist art style, strictly no text, no words, no letters, no writing, no labels, no speech bubbles, no signs, no typography';
-
-  return `${prefix}, ${clean}, ${suffix}`;
+  return `Clean flat 2D vector illustration, ${clean}, vibrant warm colors, minimalist flat art style, clean empty background, pure visual scenery`;
 }
 
 function getFallbackImageUrl(prompt: string, topic: string, phaseIdx = 0): string {
@@ -4560,11 +4563,36 @@ export default function LessonPage() {
           // Topic-specific authentic 8-exercise bank strictly aligned with CEFR grammar target
           const defaultExercises = getTopicQuizExercises(topicParam, sublevelParam, Number(classIndexParam) || 1);
 
-          // Filter strictly valid exercises
+          // Filter strictly valid exercises and randomize option order while preserving expected_answer
           const filteredCollected: any[] = [];
+          const pushWithShuffledOptions = (rawEx: any, idxNum: number) => {
+            const expected = (rawEx.expected_answer || rawEx.options?.[0] || '').trim();
+            let opts = Array.isArray(rawEx.options) ? [...rawEx.options] : [];
+            if (opts.length >= 2) {
+              for (let i = opts.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [opts[i], opts[j]] = [opts[j], opts[i]];
+              }
+              if (expected) {
+                const expLow = expected.toLowerCase();
+                const curPos = opts.findIndex((o: string) => o.trim().toLowerCase() === expLow);
+                const targetPos = (idxNum + 1 + Math.floor(Math.random() * opts.length)) % opts.length;
+                if (curPos !== -1 && curPos !== targetPos) {
+                  [opts[curPos], opts[targetPos]] = [opts[targetPos], opts[curPos]];
+                }
+              }
+            }
+            filteredCollected.push({
+              ...rawEx,
+              id: rawEx.id || `ex-${idxNum + 1}`,
+              expected_answer: expected,
+              options: opts,
+            });
+          };
+
           collectedExercises.forEach(ex => {
             if (ex && ex.sentence && !filteredCollected.some(f => f.sentence === ex.sentence)) {
-              filteredCollected.push(ex);
+              pushWithShuffledOptions(ex, filteredCollected.length);
             }
           });
 
@@ -4572,10 +4600,7 @@ export default function LessonPage() {
           for (const defEx of defaultExercises) {
             if (filteredCollected.length >= 8) break;
             if (!filteredCollected.some(f => f.sentence === defEx.sentence)) {
-              filteredCollected.push({
-                ...defEx,
-                id: `ex-${filteredCollected.length + 1}`
-              });
+              pushWithShuffledOptions(defEx, filteredCollected.length);
             }
           }
 

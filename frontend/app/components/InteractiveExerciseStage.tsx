@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Volume2,
   Sparkles,
@@ -82,6 +82,34 @@ export default function InteractiveExerciseStage({
   const audioChunksRef = useRef<Blob[]>([]);
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
+  // Shuffle options once per exercise list so the first option is NOT always the correct answer
+  const shuffledExercises = useMemo(() => {
+    return (exercises || []).map((ex, idx) => {
+      if (!ex.options || ex.options.length <= 1) return ex;
+      const expected = (ex.expected_answer || ex.options[0] || '').trim();
+      const opts = [...ex.options];
+      // Fisher-Yates random shuffle
+      for (let i = opts.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [opts[i], opts[j]] = [opts[j], opts[i]];
+      }
+      // Ensure the correct answer is distributed across varied positions (not stuck at index 0)
+      if (expected && opts.length >= 2) {
+        const expLow = expected.toLowerCase();
+        const curPos = opts.findIndex((o) => o.trim().toLowerCase() === expLow);
+        const targetPos = (idx + 1 + Math.floor(Math.random() * opts.length)) % opts.length;
+        if (curPos !== -1 && curPos !== targetPos) {
+          [opts[curPos], opts[targetPos]] = [opts[targetPos], opts[curPos]];
+        }
+      }
+      return {
+        ...ex,
+        expected_answer: expected,
+        options: opts,
+      };
+    });
+  }, [exercises]);
+
   // Trigger image generation for all exercises on mount
   useEffect(() => {
     exercises.forEach((ex, idx) => {
@@ -103,11 +131,11 @@ export default function InteractiveExerciseStage({
     };
   }, []);
 
-  if (!exercises || exercises.length === 0) {
+  if (!shuffledExercises || shuffledExercises.length === 0) {
     return null;
   }
 
-  const currentEx = exercises[currentExIdx] || exercises[0];
+  const currentEx = shuffledExercises[currentExIdx] || shuffledExercises[0];
   const promptKey = `ex-${phaseIdx}-${currentEx.id || currentExIdx}`;
   const exerciseImageUrl = minimaxImageMap[promptKey] || currentEx.image_url;
   const currentEval = evaluatedItems[currentEx.id];

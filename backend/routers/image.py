@@ -48,15 +48,16 @@ async def generate_image(
     # 2. Strip IPA phonetic transcriptions like /e/, /æ/, /iː/, etc.
     sanitized = re.sub(r'/[A-Za-zʃʊʌæəɪɔɑɜθðʒŋːˈ\.\s]+/', ' ', sanitized)
 
-    # 3. Replace text-bearing surfaces & text triggers with clean visual equivalents
-    sanitized = re.sub(r'\b(?:blackboard|whiteboard|chalkboard|bulletin board)\b', 'clean classroom wall', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|sign)\b', 'decorative backdrop', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon)\b', 'expressive conversational gesture', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'\b(?:poster|banner|placard|flyer|pamphlet|brochure)\b', 'decorative wall art', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'\b(?:flashcards?|cue cards?)\b', 'colorful study cards', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation)\b', 'concept visual', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'\b(?:displaying|saying|reading|showing the words?|labeled with|with the phrase|with the letters?|with text)\b', 'illustrating', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography|speech|dialogue|conversation|talking|speaking|chatting|saying|telling|bubble|bubbles)\b', 'friendly visual scene', sanitized, flags=re.IGNORECASE)
+    # 3. Replace text-bearing surfaces, books, menus, screens & text triggers with clean visual equivalents
+    sanitized = re.sub(r'\b(?:blackboard|whiteboard|chalkboard|bulletin board|departure flight boards?|flight boards?)\b', 'sunny window', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:signboard|billboard|road sign|traffic sign|wooden sign|street sign|sign saying|sign with|signs?)\b', 'green trees', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:speech bubble|dialogue bubble|chat bubble|thought bubble|speech balloon|bubbles?)\b', 'warm lighting', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:poster|banner|placard|flyer|pamphlet|brochure|menus?|newspapers?|magazines?|exams?|certificates?|diplomas?|badges?|tickets?|blueprints?)\b', 'ceramic cup', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:flashcards?|cue cards?|cards?|notebooks?|textbooks?|open books?|books?|notes?|pages?|papers?|sheets?|documents?|lists?)\b', 'potted green plant', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:laptops?|computers?|monitors?|screens?|tablets?|smartphones?|phones?)\b', 'wooden table', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:grammar formula|grammar rules?|syntactic formula|formula|equation|english class|english lesson|online english|english)\b', 'cozy atmosphere', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:displaying|saying|reading|writing|studying|taking notes|showing the words?|labeled with|with the phrase|with the letters?|with text)\b', 'smiling warmly', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'\b(?:duel|versus|vs|fight|fighting|boxers|boxing ring|boxing gloves|letters|phoneme|alphabet|spelling|text|characters|subtitles|typography|speech|dialogue|conversation|talking|speaking|chatting|telling|bubble|bubbles|words|labels|captions|watermarks|script)\b', 'friendly visual scene', sanitized, flags=re.IGNORECASE)
 
     # 4. Remove leftover quotes and brackets
     sanitized = re.sub(r'[/\\|\[\](){}+=→<>_~*#^"“”‘’`]', ' ', sanitized)

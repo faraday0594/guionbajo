@@ -42,6 +42,8 @@ else:
     except Exception as e:
         logger.warning(f"Error creating SSL context for DB: {e}")
     connect_args["statement_cache_size"] = 0
+    connect_args["timeout"] = 15
+    connect_args["command_timeout"] = 20
     engine_kwargs["pool_pre_ping"] = True
     engine_kwargs["pool_recycle"] = 300
 

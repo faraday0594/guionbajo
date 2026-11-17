@@ -35,6 +35,13 @@ from routers import (
 
 def sync_table_columns(sync_conn):
     from sqlalchemy import inspect, text
+    try:
+        if sync_conn.dialect.name == "postgresql":
+            sync_conn.execute(text("SET LOCAL lock_timeout = '5s'"))
+            sync_conn.execute(text("SET LOCAL statement_timeout = '10s'"))
+    except Exception:
+        pass
+
     inspector = inspect(sync_conn)
     existing_tables = set(inspector.get_table_names())
     
@@ -50,102 +57,116 @@ def sync_table_columns(sync_conn):
                     val = column.default.arg
                     if isinstance(val, (str, int, float, bool)):
                         default_clause = f" DEFAULT '{val}'" if isinstance(val, str) else f" DEFAULT {val}"
-                sql = f"ALTER TABLE {table_name} ADD COLUMN {column.name} {col_type}{default_clause}"
+                if_not_exists = "IF NOT EXISTS " if sync_conn.dialect.name == "postgresql" else ""
+                sql = f"ALTER TABLE {table_name} ADD COLUMN {if_not_exists}{column.name} {col_type}{default_clause}"
                 try:
                     sync_conn.execute(text(sql))
                     print(f"[DB MIGRATION] Added column '{column.name}' to table '{table_name}'.")
                 except Exception as ex:
                     print(f"[DB MIGRATION WARN] Could not add column '{column.name}' to '{table_name}': {ex}")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Auto-initialize database tables and seed demo user
+
+async def _init_database_task():
     try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            await conn.run_sync(sync_table_columns)
-        print("[OK] Database tables initialized successfully.")
-        
-        async with AsyncSessionLocal() as db:
-            result = await db.execute(select(User).where(User.email == "demo@guionbajo.com"))
-            existing = result.scalars().first()
-            if not existing:
-                demo_user = User(
-                    id=str(uuid.uuid4()),
-                    email="demo@guionbajo.com",
-                    password_hash=get_password_hash("demo1234"),
-                    name="Demo Student",
-                    native_language="es",
-                )
-                db.add(demo_user)
-                await db.flush()
+        async def _do_init():
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                await conn.run_sync(sync_table_columns)
+            print("[OK] Database tables initialized successfully.")
 
-                demo_profile = StudentProfile(
-                    user_id=demo_user.id,
-                    current_level="A1",
-                    current_sublevel="A1.2",
-                    total_xp=150,
-                    streak_days=3,
-                    weak_areas=["past_tense", "pronunciation"],
-                    learning_map=[],
-                    knowledge_map={},
-                    phonetics_mastery={},
-                    minimax_api_key=None,
-                    preferred_voice="es-US-AlonsoNeural",
-                )
-                db.add(demo_profile)
-                await db.commit()
-                print("[OK] Demo user (demo@guionbajo.com) created in database.")
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(select(User).where(User.email == "demo@guionbajo.com"))
+                existing = result.scalars().first()
+                if not existing:
+                    demo_user = User(
+                        id=str(uuid.uuid4()),
+                        email="demo@guionbajo.com",
+                        password_hash=get_password_hash("demo1234"),
+                        name="Demo Student",
+                        native_language="es",
+                        access_status="approved",
+                    )
+                    db.add(demo_user)
+                    await db.flush()
 
-            # Asegurar que megafer1994@gmail.com esté en nivel B2.1 sin alterar su contraseña original
-            fer_res = await db.execute(select(User).where(User.email == "megafer1994@gmail.com"))
-            fer_user = fer_res.scalars().first()
-            if fer_user:
-                prof_res = await db.execute(select(StudentProfile).where(StudentProfile.user_id == fer_user.id))
-                prof = prof_res.scalars().first()
-                if prof:
-                    prof.current_level = "B2"
-                    prof.current_sublevel = "B2.1"
-                    if not prof.total_xp or prof.total_xp < 6800:
-                        prof.total_xp = 6800
-                    if not prof.streak_days or prof.streak_days < 28:
-                        prof.streak_days = 28
-                    k_map = dict(prof.knowledge_map or {})
-                    k_map["current_class_index"] = 1
-                    k_map["active_checkpoint"] = None
-                    prof.knowledge_map = k_map
+                    demo_profile = StudentProfile(
+                        user_id=demo_user.id,
+                        current_level="A1",
+                        current_sublevel="A1.2",
+                        total_xp=150,
+                        streak_days=3,
+                        weak_areas=["past_tense", "pronunciation"],
+                        learning_map=[],
+                        knowledge_map={},
+                        phonetics_mastery={},
+                        minimax_api_key=None,
+                        preferred_voice="es-US-AlonsoNeural",
+                    )
+                    db.add(demo_profile)
                     await db.commit()
-                    print("[OK] megafer1994@gmail.com profile set to B2.1 in database.")
-            else:
-                new_fer = User(
-                    id=str(uuid.uuid4()),
-                    email="megafer1994@gmail.com",
-                    password_hash=get_password_hash("123456"),
-                    name="Fernando",
-                    native_language="es",
-                )
-                db.add(new_fer)
-                await db.flush()
-                new_prof = StudentProfile(
-                    user_id=new_fer.id,
-                    current_level="B2",
-                    current_sublevel="B2.1",
-                    total_xp=6800,
-                    streak_days=28,
-                    knowledge_map={"current_class_index": 1, "active_checkpoint": None},
-                    preferred_voice="es-US-AlonsoNeural",
-                )
-                db.add(new_prof)
-                await db.commit()
-                print("[OK] megafer1994@gmail.com initialized in B2.1 with password 123456.")
-            lau_res = await db.execute(select(User).where(User.email == 'lauvalencia542@gmail.com'))
-            lau_user = lau_res.scalars().first()
-            if lau_user:
-                lau_user.password_hash = get_password_hash('lau12345')
-                await db.commit()
+                    print("[OK] Demo user (demo@guionbajo.com) created in database.")
+
+                fer_res = await db.execute(select(User).where(User.email == "megafer1994@gmail.com"))
+                fer_user = fer_res.scalars().first()
+                if fer_user:
+                    fer_user.access_status = "approved"
+                    prof_res = await db.execute(select(StudentProfile).where(StudentProfile.user_id == fer_user.id))
+                    prof = prof_res.scalars().first()
+                    if prof:
+                        prof.current_level = "B2"
+                        prof.current_sublevel = "B2.1"
+                        if not prof.total_xp or prof.total_xp < 6800:
+                            prof.total_xp = 6800
+                        if not prof.streak_days or prof.streak_days < 28:
+                            prof.streak_days = 28
+                        k_map = dict(prof.knowledge_map or {})
+                        k_map["current_class_index"] = 1
+                        k_map["active_checkpoint"] = None
+                        prof.knowledge_map = k_map
+                        await db.commit()
+                        print("[OK] megafer1994@gmail.com profile set to B2.1 in database.")
+                else:
+                    new_fer = User(
+                        id=str(uuid.uuid4()),
+                        email="megafer1994@gmail.com",
+                        password_hash=get_password_hash("123456"),
+                        name="Fernando",
+                        native_language="es",
+                        access_status="approved",
+                    )
+                    db.add(new_fer)
+                    await db.flush()
+                    new_prof = StudentProfile(
+                        user_id=new_fer.id,
+                        current_level="B2",
+                        current_sublevel="B2.1",
+                        total_xp=6800,
+                        streak_days=28,
+                        knowledge_map={"current_class_index": 1, "active_checkpoint": None},
+                        preferred_voice="es-US-AlonsoNeural",
+                    )
+                    db.add(new_prof)
+                    await db.commit()
+                    print("[OK] megafer1994@gmail.com initialized in B2.1 with password 123456.")
+                lau_res = await db.execute(select(User).where(User.email == 'lauvalencia542@gmail.com'))
+                lau_user = lau_res.scalars().first()
+                if lau_user:
+                    lau_user.password_hash = get_password_hash('lau12345')
+                    lau_user.access_status = "approved"
+                    await db.commit()
+
+        await asyncio.wait_for(_do_init(), timeout=25.0)
     except Exception as e:
         print(f"[WARN] Database initialization notice: {e}")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Launch DB init in background so Uvicorn binds to $PORT immediately on Render
+    init_task = asyncio.create_task(_init_database_task())
     yield
+    if not init_task.done():
+        init_task.cancel()
 
 app = FastAPI(
     title="Guionbajo Cloud - Master Phonetics Engine",
@@ -228,4 +249,5 @@ app.include_router(netflix_companion_router)
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    is_dev = os.environ.get("RENDER") is None and "PORT" not in os.environ
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=is_dev)

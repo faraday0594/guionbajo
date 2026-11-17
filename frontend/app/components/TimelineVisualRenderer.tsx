@@ -779,10 +779,10 @@ export default function TimelineVisualRenderer({
                               >
                                 <div className="text-xs space-y-0.5">
                                   <div className="font-mono font-bold text-white flex items-center gap-1.5">
-                                    <span>{pair.word1}</span>
+                                    <span><TranslatableText text={pair.word1} /></span>
                                     <span className="text-[10px] text-cyan-300 font-normal">{pair.ipa1}</span>
                                     <span className="text-white/40">vs</span>
-                                    <span>{pair.word2}</span>
+                                    <span><TranslatableText text={pair.word2} /></span>
                                     <span className="text-[10px] text-emerald-300 font-normal">{pair.ipa2}</span>
                                   </div>
                                 </div>
@@ -832,7 +832,7 @@ export default function TimelineVisualRenderer({
                         .map((ct, ctIdx) => (
                         <div key={ctIdx} className="my-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs flex items-center justify-between">
-                            <span className="font-mono font-bold">✅ &quot;{ct.correct}&quot;</span>
+                            <span className="font-mono font-bold">✅ &quot;<TranslatableText text={ct.correct} />&quot;</span>
                             <div className="flex items-center gap-1">
                               {onPlayAudio && (
                                 <button
@@ -856,7 +856,7 @@ export default function TimelineVisualRenderer({
                             </div>
                           </div>
                           <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs flex items-center justify-between">
-                            <span className="font-mono line-through opacity-80">❌ &quot;{ct.incorrect}&quot;</span>
+                            <span className="font-mono line-through opacity-80">❌ &quot;<TranslatableText text={ct.incorrect} />&quot;</span>
                             <span className="text-[9px] uppercase font-bold text-rose-400">Error común</span>
                           </div>
                         </div>
@@ -1005,7 +1005,7 @@ export default function TimelineVisualRenderer({
                                 <span className="text-[9px] font-extrabold uppercase opacity-80">
                                   {pt.role}:
                                 </span>
-                                <strong className="text-white">{pt.text}</strong>
+                                <strong className="text-white"><TranslatableText text={pt.text} /></strong>
                               </div>
                             );
                           })}

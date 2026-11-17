@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Check,
 } from 'lucide-react';
+import TranslatableText from './TranslatableText';
 
 // ─── TYPES & INTERFACES ───────────────────────────────────────────────────────
 
@@ -822,7 +823,7 @@ export default function ExplanationBoard({
                                         isChalk
                                       )}`}
                                     >
-                                      {tok.text}
+                                      <TranslatableText text={tok.text} />
                                     </span>
                                   );
                                 })}
@@ -830,14 +831,14 @@ export default function ExplanationBoard({
                             ) : ex.isTransformation ? (
                               /* Transformation Pair: go (ir) → went (fui / fue) */
                               <div className="flex items-center gap-2 text-xs sm:text-sm">
-                                <span className="text-white/70 font-mono">{ex.fromText}</span>
+                                <span className="text-white/70 font-mono"><TranslatableText text={ex.fromText || ''} /></span>
                                 <ArrowRight size={13} className="text-brand-cyan" />
-                                <span className="font-bold text-brand-cyan font-mono">{ex.toText}</span>
+                                <span className="font-bold text-brand-cyan font-mono"><TranslatableText text={ex.toText || ''} /></span>
                               </div>
                             ) : (
                               /* Standard English Phrase */
                               <p className={`font-bold text-white text-xs sm:text-sm tracking-wide ${isChalk ? 'font-chalk text-sm sm:text-base' : ''}`}>
-                                {ex.english}
+                                <TranslatableText text={ex.english} />
                               </p>
                             )}
 
@@ -880,7 +881,7 @@ export default function ExplanationBoard({
                         <div>
                           <span className="text-[10px] uppercase font-bold text-rose-300 block">Incorrecto</span>
                           <span className="text-xs sm:text-sm text-white/80 line-through decoration-rose-400/80 font-mono">
-                            {duel.incorrect}
+                            <TranslatableText text={duel.incorrect} />
                           </span>
                         </div>
                       </div>
@@ -892,7 +893,7 @@ export default function ExplanationBoard({
                           <div>
                             <span className="text-[10px] uppercase font-bold text-emerald-300 block">Correcto</span>
                             <span className="text-xs sm:text-sm text-emerald-200 font-bold font-mono">
-                              {duel.correct}
+                              <TranslatableText text={duel.correct} />
                             </span>
                           </div>
                         </div>

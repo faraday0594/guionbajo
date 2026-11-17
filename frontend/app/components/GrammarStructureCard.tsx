@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Lightbulb, Volume2, Sparkles, HelpCircle, CheckCircle2 } from 'lucide-react';
+import TranslatableText from './TranslatableText';
 
 export interface GrammarToken {
   role?: string;
@@ -306,7 +307,7 @@ export default function GrammarStructureCard({
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <span className="text-xs sm:text-sm font-bold font-mono text-white">
-                      &quot;{ex.english}&quot;
+                      &quot;<TranslatableText text={ex.english} />&quot;
                     </span>
                     {onPlayAudio && (
                       <button
@@ -339,7 +340,7 @@ export default function GrammarStructureCard({
                           <span className="text-[9px] font-extrabold uppercase opacity-80">
                             {p.role}:
                           </span>
-                          <strong className="text-white">{p.text}</strong>
+                          <strong className="text-white"><TranslatableText text={p.text} /></strong>
                         </div>
                       );
                     })}

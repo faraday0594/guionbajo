@@ -505,19 +505,24 @@ def lookup_local_dictionary(word: str) -> Optional[str]:
     # Posesivo 's
     if w.endswith("'s") and len(w) > 2:
         stem = w[:-2]
-        if stem in BASE_DICTIONARY:
-            return f"de {BASE_DICTIONARY[stem]}"
+        hit = lookup_local_dictionary(stem)
+        if hit:
+            return f"de {hit.split(' / ')[0]}"
 
     # Plurales / 3ra persona singular
     if w.endswith("ies") and len(w) > 4:
         cand = w[:-3] + "y"
         if cand in BASE_DICTIONARY:
             return BASE_DICTIONARY[cand]
+    if w.endswith("ves") and len(w) > 4:
+        for cand in (w[:-3] + "f", w[:-3] + "fe"):
+            if cand in BASE_DICTIONARY:
+                return BASE_DICTIONARY[cand]
     if w.endswith("es") and len(w) > 3:
-        cand = w[:-2]
-        if cand in BASE_DICTIONARY:
-            return BASE_DICTIONARY[cand]
-    if w.endswith("s") and len(w) > 2:
+        for cand in (w[:-2], w[:-1]):
+            if cand in BASE_DICTIONARY:
+                return BASE_DICTIONARY[cand]
+    if w.endswith("s") and not w.endswith("ss") and len(w) > 2:
         cand = w[:-1]
         if cand in BASE_DICTIONARY:
             return BASE_DICTIONARY[cand]
@@ -528,31 +533,66 @@ def lookup_local_dictionary(word: str) -> Optional[str]:
         if cand in BASE_DICTIONARY:
             return f"{BASE_DICTIONARY[cand]} (pasado)"
     if w.endswith("ed") and len(w) > 3:
-        for cand in (w[:-2], w[:-1]):
-            if cand in BASE_DICTIONARY:
+        stem2 = w[:-2]
+        stem1 = w[:-1]
+        stem_double = stem2[:-1] if len(stem2) >= 3 and stem2[-1] == stem2[-2] else ""
+        for cand in (stem2, stem1, stem_double):
+            if cand and cand in BASE_DICTIONARY:
                 return f"{BASE_DICTIONARY[cand]} (pasado)"
 
     # Gerundio -ing
+    if w.endswith("ying") and len(w) > 5:
+        cand = w[:-4] + "ie"
+        if cand in BASE_DICTIONARY:
+            return f"{BASE_DICTIONARY[cand]} (-ando/-iendo)"
     if w.endswith("ing") and len(w) > 4:
-        for cand in (w[:-3], w[:-3] + "e"):
-            if cand in BASE_DICTIONARY:
+        stem = w[:-3]
+        stem_e = stem + "e"
+        stem_double = stem[:-1] if len(stem) >= 3 and stem[-1] == stem[-2] else ""
+        for cand in (stem, stem_e, stem_double):
+            if cand and cand in BASE_DICTIONARY:
                 return f"{BASE_DICTIONARY[cand]} (-ando/-iendo)"
 
-    # Adverbios -ly
-    if w.endswith("ly") and len(w) > 3:
-        cand = w[:-2]
+    # Adverbios -ily / -ly
+    if w.endswith("ily") and len(w) > 4:
+        cand = w[:-3] + "y"
         if cand in BASE_DICTIONARY:
             return f"{BASE_DICTIONARY[cand]} (-mente)"
+    if w.endswith("ly") and len(w) > 3:
+        for cand in (w[:-2], w[:-2] + "e", w[:-1] + "e"):
+            if cand in BASE_DICTIONARY:
+                return f"{BASE_DICTIONARY[cand]} (-mente)"
 
     # Comparativos / superlativos
+    if w.endswith("ier") and len(w) > 4:
+        cand = w[:-3] + "y"
+        if cand in BASE_DICTIONARY:
+            return f"más {BASE_DICTIONARY[cand]}"
+    if w.endswith("iest") and len(w) > 5:
+        cand = w[:-4] + "y"
+        if cand in BASE_DICTIONARY:
+            return f"el más {BASE_DICTIONARY[cand]}"
     if w.endswith("er") and len(w) > 3:
-        for cand in (w[:-2], w[:-1]):
-            if cand in BASE_DICTIONARY:
+        stem = w[:-2]
+        stem_e = w[:-1]
+        stem_double = stem[:-1] if len(stem) >= 3 and stem[-1] == stem[-2] else ""
+        for cand in (stem, stem_e, stem_double):
+            if cand and cand in BASE_DICTIONARY:
                 return f"más {BASE_DICTIONARY[cand]}"
     if w.endswith("est") and len(w) > 4:
-        for cand in (w[:-3], w[:-2]):
-            if cand in BASE_DICTIONARY:
+        stem = w[:-3]
+        stem_e = w[:-2]
+        stem_double = stem[:-1] if len(stem) >= 3 and stem[-1] == stem[-2] else ""
+        for cand in (stem, stem_e, stem_double):
+            if cand and cand in BASE_DICTIONARY:
                 return f"el más {BASE_DICTIONARY[cand]}"
+
+    # Prefijos comunes (un-, re-, dis-, mis-, non-)
+    for pref, label in (("un", "no / des-"), ("dis", "des- / no "), ("re", "volver a / re-"), ("mis", "mal "), ("non", "no ")):
+        if w.startswith(pref) and len(w) > len(pref) + 3:
+            rest = lookup_local_dictionary(w[len(pref):])
+            if rest:
+                return f"{label}{rest.split(' / ')[0]}"
 
     return None
 
@@ -562,7 +602,7 @@ async def translate_word_free(word: str, sentence: str = "") -> str:
     Traduce una palabra al español con 0 tokens de IA:
     1. Caché en memoria
     2. Diccionario local + reglas morfológicas
-    3. Respaldo gratuito sin API key (Google Translate gtx) para palabras raras
+    3. Respaldo gratuito sin API key (MyMemory) para palabras raras
     """
     clean_word = re.sub(r"^[^a-zA-Z']+|[^a-zA-Z']+$", "", (word or "").strip())
     if not clean_word:
@@ -589,7 +629,7 @@ async def translate_word_free(word: str, sentence: str = "") -> str:
                 translated = (
                     (data.get("responseData") or {}).get("translatedText") or ""
                 ).strip()
-                if translated and translated.lower() != lower_w:
+                if translated:
                     _TRANSLATION_CACHE[lower_w] = translated
                     return translated
     except Exception as e:

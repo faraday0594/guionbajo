@@ -16,6 +16,8 @@ import {
   Sliders,
 } from 'lucide-react';
 import { playTutorVoice, stopTutorVoice } from '@/lib/api';
+import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
+import { getCurrentUpgradeStage } from '@/lib/guionbajoUpgrades';
 
 export interface CardItem {
   uid: string;
@@ -53,6 +55,7 @@ interface TwinCardsGameProps {
     pairs: TwinCardPairData[];
   }) => void;
   onSwitchGame?: () => void;
+  onTutorSpeechChange?: (speaking: boolean, message?: string) => void;
 }
 
 type DifficultyLevel = 'easy' | 'medium' | 'hard';
@@ -69,6 +72,7 @@ export default function TwinCardsGame({
   sublevel,
   onFinishGame,
   onSwitchGame,
+  onTutorSpeechChange,
 }: TwinCardsGameProps) {
   const [cards, setCards] = useState<CardItem[]>([]);
   const [flippedCardIndices, setFlippedCardIndices] = useState<number[]>([]);
@@ -273,6 +277,7 @@ export default function TwinCardsGame({
     }
     setTutorMessage(msg);
     setIsSpeaking(true);
+    onTutorSpeechChange?.(true, msg);
     isVoiceActiveRef.current = true;
     pauseQuestionTimer();
     try {
@@ -281,6 +286,7 @@ export default function TwinCardsGame({
       console.warn('Voice playback error:', e);
     } finally {
       setIsSpeaking(false);
+      onTutorSpeechChange?.(false, msg);
       isVoiceActiveRef.current = false;
     }
   };
@@ -756,8 +762,16 @@ export default function TwinCardsGame({
                 : 'bg-brand-surface/60 border-white/10 text-brand-text-muted opacity-70'
             }`}
           >
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-              <Bot size={15} className="text-purple-400" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-purple-500/15 flex items-center justify-center flex-shrink-0 overflow-visible">
+              <div className="scale-75 origin-center">
+                <TutorAvatar
+                  size="toolbar"
+                  headOnly={true}
+                  state={isSpeaking ? 'speaking' : currentTurn === 'ai' ? 'thinking' : 'idle'}
+                  text={tutorMessage}
+                  upgradeStage={getCurrentUpgradeStage(sublevel)}
+                />
+              </div>
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[9px] sm:text-[10px] uppercase font-bold text-purple-300 truncate">

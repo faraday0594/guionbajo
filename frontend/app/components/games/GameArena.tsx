@@ -38,6 +38,8 @@ interface GameArenaProps {
   onGameScoreUpdate?: (gameType: 'mystery_word' | 'twin_cards' | 'pov_quest', score: number) => void;
   onFinishClass?: () => void;
   onFinishAndGoToDashboard?: () => Promise<void> | void;
+  onActiveTabChange?: (tab: 'lobby' | 'twin_cards' | 'mystery_word' | 'pov_quest') => void;
+  onTutorSpeechChange?: (speaking: boolean, message?: string) => void;
 }
 
 export default function GameArena({
@@ -51,12 +53,21 @@ export default function GameArena({
   onGameScoreUpdate,
   onFinishClass,
   onFinishAndGoToDashboard,
+  onActiveTabChange,
+  onTutorSpeechChange,
 }: GameArenaProps) {
   const router = useRouter();
   // Starts on the Game Hub Lobby panel so the user chooses their game first
   const [activeTab, setActiveTab] = useState<'lobby' | 'twin_cards' | 'mystery_word' | 'pov_quest'>('lobby');
   const [loading, setLoading] = useState(true);
   const [localPovCompleted, setLocalPovCompleted] = useState(povQuestCompleted);
+
+  useEffect(() => {
+    onActiveTabChange?.(activeTab);
+    if (activeTab !== 'twin_cards') {
+      onTutorSpeechChange?.(false, '');
+    }
+  }, [activeTab, onActiveTabChange, onTutorSpeechChange]);
 
   useEffect(() => {
     if (povQuestCompleted) setLocalPovCompleted(true);
@@ -997,6 +1008,7 @@ export default function GameArena({
             sublevel={sublevel}
             onFinishGame={handleFinishTwinCards}
             onSwitchGame={() => setActiveTab('mystery_word')}
+            onTutorSpeechChange={onTutorSpeechChange}
           />
         )}
 

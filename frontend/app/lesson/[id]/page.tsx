@@ -3590,6 +3590,21 @@ export default function LessonPage() {
 
   // 🎨 Consolidated View Modes: 'board' (Pizarra Interactiva), 'reading' (Práctica de Lectura), or 'games' (Game Arena)
   const [viewMode, setViewMode] = useState<'board' | 'reading' | 'games'>('board');
+  const [activeGameTab, setActiveGameTab] = useState<'lobby' | 'twin_cards' | 'mystery_word' | 'pov_quest'>('lobby');
+  const [gameTutorSpeaking, setGameTutorSpeaking] = useState<boolean>(false);
+  const [gameTutorMessage, setGameTutorMessage] = useState<string>('');
+
+  const handleGameTabChange = useCallback((tab: 'lobby' | 'twin_cards' | 'mystery_word' | 'pov_quest') => {
+    setActiveGameTab(tab);
+    if (tab === 'twin_cards') {
+      setIsGuionbajoDeployed(true);
+    }
+  }, []);
+
+  const handleGameTutorSpeechChange = useCallback((speaking: boolean, msg?: string) => {
+    setGameTutorSpeaking(speaking);
+    if (msg !== undefined) setGameTutorMessage(msg);
+  }, []);
 
   const practiceSlideIdx = useMemo(() => {
     if (!lesson?.phases) return -1;
@@ -6284,29 +6299,32 @@ export default function LessonPage() {
             {/* Guionbajo Tutor State & Hangar Dock */}
             <div
               onClick={() => {
-                if (viewMode === 'board') {
+                if (viewMode === 'board' || (viewMode === 'games' && activeGameTab === 'twin_cards')) {
                   setIsGuionbajoDeployed((v) => !v);
                 }
               }}
               title={
-                viewMode === 'games'
-                  ? 'Hueco del Hangar: Guionbajo bajó al escenario del juego'
+                viewMode === 'games' && activeGameTab === 'mystery_word'
+                  ? 'Hueco del Hangar: Guionbajo bajó al estanque de la Palabra Misteriosa'
                   : viewMode === 'reading'
                   ? 'Guionbajo supervisando tu lectura desde el Hangar'
-                  : isGuionbajoDeployed
+                  : (viewMode === 'board' || (viewMode === 'games' && activeGameTab === 'twin_cards')) && isGuionbajoDeployed
                   ? 'Hueco del Hangar: haz clic para que Guionbajo regrese aquí'
-                  : 'Haz clic para desplegar a Guionbajo 3D volando hacia la pizarra'
+                  : 'Haz clic para desplegar a Guionbajo 3D volando hacia el tablero'
               }
               className={`hidden lg:flex items-center gap-3 px-3.5 py-1 rounded-2xl bg-brand-surface/90 border border-brand-border/80 text-xs shadow-inner h-[76px] overflow-visible flex-shrink-0 transition-colors group ${
-                viewMode === 'board' ? 'hover:border-brand-cyan/50 cursor-pointer' : ''
+                viewMode === 'board' || (viewMode === 'games' && activeGameTab === 'twin_cards')
+                  ? 'hover:border-brand-cyan/50 cursor-pointer'
+                  : ''
               }`}
             >
               <div
                 id="guionbajo-toolbar-dock"
                 className="w-16 h-[72px] flex items-center justify-center relative flex-shrink-0 overflow-visible"
               >
-                {(viewMode === 'board' && isGuionbajoDeployed) || viewMode === 'games' ? (
-                  /* Hueco mecánico vacío dejado por Guionbajo al bajar a la pizarra o al estanque del juego */
+                {((viewMode === 'board' || (viewMode === 'games' && activeGameTab === 'twin_cards')) && isGuionbajoDeployed) ||
+                (viewMode === 'games' && activeGameTab === 'mystery_word') ? (
+                  /* Hueco mecánico vacío dejado por Guionbajo al bajar a la pizarra, a Cartas Parejas o al estanque */
                   <div className="relative w-12 h-14 rounded-xl bg-[#04070e] border border-dashed border-brand-cyan/35 shadow-[inset_0_4px_12px_rgba(0,0,0,0.95)] flex flex-col items-center justify-center overflow-hidden">
                     {/* Silueta hundida de cabeza y torso */}
                     <div className="w-7 h-5 rounded-md bg-slate-900/80 border border-slate-800/90 shadow-inner mb-0.5" />
@@ -6321,8 +6339,8 @@ export default function LessonPage() {
                   </div>
                 ) : (
                   <TutorAvatar
-                    state={tutorState}
-                    text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
+                    state={viewMode === 'games' && activeGameTab === 'twin_cards' ? (gameTutorSpeaking ? 'speaking' : 'idle') : tutorState}
+                    text={viewMode === 'games' && activeGameTab === 'twin_cards' ? gameTutorMessage : (currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || ''))}
                     audioProgress={audioProgress}
                     size="toolbar"
                     headOnly={false}
@@ -6335,7 +6353,7 @@ export default function LessonPage() {
                 <span className="text-white font-bold text-xs tracking-wide">Guionbajo</span>
                 <span className="text-brand-cyan text-[11px] font-semibold flex items-center gap-1.5 whitespace-nowrap">
                   <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse inline-block" />
-                  {tutorState === 'speaking'
+                  {tutorState === 'speaking' || (viewMode === 'games' && activeGameTab === 'twin_cards' && gameTutorSpeaking)
                     ? 'Explicando...'
                     : tutorState === 'thinking'
                     ? 'Pensando...'
@@ -6382,15 +6400,15 @@ export default function LessonPage() {
         </div>
       </header>
 
-      {/* Guionbajo 3D Volador: solo baja en la Pizarra/Quiz (viewMode === 'board'), NO en Lectura ni en Juegos */}
+      {/* Guionbajo 3D Volador: baja en la Pizarra/Quiz (viewMode === 'board') y en Cartas Parejas (twin_cards) */}
       <Guionbajo3DFloatingCompanion
-        state={tutorState}
-        text={currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || '')}
-        audioProgress={audioProgress}
+        state={viewMode === 'games' && activeGameTab === 'twin_cards' ? (gameTutorSpeaking ? 'speaking' : 'idle') : tutorState}
+        text={viewMode === 'games' && activeGameTab === 'twin_cards' ? gameTutorMessage : (currentSpeakingText || (typeof phase?.tutor_says === 'string' ? phase?.tutor_says : phase?.tutor_says?.text || ''))}
+        audioProgress={viewMode === 'games' && activeGameTab === 'twin_cards' ? (gameTutorSpeaking ? 50 : 0) : audioProgress}
         audioElement={currentAudioRef.current}
         upgradeStage={avatarUpgradeStage}
-        phaseKey={currentPhaseIdx}
-        deployed={viewMode === 'board' && isGuionbajoDeployed}
+        phaseKey={`${currentPhaseIdx}-${viewMode}-${activeGameTab}`}
+        deployed={(viewMode === 'board' || (viewMode === 'games' && activeGameTab === 'twin_cards')) && isGuionbajoDeployed}
         onDockChange={setIsGuionbajoDeployed}
       />
 
@@ -6416,6 +6434,8 @@ export default function LessonPage() {
                 mysteryWordCompleted={mysteryWordCompleted}
                 twinCardsCompleted={twinCardsCompleted}
                 povQuestCompleted={povQuestCompleted}
+                onActiveTabChange={handleGameTabChange}
+                onTutorSpeechChange={handleGameTutorSpeechChange}
                 onBackToLesson={() => {
                   setViewMode('board');
                   syncCheckpoint({ mode: 'board' });

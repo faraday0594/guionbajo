@@ -22,8 +22,9 @@ import {
   Maximize2,
   X,
 } from 'lucide-react';
-import { api, playEnglishAudio, stopTutorVoice } from '@/lib/api';
+import { api, playEnglishAudio, preloadEnglishAudio, stopTutorVoice } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import GuionbajoMeditationLoader from './GuionbajoMeditationLoader';
 
 export interface QuestNodeData {
   node_id: string;
@@ -47,9 +48,120 @@ export interface StoryQuestData {
   difficulty_level: string;
   companion_name?: string;
   companion_gender?: 'female' | 'male' | string;
+  companion_age?: 'young' | 'adult' | 'elder' | string;
   companion_voice?: string;
   companion_avatar?: string;
+  character_dna?: string;
   nodes: QuestNodeData[];
+}
+
+// ─── HELPER: Resolve Companion Gender, Age Group, MiniMax Voice & Avatar ──────
+function resolveCompanionProfile(questData?: StoryQuestData): {
+  gender: 'female' | 'male';
+  ageGroup: 'young' | 'adult' | 'elder';
+  voiceId: string;
+  avatar: string;
+} {
+  const nameStr = (questData?.companion_name || 'Emma').trim();
+  const nameLower = nameStr.toLowerCase();
+  const dnaStr = questData?.character_dna || '';
+  const firstPrompt = questData?.nodes?.[0]?.pov_image_prompt || '';
+  const visualContext = `${nameStr} ${dnaStr} ${firstPrompt}`.toLowerCase();
+
+  const femaleNames = new Set([
+    'emma', 'sarah', 'sara', 'sophia', 'sofia', 'olivia', 'emily', 'chloe', 'mia', 'ava',
+    'isabella', 'lily', 'hannah', 'zoe', 'maya', 'elena', 'maria', 'laura', 'anna', 'ana',
+    'alice', 'claire', 'rachel', 'jessica', 'julia', 'grace', 'victoria', 'natalie', 'lucy',
+    'amy', 'katie', 'mei', 'yuki', 'sakura', 'camila', 'valeria', 'diana', 'linda', 'susan',
+    'karen', 'nancy', 'betty', 'helen', 'sandra', 'donna', 'carol', 'ruth', 'sharon', 'michelle',
+    'amanda', 'melissa', 'deborah', 'stephanie', 'rebecca', 'kathleen', 'martha', 'rose',
+  ]);
+  const maleNames = new Set([
+    'lucas', 'liam', 'noah', 'oliver', 'james', 'benjamin', 'elijah', 'william', 'henry',
+    'alexander', 'michael', 'daniel', 'matthew', 'david', 'joseph', 'jack', 'leo', 'ryan',
+    'carlos', 'john', 'davies', 'marcus', 'arthur', 'thomas', 'edward', 'george', 'robert',
+    'richard', 'charles', 'ken', 'hiro', 'mateo', 'diego', 'kevin', 'brian', 'jason', 'jeff',
+    'frank', 'scott', 'eric', 'stephen', 'andrew', 'raymond', 'gregory', 'joshua', 'jerry',
+    'dennis', 'walter', 'patrick', 'peter', 'harold', 'douglas', 'carl', 'harvey', 'paul', 'mark',
+  ]);
+
+  const nameTokens = nameLower.split(/[^a-z]+/).filter(Boolean);
+  const isNameFemale = nameTokens.some((t) => femaleNames.has(t));
+  const isNameMale = nameTokens.some((t) => maleNames.has(t));
+
+  const hasFemaleTitle = /\b(ms\.?|mrs\.?|miss|lady|queen|princess|grandma|grandmother|mother|mom|aunt|sister)\b/.test(visualContext);
+  const hasMaleTitle = /\b(mr\.?|sir|king|prince|grandpa|grandfather|father|dad|uncle|brother)\b/.test(visualContext);
+
+  const femaleVisualHits = (visualContext.match(/\b(1girl|1female|female|woman|girl|lady|waitress|actress|she|her|blouse|skirt|dress|ponytail|bun)\b/g) || []).length;
+  const maleVisualHits = (visualContext.match(/\b(1boy|1male|male|man|boy|gentleman|guy|waiter|actor|he|his|beard|mustache)\b/g) || []).length;
+
+  const rawGender = (questData?.companion_gender || '').toLowerCase().trim();
+  let gender: 'female' | 'male' = 'female';
+
+  if (hasFemaleTitle || (isNameFemale && !isNameMale)) {
+    gender = 'female';
+  } else if (hasMaleTitle || (isNameMale && !isNameFemale)) {
+    gender = 'male';
+  } else if (femaleVisualHits > maleVisualHits) {
+    gender = 'female';
+  } else if (maleVisualHits > femaleVisualHits) {
+    gender = 'male';
+  } else if (rawGender === 'male' || rawGender === 'masculino' || rawGender === 'man' || rawGender === 'boy') {
+    gender = 'male';
+  } else {
+    gender = 'female';
+  }
+
+  // Age group detection ('young' | 'adult' | 'elder')
+  const rawAge = (questData?.companion_age || '').toLowerCase().trim();
+  const ageMatch = visualContext.match(/\b(\d{2})\s*(?:-|\s)?\s*years?(?:-|\s)?old\b/);
+  const numericAge = ageMatch ? parseInt(ageMatch[1], 10) : null;
+
+  let ageGroup: 'young' | 'adult' | 'elder' = 'adult';
+  if (numericAge !== null && !isNaN(numericAge)) {
+    if (numericAge <= 25) ageGroup = 'young';
+    else if (numericAge >= 50) ageGroup = 'elder';
+    else ageGroup = 'adult';
+  } else if (
+    /\b(old|older|elder|elderly|senior|veteran|retired|grandma|grandmother|grandpa|grandfather|granny|gray hair|grey hair|white hair|silver hair|wrinkles)\b/.test(visualContext) ||
+    ['elder', 'old', 'older', 'viejo', 'mayor', 'anciano'].includes(rawAge)
+  ) {
+    ageGroup = 'elder';
+  } else if (
+    /\b(young|youth|teen|teenager|student|classmate|schoolgirl|schoolboy|kid|boy|girl|freshman|college|campus|barista)\b/.test(visualContext) ||
+    ['young', 'joven', 'teen', 'youth'].includes(rawAge)
+  ) {
+    ageGroup = 'young';
+  } else {
+    ageGroup = 'adult';
+  }
+
+  const voiceId = `minimax-${gender}-${ageGroup}`;
+
+  const rawAvatar = questData?.companion_avatar || '';
+  const hasWrongAvatarGender =
+    (gender === 'female' && rawAvatar.includes('👨')) ||
+    (gender === 'male' && rawAvatar.includes('👩'));
+
+  const defaultAvatar =
+    gender === 'female'
+      ? ageGroup === 'elder'
+        ? '👵'
+        : ageGroup === 'young'
+        ? '👩‍🎓'
+        : '👩‍💼'
+      : ageGroup === 'elder'
+      ? '👴'
+      : ageGroup === 'young'
+      ? '🧑‍🎓'
+      : '👨‍💼';
+
+  return {
+    gender,
+    ageGroup,
+    voiceId,
+    avatar: !rawAvatar || hasWrongAvatarGender ? defaultAvatar : rawAvatar,
+  };
 }
 
 interface POVQuestGameProps {
@@ -101,27 +213,40 @@ function preloadImageBitmap(url: string, timeoutMs = 15000): Promise<boolean> {
   });
 }
 
-// ─── HELPER: Generate Node Image Exclusively with MiniMax image-01 ──────────────
+// ─── HELPER: Generate Node Image with Gender & Prompt Consistency ──────────────
 async function generateNodeImageWithMiniMax(
   node: QuestNodeData,
   companionName = 'Emma',
-  index = 0
+  index = 0,
+  gender: 'female' | 'male' = 'female'
 ): Promise<string> {
   if (node.image_url) {
     await preloadImageBitmap(node.image_url, 6000);
     return node.image_url;
   }
 
+  let prompt = node.pov_image_prompt || '';
+  if (gender === 'female') {
+    prompt = prompt.replace(
+      /\b(1boy|1male|single male|male character|young man|old man|handsome man|gentleman)\b/gi,
+      '1girl, single female character'
+    );
+  } else {
+    prompt = prompt.replace(
+      /\b(1girl|1female|single female|female character|young woman|old woman|beautiful woman|lady)\b/gi,
+      '1boy, single male character'
+    );
+  }
+
   try {
-    const res: any = await api.generateImage(node.pov_image_prompt, '16:9');
+    const res: any = await api.generateImage(prompt, '16:9');
     if (res && (res.url || res.image_url)) {
       const finalUrl = (res.url || res.image_url) as string;
       await preloadImageBitmap(finalUrl, 10000);
       return finalUrl;
     }
-    console.warn(`MiniMax image-01 returned no URL for scene ${index}:`, res);
   } catch (err) {
-    console.warn(`MiniMax image-01 generation error for scene ${index}:`, err);
+    console.warn(`Scene ${index} image generation error:`, err);
   }
 
   return '';
@@ -178,6 +303,14 @@ export default function POVQuestGame({
   const currentNode = nodes[currentNodeIndex] || nodes[0];
   const isFinalNode = currentNodeIndex === nodes.length - 1;
 
+  // Resolve companion gender, age group, MiniMax voice, and avatar
+  const companionProfile = React.useMemo(
+    () => resolveCompanionProfile(questData),
+    [questData]
+  );
+  const resolvedCompanionVoice = companionProfile.voiceId;
+  const resolvedCompanionAvatar = companionProfile.avatar;
+
   // ─── Initialize Session ─────────────────────────────────────────────────────
   useEffect(() => {
     async function initSession() {
@@ -195,13 +328,18 @@ export default function POVQuestGame({
     }
   }, [questData, topic, sublevel]);
 
-  // ─── Current Scene Image Loader & Scene Readiness Gating ─────────────────────
+  // ─── Current Scene Image + MiniMax Voice Loader & Scene Readiness Gating ────
   useEffect(() => {
     if (!currentNode) return;
     let isCancelled = false;
 
     async function prepareCurrentScene() {
-      // If already cached, mark ready immediately
+      // Pre-synthesize the MiniMax voice in parallel while the scene prepares
+      if (currentNode.companion_dialogue) {
+        preloadEnglishAudio(currentNode.companion_dialogue, resolvedCompanionVoice).catch(() => {});
+      }
+
+      // If image already cached, mark ready immediately
       if (imageCache[currentNode.node_id]) {
         setIsSceneReady(true);
         return;
@@ -211,11 +349,17 @@ export default function POVQuestGame({
       setImageLoading((prev) => ({ ...prev, [currentNode.node_id]: true }));
 
       try {
-        const url = await generateNodeImageWithMiniMax(
-          currentNode,
-          questData.companion_name || 'Emma',
-          currentNodeIndex
-        );
+        const [url] = await Promise.all([
+          generateNodeImageWithMiniMax(
+            currentNode,
+            questData.companion_name || 'Emma',
+            currentNodeIndex,
+            companionProfile.gender
+          ),
+          currentNode.companion_dialogue
+            ? preloadEnglishAudio(currentNode.companion_dialogue, resolvedCompanionVoice).catch(() => null)
+            : Promise.resolve(null),
+        ]);
 
         if (!isCancelled && url) {
           setImageCache((prev) => ({ ...prev, [currentNode.node_id]: url }));
@@ -225,9 +369,8 @@ export default function POVQuestGame({
           setIsSceneReady(true);
         }
       } catch (e) {
-        console.warn('Error preparing scene image:', e);
+        console.warn('Error preparing scene:', e);
         if (!isCancelled) {
-          // If error occurs, still allow scene to open so user isn't permanently stuck
           setIsSceneReady(true);
         }
       } finally {
@@ -241,20 +384,25 @@ export default function POVQuestGame({
     return () => {
       isCancelled = true;
     };
-  }, [currentNodeIndex, currentNode?.node_id]);
+  }, [currentNodeIndex, currentNode?.node_id, resolvedCompanionVoice, companionProfile.gender]);
 
   // ─── Background Sequential Pre-generation for Remaining Scenes ───────────────
-  // Pre-generates images with MiniMax for scenes 1, 2, ... N-1 while the student plays scene 0
   useEffect(() => {
     if (!nodes || nodes.length <= 1) return;
     let isCancelled = false;
 
     async function preheatRemainingScenes() {
-      // Loop through all nodes starting from 1 to N-1
       for (let i = 1; i < nodes.length; i++) {
         if (isCancelled) break;
         const n = nodes[i];
-        if (!n || imageCache[n.node_id] || backgroundPreloadedRef.current.has(n.node_id)) {
+        if (!n) continue;
+
+        // Preload MiniMax voice for upcoming scenes
+        if (n.companion_dialogue) {
+          preloadEnglishAudio(n.companion_dialogue, resolvedCompanionVoice).catch(() => {});
+        }
+
+        if (imageCache[n.node_id] || backgroundPreloadedRef.current.has(n.node_id)) {
           continue;
         }
 
@@ -264,18 +412,18 @@ export default function POVQuestGame({
           const url = await generateNodeImageWithMiniMax(
             n,
             questData.companion_name || 'Emma',
-            i
+            i,
+            companionProfile.gender
           );
           if (!isCancelled && url) {
             setImageCache((prev) => ({ ...prev, [n.node_id]: url }));
           }
         } catch (e) {
-          console.warn(`Error pre-generating scene ${i} with MiniMax:`, e);
+          console.warn(`Error pre-generating scene ${i}:`, e);
         }
       }
     }
 
-    // Small delay to prioritize the current scene first
     const timer = setTimeout(() => {
       preheatRemainingScenes();
     }, 1200);
@@ -284,23 +432,34 @@ export default function POVQuestGame({
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [nodes, questData?.companion_name]);
+  }, [nodes, questData?.companion_name, resolvedCompanionVoice, companionProfile.gender]);
 
-  const isMaleCompanion =
-    questData?.companion_gender === 'male' ||
-    ['lucas', 'alex', 'davies', 'john', 'carlos'].some((n) =>
-      (questData?.companion_name || '').toLowerCase().includes(n)
-    );
-  const resolvedCompanionVoice =
-    questData?.companion_voice || (isMaleCompanion ? 'en-US-RogerNeural' : 'en-US-JennyNeural');
-
-  // ─── Companion Audio Speech Motor ───────────────────────────────────────────
+  // ─── Companion Audio Speech Motor (MiniMax Priority) ────────────────────────
   const playDialogueAudio = useCallback(
     async (text: string) => {
       if (!text) return;
       try {
         setIsPlayingDialogue(true);
-        await playEnglishAudio(text, resolvedCompanionVoice);
+        // Pass instantSpeechFallback = false so MiniMax HD voice is ALWAYS prioritized
+        const audioEl = await playEnglishAudio(text, resolvedCompanionVoice, false);
+        if (audioEl && typeof (audioEl as HTMLAudioElement).addEventListener === 'function') {
+          await new Promise<void>((resolve) => {
+            const el = audioEl as HTMLAudioElement;
+            if (el.ended || el.paused) {
+              resolve();
+              return;
+            }
+            const onDone = () => {
+              el.removeEventListener('ended', onDone);
+              el.removeEventListener('pause', onDone);
+              el.removeEventListener('error', onDone);
+              resolve();
+            };
+            el.addEventListener('ended', onDone);
+            el.addEventListener('pause', onDone);
+            el.addEventListener('error', onDone);
+          });
+        }
       } catch (e) {
         console.warn('Dialogue audio error:', e);
       } finally {
@@ -530,7 +689,7 @@ export default function POVQuestGame({
       {/* ── 1. Top Status Bar ── */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 bg-zinc-950/80 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <span className="text-2xl sm:text-3xl">{questData.companion_avatar || '👩'}</span>
+          <span className="text-2xl sm:text-3xl">{resolvedCompanionAvatar}</span>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm sm:text-base font-extrabold text-white">
@@ -594,29 +753,10 @@ export default function POVQuestGame({
               className="w-full h-full object-cover object-center"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-zinc-950 via-purple-950/40 to-black relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand-accent/20 via-transparent to-transparent animate-pulse" />
-              <div className="relative z-10 flex flex-col items-center max-w-md">
-                <div className="relative mb-3">
-                  <div className="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center animate-pulse">
-                    <Sparkles size={26} className="text-purple-300 animate-spin" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-brand-cyan text-black font-extrabold text-[9px] uppercase tracking-wider shadow">
-                    MiniMax AI
-                  </div>
-                </div>
-                <h4 className="text-sm sm:text-base font-extrabold text-white tracking-wide">
-                  Generando Escena con MiniMax image-01...
-                </h4>
-                <p className="text-xs text-purple-200/80 mt-1 max-w-sm">
-                  Pintando el entorno interactivo en primera persona (POV) con <strong className="text-white">{questData.companion_name || 'Emma'}</strong>.
-                </p>
-                <div className="flex items-center gap-2 mt-4 px-3 py-1.5 rounded-full bg-black/70 border border-white/10 text-[11px] text-zinc-300">
-                  <Loader2 size={12} className="animate-spin text-brand-cyan" />
-                  <span>Esperando creación de la foto para iniciar la escena...</span>
-                </div>
-              </div>
-            </div>
+            <GuionbajoMeditationLoader
+              title="Guionbajo está fabricando la escena..."
+              companionName={questData.companion_name || 'Emma'}
+            />
           )}
 
           {/* Subtle cinematic gradient only at top/bottom edges for HUD readability */}
@@ -715,7 +855,7 @@ export default function POVQuestGame({
         <div className="flex items-center justify-between border-b border-white/10 pb-2">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-brand-cyan/20 border border-brand-cyan/40 flex items-center justify-center text-base">
-              {questData.companion_avatar || '👩'}
+              {resolvedCompanionAvatar}
             </div>
             <div>
               <span className="font-extrabold text-sm text-brand-cyan tracking-wide block">
@@ -723,7 +863,7 @@ export default function POVQuestGame({
               </span>
               <span className="text-[10px] text-zinc-400">
                 {!isSceneReady
-                  ? 'Esperando foto de la escena...'
+                  ? 'Preparando escenario...'
                   : isPlayingDialogue
                   ? 'Hablando en inglés...'
                   : 'Esperando tu respuesta'}
@@ -755,7 +895,7 @@ export default function POVQuestGame({
         ) : (
           <div className="flex items-center gap-2 text-zinc-400 text-sm italic py-1">
             <Loader2 size={14} className="animate-spin text-brand-cyan" />
-            <span>{questData.companion_name || 'Emma'} está entrando en escena (esperando foto de MiniMax AI)...</span>
+            <span>{questData.companion_name || 'Emma'} está entrando en escena...</span>
           </div>
         )}
       </div>

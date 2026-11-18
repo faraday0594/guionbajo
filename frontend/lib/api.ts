@@ -1460,7 +1460,35 @@ export async function playEnglishAudio(
   const isExplicitMale = savedVoice.includes('male') || savedVoice.includes('jorge') || savedVoice.includes('alvaro') || savedVoice.includes('alonso') || savedVoice.includes('roger') || savedVoice.includes('guy') || savedVoice.includes('qingse') || savedVoice.includes('jingying') || savedVoice.includes('daxuesheng');
   const defaultVoice = isExplicitMale ? 'en-US-RogerNeural' : 'en-US-JennyNeural';
   const targetVoice = preferredVoice || defaultVoice;
-  const isFemale = !targetVoice.includes('Roger') && !targetVoice.includes('Guy') && !targetVoice.includes('male') && !isExplicitMale;
+  const tvLower = targetVoice.toLowerCase();
+  const isTargetExplicitFemale =
+    tvLower.includes('female') ||
+    tvLower.includes('jenny') ||
+    tvLower.includes('shaonv') ||
+    tvLower.includes('tianmei') ||
+    tvLower.includes('yujie') ||
+    tvLower.includes('chengshu') ||
+    tvLower.includes('dalia') ||
+    tvLower.includes('elvira') ||
+    tvLower.includes('paloma') ||
+    tvLower.includes('aria') ||
+    tvLower.includes('sonia');
+  const isTargetExplicitMale =
+    !isTargetExplicitFemale &&
+    (tvLower.includes('male') ||
+      tvLower.includes('roger') ||
+      tvLower.includes('guy') ||
+      tvLower.includes('qingse') ||
+      tvLower.includes('jingying') ||
+      tvLower.includes('daxuesheng') ||
+      tvLower.includes('jorge') ||
+      tvLower.includes('alvaro') ||
+      tvLower.includes('alonso'));
+  const isFemale = isTargetExplicitFemale
+    ? true
+    : isTargetExplicitMale
+    ? false
+    : !isExplicitMale;
   const cacheKey = `${targetVoice}:${speechText.toLowerCase()}`;
 
   const isWord = speechText.trim().split(/\s+/).length <= 2;

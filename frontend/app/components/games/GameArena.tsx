@@ -22,6 +22,7 @@ import MysteryWordGame, { MysteryWordData } from './MysteryWordGame';
 import TwinCardsGame, { TwinCardPairData } from './TwinCardsGame';
 import POVQuestGame, { StoryQuestData } from './POVQuestGame';
 import GameReviewModal from './GameReviewModal';
+import GuionbajoMeditationLoader from './GuionbajoMeditationLoader';
 import { api, playTutorVoice, stopTutorVoice } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
@@ -328,8 +329,9 @@ export default function GameArena({
       difficulty_level: sublevel || 'A1',
       companion_name: 'Emma',
       companion_gender: 'female',
-      companion_voice: 'en-US-JennyNeural',
-      companion_avatar: '👩‍🦱',
+      companion_age: 'young',
+      companion_voice: 'minimax-female-young',
+      companion_avatar: '👩‍🎓',
       nodes: [
         {
           node_id: 'step_1_invitation',
@@ -591,17 +593,11 @@ export default function GameArena({
 
   if (loading) {
     return (
-      <div className="min-h-[500px] flex flex-col items-center justify-center p-8 text-center text-white">
-        <div className="relative mb-6">
-          <div className="w-16 h-16 rounded-full bg-brand-accent/20 border-2 border-brand-accent flex items-center justify-center animate-ping absolute inset-0" />
-          <div className="w-16 h-16 rounded-full bg-brand-surface border-2 border-brand-cyan flex items-center justify-center relative z-10 shadow-xl shadow-brand-cyan/20">
-            <Gamepad2 className="w-8 h-8 text-brand-cyan animate-pulse" />
-          </div>
-        </div>
-        <h3 className="text-xl font-outfit font-extrabold mb-2">Preparando Zona de Juegos Didácticos...</h3>
-        <p className="text-xs text-brand-text-secondary max-w-sm">
-          Adaptando cartas, palabras misteriosas y misiones conversacionales para <strong className="text-brand-cyan">{topic}</strong> ({sublevel}).
-        </p>
+      <div className="min-h-[480px] w-full rounded-3xl overflow-hidden border border-white/15 shadow-2xl">
+        <GuionbajoMeditationLoader
+          title="Guionbajo está fabricando tu Zona de Juegos..."
+          subtitle={`Diseñando la misión conversacional, las cartas gemelas y la palabra misteriosa para ${topic} (${sublevel}).`}
+        />
       </div>
     );
   }

@@ -26,7 +26,8 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "setting_type": "journey_walk",
             "companion_name": "Emma",
             "companion_gender": "female",
-            "companion_voice": "en-US-JennyNeural",
+            "companion_age": "young",
+            "companion_voice": "minimax-female-young",
             "companion_avatar": "👩‍🦱",
             "character_dna": "Emma, 20-year-old female student with wavy chestnut brown hair, warm hazel eyes, wearing a denim jacket over a white t-shirt",
             "nodes": [
@@ -79,7 +80,8 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "setting_type": "static_location",
             "companion_name": "Lucas",
             "companion_gender": "male",
-            "companion_voice": "en-US-RogerNeural",
+            "companion_age": "young",
+            "companion_voice": "minimax-male-young",
             "companion_avatar": "🧑‍🦰",
             "character_dna": "Lucas, friendly 22-year-old male barista with short auburn hair, hazel eyes, wearing a brown canvas barista apron over a beige sweater",
             "environment_anchor": "inside the exact same cozy cafe by a sunlit arched window with a warm polished wooden table and hanging green plants, warm golden afternoon lighting",
@@ -122,7 +124,8 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "setting_type": "journey_walk",
             "companion_name": "Officer Davies",
             "companion_gender": "male",
-            "companion_voice": "en-US-RogerNeural",
+            "companion_age": "adult",
+            "companion_voice": "minimax-male-adult",
             "companion_avatar": "👮‍♂️",
             "character_dna": "Officer Davies, 35-year-old polite airport staff officer with short dark hair, wearing a crisp navy blue airport uniform with a silver badge",
             "nodes": [
@@ -177,7 +180,8 @@ FALLBACK_QUESTS_BANK: Dict[str, List[Dict[str, Any]]] = {
             "setting_type": "static_location",
             "companion_name": "Ms. Carter",
             "companion_gender": "female",
-            "companion_voice": "en-US-JennyNeural",
+            "companion_age": "adult",
+            "companion_voice": "minimax-female-adult",
             "companion_avatar": "👩‍💼",
             "character_dna": "Ms. Carter, 32-year-old elegant executive with sleek dark brown hair in a neat low bun, wearing a tailored navy blazer over an ivory silk blouse",
             "environment_anchor": "inside the exact same executive glass conference room across a polished reflective desk, panoramic city skyline view outside large floor-to-ceiling windows, bright sunny daylight",
@@ -325,14 +329,15 @@ JSON SCHEMA:
   "setting_type": "static_location",
   "companion_name": "Emma",
   "companion_gender": "female",
-  "companion_voice": "en-US-JennyNeural",
+  "companion_age": "young",
+  "companion_voice": "minimax-female-young",
   "companion_avatar": "👩‍🦱",
   "character_dna": "Emma, 20-year-old female student with wavy chestnut brown hair, warm hazel eyes, wearing a denim jacket over a white shirt",
   "environment_anchor": "inside the exact same cozy cafe booth by a sunny arched window with a warm wooden table and green plants, bright daylight",
   "nodes": [
     {{
       "node_id": "step_1_invitation",
-      "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai vibrant aesthetic, solo, 1girl, single female character only, Emma (20-year-old female student with wavy chestnut brown hair, warm hazel eyes, wearing a denim jacket over a white shirt) sitting across the wooden table facing camera with direct friendly eye contact, smiling and making an inviting hand gesture, inside the exact same cozy cafe booth by a sunny arched window with a warm wooden table and green plants, bright daylight, clean 2D anime digital illustration, strictly 2D anime drawing, single person only, no second person, no couple, no photorealism, 16:9, no text, no words",
+      "pov_image_prompt": "Masterpiece 2D Japanese anime visual novel game CG, Makoto Shinkai vibrant aesthetic, solo, 1girl, single female character only, Emma (20-year-old female student with wavy chestnut brown hair, warm hazel eyes, wearing a denim jacket over a white shirt) sitting across the wooden table facing camera with direct friendly eye contact, smiling and making an inviting hand gesture, inside the exact same cozy cafe booth by a sunny arched window with a warm wooden table and green plants, bright daylight, clean 2D anime digital illustration, strictly 2D anime drawing, single person only, no second person, no couple, no photorealism, 16:9",
       "companion_dialogue": "...",
       "pedagogical_goal": "...",
       "hint": "...",
@@ -364,28 +369,107 @@ JSON SCHEMA:
                 logger.warning("LLM returned incomplete quest nodes. Falling back.")
                 return self.get_fallback_quest(topic, sublevel)
 
-            # Ensure gender and voice are properly resolved
-            comp_gender = str(data.get("companion_gender", "female")).lower()
-            if comp_gender not in ("female", "male"):
-                comp_gender = "male" if any(m in str(data.get("companion_name", "")).lower() for m in ("lucas", "alex", "john", "michael", "davies", "carlos", "david")) else "female"
+            # ─── Strict Gender + Age + MiniMax Voice Synchronization ─────────────────
+            name_str = str(data.get("companion_name", "")).strip()
+            name_lower = name_str.lower()
+            dna_str = str(data.get("character_dna", ""))
+            first_prompt = str(data["nodes"][0].get("pov_image_prompt", "")) if data.get("nodes") else ""
+            visual_context = f"{name_str} {dna_str} {first_prompt}".lower()
+
+            female_names = {
+                "emma", "sarah", "sara", "sophia", "sofia", "olivia", "emily", "chloe", "mia", "ava",
+                "isabella", "lily", "hannah", "zoe", "maya", "elena", "maria", "laura", "anna", "ana",
+                "alice", "claire", "rachel", "jessica", "julia", "grace", "victoria", "natalie", "lucy",
+                "amy", "katie", "mei", "yuki", "sakura", "camila", "valeria", "diana", "linda", "susan",
+                "karen", "nancy", "betty", "helen", "sandra", "donna", "carol", "ruth", "sharon", "michelle",
+                "amanda", "melissa", "deborah", "stephanie", "rebecca", "Cynth", "kathleen", "martha", "rose"
+            }
+            male_names = {
+                "lucas", "liam", "noah", "oliver", "james", "benjamin", "elijah", "william", "henry",
+                "alexander", "michael", "daniel", "matthew", "david", "joseph", "jack", "leo", "ryan",
+                "carlos", "john", "davies", "marcus", "arthur", "thomas", "edward", "george", "robert",
+                "richard", "charles", "ken", "hiro", "mateo", "diego", "kevin", "brian", "jason", "jeff",
+                "frank", "scott", "eric", "STEPHEN", "andrew", "raymond", "gregory", "joshua", "jerry",
+                "dennis", "walter", "patrick", "peter", "harold", "douglas", "carl", "harvey", "paul", "mark"
+            }
+
+            name_tokens = set(re.findall(r"[a-z]+", name_lower))
+            has_female_title = bool(re.search(r"\b(ms\.?|mrs\.?|miss|lady|queen|princess|grandma|grandmother|mother|mom|aunt|sister)\b", visual_context))
+            has_male_title = bool(re.search(r"\b(mr\.?|sir|king|prince|grandpa|grandfather|father|dad|uncle|brother)\b", visual_context))
+
+            female_visual_hits = len(re.findall(r"\b(1girl|1female|female|woman|girl|lady|waitress|actress|she|her|blouse|skirt|dress|ponytail|bun)\b", visual_context))
+            male_visual_hits = len(re.findall(r"\b(1boy|1male|male|man|boy|gentleman|guy|waiter|actor|he|his|beard|mustache|baritone)\b", visual_context))
+
+            raw_gender = str(data.get("companion_gender", "")).lower().strip()
+
+            if has_female_title or (name_tokens & female_names and not (name_tokens & male_names)):
+                comp_gender = "female"
+            elif has_male_title or (name_tokens & male_names and not (name_tokens & female_names)):
+                comp_gender = "male"
+            elif female_visual_hits > male_visual_hits:
+                comp_gender = "female"
+            elif male_visual_hits > female_visual_hits:
+                comp_gender = "male"
+            elif raw_gender in ("female", "male", "femenino", "masculino", "woman", "man", "girl", "boy"):
+                comp_gender = "male" if raw_gender in ("male", "masculino", "man", "boy") else "female"
+            else:
+                comp_gender = "female"
+
+            # Determine Age Group ('young' | 'adult' | 'elder')
+            raw_age = str(data.get("companion_age", "")).lower().strip()
+            age_match = re.search(r"\b(\d{2})\s*(?:-|\s)?\s*years?(?:-|\s)?old\b", visual_context)
+            numeric_age = int(age_match.group(1)) if age_match else None
+
+            if numeric_age is not None:
+                if numeric_age <= 25:
+                    comp_age = "young"
+                elif numeric_age >= 50:
+                    comp_age = "elder"
+                else:
+                    comp_age = "adult"
+            elif re.search(r"\b(old|older|elder|elderly|senior|veteran|retired|grandma|grandmother|grandpa|grandfather|granny|gray hair|grey hair|white hair|silver hair|wrinkles|wise old)\b", visual_context) or raw_age in ("elder", "old", "older", "viejo", "mayor", "anciano"):
+                comp_age = "elder"
+            elif re.search(r"\b(young|youth|teen|teenager|student|classmate|schoolgirl|schoolboy|kid|boy|girl|freshman|college|campus|barista)\b", visual_context) or raw_age in ("young", "joven", "teen", "youth"):
+                comp_age = "young"
+            else:
+                comp_age = "adult"
+
             data["companion_gender"] = comp_gender
-            data["companion_voice"] = "en-US-RogerNeural" if comp_gender == "male" else "en-US-JennyNeural"
+            data["companion_age"] = comp_age
+            data["companion_voice"] = f"minimax-{comp_gender}-{comp_age}"
 
-            if not data.get("companion_avatar"):
-                data["companion_avatar"] = "👨‍🦱" if comp_gender == "male" else "👩‍🦱"
+            # Avatar matching exact gender & age group
+            if comp_gender == "female":
+                default_avatar = "👵" if comp_age == "elder" else ("👩‍🎓" if comp_age == "young" else "👩‍💼")
+            else:
+                default_avatar = "👴" if comp_age == "elder" else ("🧑‍🎓" if comp_age == "young" else "👨‍💼")
+            if not data.get("companion_avatar") or (comp_gender == "female" and "👨" in str(data.get("companion_avatar"))) or (comp_gender == "male" and "👩" in str(data.get("companion_avatar"))):
+                data["companion_avatar"] = default_avatar
 
-            dna = data.get("character_dna") or f"{data.get('companion_name', 'companion')}, friendly anime character"
+            dna = data.get("character_dna") or f"{data.get('companion_name', 'companion')}, friendly {comp_age} {comp_gender} anime character"
+            if comp_gender == "female":
+                dna = re.sub(r"\b(male|man|boy|gentleman|guy)\b", "female", dna, flags=re.IGNORECASE)
+            else:
+                dna = re.sub(r"\b(female|woman|girl|lady)\b", "male", dna, flags=re.IGNORECASE)
+            data["character_dna"] = dna
+
             env_anchor = data.get("environment_anchor", "in a bright sunlit environment with warm natural lighting")
             is_static = data.get("setting_type") == "static_location"
-            solo_tag = "solo, 1female, single female character only" if comp_gender == "female" else "solo, 1male, single male character only"
+            solo_tag = "solo, 1girl, single female character only" if comp_gender == "female" else "solo, 1boy, single male character only"
 
-            # Ensure all nodes have clean anime prompts and scenography continuity
+            # Ensure all nodes have clean anime prompts, strict gender lock, and scenography continuity
             for idx, node in enumerate(data["nodes"]):
                 if not node.get("node_id"):
                     node["node_id"] = f"step_{idx+1}"
                 
                 prompt_str = str(node.get("pov_image_prompt", ""))
                 
+                # Enforce visual gender consistency in every scene prompt so image-01 never draws the wrong gender
+                if comp_gender == "female":
+                    prompt_str = re.sub(r"\b(1boy|1male|single male|male character|young man|old man|handsome man|gentleman)\b", "1girl, single female character", prompt_str, flags=re.IGNORECASE)
+                else:
+                    prompt_str = re.sub(r"\b(1girl|1female|single female|female character|young woman|old woman|beautiful woman|lady)\b", "1boy, single male character", prompt_str, flags=re.IGNORECASE)
+
                 # Remove photography/dark artifacts and hands holding that cause couples
                 clean_p = re.sub(r'realistic photography|photorealistic|photorealism|photo|hyperrealistic|realism', 'clean 2D anime visual novel digital illustration, Makoto Shinkai vibrant aesthetic, bright daylight', prompt_str, flags=re.IGNORECASE)
                 clean_p = re.sub(r"player's (own )?hands (and arms )?(visible in (the )?bottom foreground )?(holding|resting|reaching|gesturing)?", "foreground wooden table edge", clean_p, flags=re.IGNORECASE)
@@ -398,8 +482,8 @@ JSON SCHEMA:
                 if is_static and env_anchor and env_anchor.lower() not in clean_p.lower():
                     clean_p = f"{clean_p}, {env_anchor}"
 
-                # Append mandatory 2D anime and anti-couple negative tags
-                clean_p = f"{clean_p}, clean 2D anime digital drawing, strictly 2D anime, single person only, no second person, no couple, no romance, no holding hands, not a photo, no photorealism, no 3D, no text, no words"
+                # Append mandatory 2D anime tags
+                clean_p = f"{clean_p}, {solo_tag}, clean 2D anime digital drawing, strictly 2D anime, single person only"
 
                 node["pov_image_prompt"] = clean_p
 

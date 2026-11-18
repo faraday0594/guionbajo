@@ -755,7 +755,7 @@ export default function POVQuestGame({
           ) : (
             <GuionbajoMeditationLoader
               title="Guionbajo está fabricando la escena..."
-              companionName={questData.companion_name || 'Emma'}
+              sublevel={sublevel}
             />
           )}
 

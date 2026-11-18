@@ -596,7 +596,8 @@ export default function GameArena({
       <div className="min-h-[480px] w-full rounded-3xl overflow-hidden border border-white/15 shadow-2xl">
         <GuionbajoMeditationLoader
           title="Guionbajo está fabricando tu Zona de Juegos..."
-          subtitle={`Diseñando la misión conversacional, las cartas gemelas y la palabra misteriosa para ${topic} (${sublevel}).`}
+          subtitle="Guionbajo está concentrado preparando tu actividad interactiva..."
+          sublevel={sublevel}
         />
       </div>
     );

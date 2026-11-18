@@ -39,6 +39,10 @@ export interface TutorAvatarProps {
   pitchAngle?: number;
   /** Hace que el brazo interior señale hacia la pizarra */
   pointAtBoard?: boolean;
+  /** Activa postura de meditación budista con ojos cerrados y brazos en mudra */
+  meditating?: boolean;
+  /** En modo meditación, abre rápidamente un ojo ('left' | 'right' | 'none') para espiar */
+  peekEye?: 'none' | 'left' | 'right';
 }
 
 interface EmotionSegment {
@@ -153,6 +157,8 @@ export default function TutorAvatar({
   yawAngle,
   pitchAngle,
   pointAtBoard = false,
+  meditating = false,
+  peekEye = 'none',
 }: TutorAvatarProps) {
   // El avatar está en modo speaking si el estado es speaking y el progreso no ha concluido
   const isSpeaking = state === 'speaking' && (audioProgress === undefined || audioProgress < 99);
@@ -472,58 +478,74 @@ export default function TutorAvatar({
         </div>
 
         {/* Ojos con Obturadores / Párpados Mecánicos */}
-        <div className={styles.robotEyes}>
-          {[0, 1].map(i => (
-            <div key={i} className={styles.eyeSocket}>
-              {/* Párpado superior mecánico */}
-              <div
-                className={`${styles.shutter} ${styles.shutterTop} ${
-                  drowned
-                    ? styles.shutterClosedTop
-                    : currentEmotion === 'angry'
-                    ? `${styles.angryShutterTop} ${i === 0 ? styles.angryShutterLeft : styles.angryShutterRight}`
-                    : state === 'idle' && currentEmotion === 'neutral'
-                    ? `${styles.idleBlink} ${i === 1 ? styles.shutterRight : ''}`
-                    : ''
-                }`}
-              />
+        <div className={`${styles.robotEyes} ${meditating ? styles.eyesMeditatingZ : ''}`}>
+          {[0, 1].map(i => {
+            const isEyeMeditatingClosed =
+              meditating &&
+              ((i === 0 && peekEye !== 'left') || (i === 1 && peekEye !== 'right'));
 
-              {/* Lente neón / pupila (se vuelve ROJO intenso en Stage >= 3) */}
-              <div className={styles.eyeLens}>
+            return (
+              <div key={i} className={styles.eyeSocket}>
+                {/* Párpado superior mecánico */}
                 <div
-                  className={`${styles.pupil} ${
+                  className={`${styles.shutter} ${styles.shutterTop} ${
                     drowned
-                      ? styles.drownedPupil
-                      : upgradeStage >= 3
-                      ? styles.tacticalRedPupil
-                      : currentEmotion === 'happy' || currentEmotion === 'victory'
-                      ? styles.happyPupil
+                      ? styles.shutterClosedTop
+                      : isEyeMeditatingClosed
+                      ? styles.shutterMeditateTop
+                      : meditating
+                      ? styles.shutterPeekOpen
                       : currentEmotion === 'angry'
-                      ? styles.angryPupil
-                      : currentEmotion === 'thinking' || state === 'thinking'
-                      ? styles.thinkingPupil
-                      : currentEmotion === 'nervous'
-                      ? styles.nervousPupil
+                      ? `${styles.angryShutterTop} ${i === 0 ? styles.angryShutterLeft : styles.angryShutterRight}`
                       : state === 'idle' && currentEmotion === 'neutral'
-                      ? styles.idleLook
+                      ? `${styles.idleBlink} ${i === 1 ? styles.shutterRight : ''}`
                       : ''
                   }`}
                 />
-                {!drowned && <div className={styles.eyeGlint} />}
-              </div>
 
-              {/* Párpado inferior mecánico */}
-              <div
-                className={`${styles.shutter} ${styles.shutterBottom} ${
-                  drowned
-                    ? styles.shutterClosedBottom
-                    : currentEmotion === 'happy' || currentEmotion === 'victory'
-                    ? styles.happyShutterBottom
-                    : ''
-                }`}
-              />
-            </div>
-          ))}
+                {/* Lente neón / pupila (se vuelve ROJO intenso en Stage >= 3) */}
+                <div className={styles.eyeLens}>
+                  <div
+                    className={`${styles.pupil} ${
+                      drowned
+                        ? styles.drownedPupil
+                        : isEyeMeditatingClosed
+                        ? styles.meditateClosedPupil
+                        : upgradeStage >= 3
+                        ? styles.tacticalRedPupil
+                        : currentEmotion === 'happy' || currentEmotion === 'victory'
+                        ? styles.happyPupil
+                        : currentEmotion === 'angry'
+                        ? styles.angryPupil
+                        : currentEmotion === 'thinking' || state === 'thinking'
+                        ? styles.thinkingPupil
+                        : currentEmotion === 'nervous'
+                        ? styles.nervousPupil
+                        : state === 'idle' && currentEmotion === 'neutral' && !meditating
+                        ? styles.idleLook
+                        : ''
+                    }`}
+                  />
+                  {!drowned && !isEyeMeditatingClosed && <div className={styles.eyeGlint} />}
+                </div>
+
+                {/* Párpado inferior mecánico */}
+                <div
+                  className={`${styles.shutter} ${styles.shutterBottom} ${
+                    drowned
+                      ? styles.shutterClosedBottom
+                      : isEyeMeditatingClosed
+                      ? styles.shutterMeditateBottom
+                      : meditating
+                      ? styles.shutterPeekOpen
+                      : currentEmotion === 'happy' || currentEmotion === 'victory'
+                      ? styles.happyShutterBottom
+                      : ''
+                  }`}
+                />
+              </div>
+            );
+          })}
         </div>
 
         {/* Boca: Dientes Bender de 7 barras o Cursor Terminal '_' en reposo/silencio */}
@@ -633,6 +655,8 @@ export default function TutorAvatar({
             let animClass = '';
             if (panickedArms && !drowned) {
               animClass = isLeft ? styles.armPanicLeft : styles.armPanicRight;
+            } else if (meditating) {
+              animClass = isLeft ? styles.armMeditateLeft : styles.armMeditateRight;
             } else if (mode3D && pointAtBoard && ((isLeft && lookDirection === 'left') || (!isLeft && lookDirection === 'right'))) {
               animClass = isLeft ? styles.armPointingBoardLeft : styles.armPointingBoardRight;
             } else if (currentEmotion === 'happy' || currentEmotion === 'victory') {
@@ -683,7 +707,8 @@ export default function TutorAvatar({
             )}
           </div>
 
-          {mode3D && <div className={styles.holoHoverRing} />}
+          {(mode3D || meditating) && <div className={styles.holoHoverRing} />}
+          {meditating && <div className={styles.meditationLotusRing} />}
         </div>
       )}
       </div>

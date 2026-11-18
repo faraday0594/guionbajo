@@ -13,6 +13,7 @@ import TutorAvatar from '@/app/components/TutorPanel/TutorAvatar';
 import JourneyVisualStage from '@/app/components/dashboard/JourneyVisualStage';
 import AdminAccessNotifications from '@/app/components/AdminAccessNotifications';
 import PremiumLimitModal from '@/app/components/PremiumLimitModal';
+import GuionbajoMeditationLoader from '@/app/components/games/GuionbajoMeditationLoader';
 import {
   getLocalDailyQuota,
   syncDailyQuotaFromServer,
@@ -339,9 +340,11 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-brand-dark flex flex-col items-center justify-center text-white">
-        <Loader2 className="w-10 h-10 text-brand-accent animate-spin mb-4" />
-        <p className="text-brand-text-secondary animate-pulse">Cargando tu pensum profesional de inglés...</p>
+      <div className="min-h-screen w-full bg-brand-dark flex items-center justify-center">
+        <GuionbajoMeditationLoader
+          title="Guionbajo está preparando tu panel de estudio..."
+          subtitle="Sincronizando tu progreso, racha diaria y ruta de aprendizaje..."
+        />
       </div>
     );
   }

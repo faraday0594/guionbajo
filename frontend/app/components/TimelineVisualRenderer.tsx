@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import ScoreDisplay from './TutorPanel/ScoreDisplay';
 import TranslatableText from './TranslatableText';
+import GuionbajoMeditationLoader from './games/GuionbajoMeditationLoader';
 import { isValidEnglishTargetPhrase, isUngrammaticalEnglishPhrase } from '@/app/lesson/[id]/page';
 
 export interface TimelineStepPayload {
@@ -388,11 +389,11 @@ export default function TimelineVisualRenderer({
                 )}
               </div>
             ) : imageLoading ? (
-              <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
-                <div className="w-10 h-10 border-4 border-brand-cyan border-t-transparent rounded-full animate-spin shadow-lg" />
-                <span className="text-xs font-mono text-brand-cyan font-bold animate-pulse">
-                  Generando ilustración...
-                </span>
+              <div className="w-full h-full min-h-[220px]">
+                <GuionbajoMeditationLoader
+                  compact={true}
+                  title="Guionbajo está fabricando la ilustración..."
+                />
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-2 p-6 text-center text-white/50 font-mono text-xs">

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { sfx } from '@/lib/soundEffects';
+import GuionbajoMeditationLoader from '../games/GuionbajoMeditationLoader';
 
 export interface ReadingWord {
   word: string;
@@ -746,15 +747,12 @@ export default function ReadingPracticeArena({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 glass rounded-3xl border border-brand-border/60 min-h-[440px] text-center">
-        <div className="w-16 h-16 rounded-full bg-brand-cyan/20 border-2 border-brand-cyan flex items-center justify-center mb-4 animate-pulse">
-          <BookOpen className="w-8 h-8 text-brand-cyan" />
-        </div>
-        <h3 className="text-lg font-bold text-white mb-2">Construyendo Historia Visual...</h3>
-        <p className="text-xs text-brand-text-secondary max-w-md">
-          Diseñando 3 escenas completas sobre <strong className="text-white">{topic}</strong> con 3 partes de lectura por slide, continuidad de personajes y fonética IPA.
-        </p>
-        <Loader2 className="w-6 h-6 text-brand-accent animate-spin mt-4" />
+      <div className="w-full rounded-3xl overflow-hidden border border-brand-border/60 min-h-[440px]">
+        <GuionbajoMeditationLoader
+          title="Guionbajo está fabricando la historia de Lectura Guiada..."
+          subtitle="Preparando las 3 escenas narrativas con continuidad visual y transcripción fonética IPA..."
+          sublevel={sublevel}
+        />
       </div>
     );
   }
@@ -969,11 +967,12 @@ export default function ReadingPracticeArena({
               </button>
             </>
           ) : isCurrentImgLoading ? (
-            <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
-              <Loader2 size={28} className="text-brand-cyan animate-spin" />
-              <span className="text-xs text-brand-text-secondary uppercase font-bold tracking-wider">
-                Generando Ilustración de la Escena...
-              </span>
+            <div className="w-full h-full min-h-[240px]">
+              <GuionbajoMeditationLoader
+                compact={true}
+                title="Guionbajo está fabricando la ilustración de la escena..."
+                sublevel={sublevel}
+              />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-6 text-center space-y-1 text-white/40">

@@ -8,6 +8,7 @@ import { api, playEnglishAudio, preloadEnglishAudio, setSavedPreferredVoice, API
 import { getToken } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 import PhoneticLabSession from './PhoneticLabSession';
+import GuionbajoMeditationLoader from './games/GuionbajoMeditationLoader';
 
 interface PhonemeItem {
   ipa: string;
@@ -266,9 +267,11 @@ const PHONEME_LOCAL_AUDIO_MAP: Record<string, string> = {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-zinc-400 font-medium">Cargando Tablero Fonético...</p>
+      <div className="w-full min-h-[380px] rounded-3xl overflow-hidden border border-white/10">
+        <GuionbajoMeditationLoader
+          title="Guionbajo está preparando el Laboratorio Fonético..."
+          subtitle="Cargando los 44 fonemas del inglés y sus guías articulatorias..."
+        />
       </div>
     );
   }

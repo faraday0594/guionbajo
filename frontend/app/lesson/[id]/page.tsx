@@ -16,6 +16,7 @@ import PhoneticBoard from '@/app/components/PhoneticBoard';
 import LiveStoryboardController, { StoryboardStep } from '@/app/components/LiveStoryboardController';
 import TimelineVisualRenderer, { TimelineStep } from '@/app/components/TimelineVisualRenderer';
 import InteractiveExerciseStage from '@/app/components/InteractiveExerciseStage';
+import GuionbajoMeditationLoader from '@/app/components/games/GuionbajoMeditationLoader';
 import {
   ArrowLeft,
   Send,
@@ -5745,25 +5746,22 @@ export default function LessonPage() {
 
   if (loadingLesson) {
     return (
-      <div className="min-h-[100dvh] h-[100dvh] bg-brand-dark flex flex-col items-center justify-center text-white p-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(108,99,255,0.15),_transparent_70%)] pointer-events-none" />
-        <div className="relative mb-6">
-          <div className="w-20 h-20 rounded-full bg-brand-accent/20 border-2 border-brand-accent flex items-center justify-center animate-ping absolute inset-0 pointer-events-none" />
-          <div className="w-20 h-20 rounded-full bg-brand-surface border-2 border-brand-cyan flex items-center justify-center relative z-10 shadow-xl shadow-brand-cyan/20">
-            <Sparkles className="w-9 h-9 text-brand-cyan animate-pulse" />
-          </div>
-        </div>
-        <h2 className="text-2xl sm:text-3xl font-outfit font-bold mb-6 tracking-tight text-center">
-          Preparando clase interactiva...
-        </h2>
-        <button
-          type="button"
-          onClick={handleCancelAndReturnToDashboard}
-          className="relative z-20 cursor-pointer pointer-events-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm border border-white/20 transition-all shadow-lg hover:scale-105 active:scale-95"
+      <div className="min-h-[100dvh] h-[100dvh] w-full bg-brand-dark flex flex-col items-center justify-center text-white relative overflow-hidden">
+        <GuionbajoMeditationLoader
+          title="Guionbajo está fabricando tu clase interactiva..."
+          subtitle={loadingStage || 'Preparando la pizarra, ejemplos y desafíos prácticos...'}
+          sublevel={sublevelParam}
+          upgradeStage={avatarUpgradeStage}
         >
-          <ArrowLeft size={16} />
-          <span>Volver al Dashboard</span>
-        </button>
+          <button
+            type="button"
+            onClick={handleCancelAndReturnToDashboard}
+            className="cursor-pointer pointer-events-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm border border-white/20 transition-all shadow-lg hover:scale-105 active:scale-95"
+          >
+            <ArrowLeft size={16} />
+            <span>Volver al Dashboard</span>
+          </button>
+        </GuionbajoMeditationLoader>
       </div>
     );
   }
@@ -6548,9 +6546,13 @@ export default function LessonPage() {
                               </div>
                             </>
                           ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-black/50 min-h-[280px]">
-                              <Loader2 size={24} className="text-brand-cyan animate-spin mb-3" />
-                              <p className="text-xs text-white/70 font-mono">Generando imagen neuronal de apertura...</p>
+                            <div className="w-full h-full min-h-[280px]">
+                              <GuionbajoMeditationLoader
+                                compact={true}
+                                title="Guionbajo está fabricando la ilustración..."
+                                sublevel={sublevelParam}
+                                upgradeStage={avatarUpgradeStage}
+                              />
                             </div>
                           )}
                         </motion.div>

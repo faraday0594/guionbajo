@@ -24,6 +24,7 @@ import { sfx } from '@/lib/soundEffects';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslatableText from './TranslatableText';
+import GuionbajoMeditationLoader from './games/GuionbajoMeditationLoader';
 
 export interface ExerciseItemData {
   id: string;
@@ -523,12 +524,11 @@ export default function InteractiveExerciseStage({
                 </div>
               </>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-zinc-950/90 backdrop-blur-sm z-10">
-                <div className="w-12 h-12 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/30 flex items-center justify-center mb-3">
-                  <Loader2 size={24} className="text-brand-cyan animate-spin" />
-                </div>
-                <p className="text-xs font-semibold text-white font-outfit">Preparando ilustración didáctica...</p>
-                <p className="text-[11px] text-zinc-400 mt-1">Creando el contexto visual para esta actividad</p>
+              <div className="absolute inset-0 z-10">
+                <GuionbajoMeditationLoader
+                  compact={true}
+                  title="Guionbajo está fabricando el desafío visual..."
+                />
               </div>
             )}
           </div>
